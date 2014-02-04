@@ -1,0 +1,15 @@
+package lb.steve.frontend;
+
+option java_package = "com.logicblox.steve";
+
+/**
+ * Request/response 
+ */
+message Request
+{
+}
+
+message Response
+{
+  optional string error = 1;
+}

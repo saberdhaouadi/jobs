@@ -1,0 +1,75 @@
+package com.logicblox.steve;
+
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+
+import com.logicblox.bloxweb.InvalidRequestException;
+import com.logicblox.bloxweb.ProtoBufExchange;
+import com.logicblox.bloxweb.ProtoBufHandler;
+import com.logicblox.bloxweb.config.Config;
+import com.logicblox.bloxweb.config.Section;
+import com.logicblox.bloxweb.service.ServiceConfig;
+
+public class SteveHandler extends ProtoBufHandler
+{
+  public SteveHandler()
+  {
+    super("Steve");
+  }
+
+  @Override
+  public void init(Section handlerConfig, ServiceConfig service)
+  {
+    super.init(handlerConfig, service);
+  }
+
+  @Override
+  protected Message.Builder getRequestBuilder()
+  {
+    return Frontend.Request.newBuilder();
+  }
+
+  @Override
+  protected Message.Builder getResponseBuilder()
+  {
+    return Frontend.Response.newBuilder();
+  }
+
+  @Override
+  protected ListenableFuture<ProtoBufExchange> handle(
+    HttpServletRequest httpRequest,
+    HttpServletResponse httpResponse, 
+    final ProtoBufExchange protoExchange)
+  throws ServletException, IOException, InvalidProtocolBufferException, InvalidRequestException
+  {
+    Frontend.Request req = (Frontend.Request) protoExchange.getRequestMessage();    
+    return null;
+  }
+
+  @Override
+  public FileDescriptorSet getRequestProtocolDescriptor()
+  {
+    return createFileDescriptorSet(Frontend.getDescriptor());
+  }
+  
+  @Override
+  public FileDescriptorSet getResponseProtocolDescriptor()
+  {
+    // same protocol...
+    return getRequestProtocolDescriptor();
+  }
+
+  @Override
+  public void description(StringBuilder out)
+  {
+    out.append("<li>Steve jobs handler</li>");
+  }
+}
