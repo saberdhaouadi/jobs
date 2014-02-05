@@ -1,0 +1,15 @@
+
+\.pyc$
+\.swp$
+\.swo$
+\.lbb$
+\.lbp$
+~$
+\.orig$
+^.classpath
+^.project
+\_proto.logic
+\.descriptor
+
+frontend/build/*
+

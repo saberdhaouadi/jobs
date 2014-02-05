@@ -1,15 +1,92 @@
+/**
+ * This protocol covers the client-side API to the Steve front-end. It
+ * will be used by applications on different versions and for several
+ * years, so it needs to be extremely simple and stable. No
+ * incompatible changes are allowed on this protocol.
+ */
 package lb.steve.frontend;
 
 option java_package = "com.logicblox.steve";
 
 /**
- * Request/response 
+ * Request/response unions
  */
-message Request
-{
+message Request {
+  optional CreateRequest create = 1;
+  optional StatusRequest status = 2;
+  optional JoinRequest join = 3;
+  optional KillRequest kill = 4;
 }
 
-message Response
-{
+message Response {
   optional string error = 1;
+  optional CreateResponse create = 2;
+  optional StatusResponse status = 3;
+  optional JoinResponse join = 4;
+  optional KillResponse kill = 5;
+}
+
+/**
+ * Create a new job
+ */
+message CreateRequest {
+  // Identifier of the job implementation.
+  required string job_impl = 1;
+
+  // S3 urls for input
+  repeated string input = 2;
+
+  // S3 url for output (prefix)
+  required string output = 3;
+
+  repeated Param param = 4;
+}
+
+message CreateResponse {
+  required string job_id = 1;
+}
+
+/**
+ * Request status of a job
+ */
+message StatusRequest {
+  required string job_id = 1;
+}
+
+message StatusResponse {
+  required string status = 2;
+}
+
+/**
+ * Join (subject to timeouts, of course)
+ */
+message JoinRequest {
+  required string job_id = 1;
+  required uint64 timeout = 2;
+}
+
+message JoinResponse {
+  required string status = 1;
+}
+
+/**
+ * Kill a queued or executing job.
+ */
+message KillRequest {
+  required string job_id = 1;
+}
+
+message KillResponse {
+  // As a convenience to the client, we return the previous status of
+  // the job (the new status will be pending-kill until the kill has
+  // been handled)
+  required string status = 1; 
+}
+
+/**
+ * General
+ */
+message Param {
+  required string key = 1;
+  required string value = 2;
 }

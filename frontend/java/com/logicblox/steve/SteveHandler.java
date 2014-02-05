@@ -6,6 +6,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.http.HttpStatus;
+
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -17,10 +21,13 @@ import com.logicblox.bloxweb.ProtoBufHandler;
 import com.logicblox.bloxweb.config.Config;
 import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
+import com.logicblox.concurrent.MoreFutures;
 
 public class SteveHandler extends ProtoBufHandler
 {
-  public SteveHandler()
+  private Database _database;
+
+  public SteveHandler(Database database)
   {
     super("Steve");
   }
@@ -32,26 +39,15 @@ public class SteveHandler extends ProtoBufHandler
   }
 
   @Override
-  protected Message.Builder getRequestBuilder()
+  protected Frontend.Request.Builder getRequestBuilder()
   {
     return Frontend.Request.newBuilder();
   }
 
   @Override
-  protected Message.Builder getResponseBuilder()
+  protected Frontend.Response.Builder getResponseBuilder()
   {
     return Frontend.Response.newBuilder();
-  }
-
-  @Override
-  protected ListenableFuture<ProtoBufExchange> handle(
-    HttpServletRequest httpRequest,
-    HttpServletResponse httpResponse, 
-    final ProtoBufExchange protoExchange)
-  throws ServletException, IOException, InvalidProtocolBufferException, InvalidRequestException
-  {
-    Frontend.Request req = (Frontend.Request) protoExchange.getRequestMessage();    
-    return null;
   }
 
   @Override
@@ -71,5 +67,48 @@ public class SteveHandler extends ProtoBufHandler
   public void description(StringBuilder out)
   {
     out.append("<li>Steve jobs handler</li>");
+  }
+
+  @Override
+  protected ListenableFuture<ProtoBufExchange> handle(
+    HttpServletRequest httpRequest,
+    HttpServletResponse httpResponse, 
+    ProtoBufExchange exchange)
+  throws ServletException, IOException, InvalidProtocolBufferException, InvalidRequestException
+  {
+    Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
+
+    if(request.hasCreate())
+    {
+      ListenableFuture<Frontend.Response> resp = handleCreate(httpRequest, httpResponse, request.getCreate());
+      MoreFutures.transferResponse(resp, exchange);
+    }
+    else if(request.hasStatus())
+    {
+
+    }
+    else if(request.hasJoin())
+    {
+
+    }
+    else if(request.hasKill())
+    {
+
+    }
+    else
+    {
+      new HttpException(HttpStatus.BAD_REQUEST_400, "Request union has no request");
+    }
+
+    return Futures.immediateFuture(exchange);
+  }
+
+  private ListenableFuture<Frontend.Response> handleCreate(
+    HttpServletRequest httpRequest,
+    HttpServletResponse httpResponse, 
+    Frontend.CreateRequest request)
+  {
+    Frontend.Response.Builder response = Frontend.Response.newBuilder();
+    return Futures.immediateFuture(response.build());
   }
 }
