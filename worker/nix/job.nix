@@ -17,14 +17,17 @@ in
     buildCommand = ''
       echo ""
       echo "starting LogicBlox services"
-      lb-services start &> /dev/null
+      lb services start &> /dev/null
 
-      cp -R ${job}/* .
-      chmod u+w -R .
+      tar --strip-components=1 -xf ${job}
 
       echo ""
       echo "running job"
-      bash run.sh
+      if [[ -f ./run ]]; then
+        bash run
+      else
+        echo "ERROR: run.sh not found!"
+      fi
 
       mkdir -p $out
     '';
