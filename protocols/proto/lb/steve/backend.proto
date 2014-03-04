@@ -1,0 +1,41 @@
+/**
+ * This protocol covers the messages sent to and from the Steve back-end.
+ */
+package lb.steve.backend;
+
+option java_package = "com.logicblox.steve.protocol";
+
+message RunJob {
+  // Identifier of the job and job implementation.
+  required string job_impl = 1;
+  required string job = 2;
+
+  // S3 urls for input
+  repeated string input = 3;
+
+  // S3 url for output (prefix)
+  required string output = 4;
+}
+
+message JobFinished {
+  // Identifier of the job.
+  required string job = 1;
+  required int64 datetime = 2;
+
+  required string machine = 3;
+
+  required bool success = 4;
+  optional string error_code = 5;
+  optional string error_message = 6;
+}
+
+message JobStatus {
+  // Identifier of the job.
+  required string job = 1;
+
+  // Status message and date
+  required int32 datetime = 2;
+  required string status = 3;
+
+  required string machine = 4;
+}
