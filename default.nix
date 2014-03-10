@@ -54,5 +54,14 @@ rec {
         wrapProgram "$out/bin/lb-steve-worker" --prefix PATH : "${pkgs.python}/bin:${pkgs.openjdk}/bin"
       '';
     };
-  
+
+  worker_image =
+    let
+      image = (import <nixpkgs/nixos> { system = "x86_64-linux"; configuration = ./nix/worker.nix; }).config.system.build.amazonImage;
+    in 
+      stdenv.runCommand "worker-image-${version src}" {} ''
+        mkdir $out/nix-support
+        echo "file img $out/worker-${version src}.img" > $out/nix-support/hydra-build-products
+      ''
 }
+
