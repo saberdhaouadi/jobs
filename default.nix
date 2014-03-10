@@ -60,7 +60,7 @@ rec {
       image = (import <nixpkgs/nixos> { system = "x86_64-linux"; configuration = ./nix/worker.nix; }).config.system.build.amazonImage;
     in 
       with pkgs; runCommand "worker-image-${version src}" {} ''
-        mkdir $out/nix-support
+        mkdir -p $out/nix-support
         echo "file img $out/worker-${version src}.img" > $out/nix-support/hydra-build-products
       '';
 }
