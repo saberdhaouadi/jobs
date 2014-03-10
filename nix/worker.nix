@@ -3,6 +3,15 @@ let
   builder-config = import <config> {};
   platform = builder-config.releases.platform."3.10.9";
   builds = import ../. {};
+
+  workerScript =
+    pkgs.writeScriptBin "worker" ''
+      #! /bin/sh
+      source /etc/profile
+      export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${builds.worker}"
+      ${builds.worker}/bin/lb-steve-worker
+    '';
+
   worker = 
     { config, pkgs, ... }:
     {
@@ -34,15 +43,11 @@ let
         wantedBy = [ "multi-user.target" ];
         path = [ builds.worker ];
         serviceConfig = {
-          ExecStart = pkgs.writeScript "start-worker" ''
-            #! /bin/sh
-            source /etc/profile
-            export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${builds.worker}"
-            ${builds.worker}/bin/lb-steve-worker
-          '';
+          ExecStart = "${workerScript}/bin/worker";
         };
       };
 
+      networking.hostName = "worker";
     };
 in
   worker
