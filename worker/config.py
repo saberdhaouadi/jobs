@@ -35,7 +35,8 @@ jar(
      "$(s3lib)/lib/java/commons-io-2.4.jar",
      "$(s3lib)/lib/java/guava-15.0.jar",
      "$(s3lib)/lib/java/aws-java-sdk-1.7.1.jar",
-     "$(s3lib)/lib/java/s3lib-0.2.jar"
+     "$(s3lib)/lib/java/s3lib-0.2.jar",
+     "$(commons_exec)/lib/java/commons-exec.jar"
    ])
 
 install_dir('nix','nix')
