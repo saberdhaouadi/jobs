@@ -61,6 +61,7 @@ rec {
     in 
       with pkgs; runCommand "worker-image-${version src}" {} ''
         mkdir -p $out/nix-support
+        ln -s ${image}/nixos.img $out/worker-${version src}.img
         echo "file img $out/worker-${version src}.img" > $out/nix-support/hydra-build-products
       '';
 }
