@@ -4,19 +4,23 @@
 }:
 let
   pkgs = import <nixpkgs> {};
+  builder-config = import <config> {};
+  platform = builder-config.releases.platform."3.10.9";
   worker = 
     { config, pkgs, resources, ... }:
     {
+      imports = [ ./worker.nix ];
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" "ssh-world" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "m1.medium";
+      deployment.ec2.instanceType = "m2.2xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.worker-role.name;
-      ec2.metadata = true;
+      deployment.ec2.spotInstancePrice = 100;
     };
 
+  builds = import ../. {};
 in
 with pkgs.lib;
 {
@@ -37,7 +41,7 @@ with pkgs.lib;
                 "s3:List*"
               ],
               "Effect": "Allow",
-              "Resource": ["arn:aws:s3:::steve-jobs/*", "arn:aws:s3:::steve-jobs"]
+              "Resource": ["arn:aws:s3:::steve-jobs/*", "arn:aws:s3:::steve-jobs", "arn:aws:s3:::logicblox-downloads" , "arn:aws:s3:::logicblox-downloads/*"]
             },
             {
               "Action": [
@@ -92,6 +96,7 @@ with pkgs.lib;
       deployment.ec2.instanceType = "m1.medium";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       ec2.metadata = true;
+      networking.enableIPv6 = false;
     };
 
 } // (listToAttrs (map (n: nameValuePair "worker${toString n}" worker) (range 1 workers)))
