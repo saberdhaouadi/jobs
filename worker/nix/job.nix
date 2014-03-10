@@ -11,9 +11,11 @@ in
       platform.bloxweb
       releases.pdxscience."4.0.0".pdxscience
     ];
+    LB_BLOXCOMPILER_SERVER="1";
     buildCommand = ''
       echo ""
       echo "starting LogicBlox services"
+
       if which lb-services &> /dev/null ; then
         lb-services start &> /dev/null
       else
