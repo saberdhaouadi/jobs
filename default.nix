@@ -62,6 +62,6 @@ rec {
       stdenv.runCommand "worker-image-${version src}" {} ''
         mkdir $out/nix-support
         echo "file img $out/worker-${version src}.img" > $out/nix-support/hydra-build-products
-      ''
+      '';
 }
 
