@@ -17,6 +17,14 @@ message RunJob {
   required string output = 4;
 }
 
+message JobStarted {
+  // Identifier of the job.
+  required string job = 1;
+  required int64 datetime = 2;
+
+  required string machine = 3;
+}
+
 message JobFinished {
   // Identifier of the job.
   required string job = 1;
