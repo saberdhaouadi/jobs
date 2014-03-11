@@ -39,7 +39,7 @@ public class NixUtils {
     return streamToString(p.getInputStream());
   }
 
-  public static void nixStoreRealise(String file) throws Exception {
+  public static void nixStoreRealise(String file, String job) throws Exception {
     // build up the command line to using a 'java.io.File'
     CommandLine commandLine = new CommandLine("nix-store");
     commandLine.addArgument("-r");
@@ -52,7 +52,7 @@ public class NixUtils {
     executor.setExitValue(0);
 
     // handle output
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    SteveJobLogHandler outputStream = new SteveJobLogHandler(job);
     PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream);
     executor.setStreamHandler(streamHandler);
 

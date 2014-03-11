@@ -89,7 +89,6 @@ public class Main
       if (messages.size() == 1)
         return messages.get(0);
 
-      System.out.println("Sleeping...");
       Thread.sleep(5000);
     }
   }
@@ -142,7 +141,7 @@ public class Main
   }
 
   private void processMessage(Backend.RunJob msg) throws Exception {
-    System.out.println("Starting...");
+    System.out.println(String.format("%s: Starting...",msg.getJob()));
     SteveJob job = new SteveJob(
             this.client,
             msg.getJob(),
@@ -152,7 +151,7 @@ public class Main
     );
 
     job.run();
-    System.out.println("Done!");
+    System.out.println(String.format("%s: Done!", msg.getJob()));
   }
 
   protected ListeningExecutorService getHttpExecutor()

@@ -214,7 +214,7 @@ public class SteveJob {
     log(drv);
 
     // build .drv
-    NixUtils.nixStoreRealise(drv);
+    NixUtils.nixStoreRealise(drv, id);
 
   }
 
