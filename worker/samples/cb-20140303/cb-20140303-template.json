@@ -1,0 +1,5 @@
+{ "job": "$jobid",
+  "job_impl": "1cb4233f-e033-4f7f-9814-6bba06b3c16c",
+  "input": ["s3://steve-jobs/data/crate/forecast/20140303/$job/data_input", "s3://steve-jobs/data/crate/forecast/20140303/common_input"],
+  "output": "s3://steve-jobs/jobs/$jobid/out"
+}

@@ -1,0 +1,5 @@
+{ "job": "3aa453bb-2711-4b13-84de-98d1ea4c15a7",
+  "job_impl": "c9657b5f-d50d-490f-9566-7179eda380cf",
+  "inputs": ["s3://steve-jobs/jobs/3aa453bb-2711-4b13-84de-98d1ea4c15a7/in/"],
+  "output": "s3://steve-jobs/jobs/3aa453bb-2711-4b13-84de-98d1ea4c15a7/out"
+}
