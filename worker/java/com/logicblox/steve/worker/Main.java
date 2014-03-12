@@ -33,7 +33,7 @@ public class Main
   String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
 
-  public static void main(String[] args) throws InterruptedException, InternalException {
+  public static void main(String[] args) throws Exception {
     Main m = new Main();
     m.createS3Client();
     m.setupSQS();
@@ -79,7 +79,8 @@ public class Main
     sqs.setRegion(Region.getRegion(Regions.US_EAST_1));
   }
 
-  private com.amazonaws.services.sqs.model.Message fetchJob() throws InterruptedException {
+  private com.amazonaws.services.sqs.model.Message fetchJob() throws InterruptedException, IOException {
+    long waitingSince = System.currentTimeMillis();
 
     while(true) {
       ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(incoming_url);
@@ -89,6 +90,19 @@ public class Main
       if (messages.size() == 1)
         return messages.get(0);
 
+      // If idling for more than 5 minutes, poweroff machine
+      if ( (System.currentTimeMillis() - waitingSince) / 1000 > 300)
+      {
+        try
+        {
+          Process p = Runtime.getRuntime().exec("systemctl poweroff");
+          p.waitFor();
+        }
+        finally
+        {
+          System.exit(0);
+        }
+      }
       Thread.sleep(5000);
     }
   }
