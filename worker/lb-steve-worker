@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -e
 
-java -cp $(readlink -f $(dirname $BASH_SOURCE)/..)/lib/java/\* com.logicblox.steve.worker.Main
+java -cp $(readlink -f $(dirname $BASH_SOURCE)/..)/lib/java/\* com.logicblox.steve.worker.Main $@
