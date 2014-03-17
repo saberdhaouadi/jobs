@@ -42,7 +42,7 @@ message JobStatus {
   required string job = 1;
 
   // Status message and date
-  required int32 datetime = 2;
+  required int64 datetime = 2;
   required string status = 3;
 
   required string machine = 4;

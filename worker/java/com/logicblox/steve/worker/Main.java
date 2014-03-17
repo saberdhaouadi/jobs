@@ -6,6 +6,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
+import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -21,8 +22,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.Executors;
 
@@ -33,11 +32,11 @@ public class Main
   AmazonSQS sqs;
 
   // Settings
-  private int _idle = 5;
-  private String _incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
-  private String _outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
+  private static int _idle = 5;
+  private static String _incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
+  private static String _outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
 
-  public void parseArgs(String args[])
+  public static void parseArgs(String args[])
   {
     Options options = new Options();
 
@@ -79,19 +78,27 @@ public class Main
     }
   }
 
+  public Main()
+  {
+    createS3Client();
+    setupSQS();
+  }
+
+
+
   public static void main(String[] args) throws Exception {
     Main m = new Main();
-    m.parseArgs(args);
+    parseArgs(args);
 
-    System.exit(0);
-    m.createS3Client();
-    m.setupSQS();
+    m.processMessages();
+  }
 
+  private void processMessages() throws InterruptedException, IOException, InternalException {
     while (true)
     {
       Backend.RunJob.Builder msgBuilder = Backend.RunJob.newBuilder();
       Backend.RunJob msg;
-      com.amazonaws.services.sqs.model.Message job = m.fetchJob();
+      com.amazonaws.services.sqs.model.Message job = fetchJob();
 
       try
       {
@@ -104,21 +111,39 @@ public class Main
         continue;
       }
 
+      SteveJob steve = new SteveJob(
+              this.client,
+              _outgoing_url,
+              msg.getJob(),
+              msg.getJobImpl(),
+              msg.getInputList(),
+              msg.getOutput()
+      );
+
       try
       {
-        m.processMessage(msg);
-        m.notifySuccess(msg);
+        steve.run();
       }
-      catch (Exception e)
+      catch(Exception e)
       {
-        m.notifyFailure(msg, e);
+        System.err.println("ERROR: Unhandled exception: "+e.getMessage());
         e.printStackTrace();
       }
       finally
       {
-        String handle = job.getReceiptHandle();
-        m.sqs.deleteMessage(new DeleteMessageRequest(m._outgoing_url, handle));
+        removeIncoming(job);
       }
+    }
+  }
+
+  private void removeIncoming(Message job) {
+    try
+    {
+      sqs.deleteMessage(new DeleteMessageRequest(_incoming_url, job.getReceiptHandle()));
+    }
+    catch(Exception e)
+    {
+      System.err.println("ERROR: Deleting message from incoming queue failed! "+e.getMessage());
     }
   }
 
@@ -156,65 +181,9 @@ public class Main
     }
   }
 
-  private void notifyFailure(Backend.RunJob job, Exception e) {
-    Backend.JobFinished.Builder msgBuilder = getBuilder(job);
-    msgBuilder.setSuccess(false);
-
-    if (e instanceof InternalException)
-    {
-      msgBuilder.setErrorCode("INTERNAL_ERROR");
-      msgBuilder.setErrorMessage(e.getMessage());
-    }
-    else
-    {
-      msgBuilder.setErrorCode("JOB_FAILED");
-    }
-    sendResult(msgBuilder.build());
-  }
-
-  private void notifySuccess(Backend.RunJob job) {
-    Backend.JobFinished.Builder msgBuilder = getBuilder(job);
-    msgBuilder.setSuccess(true);
-    sendResult(msgBuilder.build());
-  }
-
-  private Backend.JobFinished.Builder getBuilder(Backend.RunJob job) {
-    Backend.JobFinished.Builder msgBuilder = Backend.JobFinished.newBuilder();
-    msgBuilder.setJob(job.getJob());
-    msgBuilder.setDatetime(System.currentTimeMillis() / 1000);
-
-    String hostName;
-    try
-    {
-      hostName = InetAddress.getLocalHost().getHostName();
-    }
-    catch (UnknownHostException ue)
-    {
-      hostName = "unknown";
-    }
-    msgBuilder.setMachine(hostName);
-    return msgBuilder;
-  }
-
-  private void sendResult(com.google.protobuf.Message msg)
-  {
-    String contents = new JsonFormat().printToString(msg);
-    sqs.sendMessage(_outgoing_url,contents);
-    System.out.println(contents);
-  }
 
   private void processMessage(Backend.RunJob msg) throws Exception {
-    System.out.println(String.format("%s: Starting...",msg.getJob()));
-    SteveJob job = new SteveJob(
-            this.client,
-            msg.getJob(),
-            msg.getJobImpl(),
-            msg.getInputList(),
-            msg.getOutput()
-    );
 
-    job.run();
-    System.out.println(String.format("%s: Done!", msg.getJob()));
   }
 
   protected ListeningExecutorService getHttpExecutor()

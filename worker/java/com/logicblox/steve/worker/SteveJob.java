@@ -1,8 +1,7 @@
 package com.logicblox.steve.worker;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.sqs.model.Message;
 import com.logicblox.s3lib.*;
 
 import java.io.File;
@@ -12,11 +11,16 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.commons.exec.CommandLine;
+import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.exec.Executor;
+import org.apache.commons.exec.PumpStreamHandler;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 
 public class SteveJob {
+  public final OutgoingQueueHelper outgoing;
   private String id;
   private String impl;
   private List<String> inputs;
@@ -32,11 +36,12 @@ public class SteveJob {
   private File outputPath = new File("/tmp/job/out");
   private File jobPath = new File("/tmp/job/job.tar.gz");
 
-  public SteveJob(S3Client client, String id, String impl, List<String> inputs, String output) throws InternalException {
+  public SteveJob(S3Client client, String outgoing_url, String id, String impl, List<String> inputs, String output) throws InternalException {
     this.id = id;
     this.impl = impl;
     this.inputs = inputs;
     this.client = client;
+    this.outgoing = new OutgoingQueueHelper(outgoing_url, id);
 
     try
     {
@@ -62,14 +67,29 @@ public class SteveJob {
   }
 
   public void run() throws Exception {
+    log("Starting...");
     try
     {
       setup();
       runJob();
+      outgoing.notifySuccess();
+      log("Done!");
+    }
+    catch (Exception e)
+    {
+      outgoing.notifyFailure(e);
+      e.printStackTrace();
     }
     finally
     {
-      teardown();
+      try
+      {
+        teardown();
+      }
+      catch(InternalException e)
+      {
+        outgoing.notifyFailure(e);
+      }
     }
   }
 
@@ -119,7 +139,7 @@ public class SteveJob {
     URI jobImplUri;
     try
     {
-      jobImplUri = Utils.getURI(uri);
+      jobImplUri = com.logicblox.s3lib.Utils.getURI(uri);
     }
     catch (URISyntaxException e)
     {
@@ -141,7 +161,7 @@ public class SteveJob {
     URI inputUri;
     try
     {
-      inputUri = Utils.getURI(input);
+      inputUri = com.logicblox.s3lib.Utils.getURI(input);
     }
     catch (URISyntaxException e)
     {
@@ -166,39 +186,57 @@ public class SteveJob {
 
   private void teardown() throws InternalException {
     log("Tearing down...");
-    if (drv != null)
-    {
-      File logPath = new File(NixUtils.logPath(drv));
 
-      if(! logPath.exists()) {
-        log("No log file found, going on.");
-      }
-      else
-      {
-        // upload logs
-        try
-        {
-          log("Uploading log...[%s/%s]".format(logPath.toString(), outputLog));
-          client.upload(logPath, outputLog).get();
-        }
-        catch (Exception e)
-        {
-          throw new InternalException("Error uploading log to "+outputLog,e);
-        }
-      }
-    }
-
-    // upload output
+    ObjectMetadata log = null;
     try
     {
-      log("Uploading output...");
-      client.uploadDirectory(outputPath, output, null).get();
+      log = client.exists(s3Bucket, String.format("jobs/%s/log", id)).get();
     }
-    catch (Exception e)
+    catch(Exception e)
     {
-      throw new InternalException("Error uploading output files to "+output,e);
+      throw new InternalException("Could not determine if log file already exists in S3.", e);
     }
 
+    if (log == null)
+    {
+      // client.exists(,).get();
+      if (drv != null)
+      {
+        File logPath = new File(Utils.nixLogPath(drv));
+
+        if(! logPath.exists()) {
+          log("No log file found, going on.");
+        }
+        else
+        {
+          // upload logs
+          try
+          {
+            log("Uploading log...[%s/%s]".format(logPath.toString(), outputLog));
+            client.upload(logPath, outputLog).get();
+          }
+          catch (Exception e)
+          {
+            throw new InternalException("Error uploading log to "+outputLog,e);
+          }
+        }
+      }
+
+      // upload output
+      try
+      {
+        log("Uploading output...");
+        client.uploadDirectory(outputPath, output, null).get();
+      }
+      catch (Exception e)
+      {
+        throw new InternalException("Error uploading output files to "+output,e);
+      }
+    }
+    else
+    {
+      log("ERROR: Found log file, probably means the job was executed elsewhere. Skipping upload of logs and results.");
+    }
     // cleaning up directories
     log("Removing local in-/output...");
     cleanUp();
@@ -210,12 +248,53 @@ public class SteveJob {
     String nix = "<worker/nix/job.nix>";
 
     // determine .drv
-    drv = NixUtils.nixInstantiate(nix);
-    log(drv);
+    drv = nixInstantiate(nix);
 
     // build .drv
-    NixUtils.nixStoreRealise(drv, id);
-
+    nixStoreRealise(drv, id);
   }
+
+
+  public String nixInstantiate(String file) throws Exception {
+    ProcessBuilder pb = new ProcessBuilder("nix-instantiate", file);
+
+    Process p = pb.start();
+    int exit = p.waitFor();
+    if (exit != 0)
+    {
+      throw new Exception("nix-instantiate failed with exit code "+exit+"\n\n"+Utils.streamToString(p.getErrorStream()));
+    }
+
+    return Utils.streamToString(p.getInputStream());
+  }
+
+  public void nixStoreRealise(String file, String job) throws Exception {
+    // build up the command line to using a 'java.io.File'
+    CommandLine commandLine = new CommandLine("nix-store");
+    commandLine.addArgument("-r");
+    commandLine.addArgument(file);
+
+    // create the executor and consider the exitValue '0' as success
+    Executor executor = new DefaultExecutor();
+    executor.setExitValue(0);
+
+    // handle output
+    SteveJobLogHandler outputStream = new SteveJobLogHandler(this);
+    PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream);
+    executor.setStreamHandler(streamHandler);
+
+    int exit;
+    try {
+      exit = executor.execute(commandLine);
+    } catch (Exception ex) {
+      throw ex;
+    }
+
+    if (exit != 0)
+    {
+      throw new Exception("nix-store failed with exit code "+exit);
+    }
+  }
+
 
 }
