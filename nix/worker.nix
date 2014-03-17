@@ -28,6 +28,7 @@ let
         logicblox
         bloxweb
         builder-config.releases.pdxscience."4.0.0".pdxscience
+        pkgs.stdenv
       ];
 
       nix.chrootDirs = [ "/tmp/job"];
