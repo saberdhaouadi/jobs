@@ -20,6 +20,13 @@ let
       sha256 = "1f0b1cg17k79cjij6fpichrh9jzrn0q3dxf8z2a8af23id1w49pk";
     };
 
+  commons-cli =
+    buildjar {
+      name = "commons-cli";
+      url = http://repo1.maven.org/maven2/commons-cli/commons-cli/1.2/commons-cli-1.2.jar;
+      sha256 = "1nar28vxmzsjiw12phv77q8qr6jjnbsx9kvwidb9nd3djm8qkkg7";
+    };
+
   joda-time =
     buildjar {
       name = "joda-time-2.3";
@@ -49,7 +56,13 @@ rec {
       name = "jobs-worker-${version src}";
       src = ./worker;
       buildInputs = with platform; [ logicblox bloxweb pkgs.makeWrapper ];
-      configureFlags = "--with-commons-exec=${commons-exec} --with-protocols=${protocols} --with-joda-time=${joda-time} --with-s3lib=${platform.s3lib}";
+      configureFlags = [
+        "--with-commons-exec=${commons-exec}"
+        "--with-commons-cli=${commons-cli}"
+        "--with-protocols=${protocols}"
+        "--with-joda-time=${joda-time}"
+        "--with-s3lib=${platform.s3lib}"
+      ];
       postInstall = ''
         wrapProgram "$out/bin/lb-steve-worker" --prefix PATH : "${pkgs.python}/bin:${pkgs.openjdk}/bin"
       '';
