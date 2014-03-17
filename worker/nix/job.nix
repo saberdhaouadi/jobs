@@ -13,15 +13,29 @@ in
     ];
     LB_BLOXCOMPILER_SERVER="1";
     buildCommand = ''
-      echo ""
-      echo "starting LogicBlox services"
+      function start_lb() 
+      {
+        if which lb-services &> /dev/null ; then
+          lbservices="lb-services"
+        else
+          lbservices="lb services"
+        fi
 
-      if which lb-services &> /dev/null ; then
-        lb-services start &> /dev/null
-      else
-        lb services start &> /dev/null
-      fi
+        set +e
+        cmd=start
+        for i in $(seq 1 3); do
+          echo "starting LogicBlox services [$i]"
+          $lbservices $cmd &> /dev/null
+          if [[ "$?" == "0" ]]; then
+            break
+          else
+            cmd=restart
+          fi
+        done
+        set -e
+      }
 
+      start_lb
       tar --strip-components=1 -xf /tmp/job/job.tar.gz
 
       echo ""
