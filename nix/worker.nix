@@ -49,6 +49,7 @@ let
       };
 
       networking.hostName = "worker";
+      time.timeZone = "UTC";
     };
 in
   worker
