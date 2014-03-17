@@ -16,6 +16,7 @@ import com.logicblox.s3lib.KeyProvider;
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.Utils;
 import com.logicblox.steve.protocol.Backend;
+import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
@@ -30,11 +31,59 @@ public class Main
 {
   private S3Client client;
   AmazonSQS sqs;
-  String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
-  String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
+
+  // Settings
+  private int _idle = 5;
+  private String _incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
+  private String _outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
+
+  public void parseArgs(String args[])
+  {
+    Options options = new Options();
+
+    options.addOption(OptionBuilder.withLongOpt("idle")
+            .withDescription("Number of minutes to stay idle before shutting down.")
+            .withType(Number.class)
+            .hasArg()
+            .withArgName("minutes")
+            .create());
+
+    options.addOption(OptionBuilder.withLongOpt("incoming")
+            .withDescription("Incoming queue URL")
+            .hasArg()
+            .withArgName("URL")
+            .create());
+
+    options.addOption(OptionBuilder.withLongOpt("outgoing")
+            .withDescription("Outgoing queue URL")
+            .hasArg()
+            .withArgName("URL")
+            .create());
+
+    CommandLineParser parser = new BasicParser();
+    try {
+      CommandLine _cmdline = parser.parse( options, args );
+      if (_cmdline.hasOption("idle"))
+        _idle = ((Number)_cmdline.getParsedOptionValue("idle")).intValue();
+      if (_cmdline.hasOption("idle"))
+        _incoming_url = _cmdline.getOptionValue("incoming");
+      if (_cmdline.hasOption("idle"))
+        _outgoing_url = _cmdline.getOptionValue("outgoing");
+
+    }
+    catch( ParseException exp ) {
+      System.err.println( "Error: " + exp.getMessage() );
+      HelpFormatter formatter = new HelpFormatter();
+      formatter.printHelp( "lb-steve-worker", options );
+      System.exit(1);
+    }
+  }
 
   public static void main(String[] args) throws Exception {
     Main m = new Main();
+    m.parseArgs(args);
+
+    System.exit(0);
     m.createS3Client();
     m.setupSQS();
 
@@ -68,7 +117,7 @@ public class Main
       finally
       {
         String handle = job.getReceiptHandle();
-        m.sqs.deleteMessage(new DeleteMessageRequest(m.incoming_url, handle));
+        m.sqs.deleteMessage(new DeleteMessageRequest(m._outgoing_url, handle));
       }
     }
   }
@@ -83,7 +132,7 @@ public class Main
     long waitingSince = System.currentTimeMillis();
 
     while(true) {
-      ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(incoming_url);
+      ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(_incoming_url);
       receiveMessageRequest.setMaxNumberOfMessages(1);
       List<com.amazonaws.services.sqs.model.Message> messages = sqs.receiveMessage(receiveMessageRequest).getMessages();
 
@@ -91,7 +140,7 @@ public class Main
         return messages.get(0);
 
       // If idling for more than 5 minutes, poweroff machine
-      if ( (System.currentTimeMillis() - waitingSince) / 1000 > 300)
+      if ( (System.currentTimeMillis() - waitingSince) / 1000 > _idle*60)
       {
         try
         {
@@ -150,7 +199,7 @@ public class Main
   private void sendResult(com.google.protobuf.Message msg)
   {
     String contents = new JsonFormat().printToString(msg);
-    sqs.sendMessage(outgoing_url,contents);
+    sqs.sendMessage(_outgoing_url,contents);
     System.out.println(contents);
   }
 
