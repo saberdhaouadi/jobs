@@ -63,7 +63,7 @@ public class SteveJob {
 
   public void log(String msg)
   {
-    System.out.println(String.format("%s: %s", id, msg));
+    System.err.println(String.format("%s: %s", id, msg));
   }
 
   public void run() throws Exception {

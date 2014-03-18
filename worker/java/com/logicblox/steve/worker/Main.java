@@ -107,7 +107,7 @@ public class Main
       }
       catch(IOException e)
       {
-        System.out.println("ERROR: Invalid input message:\n"+job.getBody());
+        System.err.println("ERROR: Invalid input message:\n"+job.getBody());
         continue;
       }
 

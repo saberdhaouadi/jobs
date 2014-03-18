@@ -95,7 +95,7 @@ public class OutgoingQueueHelper {
   {
     String contents = new JsonFormat().printToString(msg);
     sqs.sendMessage(_outgoing_url,contents);
-    System.out.println(contents);
+    System.err.println(contents);
   }
 
 }
