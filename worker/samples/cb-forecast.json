@@ -1,5 +1,5 @@
 { "job": "13180cb5-ca23-4276-8adf-335097fd5215",
   "job_impl": "46b80c9f-57aa-4c19-bbd6-395a05feae11",
-  "input": ["s3://steve-jobs/jobs/13180cb5-ca23-4276-8adf-335097fd5215/in/"],
+  "input": ["s3://steve-jobs/data/crate/forecast-test/"],
   "output": "s3://steve-jobs/jobs/13180cb5-ca23-4276-8adf-335097fd5215/out"
 }

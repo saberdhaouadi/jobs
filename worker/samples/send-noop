@@ -7,7 +7,7 @@ for job in $(seq 1 $1); do
   aws sqs send-message --queue-url https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs --message-body "$(cat <<EOF
 { "job": "$jobid",
   "job_impl": "c9657b5f-d50d-490f-9566-7179eda380cf",
-  "inputs": ["s3://steve-jobs/jobs/3aa453bb-2711-4b13-84de-98d1ea4c15a7/in/"],
+  "inputs": ["s3://steve-jobs/data/noop/"],
   "output": "s3://steve-jobs/jobs/3aa453bb-2711-4b13-84de-98d1ea4c15a7/out"
 }
 EOF
