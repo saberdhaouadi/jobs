@@ -11,7 +11,10 @@ in
       platform.bloxweb
       releases.pdxscience."4.0.0".pdxscience
     ];
+
     LB_BLOXCOMPILER_SERVER="1";
+    LB_MONITOR_RULE_TIME="5";
+
     buildCommand = ''
       function start_lb() 
       {
