@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+
+java -cp $(readlink -f $(dirname $BASH_SOURCE)/..)/lib/java/\* com.logicblox.steve.provision.Main $@
