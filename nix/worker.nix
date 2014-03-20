@@ -64,7 +64,7 @@ let
 
           script =
             ''
-              hostname $(curl -s --retry 3 --retry-delay 10 -m 30 http://169.254.169.254/latest/meta-data/instance-id)
+              hostname $(curl --retry 10 --retry-delay 10 -m 30 http://169.254.169.254/latest/meta-data/instance-id)
               if [[ -f /var/run/rsyslogd.pid ]]; then
                 kill -HUP `cat /var/run/rsyslogd.pid`
               fi
