@@ -51,14 +51,15 @@ public class OutgoingQueueHelper {
     Backend.JobFinished.Builder msgBuilder = getBuilder();
     msgBuilder.setSuccess(false);
 
-    if (e instanceof InternalException)
+    if (e instanceof JobFailedException)
     {
-      msgBuilder.setErrorCode("INTERNAL_ERROR");
+      msgBuilder.setErrorCode("JOB_FAILED");
       msgBuilder.setErrorMessage(e.getMessage());
     }
     else
     {
-      msgBuilder.setErrorCode("JOB_FAILED");
+      msgBuilder.setErrorCode("INTERNAL_ERROR");
+      msgBuilder.setErrorMessage(e.getMessage());
     }
     sendResult(msgBuilder.build());
   }

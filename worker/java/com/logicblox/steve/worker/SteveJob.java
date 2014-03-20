@@ -276,7 +276,6 @@ public class SteveJob {
 
     // create the executor and consider the exitValue '0' as success
     Executor executor = new DefaultExecutor();
-    executor.setExitValue(0);
 
     // handle output
     SteveJobLogHandler outputStream = new SteveJobLogHandler(this);
@@ -287,12 +286,20 @@ public class SteveJob {
     try {
       exit = executor.execute(commandLine);
     } catch (Exception ex) {
-      throw ex;
+      throw new InternalException("Execute exception: "+ ex.getMessage(), ex);
     }
 
     if (exit != 0)
     {
-      throw new Exception("nix-store failed with exit code "+exit);
+      File logPath = new File(Utils.nixLogPath(file));
+      if(logPath.exists())
+      {
+        throw new JobFailedException("nix-store failed with exit code "+exit);
+      }
+      else
+      {
+        throw new InternalException("One of the dependencies of the job likely failed, as no log was found.");
+      }
     }
   }
 
