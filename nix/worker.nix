@@ -7,9 +7,13 @@ let
   workerScript =
     pkgs.writeScriptBin "worker" ''
       #! /bin/sh
+      set -e
       source /etc/profile
       export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${builds.worker}"
-      ${builds.worker}/bin/lb-steve-worker
+      if [[ -f /root/user-data ]] ; then
+        source /root/user-data
+      fi
+      ${builds.worker}/bin/lb-steve-worker $WORKER_ARGS $@
     '';
 
   worker = 
@@ -40,7 +44,7 @@ let
 
       systemd.services.lb-steve-worker = {
         description = "LB Steve Worker";
-        after = [ "network.target" ];
+        after = [ "network.target" "fetch-ec2-data.service" ];
         wantedBy = [ "multi-user.target" ];
         path = [ builds.worker ];
         serviceConfig = {
@@ -68,6 +72,24 @@ let
 
           serviceConfig.Type = "oneshot";
           serviceConfig.RemainAfterExit = true;
+        };
+
+
+      systemd.services.sqs-return =
+        { description = "Return SQS message in-flight.";
+
+          wantedBy = [ "multi-user.target" ];
+          after = [ "network.target" ];
+          before = [ "shutdown.target" ];
+
+          path = [ builds.worker ];
+
+          serviceConfig =
+            { ExecStart = "${pkgs.coreutils}/bin/echo";
+              ExecStop = "${workerScript}/bin/worker --return-job";
+              Type = "oneshot";
+              RemainAfterExit = true;
+            };
         };
 
       time.timeZone = "UTC";

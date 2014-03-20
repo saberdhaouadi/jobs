@@ -1,5 +1,6 @@
 package com.logicblox.steve.worker;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
@@ -18,6 +19,7 @@ import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.Utils;
 import com.logicblox.steve.protocol.Backend;
 import org.apache.commons.cli.*;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
@@ -35,6 +37,8 @@ public class Main
   private static int _idle = 5;
   private static String _incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String _outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
+  private static String _handle_file = "/var/lib/lb-steve-worker.handle";
+  private static boolean _return_job = false;
 
   public static void parseArgs(String args[])
   {
@@ -59,15 +63,22 @@ public class Main
             .withArgName("URL")
             .create());
 
+
+    options.addOption(
+            OptionBuilder.withLongOpt("return-job")
+            .withDescription("Return current message to the incoming SQS queue.")
+            .create());
+
     CommandLineParser parser = new BasicParser();
     try {
       CommandLine _cmdline = parser.parse( options, args );
       if (_cmdline.hasOption("idle"))
         _idle = ((Number)_cmdline.getParsedOptionValue("idle")).intValue();
-      if (_cmdline.hasOption("idle"))
+      if (_cmdline.hasOption("incoming"))
         _incoming_url = _cmdline.getOptionValue("incoming");
-      if (_cmdline.hasOption("idle"))
+      if (_cmdline.hasOption("outgoing"))
         _outgoing_url = _cmdline.getOptionValue("outgoing");
+      _return_job =  _cmdline.hasOption("return-job");
 
     }
     catch( ParseException exp ) {
@@ -84,13 +95,47 @@ public class Main
     setupSQS();
   }
 
-
-
   public static void main(String[] args) throws Exception {
-    Main m = new Main();
     parseArgs(args);
+    Main m = new Main();
 
-    m.processMessages();
+    if(_return_job) {
+      m.returnJob();
+    }
+    else
+    {
+      m.processMessages();
+    }
+  }
+
+  private void returnJob() throws Exception {
+    File h = new File(_handle_file);
+    if(h.exists())
+    {
+      String handle = "";
+      try
+      {
+        handle = FileUtils.readFileToString(h);
+      }
+      catch(IOException e)
+      {
+        throw new InternalException(String.format("ERROR: Could not read message at %s.", _handle_file), e);
+      }
+
+      try
+      {
+        System.err.println(String.format("Returning message with handle '%s' to %s.", handle, _incoming_url));
+        sqs.changeMessageVisibility(_incoming_url, handle, 0);
+      }
+      catch(AmazonClientException e)
+      {
+        throw new InternalException(String.format("ERROR: Could return message to the %s.", _incoming_url), e);
+      }
+    }
+    else
+    {
+      System.err.println(String.format("WARNING: No message found at %s", _handle_file));
+    }
   }
 
   private void processMessages() throws InterruptedException, IOException, InternalException {
@@ -99,6 +144,15 @@ public class Main
       Backend.RunJob.Builder msgBuilder = Backend.RunJob.newBuilder();
       Backend.RunJob msg;
       com.amazonaws.services.sqs.model.Message job = fetchJob();
+
+      try
+      {
+        FileUtils.writeStringToFile(new File(_handle_file), job.getReceiptHandle());
+      }
+      catch (IOException e)
+      {
+        System.err.println(String.format("WARNING: Could not write file with current message handler to %s",_handle_file));
+      }
 
       try
       {
@@ -140,6 +194,10 @@ public class Main
     try
     {
       sqs.deleteMessage(new DeleteMessageRequest(_incoming_url, job.getReceiptHandle()));
+      if( ! FileUtils.deleteQuietly(new File(_handle_file)) )
+      {
+        System.err.println("WARNING: Couldn't delete file with current message handler.");
+      }
     }
     catch(Exception e)
     {
@@ -179,11 +237,6 @@ public class Main
       }
       Thread.sleep(5000);
     }
-  }
-
-
-  private void processMessage(Backend.RunJob msg) throws Exception {
-
   }
 
   protected ListeningExecutorService getHttpExecutor()
