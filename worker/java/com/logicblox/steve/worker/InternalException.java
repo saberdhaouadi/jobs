@@ -5,4 +5,9 @@ public class InternalException extends Exception {
   {
     super(message, cause);
   }
+
+  public InternalException(String message)
+  {
+    super(message);
+  }
 }
