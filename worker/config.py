@@ -27,6 +27,7 @@ protocols_dep = (
 depends_on(logicblox_dep, lb_web_dep, s3lib_dep, commons_exec_dep, protocols_dep, joda_time_dep, commons_cli_dep)
 
 bin_program('lb-steve-worker')
+bin_program('lb-steve-provisioner')
 
 jar(
    name = 'lb-steve-worker',
