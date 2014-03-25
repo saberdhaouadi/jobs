@@ -4,7 +4,7 @@ let
   inherit (import <config/lib> {}) releases version buildLB pkgs;
   platform = builtins.getAttr platform_version releases.platform;
 in
-  pkgs.stdenv.mkDerivation {
+  pkgs.stdenv.mkDerivation rec {
     name = "job-${toString builtins.currentTime}";
     buildInputs = [
       platform.logicblox
@@ -16,7 +16,7 @@ in
     LB_MONITOR_RULE_TIME="5";
 
     # enable gurobi and allow network
-    GRB_LICENSE_FILE=./gurobi.lib;
+    GRB_LICENSE_FILE=./gurobi.lic;
     __noChroot = true;
 
     buildCommand = ''
@@ -55,6 +55,10 @@ in
 
       rm -rf $out
       mkdir -p $out
+    '';
+    failureHook = exitHook;
+    exitHook = ''
       chmod -R 777 . /tmp/job/out/*
+      rm -f /tmp/LB_default_DaemonLock*
     '';
   }
