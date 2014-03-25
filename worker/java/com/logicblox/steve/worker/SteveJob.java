@@ -70,6 +70,7 @@ public class SteveJob {
     log("Starting...");
     try
     {
+      outgoing.notifyStart();
       setup();
       runJob();
       outgoing.notifySuccess();

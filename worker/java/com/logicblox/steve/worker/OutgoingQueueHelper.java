@@ -29,7 +29,8 @@ public class OutgoingQueueHelper {
     sqs.setRegion(Region.getRegion(Regions.US_EAST_1));
   }
 
-  public void notifyStatus(String status) {
+  public void notifyStatus(String status)
+  {
     Backend.JobStatus.Builder msgBuilder = Backend.JobStatus.newBuilder();
     msgBuilder.setJob(_job);
     msgBuilder.setDatetime(System.currentTimeMillis() / 1000);
@@ -47,7 +48,8 @@ public class OutgoingQueueHelper {
     }
   }
 
-  public void notifyFailure(Exception e) {
+  public void notifyFailure(Exception e)
+  {
     Backend.JobFinished.Builder msgBuilder = getBuilder();
     msgBuilder.setSuccess(false);
 
@@ -64,19 +66,31 @@ public class OutgoingQueueHelper {
     sendResult(msgBuilder.build());
   }
 
-  public void notifySuccess() {
+  public void notifySuccess()
+  {
     Backend.JobFinished.Builder msgBuilder = getBuilder();
     msgBuilder.setSuccess(true);
     sendResult(msgBuilder.build());
   }
 
-  private Backend.JobFinished.Builder getBuilder() {
+  private Backend.JobFinished.Builder getBuilder()
+  {
     Backend.JobFinished.Builder msgBuilder = Backend.JobFinished.newBuilder();
     msgBuilder.setJob(_job);
     msgBuilder.setDatetime(System.currentTimeMillis() / 1000);
 
     msgBuilder.setMachine(getHostname());
     return msgBuilder;
+  }
+
+  public void notifyStart()
+  {
+    Backend.JobStarted.Builder msgBuilder = Backend.JobStarted.newBuilder();
+    msgBuilder.setJob(_job);
+    msgBuilder.setDatetime(System.currentTimeMillis() / 1000);
+
+    msgBuilder.setMachine(getHostname());
+    sendResult(msgBuilder.build());
   }
 
   public String getHostname() {
