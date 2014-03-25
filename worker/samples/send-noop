@@ -1,8 +1,9 @@
 #! /usr/bin/env bash
 set -e
 
-for job in $(seq 1 $1); do
-  echo "sending job $job"
+function send_noop() 
+{
+  echo "sending job $1"
   jobid=$(uuidgen)
   aws sqs send-message --queue-url https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs --message-body "$(cat <<EOF
 { "job": "$jobid",
@@ -12,4 +13,7 @@ for job in $(seq 1 $1); do
 }
 EOF
 )"
-done
+}
+
+export -f send_noop
+seq 1 $1 | parallel -j 40 send_noop
