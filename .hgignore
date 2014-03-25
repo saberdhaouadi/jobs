@@ -10,6 +10,8 @@
 ^.project
 \_proto.logic
 \.descriptor
-
+lb-stage
 frontend/build/*
-
+\.idea
+worker/lib/*
+worker/build/*
