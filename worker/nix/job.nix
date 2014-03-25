@@ -15,6 +15,10 @@ in
     LB_BLOXCOMPILER_SERVER="1";
     LB_MONITOR_RULE_TIME="5";
 
+    # enable gurobi and allow network
+    GRB_LICENSE_FILE=./gurobi.lib;
+    __noChroot = true;
+
     buildCommand = ''
       function start_lb() 
       {
