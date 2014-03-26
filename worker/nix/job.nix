@@ -59,6 +59,7 @@ in
     failureHook = exitHook;
     exitHook = ''
       chmod -R 777 . /tmp/job/out/*
-      rm -f /tmp/LB_default_DaemonLock*
+      rm -f /tmp/LB_default_DaemonLock* || true
+      rm -f /dev/shm/LB_* || true
     '';
   }
