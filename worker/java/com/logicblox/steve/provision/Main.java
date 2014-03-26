@@ -9,9 +9,7 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import org.apache.commons.cli.*;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Main
 {
@@ -19,7 +17,7 @@ public class Main
   private AmazonEC2 ec2;
 
   private static String url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
-  private static String ami = "ami-d31603ba";
+  private static String ami = "ami-a93324c0";
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
   private static double pctSpot = 0.75;
   private static double spotPrice = 0.5;
@@ -224,6 +222,9 @@ public class Main
     req.setImageId(ami);
     req.setInstanceType(instanceType);
     req.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
+    Collection<String> groups = new ArrayList<String>();
+    groups.add("lb-steve-worker");
+    req.setSecurityGroups(groups);
 
     RunInstancesResult res = ec2.runInstances(req);
   }
@@ -239,8 +240,11 @@ public class Main
     spec.setImageId(ami);
     spec.setInstanceType(instanceType);
     spec.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
-    req.setLaunchSpecification(spec);
 
+    Collection<String> groups = new ArrayList<String>();
+    groups.add("lb-steve-worker");
+    spec.setSecurityGroups(groups);
+    req.setLaunchSpecification(spec);
 
     RequestSpotInstancesResult res = ec2.requestSpotInstances(req);
   }
