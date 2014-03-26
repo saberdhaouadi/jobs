@@ -25,7 +25,7 @@ buildAndUploadFor() {
         else s3location="$region"
         fi
 
-        ec2-upload-bundle -b "$bucket/$TIMESTAMP" -m /tmp/nixos.img.manifest.xml \
+        ec2-upload-bundle --retry -b "$bucket/$TIMESTAMP" -m /tmp/nixos.img.manifest.xml \
             -a "$EC2_ACCESS_KEY" -s "$EC2_SECRET_KEY" --location "$s3location" \
             --url http://s3.amazonaws.com
 
