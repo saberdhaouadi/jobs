@@ -12,6 +12,8 @@ let
       export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${builds.worker}"
       if [[ -f /root/user-data ]] ; then
         source /root/user-data
+      else
+        exit 1
       fi
       ${builds.worker}/bin/lb-steve-worker $WORKER_ARGS $@
     '';
@@ -48,7 +50,9 @@ let
         wantedBy = [ "multi-user.target" ];
         path = [ builds.worker ];
         serviceConfig = {
-          ExecStart = "${workerScript}/bin/worker";
+          ExecStart = "${workerScript}/bin/worker --shutdown-on-idle";
+          Restart = "always";
+          RestartSec = 5;
         };
       };
 
