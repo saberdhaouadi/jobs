@@ -1,7 +1,6 @@
 package com.logicblox.steve.worker;
 
 import com.amazonaws.AmazonClientException;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -39,6 +38,7 @@ public class Main
   private static String _outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
   private static String _handle_file = "/var/lib/lb-steve-worker.handle";
   private static boolean _return_job = false;
+  private static boolean _shutdown_on_idle = false;
 
   public static void parseArgs(String args[])
   {
@@ -69,6 +69,11 @@ public class Main
             .withDescription("Return current message to the incoming SQS queue.")
             .create());
 
+    options.addOption(
+            OptionBuilder.withLongOpt("shutdown-on-idle")
+                    .withDescription("Shutdown machine on idle.")
+                    .create());
+
     CommandLineParser parser = new BasicParser();
     try {
       CommandLine _cmdline = parser.parse( options, args );
@@ -79,6 +84,7 @@ public class Main
       if (_cmdline.hasOption("outgoing"))
         _outgoing_url = _cmdline.getOptionValue("outgoing");
       _return_job =  _cmdline.hasOption("return-job");
+      _shutdown_on_idle =  _cmdline.hasOption("shutdown-on-idle");
 
     }
     catch( ParseException exp ) {
@@ -223,7 +229,7 @@ public class Main
         return messages.get(0);
 
       // If idling for more than 5 minutes, poweroff machine
-      if ( (System.currentTimeMillis() - waitingSince) / 1000 > _idle*60)
+      if (_shutdown_on_idle && (System.currentTimeMillis() - waitingSince) / 1000 > _idle*60)
       {
         try
         {
