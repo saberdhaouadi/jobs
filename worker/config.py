@@ -34,15 +34,16 @@ jar(
    srcdir = 'java',
    classpath = [
      "$(protocols)/lib/java/lb-steve-protocols.jar",
-     "$(logicblox)/lib/java/protobuf-2.5.0.jar",
-     "$(lb_web)/lib/java/protobuf-java-format-1.3.jar",
      "$(s3lib)/lib/java/jcommander-1.29.jar",
      "$(s3lib)/lib/java/commons-io-2.4.jar",
      "$(s3lib)/lib/java/guava-15.0.jar",
      "$(s3lib)/lib/java/aws-java-sdk-1.7.1.jar",
      "$(s3lib)/lib/java/s3lib-0.2.jar",
      "$(commons_exec)/lib/java/commons-exec.jar",
-     "$(commons_cli)/lib/java/commons-cli.jar"
+     "$(commons_cli)/lib/java/commons-cli.jar",
+     "$(logicblox)/lib/java/protobuf-2.5.0.jar",
+     "$(lb_web)/lib/java/protobuf-java-format-1.3.jar",
+     "$(lb_web)/lib/java/lb-web-client.jar"
    ])
 
 install_dir('nix','nix')
@@ -53,11 +54,12 @@ rule(
   commands = [
     'cp -f $(s3lib)/lib/java/*.jar $(prefix)/lib/java',
     'cp -f $(logicblox)/lib/java/protobuf-2.5.0.jar $(prefix)/lib/java',
-    'cp -f $(lb_web)/lib/java/protobuf-java*.jar $(prefix)/lib/java',
     'cp -f $(protocols)/lib/java/*.jar $(prefix)/lib/java',
     'cp -f $(commons_exec)/lib/java/*.jar $(prefix)/lib/java',
     'cp -f $(commons_cli)/lib/java/*.jar $(prefix)/lib/java',
-    'cp -f $(joda_time)/lib/java/*.jar $(prefix)/lib/java'
+    'cp -f $(joda_time)/lib/java/*.jar $(prefix)/lib/java',
+    'cp -f $(lb_web)/lib/java/protobuf-java*.jar $(prefix)/lib/java',
+    'cp -f $(lb_web)/lib/java/lb-web-client.jar $(prefix)/lib/java'
   ]
 )
 

@@ -57,6 +57,7 @@ public class Main
             .withDescription("Spot instance price")
             .hasArg()
             .withArgName("price")
+            .withType(Number.class)
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("instance-type")
@@ -101,6 +102,10 @@ public class Main
         totalNeeded = ((Number)_cmdline.getParsedOptionValue("total")).intValue();
       if (_cmdline.hasOption("max"))
         maxInstances = ((Number)_cmdline.getParsedOptionValue("max")).intValue();
+      if (_cmdline.hasOption("spot-price"))
+        spotPrice = ((Number)_cmdline.getParsedOptionValue("spot-price")).doubleValue();
+      if (_cmdline.hasOption("percentage-spot"))
+        pctSpot = ((Number)_cmdline.getParsedOptionValue("percentage-spot")).doubleValue();
 
     }
     catch( ParseException exp ) {
@@ -152,6 +157,7 @@ public class Main
       createOnDemandInstances(odNeeded);
   }
 
+  // get number of spot instances that are not yet terminated
   private int getNumberOfCurrentSpotInstances()
   {
     int result = 0;
@@ -189,6 +195,7 @@ public class Main
     return result;
   }
 
+  // get number of on-demand instances that are not yet terminated
   private int getNumberOfCurrentOnDemandInstances()
   {
     int result = 0;
