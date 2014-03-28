@@ -37,7 +37,7 @@ let
         pkgs.stdenv
       ];
 
-      nix.chrootDirs = [ "/tmp/job"];
+      nix.chrootDirs = [ "/tmp/job" ];
       nix.extraOptions = ''
         build-compress-log = false
       '';
@@ -62,7 +62,7 @@ let
         };
       };
 
-      networking.hostName = pkgs.lib.mkForce "";
+      networking.hostName = pkgs.lib.mkForce "i-worker";
 
       systemd.services.sqs-return =
         { description = "Return SQS message in-flight.";
