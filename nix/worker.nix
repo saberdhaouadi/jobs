@@ -1,87 +1,103 @@
+{ config, pkgs, ... }:
+with pkgs.lib;
 let
-  pkgs = import <nixpkgs> {};
   builder-config = import <config> {};
   platform = builder-config.releases.platform."3.10.9";
   builds = import ../. {};
-
+  
+  cfg = config.lb-steve-worker;
   workerScript =
     pkgs.writeScriptBin "worker" ''
       #! /bin/sh
       set -e
       source /etc/profile
       export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${builds.worker}"
-      if [[ -f /root/user-data ]] ; then
-        source /root/user-data
-      else
-        exit 1
-      fi
-      ${builds.worker}/bin/lb-steve-worker $WORKER_ARGS $@
+      ${optionalString (cfg.deployment.targetEnv or "" == "") ''
+        if [[ -f /root/user-data ]] ; then
+          source /root/user-data
+        else
+          exit 1
+        fi
+      ''}
+      ${builds.worker}/bin/lb-steve-worker ${cfg.arguments} $@
+    '';
+in
+{
+  options = {
+    lb-steve-worker.shutdownOnIdle = mkOption {
+      default = false;
+      type = types.bool;
+      description = "
+        Shutdown machine when lb-steve-worker has been idle.
+      ";
+    };
+    lb-steve-worker.arguments = mkOption {
+      default = "$WORKERARGS";
+      type = types.str;
+      description = "
+        Arguments to pass to lb-steve-worker.
+      ";
+    };
+  };
+
+  config = {
+    # Adding packages that are used by the jobs to the system
+    # closure, to make them immediately available.
+    environment.systemPackages = with platform; [
+      builds.worker
+      logicblox
+      bloxweb
+      builder-config.releases.pdxscience."4.0.0".pdxscience
+      pkgs.stdenv
+    ];
+
+    # The jobs and their data cannot reasonably be passed in a pure
+    # way, as the input and output data can be very big.
+    nix.chrootDirs = [ "/tmp/job" ];
+    nix.extraOptions = ''
+      build-compress-log = false
     '';
 
-  worker = 
-    { config, pkgs, ... }:
-    {
-      imports = [
-        <nixpkgs/nixos/modules/virtualisation/amazon-config.nix>
-        <lbdevops/nixos/base/papertrail.nix>
-      ];
+    # LogicBlox needs /dev/shm to be at least 75% of total memory.
+    boot.devShmSize = "75%";
 
-      services.rsyslogd.enable = true;
-      ec2.metadata = true;
-
-      environment.systemPackages = with platform; [
-        builds.worker
-        logicblox
-        bloxweb
-        builder-config.releases.pdxscience."4.0.0".pdxscience
-        pkgs.stdenv
-      ];
-
-      nix.chrootDirs = [ "/tmp/job" ];
-      nix.extraOptions = ''
-        build-compress-log = false
+    # Directory is needed in case nix tries to build something, otherwise
+    # the chroot setup fails.
+    system.activationScripts.job-directory = 
+      ''
+        mkdir -p /tmp/job
       '';
 
-      boot.devShmSize = "75%";
+    # 
+    systemd.services.lb-steve-worker = {
+      description = "LB Steve Worker";
+      after = [ "network.target" "fetch-ec2-data.service" ];
+      wantedBy = [ "multi-user.target" ];
+      path = [ builds.worker ];
+      serviceConfig = {
+        ExecStart = "${workerScript}/bin/worker ${optionalString cfg.shutdownOnIdle "--shutdown-on-idle"}";
+        Restart = "always";
+        RestartSec = 5;
+      };
+    };
 
-      systemd.services.lb-steve-worker = {
-        description = "LB Steve Worker";
-        after = [ "network.target" "fetch-ec2-data.service" ];
+    systemd.services.sqs-return =
+      { description = "Return SQS message in-flight.";
+
         wantedBy = [ "multi-user.target" ];
-        path = [ pkgs.curl pkgs.coreutils pkgs.nettools builds.worker ];
-        preStart = ''
-          hostname $(curl --retry 5 --retry-delay 5 -m 10 http://169.254.169.254/latest/meta-data/instance-id)
-          if [[ -f /var/run/rsyslogd.pid ]]; then
-            kill -HUP `cat /var/run/rsyslogd.pid`
-          fi
-        '';
-        serviceConfig = {
-          ExecStart = "${workerScript}/bin/worker --shutdown-on-idle";
-          Restart = "always";
-          RestartSec = 5;
-        };
+        after = [ "network.target" ];
+        before = [ "shutdown.target" ];
+
+        path = [ builds.worker ];
+
+        serviceConfig =
+          { ExecStart = "${pkgs.coreutils}/bin/echo";
+            ExecStop = "${workerScript}/bin/worker --return-job";
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
       };
 
-      networking.hostName = pkgs.lib.mkForce "i-worker";
-
-      systemd.services.sqs-return =
-        { description = "Return SQS message in-flight.";
-
-          wantedBy = [ "multi-user.target" ];
-          after = [ "network.target" ];
-          before = [ "shutdown.target" ];
-
-          path = [ builds.worker ];
-
-          serviceConfig =
-            { ExecStart = "${pkgs.coreutils}/bin/echo";
-              ExecStop = "${workerScript}/bin/worker --return-job";
-              Type = "oneshot";
-              RemainAfterExit = true;
-            };
-        };
-
-      time.timeZone = "UTC";
-    };
-in
-  worker
+    time.timeZone = "UTC";
+  };
+}

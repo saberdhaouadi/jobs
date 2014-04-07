@@ -10,14 +10,13 @@ in
       platform.logicblox
       platform.bloxweb
       releases.pdxscience."4.0.0".pdxscience
+      pkgs.socat
     ];
 
     LB_BLOXCOMPILER_SERVER="1";
     LB_MONITOR_RULE_TIME="5";
 
-    # enable gurobi and allow network
-    GRB_LICENSE_FILE=./gurobi.lic;
-    __noChroot = true;
+    GRB_LICENSE_FILE = pkgs.writeText "gurobi.lic" "TOKENSERVER=127.0.0.1";
 
     buildCommand = ''
       function start_lb() 
@@ -41,6 +40,12 @@ in
         done
         set -e
       }
+
+      # a connection to the gurobi token server is exposed via an
+      # unix domain socket at /run/sockets/gurobi
+      if [[ -S /run/sockets/gurobi ]]; then
+        socat tcp4-listen:8000,fork unix-connect:/run/sockets/gurobi &> /dev/null &
+      fi
 
       start_lb
       tar --strip-components=1 -xf /tmp/job/job.tar.gz
