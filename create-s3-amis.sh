@@ -1,6 +1,6 @@
 #! /bin/sh -e
 
-export NIXOS_CONFIG=$(dirname $(readlink -f $0))/nix/worker.nix
+export NIXOS_CONFIG=$(dirname $(readlink -f $0))/nix/worker-ec2-image.nix
 export TIMESTAMP=$(date +%Y%m%d%H%M)
 
 buildAndUploadFor() {
