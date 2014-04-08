@@ -68,14 +68,15 @@ rec {
       '';
     };
 
-  worker_image =
+  worker_image.ec2 =
     let
-      image = (import <nixpkgs/nixos> { system = "x86_64-linux"; configuration = ./nix/worker.nix; }).config.system.build.amazonImage;
+      image = (import <nixpkgs/nixos> { system = "x86_64-linux"; configuration = ./nix/worker-ec2-image.nix; }).config.system.build.amazonImage;
     in 
-      with pkgs; runCommand "worker-image-${version src}" {} ''
+      with pkgs; runCommand "worker-ec2-image-${version src}" {} ''
         mkdir -p $out/nix-support
         ln -s ${image}/nixos.img $out/worker-${version src}.img
         echo "file img $out/worker-${version src}.img" > $out/nix-support/hydra-build-products
       '';
+
 }
 
