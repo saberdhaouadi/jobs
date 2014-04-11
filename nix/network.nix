@@ -18,6 +18,7 @@ let
       deployment.ec2.instanceType = "m2.2xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.worker-role.name;
       deployment.ec2.spotInstancePrice = 100;
+      ec2.metadata = true;
     };
 
   builds = import ../. {};
