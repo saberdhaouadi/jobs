@@ -6,7 +6,6 @@
     <lbdevops/nixos/base/papertrail.nix>
   ];
 
-  ec2.metadata = true;
   networking.hostName = pkgs.lib.mkForce "";
 
   lb-steve-worker.shutdownOnIdle = true;
