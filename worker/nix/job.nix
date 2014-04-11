@@ -7,6 +7,7 @@ in
   pkgs.stdenv.mkDerivation rec {
     name = "job-${toString builtins.currentTime}";
     buildInputs = [
+      pkgs.pythonFull
       platform.logicblox
       platform.bloxweb
       releases.pdxscience."4.0.0".pdxscience
@@ -42,9 +43,9 @@ in
       }
 
       # a connection to the gurobi token server is exposed via an
-      # unix domain socket at /run/sockets/gurobi
-      if [[ -S /run/sockets/gurobi ]]; then
-        socat tcp4-listen:8000,fork unix-connect:/run/sockets/gurobi &> /dev/null &
+      # unix domain socket at /sockets/gurobi
+      if [[ -S /sockets/gurobi ]]; then
+        socat tcp4-listen:41954,fork unix-connect:/sockets/gurobi &> /dev/null &
       fi
 
       start_lb
