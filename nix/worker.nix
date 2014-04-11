@@ -12,7 +12,7 @@ let
       set -e
       source /etc/profile
       export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${builds.worker}"
-      ${optionalString (cfg.deployment.targetEnv or "" == "") ''
+      ${optionalString (config.deployment.targetEnv or "" == "") ''
         if [[ -f /root/user-data ]] ; then
           source /root/user-data
         else
@@ -53,10 +53,31 @@ in
 
     # The jobs and their data cannot reasonably be passed in a pure
     # way, as the input and output data can be very big.
-    nix.chrootDirs = [ "/tmp/job" ];
+    nix.chrootDirs = [ "/tmp/job" "/sockets=/run/sockets" "/usr/bin/env=${pkgs.coreutils}/bin/env"];
     nix.extraOptions = ''
       build-compress-log = false
     '';
+    nix.useChroot = true;
+
+    systemd.services.gurobi-socket =
+      { description = "Create Gurobi unix domain socket";
+        wantedBy = [ "multi-user.target" ];
+        path = [ pkgs.socat ];
+        preStart =
+          ''
+            mkdir -p /run/sockets
+            chmod 755 /run/sockets
+          '';
+        postStart =
+          ''
+            chmod go+w-x /run/sockets/gurobi
+          '';
+        serviceConfig = {
+          ExecStart = "${pkgs.socat}/bin/socat unix-listen:/run/sockets/gurobi,fork tcp-connect:ec2-50-17-61-66.compute-1.amazonaws.com:41954";
+          Restart = "always";
+          RestartSec = "2";
+        };
+      };
 
     # LogicBlox needs /dev/shm to be at least 75% of total memory.
     boot.devShmSize = "75%";
@@ -99,5 +120,7 @@ in
       };
 
     time.timeZone = "UTC";
+
+    nixpkgs.config.allowUnfree = true;
   };
 }
