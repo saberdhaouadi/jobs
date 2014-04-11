@@ -5,7 +5,6 @@
 let
   pkgs = import <nixpkgs> {};
   builder-config = import <config> {};
-  platform = builder-config.releases.platform."3.10.9";
   worker = 
     { config, pkgs, resources, ... }:
     {
@@ -13,7 +12,7 @@ let
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" "ssh-world" ];
+      deployment.ec2.securityGroups = [ "admin" "ssh-world" "lb-steve-worker" ];
       deployment.ec2.region = region;
       deployment.ec2.instanceType = "m2.2xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.worker-role.name;
@@ -86,6 +85,7 @@ with pkgs.lib;
       '';
     };
 
+/*
   frontend =
     { config, pkgs, resources, ... }:
     {
@@ -99,5 +99,6 @@ with pkgs.lib;
       ec2.metadata = true;
       networking.enableIPv6 = false;
     };
+*/
 
 } // (listToAttrs (map (n: nameValuePair "worker${toString n}" worker) (range 1 workers)))
