@@ -277,6 +277,7 @@ public class SteveJob {
 
     // create the executor and consider the exitValue '0' as success
     Executor executor = new DefaultExecutor();
+    executor.setExitValues(null);
 
     // handle output
     SteveJobLogHandler outputStream = new SteveJobLogHandler(this);
