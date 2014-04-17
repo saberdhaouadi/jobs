@@ -274,6 +274,8 @@ public class SteveJob {
     CommandLine commandLine = new CommandLine("nix-store");
     commandLine.addArgument("-r");
     commandLine.addArgument(file);
+    commandLine.addArgument("--timeout");
+    commandLine.addArgument("3600");
 
     // create the executor and consider the exitValue '0' as success
     Executor executor = new DefaultExecutor();
