@@ -30,7 +30,7 @@ in
 
         set +e
         cmd=start
-        for i in $(seq 1 3); do
+        for i in $(seq 1 5); do
           echo "starting LogicBlox services [$i]"
           $lbservices $cmd &> /dev/null
           if [[ "$?" == "0" ]]; then
