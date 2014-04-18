@@ -15,6 +15,9 @@ message RunJob {
 
   // S3 url for output (prefix)
   required string output = 4;
+
+  // Timeout for the job
+  optional int64 timeout = 5 [ default = 1800 ];
 }
 
 message JobStarted {
