@@ -26,6 +26,7 @@ public class SteveJob {
   private List<String> inputs;
   private URI output;
   private String drv;
+  private long timeout;
 
   private String s3Bucket = "steve-jobs";
   private URI outputLog;
@@ -36,12 +37,13 @@ public class SteveJob {
   private File outputPath = new File("/tmp/job/out");
   private File jobPath = new File("/tmp/job/job.tar.gz");
 
-  public SteveJob(S3Client client, String outgoing_url, String id, String impl, List<String> inputs, String output) throws InternalException {
+  public SteveJob(S3Client client, String outgoing_url, String id, String impl, List<String> inputs, String output, long timeout) throws InternalException {
     this.id = id;
     this.impl = impl;
     this.inputs = inputs;
     this.client = client;
     this.outgoing = new OutgoingQueueHelper(outgoing_url, id);
+    this.timeout = timeout;
 
     try
     {
@@ -168,10 +170,12 @@ public class SteveJob {
     {
       throw new InternalException("Invalid URI '"+input, e);
     }
-    // Take basename, File/String conversion for removal of trailing slash (/)
-    String basename = FilenameUtils.getBaseName(new File(inputUri.getPath()).toString());
+    // Strip trailing slash
+    String last = new File(inputUri.getPath()).toString();
+    // Use the last part of the URL
+    last = last.substring(last.lastIndexOf('/') + 1);
 
-    File f = new File(inputPath,basename);
+    File f = new File(inputPath,last);
     try
     {
       if (input.endsWith("/"))
@@ -275,9 +279,8 @@ public class SteveJob {
     commandLine.addArgument("-r");
     commandLine.addArgument(file);
     commandLine.addArgument("--timeout");
-    commandLine.addArgument("3600");
+    commandLine.addArgument(Long.toString(timeout));
 
-    // create the executor and consider the exitValue '0' as success
     Executor executor = new DefaultExecutor();
     executor.setExitValues(null);
 

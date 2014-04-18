@@ -177,7 +177,8 @@ public class Main
               msg.getJob(),
               msg.getJobImpl(),
               msg.getInputList(),
-              msg.getOutput()
+              msg.getOutput(),
+              msg.getTimeout()
       );
 
       try
