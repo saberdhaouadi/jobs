@@ -1,6 +1,6 @@
 #! /bin/sh -e
 
-export NIXOS_CONFIG=$(dirname $(readlink -f $0))/nix/worker-gce.nix
+export NIXOS_CONFIG=$(dirname $(readlink -f $0))/nix/worker-gce-image.nix
 export TIMESTAMP=$(date +%Y%m%d%H%M)
 
 buildAndUploadFor() {
