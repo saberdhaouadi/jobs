@@ -17,10 +17,11 @@ public class Main
   private AmazonEC2 ec2;
 
   private static String url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
-  private static String ami = "ami-a3425aca";
+  private static String ami = "ami-c3716baa";
+  private static String key = "rob";
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
-  private static double pctSpot = 0.75;
-  private static double spotPrice = 0.5;
+  private static double pctSpot = 0.9;
+  private static double spotPrice = 0.6;
   private static String instanceType = "m2.xlarge";
   private static String role = "steve-jobs-worker";
   private static int totalNeeded = 0;
@@ -47,10 +48,17 @@ public class Main
             .withArgName("AMI")
             .create());
 
+    options.addOption(OptionBuilder.withLongOpt("key")
+            .withDescription("Amazon EC2 keypair")
+            .hasArg()
+            .withArgName("KEY")
+            .create());
+
     options.addOption(OptionBuilder.withLongOpt("percentage-spot")
             .withDescription("Percentage of spot instance of total")
             .hasArg()
             .withArgName("percentage")
+            .withType(Number.class)
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("spot-price")
@@ -93,6 +101,8 @@ public class Main
         url = _cmdline.getOptionValue("queue");
       if (_cmdline.hasOption("ami"))
         ami = _cmdline.getOptionValue("ami");
+      if (_cmdline.hasOption("key"))
+        key = _cmdline.getOptionValue("key");
       if (_cmdline.hasOption("role"))
         role = _cmdline.getOptionValue("role");
       if (_cmdline.hasOption("instance-type"))
@@ -104,8 +114,9 @@ public class Main
         maxInstances = ((Number)_cmdline.getParsedOptionValue("max")).intValue();
       if (_cmdline.hasOption("spot-price"))
         spotPrice = ((Number)_cmdline.getParsedOptionValue("spot-price")).doubleValue();
-      if (_cmdline.hasOption("percentage-spot"))
+      if (_cmdline.hasOption("percentage-spot")) {
         pctSpot = ((Number)_cmdline.getParsedOptionValue("percentage-spot")).doubleValue();
+      }
 
     }
     catch( ParseException exp ) {
@@ -229,6 +240,7 @@ public class Main
     req.setImageId(ami);
     req.setInstanceType(instanceType);
     req.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
+    req.setKeyName(key);
     Collection<String> groups = new ArrayList<String>();
     groups.add("lb-steve-worker");
     req.setSecurityGroups(groups);
@@ -247,6 +259,7 @@ public class Main
     spec.setImageId(ami);
     spec.setInstanceType(instanceType);
     spec.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
+    spec.setKeyName(key);
 
     Collection<String> groups = new ArrayList<String>();
     groups.add("lb-steve-worker");
