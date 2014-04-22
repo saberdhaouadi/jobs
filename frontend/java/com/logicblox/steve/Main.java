@@ -18,6 +18,7 @@ import com.logicblox.bloxweb.config.ConfigLocator;
 import com.logicblox.bloxweb.config.ConfigValidator;
 import com.logicblox.bloxweb.config.ValidationMessage;
 import com.logicblox.bloxweb.service.ServiceContext;
+import com.logicblox.common.Option;
 import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
@@ -46,7 +47,7 @@ public class Main
         main.loadServiceContext();
 
         final BloxWebServer bloxwebServer = new BloxWebServer(
-          main._logDir, 
+          Option.some(main._logDir),
           main._config,
           main._ctx,
           main._logger);
