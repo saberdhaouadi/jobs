@@ -114,9 +114,8 @@ public class Main
         maxInstances = ((Number)_cmdline.getParsedOptionValue("max")).intValue();
       if (_cmdline.hasOption("spot-price"))
         spotPrice = ((Number)_cmdline.getParsedOptionValue("spot-price")).doubleValue();
-      if (_cmdline.hasOption("percentage-spot")) {
+      if (_cmdline.hasOption("percentage-spot"))
         pctSpot = ((Number)_cmdline.getParsedOptionValue("percentage-spot")).doubleValue();
-      }
 
     }
     catch( ParseException exp ) {
