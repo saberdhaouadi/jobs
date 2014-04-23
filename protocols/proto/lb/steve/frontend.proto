@@ -18,7 +18,10 @@ message Request {
 }
 
 message Response {
+
   optional string error = 1;
+  optional string error_code = 2;
+
   optional CreateResponse create = 2;
   optional StatusResponse status = 3;
   optional KillResponse kill = 4;
@@ -31,9 +34,10 @@ message CreateRequest {
   // Identifier of the job implementation.
   required string job_impl = 1;
 
-  repeated Param param = 2;
+  // Parameters to be passed to the execution of the job
+  repeated Param input_param = 2;
 
-  // S3 urls for input
+  // Input files (S3 urls)
   repeated File input = 3;
 
   // S3 url for output (prefix)
