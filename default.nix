@@ -46,6 +46,16 @@ rec {
       ];
     };
 
+  client =
+    buildLBConfig {
+      name = "jobs-client-${version src}";
+      src = ./client;
+      buildInputs = with platform; [ logicblox bloxweb ];
+      configureFlags = [
+        "--with-protocols=${protocols}"
+      ];
+    };
+
   protocols =
     buildLBConfig {
       name = "jobs-protocols-${version src}";

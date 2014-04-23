@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+
+import sys
+import os
+
+bindir = os.path.dirname(os.path.realpath(__file__))
+prefix = os.path.dirname(bindir)
+sys.path.insert(0, '%s/lib/python' % prefix)
+
+import argparse
+
+def run(args):
+
+    prefix_deps = [
+      'lb-common.jar',
+      'lb-web-client.jar',
+      'lb-steve-client.jar',
+      'lb-steve-protocols.jar'
+    ]
+
+    deps_paths = [prefix + '/lib/java/' + name for name in prefix_deps]
+    classpath = ':'.join(deps_paths)
+
+    jvm_args = []
+    java_args = ['java'] + jvm_args + ['-cp', classpath, 'com.logicblox.steve.client.Main']
+    java_args.extend(args)
+
+    os.execvp('java', java_args)
+
+def main():
+    command_line = sys.argv[1:]
+    run(command_line)
+
+if __name__ == '__main__':
+    main()
+
