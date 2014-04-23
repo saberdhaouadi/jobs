@@ -23,6 +23,8 @@ import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.concurrent.MoreFutures;
 
+import com.logicblox.steve.protocol.Frontend;
+
 public class SteveHandler extends ProtoBufHandler
 {
   private Database _database;

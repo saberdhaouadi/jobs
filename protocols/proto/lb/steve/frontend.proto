@@ -6,7 +6,7 @@
  */
 package lb.steve.frontend;
 
-option java_package = "com.logicblox.steve";
+option java_package = "com.logicblox.steve.protocol";
 
 /**
  * Request/response unions

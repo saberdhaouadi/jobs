@@ -6,27 +6,22 @@ lbconfig_package(
   default_prefix='/opt/logicblox/lb-steve-frontend',
   default_targets=['jars'])
 
+protocols_dep = (
+  "protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"}
+)
+
 depends_on(
   logicblox_dep,
-  lb_web_dep)
-
-protobuf_protocol(
-  name = 'frontend',
-  package = 'lb.steve',
-  java_package = 'com.logicblox.steve',
-  srcdir = 'proto',
-  gen_datalog=False
-)
+  lb_web_dep,
+  protocols_dep)
 
 bin_program('lb-steve-frontend')
 
 jar(
    name = 'lb-steve-frontend',
    srcdir = 'java',
-   srcgen = [
-      java_protobuf_file('frontend', 'com.logicblox.steve'), 
-   ],
    classpath = [
+     "$(protocols)/lib/java/lb-steve-protocols.jar",
       '$(lb_web)/lib/java/lb-web-server.jar',
       '$(lb_web)/lib/java/lb-web-client.jar',
       '$(lb_web)/lib/java/protobuf-2.5.0.jar',
