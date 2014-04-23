@@ -41,6 +41,9 @@ rec {
       name = "jobs-frontend-${version src}";
       src = ./frontend;
       buildInputs = with platform; [ logicblox bloxweb ];
+      configureFlags = [
+        "--with-protocols=${protocols}"
+      ];
     };
 
   protocols =
