@@ -31,13 +31,17 @@ message CreateRequest {
   // Identifier of the job implementation.
   required string job_impl = 1;
 
+  repeated Param param = 2;
+
   // S3 urls for input
-  repeated string input = 2;
+  repeated File input = 3;
 
   // S3 url for output (prefix)
-  required string output = 3;
+  required string output = 4;
+  optional string output_encryption_key = 5;
 
-  repeated Param param = 4;
+  // Timeout for execution of job
+  optional uint64 timeout = 6;
 }
 
 message CreateResponse {
@@ -75,4 +79,10 @@ message KillResponse {
 message Param {
   required string key = 1;
   required string value = 2;
+}
+
+message File {
+  required string url = 1;
+  // TODO support SHA256/512 that we attach ourselves as metadata?
+  optional string md5 = 2;
 }
