@@ -89,10 +89,6 @@ public class SteveHandler extends ProtoBufHandler
     {
 
     }
-    else if(request.hasJoin())
-    {
-
-    }
     else if(request.hasKill())
     {
 

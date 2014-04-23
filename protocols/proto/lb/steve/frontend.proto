@@ -14,16 +14,14 @@ option java_package = "com.logicblox.steve.protocol";
 message Request {
   optional CreateRequest create = 1;
   optional StatusRequest status = 2;
-  optional JoinRequest join = 3;
-  optional KillRequest kill = 4;
+  optional KillRequest kill = 3;
 }
 
 message Response {
   optional string error = 1;
   optional CreateResponse create = 2;
   optional StatusResponse status = 3;
-  optional JoinResponse join = 4;
-  optional KillResponse kill = 5;
+  optional KillResponse kill = 4;
 }
 
 /**
@@ -55,18 +53,6 @@ message StatusRequest {
 
 message StatusResponse {
   required string status = 2;
-}
-
-/**
- * Join (subject to timeouts, of course)
- */
-message JoinRequest {
-  required string job_id = 1;
-  required uint64 timeout = 2;
-}
-
-message JoinResponse {
-  required string status = 1;
 }
 
 /**
