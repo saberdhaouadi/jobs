@@ -14,6 +14,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -24,18 +26,42 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
+
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closeables;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ExtensionRegistry;
+import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import com.googlecode.protobuf.format.JsonFormat;
 
+import com.logicblox.bloxweb.Encoding;
+import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.bloxweb.UsageException;
+import com.logicblox.bloxweb.client.ClientConfigUtils;
+import com.logicblox.bloxweb.client.ProtobufServiceClient;
+import com.logicblox.bloxweb.client.ServiceConnector;
+import com.logicblox.bloxweb.client.Transport;
+import com.logicblox.common.Option;
 import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
+
+import com.logicblox.steve.protocol.Frontend;
 
 public class Main
 {
@@ -90,16 +116,72 @@ public class Main
     public abstract void invoke() throws Exception;
   }
 
+  protected ProtobufServiceClient getProtobufClient() throws URISyntaxException
+  {
+    String service = "http://localhost:8080";
+    URI serviceUri = new URI(service);
+    ServiceConnector connector = ServiceConnector.create(serviceUri.toString());
+
+    // TODO support TCP configuration (timeouts, SSL etc)
+    Transport transport = ClientConfigUtils.getTCPTransport();
+    connector.setTransport(transport);
+    connector.setEncoding(Encoding.JSON);
+    connector.setGZIP(true);
+    return connector.createProtobufClient();
+  }
+
+  private static String formatJSON(String json)
+  {
+    try
+    {
+      Gson gson = new GsonBuilder().setPrettyPrinting().create();
+      JsonParser jp = new JsonParser();
+      JsonElement je = jp.parse(json);
+      return gson.toJson(je);
+    }
+    catch(Exception exc)
+    {
+      return json;
+    }
+  }
+
   /**
    * Create job
    */
   @Parameters(commandDescription = "Create a new job")
   class CreateJobCommand extends Command
   {
+    @Parameter(names = {"--impl"}, description = "Job implementation identifier")
+    String _impl;
+
+    @Parameter(names = {"--corr"}, description = "Correlation identifier")
+    String _correlation = null;
+
+    @Parameter(names = {"-i", "--input"}, description = "S3 input file")
+    List<String> _input;
+
+    @Parameter(names = {"-o", "--output"}, description = "S3 URL prefix for output files")
+    String _output;
+
     @Override
     public void invoke() throws Exception
     {
-      System.out.println("woohoo");
+      ProtobufServiceClient client = getProtobufClient();
+      Message.Builder req = Frontend.Request.newBuilder();
+      Message.Builder resp = Frontend.Response.newBuilder();
+      final ProtoBufExchange exchange = new ProtoBufExchange(req, resp, Option.<String>none());
+      exchange.setRequestMessage(req.build());
+
+      Futures.transform(client.postMessage(exchange), new AsyncFunction<Object, Object>()
+      {        
+        @Override
+        public ListenableFuture<Object> apply(Object o) throws Exception
+        {
+          String json = exchange.getResponseJSON();
+          json = formatJSON(json);
+          return Futures.immediateFuture((Object) json);
+        }
+      }).get();
     }
   }
   

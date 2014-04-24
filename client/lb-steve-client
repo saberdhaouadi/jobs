@@ -10,12 +10,17 @@ sys.path.insert(0, '%s/lib/python' % prefix)
 import argparse
 
 def run(args):
+    jetty_version = '7.6.7.v20120910'
 
     prefix_deps = [
       'lb-common.jar',
       'lb-web-client.jar',
       'lb-steve-client.jar',
-      'lb-steve-protocols.jar'
+      'lb-steve-protocols.jar',
+      'jetty-client-' + jetty_version + '.jar',
+      'jetty-http-' + jetty_version + '.jar',
+      'jetty-io-' + jetty_version + '.jar',
+      'jetty-util-' + jetty_version + '.jar',
     ]
 
     deps_paths = [prefix + '/lib/java/' + name for name in prefix_deps]
