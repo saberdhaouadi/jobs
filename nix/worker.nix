@@ -21,6 +21,15 @@ let
       ''}
       ${builds.worker}/bin/lb-steve-worker ${cfg.arguments} $@
     '';
+
+  shutdown-self =
+    pkgs.writeScriptBin "shutdown-self"
+      ''
+        #! /bin/sh
+        aws ec2 terminate-instances --instance-ids $(curl -s --retry 5 --retry-delay 5 -m 10 http://169.254.169.254/latest/meta-data/instance-id)
+        poweroff
+      '';
+
 in
 {
   options = {
@@ -49,6 +58,8 @@ in
       bloxweb
       builder-config.releases.pdxscience."4.0.0".pdxscience
       pkgs.stdenv
+      pkgs.awscli
+      shutdown-self
     ];
 
     # The jobs and their data cannot reasonably be passed in a pure
