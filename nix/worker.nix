@@ -27,7 +27,7 @@ let
       ''
         #! /bin/sh
         aws ec2 terminate-instances --instance-ids $(curl -s --retry 5 --retry-delay 5 -m 10 http://169.254.169.254/latest/meta-data/instance-id)
-        poweroff
+        systemctl poweroff
       '';
 
 in
