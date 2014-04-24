@@ -234,7 +234,7 @@ public class Main
       {
         try
         {
-          Process p = Runtime.getRuntime().exec("systemctl poweroff");
+          Process p = Runtime.getRuntime().exec("shutdown-self");
           p.waitFor();
         }
         finally
