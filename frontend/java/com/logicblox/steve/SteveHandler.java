@@ -27,9 +27,7 @@ import com.logicblox.steve.protocol.Frontend;
 
 public class SteveHandler extends ProtoBufHandler
 {
-  private Database _database;
-
-  public SteveHandler(Database database)
+  public SteveHandler()
   {
     super("Steve");
   }

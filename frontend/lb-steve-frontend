@@ -36,7 +36,8 @@ def cmd_start(args):
 
 
     prefix_deps = [
-        'lb-steve-frontend.jar'
+        'lb-steve-frontend.jar',
+        'lb-steve-protocols.jar',
     ]
 
     lb_deps_paths = [lbprefix + '/lib/java/' + name for name in lb_deps]
@@ -45,12 +46,14 @@ def cmd_start(args):
 
     classpath = ':'.join(prefix_deps_paths + lbweb_deps_paths + lb_deps_paths)
 
+    subenv = os.environ.copy()
+    subenv['LB_WEBSERVER_HOME'] = prefix
+
     java_args = ['java']
-    java_args.extend(['-cp', classpath, 'com.logicblox.steve.Main'])
+    java_args.extend(['-cp', classpath, 'com.logicblox.steve.Main', prefix])
     java_args = [os.path.expandvars(arg) for arg in java_args]
 
-    print java_args
-    os.execvp('java', java_args)
+    os.execvpe('java', java_args, subenv)
 
 class MyFormatter(argparse.ArgumentDefaultsHelpFormatter):
     def __init__(self, prog):

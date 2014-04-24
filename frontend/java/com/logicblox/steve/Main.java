@@ -43,8 +43,8 @@ public class Main
       {
         Collection<ValidationMessage> messages = ConfigValidator.validate(main._config);
         ConfigValidator.handleMessages(messages, logger);
-                
-        main.loadServiceContext();
+
+        main._ctx = ServiceContext.fromConfig(main._config, main._logger);
 
         final BloxWebServer bloxwebServer = new BloxWebServer(
           Option.some(main._logDir),
@@ -62,6 +62,8 @@ public class Main
             bloxwebServer.run();
           }
         });
+
+        main.loadServiceContext();
       }
       else
       {
@@ -92,37 +94,41 @@ public class Main
 
   private void loadServiceContext() throws Exception
   {
-    _ctx = ServiceContext.fromConfig(_config, _logger);
+    try
+    {
+      _ctx.getServiceMapScanner().rescan(_ctx, Collections.singletonList("steve"), true);
+    }
+    catch(Error e)
+    {
+      throw e;
+    }
+    catch(Exception e)
+    {
+      throw e;
+    }
+    catch(Throwable e)
+    {
+      throw new RuntimeException(e);
+    }
   }
 
   private boolean processArgs(String[] args) throws Exception
   {
-    // Construct an array of configuration files that will be used to
-    // find configuration settings. Order:
-    //
-    // 1) Custom file specified via args[0]
-    // 2) LB_DEPLOYMENT_HOME/config/lb-web-server.config
-    // 3) BLOXWEB_HOME/config/lb-web-server.config
+    String configFilename = "lb-steve-frontend.config";
+    File file1 = ConfigLocator.getDefaultConfigFile("lb-web-server.config");
+    File file2 = ConfigLocator.getDefaultConfigFile("lb-steve-frontend.config");
+    File file3 = ConfigLocator.getDeploymentConfigFile("lb-steve-frontend.config", _logger);
 
-    final String configFilename = "lb-web-server.config";
-    File defaultConfigFile = ConfigLocator.getDefaultConfigFile(configFilename);
-    File deploymentConfigFile = ConfigLocator.getDeploymentConfigFile(configFilename, _logger);
-    File customConfigFile = null;
-    if(args.length == 1)
-      customConfigFile = new File(args[0]);
-
-    if(defaultConfigFile != null)
-      _config = new Config(defaultConfigFile, _config);
-    if(deploymentConfigFile != null)
-      _config = new Config(deploymentConfigFile, _config);
-    if(customConfigFile != null)
-      _config = new Config(customConfigFile, _config);
+    if(file1 != null)
+      _config = new Config(file1, _config);
+    if(file2 != null)
+      _config = new Config(file2, _config);
+    if(file3 != null)
+      _config = new Config(file3, _config);
 
     _logDir = new File(_config.getStringError("logdir_access"));
     if(!_logDir.exists())
       throw new UsageException("directory '" + _logDir.getPath() + "' does not exist");
-
-    _config = new Config(new ByteArrayInputStream("scan_workspaces_on_startup = false".getBytes(StandardCharsets.UTF_8)), _config);
 
     if(_config.getBoolError("debug"))
     {
