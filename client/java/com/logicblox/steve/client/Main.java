@@ -18,6 +18,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.log4j.PatternLayout;
@@ -118,7 +119,7 @@ public class Main
 
   protected ProtobufServiceClient getProtobufClient() throws URISyntaxException
   {
-    String service = "http://localhost:8080";
+    String service = "http://localhost:8080/job";
     URI serviceUri = new URI(service);
     ServiceConnector connector = ServiceConnector.create(serviceUri.toString());
 
@@ -167,8 +168,16 @@ public class Main
     public void invoke() throws Exception
     {
       ProtobufServiceClient client = getProtobufClient();
-      Message.Builder req = Frontend.Request.newBuilder();
-      Message.Builder resp = Frontend.Response.newBuilder();
+      Frontend.Request.Builder req = Frontend.Request.newBuilder();
+      Frontend.Response.Builder resp = Frontend.Response.newBuilder();
+
+      // String client_id = UUID.randomUUID().toString();
+
+      req.setCreate(
+        Frontend.CreateRequest.newBuilder()
+        .setJobImpl("cb-mdo-v1")
+        .setOutput("s3://voodoo"));
+
       final ProtoBufExchange exchange = new ProtoBufExchange(req, resp, Option.<String>none());
       exchange.setRequestMessage(req.build());
 
@@ -179,6 +188,7 @@ public class Main
         {
           String json = exchange.getResponseJSON();
           json = formatJSON(json);
+          System.out.println(json);
           return Futures.immediateFuture((Object) json);
         }
       }).get();
