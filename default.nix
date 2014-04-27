@@ -34,6 +34,25 @@ let
       sha256 = "0fwq6k98qr68graj74qgryyi4rrmkffbvb49snpv7y21cq0dhbv0";
     };
 
+  aws-java-sdk =
+    pkgs.stdenv.mkDerivation rec {
+      name = "aws-java-sdk-1.7.1";
+      src = fetchurl {
+        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.7.1.zip;
+        sha256 = "afc1a93635b5e77fb2f1fac4025a3941300843dce7fc5af4f2a99ff9bf4af05b";
+      };
+      buildInputs = [unzip];
+      buildCommand = ''
+        unzip $src
+
+        ensureDir $out/lib/java
+
+        for f in $(find ${name} -name '*.jar'); do
+          cp $f $out/lib/java
+        done
+      '';
+    };
+
 in
 rec {
   frontend =
@@ -43,6 +62,7 @@ rec {
       buildInputs = with platform; [ logicblox bloxweb ];
       configureFlags = [
         "--with-protocols=${protocols}"
+        "--with-aws=${aws-java-sdk}"
       ];
     };
 

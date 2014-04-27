@@ -4,8 +4,8 @@ import java.util.Map;
 import java.util.HashMap;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.dynamodb.*;
-import com.amazonaws.services.dynamodb.model.*;
+import com.amazonaws.services.dynamodbv2.*;
+import com.amazonaws.services.dynamodbv2.model.*;
 
 import com.logicblox.bloxweb.config.Config;
 import com.logicblox.bloxweb.client.ClientConfigUtils;

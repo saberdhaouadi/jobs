@@ -26,6 +26,7 @@ jar(
    srcdir = 'java',
    classpath = [
       '$(protocols)/lib/java/lb-steve-protocols.jar',
+      '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
       '$(lb_web)/lib/java/lb-web-server.jar',
       '$(lb_web)/lib/java/lb-web-client.jar',
       '$(lb_web)/lib/java/protobuf-2.5.0.jar',
