@@ -1,5 +1,6 @@
 package com.logicblox.steve.db;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -10,6 +11,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.bloxweb.SimpleErrorCode;
+
+import com.logicblox.steve.common.Data;
 
 public class FakeDatabase implements Database
 {
@@ -81,7 +84,7 @@ public class FakeDatabase implements Database
   }
 
   public synchronized ListenableFuture<Job> createJob(
-    String userid, String clientId, String jobImpl, String output)
+    String userid, String clientId, String jobImpl, Collection<Data> inputs, String output)
   {
     Job job;
 
@@ -97,6 +100,7 @@ public class FakeDatabase implements Database
       job.setId(id);
       job.setImpl(jobImpl);
       job.setClientId(clientId);
+      job.setInputData(inputs);
       job.setOutputPrefix(jobImpl);
 
       _jobState.initialize(id);

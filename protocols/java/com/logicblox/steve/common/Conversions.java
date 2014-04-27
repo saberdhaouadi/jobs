@@ -8,6 +8,16 @@ import com.logicblox.steve.protocol.Backend;
 
 public class Conversions
 {
+  public static List<Data> convertFrontendFileToData(List<Frontend.File> files)
+  {
+    List<Data> result = new ArrayList<Data>();
+
+    for(Frontend.File f : files)
+      result.add(convertFileToData(f));
+
+    return result;
+  }
+
   public static List<Data> convertFileToData(List<Backend.File> files)
   {
     List<Data> result = new ArrayList<Data>();
@@ -19,6 +29,16 @@ public class Conversions
   }
 
   public static Data convertFileToData(Backend.File file)
+  {
+    Data d = new Data();
+    d.setLocation(file.getUrl());
+    if(file.hasHash())
+      d.setHash(file.getHash());
+
+    return d;
+  }
+
+  public static Data convertFileToData(Frontend.File file)
   {
     Data d = new Data();
     d.setLocation(file.getUrl());

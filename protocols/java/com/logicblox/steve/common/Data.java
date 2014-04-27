@@ -3,6 +3,9 @@ package com.logicblox.steve.common;
 import java.net.URI;
 import java.net.URL;
 
+/**
+ * Combination of a location and optionally a hash for the data.
+ */
 public class Data
 {
   private String _loc;

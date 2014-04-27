@@ -1,9 +1,17 @@
 package com.logicblox.steve.db;
 
 import java.security.PublicKey;
+import java.util.Collection;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.logicblox.steve.common.Data;
 
+/**
+ * Interface for storing data about jobs. The implementations also
+ * need to include necessary verifications. The methods are on purpose
+ * coarse grained to give the implementations freedom of using single
+ * vs many transactions to check requests.
+ */
 public interface Database
 {
   public User getUser(String userid);
@@ -13,7 +21,11 @@ public interface Database
    * Initial creation of a job in the database.
    */
   public ListenableFuture<Job> createJob(
-    String userid, String clientid, String jobImpl, String output);
+    String userid,
+    String clientid,
+    String jobImpl,
+    Collection<Data> inputs,
+    String output);
 
   /**
    * Returns Job with the state field populated, and the full status

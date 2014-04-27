@@ -24,6 +24,7 @@ import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.concurrent.MoreFutures;
 
+import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.db.Database;
 import com.logicblox.steve.db.DynamoJobState;
 import com.logicblox.steve.db.FakeDatabase;
@@ -115,7 +116,12 @@ public class SteveHandler extends ProtoBufHandler
     Frontend.CreateRequest req)
   {
     return Futures.transform(
-      _db.createJob("martin", req.getClientId(), req.getJobImpl(), req.getOutput()),
+      _db.createJob(
+        "martin", // TODO require authentication and use actual user
+        req.getClientId(),
+        req.getJobImpl(),
+        Conversions.convertFrontendFileToData(req.getInputList()),
+        req.getOutput()),
       new Function<Job, Frontend.Response>()
       {
         public Frontend.Response apply(Job job)
