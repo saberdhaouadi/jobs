@@ -62,6 +62,7 @@ rec {
       buildInputs = with platform; [ logicblox bloxweb ];
       configureFlags = [
         "--with-protocols=${protocols}"
+        "--with-s3lib=${platform.s3lib}"
         "--with-aws=${aws-java-sdk}"
       ];
     };
