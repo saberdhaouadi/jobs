@@ -90,7 +90,7 @@ public class SteveHandler extends ProtoBufHandler
       ListenableFuture<Frontend.Response> resp = handleCreate(httpRequest, httpResponse, request.getCreate());
       MoreFutures.transferResponse(resp, exchange);
     }
-    else if(request.hasStatus())
+    else if(request.hasState())
     {
 
     }

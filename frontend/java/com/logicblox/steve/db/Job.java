@@ -12,6 +12,8 @@ public class Job
 
   private Collection<Data> _inputData;
   private Collection<Data> _outputData;
+
+  private Status.State _state;
   private Collection<Status> _status;
 
   public void setId(String v)

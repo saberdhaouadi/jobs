@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -101,9 +102,33 @@ public class FakeDatabase implements Database
     return Futures.immediateFuture(job);
   }
 
+  public synchronized ListenableFuture<Job> getState(String jobId, boolean detail)
+  {
+    ListenableFuture<Job> job = getJob(jobId);
+    return job;
+  }
+
   // TODO add user account and only return job when it exists in this account.
   // TODO throw authorization exception if the user is not allowed to access the job
-  public synchronized ListenableFuture<Job> getResult(String userid, String jobId)
+  public synchronized ListenableFuture<Job> getResult(final String jobId)
+  {
+    ListenableFuture<Job> job = getJob(jobId);
+    return Futures.transform(job, new Function<Job, Job>()
+    {
+      public Job apply(Job j)
+      {
+        if(!j.isSucceeded())
+        {
+          throw new ServiceException(
+            new SimpleErrorCode("INVALID_STATE", 400, "Job '" + jobId + "' does not have SUCCEEDED state"));
+        }
+
+        return j;
+      }
+    });
+  }
+
+  private ListenableFuture<Job> getJob(String jobId)
   {
     Job job = _jobFromId.get(jobId);
     if(job == null)
@@ -112,14 +137,7 @@ public class FakeDatabase implements Database
         new ServiceException(
           new SimpleErrorCode("NO_SUCH_JOB", 400, "Job '" + jobId + "' does not exist")));
     }
-
-    if(!job.isSucceeded())
-    {
-      return Futures.immediateFailedFuture(
-        new ServiceException(
-          new SimpleErrorCode("INVALID_STATE", 400, "Job '" + jobId + "' does not have SUCCEEDED state")));
-    }
-
-    return Futures.immediateFuture(job);
+    else
+      return Futures.immediateFuture(job);
   }
 }

@@ -13,7 +13,7 @@ option java_package = "com.logicblox.steve.protocol";
  */
 message Request {
   optional CreateRequest create = 1;
-  optional StatusRequest status = 2;
+  optional StateRequest state = 2;
   optional ResultRequest result = 3;
   optional KillRequest kill = 4;
 }
@@ -24,7 +24,7 @@ message Response {
   optional string error_code = 2;
 
   optional CreateResponse create = 10;
-  optional StatusResponse status = 11;
+  optional StateResponse state = 11;
   optional ResultResponse result = 12;
   optional KillResponse kill = 13;
 }
@@ -69,12 +69,14 @@ message CreateResponse {
 /**
  * Request status of a job
  */
-message StatusRequest {
+message StateRequest {
   required string job_id = 1;
+  optional bool detail = 2;
 }
 
-message StatusResponse {
-  required string status = 2;
+message StateResponse {
+  required string state = 1;
+  repeated Status status = 2;
 }
 
 /**

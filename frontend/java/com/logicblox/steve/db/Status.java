@@ -2,12 +2,16 @@ package com.logicblox.steve.db;
 
 public class Status
 {
-  public enum Code {
-    INITIAL, QUEUE, RUNNING, CANCELLING, SUCCEEDED, FAILED, CANCELLED
+  public enum State {
+    INITIAL, QUEUED, EXECUTING, PENDING_CANCEL, SUCCEEDED, FAILED
+  }
+
+  public enum Event {
+    EV_QUEUED, EV_EXECUTING, EV_UNRESPONSIVE, EV_CANCEL, EV_SUCCEEDED, EV_FAILED, EV_KILLED, EV_TIMEOUT
   };
 
   private long _timestamp;
-  private Code _code;
+  private Event _event;
   private String _machine;
 
   public void setTimestamp(long v)
@@ -20,14 +24,14 @@ public class Status
     return _timestamp;
   }
 
-  public void setCode(Code c)
+  public void setEvent(Event c)
   {
-    _code = c;
+    _event = c;
   }
 
-  public Code getCode()
+  public Event getEvent()
   {
-    return _code;
+    return _event;
   }
 
   public void setMachine(String v)

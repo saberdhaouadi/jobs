@@ -15,5 +15,11 @@ public interface Database
   public ListenableFuture<Job> createJob(
     String userid, String clientid, String jobImpl, String output);
 
-  public ListenableFuture<Job> getResult(String userid, String jobId);
+  /**
+   * Returns Job with the state field populated, and the full status
+   * history if detail is true.
+   */
+  public ListenableFuture<Job> getState(String jobId, boolean detail);
+
+  public ListenableFuture<Job> getResult(String jobId);
 }
