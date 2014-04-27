@@ -6,13 +6,15 @@ lbconfig_package(
   default_prefix='/opt/logicblox/lb-steve-frontend',
   default_targets=['jars'])
 
-protocols_dep = (
-  "protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"}
-)
+protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
+s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib"})
+aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.7.1"})
 
 depends_on(
   logicblox_dep,
   lb_web_dep,
+  s3lib_dep,
+  aws_dep,
   protocols_dep)
 
 bin_program('lb-steve-frontend')
@@ -36,6 +38,10 @@ rule(
   output='install',
   input = [],
   commands = [
+    'cp -f $(aws)/lib/java/jackson*.jar $(prefix)/lib/java',
+    'cp -f $(aws)/lib/java/aws-java-sdk-1.7.1.jar $(prefix)/lib/java',
+    'cp -f $(aws)/lib/java/http*.jar $(prefix)/lib/java',
+    'cp -f $(aws)/lib/java/joda-*.jar $(prefix)/lib/java',
     'cp -f $(lb_web)/config/lb-web-server.config $(prefix)/config',
     'cp -f $(protocols)/lib/java/*.jar $(prefix)/lib/java',
   ]

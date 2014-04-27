@@ -25,6 +25,7 @@ import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.concurrent.MoreFutures;
 
 import com.logicblox.steve.db.Database;
+import com.logicblox.steve.db.DynamoJobState;
 import com.logicblox.steve.db.FakeDatabase;
 import com.logicblox.steve.db.Job;
 import com.logicblox.steve.protocol.Frontend;
@@ -36,13 +37,13 @@ public class SteveHandler extends ProtoBufHandler
   public SteveHandler()
   {
     super("Steve");
-    _db = new FakeDatabase();
   }
 
   @Override
   public void init(Section handlerConfig, ServiceConfig service)
   {
     super.init(handlerConfig, service);
+    _db = new FakeDatabase(new DynamoJobState(handlerConfig.getParent(), _logger));
   }
 
   @Override

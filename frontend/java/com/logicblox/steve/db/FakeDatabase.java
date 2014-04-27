@@ -18,13 +18,17 @@ public class FakeDatabase implements Database
   private Map<String, Job> _jobFromId;
   private Map<String, Job> _jobFromClientId;
 
-  public FakeDatabase()
+  private JobState _jobState;
+
+  public FakeDatabase(JobState jobState)
   {
     _users = new HashMap<String, User>();
     _accounts = new HashMap<String, Account>();
 
     _jobFromId = new HashMap<String, Job>();
     _jobFromClientId = new HashMap<String, Job>();
+
+    _jobState = jobState;
 
     addUser(
       new User(
@@ -94,6 +98,8 @@ public class FakeDatabase implements Database
       job.setImpl(jobImpl);
       job.setClientId(clientId);
       job.setOutputPrefix(jobImpl);
+
+      _jobState.initialize(id);
       
       _jobFromId.put(job.getId(), job);
       _jobFromClientId.put(job.getClientId(), job);

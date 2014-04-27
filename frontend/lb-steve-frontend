@@ -31,14 +31,25 @@ def cmd_start(args):
     lbweb_deps = [
       'lb-web-server.jar',
       'bloxweb-credentials.jar',
-      'bloxweb-email.jar'
+      'bloxweb-email.jar',
     ]
-
 
     prefix_deps = [
+        'jcommander-1.29.jar',
+        'aws-java-sdk-1.7.1.jar',
+        'httpcore-4.2.jar',
+        'httpclient-4.2.3.jar',
+        'joda-time-2.2.jar',
         'lb-steve-frontend.jar',
         'lb-steve-protocols.jar',
+        'jackson-annotations-2.1.1.jar',
+        'jackson-core-2.1.1.jar',
+        'jackson-databind-2.1.1.jar',
     ]
+# commons-codec-1.9.jar
+# s3lib-0.2.jar
+# commons-io-2.4.ja
+# commons-logging-1.1.1.jar
 
     lb_deps_paths = [lbprefix + '/lib/java/' + name for name in lb_deps]
     lbweb_deps_paths = [lbwebprefix + '/lib/java/' + name for name in lbweb_deps]
