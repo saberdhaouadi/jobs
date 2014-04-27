@@ -37,7 +37,7 @@ let
   aws-java-sdk =
     pkgs.stdenv.mkDerivation rec {
       name = "aws-java-sdk-1.7.1";
-      src = fetchurl {
+      src = pkgs.fetchurl {
         url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.7.1.zip;
         sha256 = "afc1a93635b5e77fb2f1fac4025a3941300843dce7fc5af4f2a99ff9bf4af05b";
       };
