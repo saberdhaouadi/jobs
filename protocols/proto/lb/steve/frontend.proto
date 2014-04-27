@@ -14,7 +14,8 @@ option java_package = "com.logicblox.steve.protocol";
 message Request {
   optional CreateRequest create = 1;
   optional StatusRequest status = 2;
-  optional KillRequest kill = 3;
+  optional ResultRequest result = 3;
+  optional KillRequest kill = 4;
 }
 
 message Response {
@@ -24,7 +25,8 @@ message Response {
 
   optional CreateResponse create = 10;
   optional StatusResponse status = 11;
-  optional KillResponse kill = 12;
+  optional ResultResponse result = 12;
+  optional KillResponse kill = 13;
 }
 
 /**
@@ -63,6 +65,7 @@ message CreateResponse {
   required string job_id = 1;
 }
 
+
 /**
  * Request status of a job
  */
@@ -73,6 +76,18 @@ message StatusRequest {
 message StatusResponse {
   required string status = 2;
 }
+
+/**
+ * Request result of a job execution
+ */
+message ResultRequest {
+  required string job_id = 1;
+}
+
+message ResultResponse {
+  repeated File output = 2;
+}
+
 
 /**
  * Kill a queued or executing job.
@@ -99,5 +114,14 @@ message Param {
 message File {
   required string url = 1;
   // TODO support SHA256/512 that we attach ourselves as metadata?
-  optional string md5 = 2;
+  optional string hash = 2;
+}
+
+message Status {
+  required int64 timestamp = 1;
+  required string status_code = 2;
+
+  // TODO should we only return the machine under certain
+  // authorization conditions?
+  optional string machine = 3;
 }

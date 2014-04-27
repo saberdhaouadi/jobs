@@ -12,5 +12,8 @@ public interface Database
   /**
    * Initial creation of a job in the database.
    */
-  public ListenableFuture<Job> createJob(String userid, String clientid, String jobImpl, String output);
+  public ListenableFuture<Job> createJob(
+    String userid, String clientid, String jobImpl, String output);
+
+  public ListenableFuture<Job> getResult(String userid, String jobId);
 }

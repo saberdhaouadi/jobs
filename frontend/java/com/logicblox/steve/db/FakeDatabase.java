@@ -7,6 +7,9 @@ import java.util.UUID;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import com.logicblox.bloxweb.service.ServiceException;
+import com.logicblox.bloxweb.SimpleErrorCode;
+
 public class FakeDatabase implements Database
 {
   private Map<String, User> _users;
@@ -89,12 +92,34 @@ public class FakeDatabase implements Database
       job.setId(id);
       job.setImpl(jobImpl);
       job.setClientId(clientId);
-      job.setOutput(jobImpl);
+      job.setOutputPrefix(jobImpl);
       
       _jobFromId.put(job.getId(), job);
       _jobFromClientId.put(job.getClientId(), job);
     }
     
+    return Futures.immediateFuture(job);
+  }
+
+  // TODO add user account and only return job when it exists in this account.
+  // TODO throw authorization exception if the user is not allowed to access the job
+  public synchronized ListenableFuture<Job> getResult(String userid, String jobId)
+  {
+    Job job = _jobFromId.get(jobId);
+    if(job == null)
+    {
+      return Futures.immediateFailedFuture(
+        new ServiceException(
+          new SimpleErrorCode("NO_SUCH_JOB", 400, "Job '" + jobId + "' does not exist")));
+    }
+
+    if(!job.isSucceeded())
+    {
+      return Futures.immediateFailedFuture(
+        new ServiceException(
+          new SimpleErrorCode("INVALID_STATE", 400, "Job '" + jobId + "' does not have SUCCEEDED state")));
+    }
+
     return Futures.immediateFuture(job);
   }
 }

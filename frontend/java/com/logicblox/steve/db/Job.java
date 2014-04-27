@@ -1,11 +1,18 @@
 package com.logicblox.steve.db;
 
+import java.util.Collection;
+import com.google.common.collect.ImmutableList;
+
 public class Job
 {
-  public String _id;
-  public String _clientId;
-  public String _impl;
-  public String _output;
+  private String _id;
+  private String _clientId;
+  private String _impl;
+  private String _output;
+
+  private Collection<Data> _inputData;
+  private Collection<Data> _outputData;
+  private Collection<Status> _status;
 
   public void setId(String v)
   {
@@ -37,14 +44,49 @@ public class Job
     return _clientId;
   }
 
-  public void setOutput(String v)
+  public void setOutputPrefix(String v)
   {
     _output = v;
   }
 
-  public String getOutput()
+  public String getOutputPrefix()
   {
     return _output;
   }
- 
+
+  public Collection<Status> getStatus()
+  {
+    return _status;
+  }
+
+  public void setStatus(Collection<Status> v)
+  {
+    _status = ImmutableList.copyOf(v);
+  }
+
+  public boolean isSucceeded()
+  {
+    // TODO review if this should be done differently
+    return _outputData != null;
+  }
+
+  public void setOutputData(Collection<Data> data)
+  {
+    _outputData = ImmutableList.copyOf(data);
+  }
+
+  public Collection<Data> getOutputData()
+  {
+    return _outputData;
+  }
+
+  public void setInputData(Collection<Data> data)
+  {
+    _inputData = ImmutableList.copyOf(data);
+  }
+
+  public Collection<Data> getInputData()
+  {
+    return _inputData;
+  }
 }
