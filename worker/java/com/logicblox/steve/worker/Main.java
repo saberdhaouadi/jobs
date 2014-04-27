@@ -12,11 +12,14 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.googlecode.protobuf.format.JsonFormat;
+
 import com.logicblox.s3lib.DirectoryKeyProvider;
 import com.logicblox.s3lib.KeyProvider;
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.Utils;
 import com.logicblox.steve.protocol.Backend;
+import com.logicblox.steve.common.Conversions;
+
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -176,7 +179,7 @@ public class Main
               _outgoing_url,
               msg.getJob(),
               msg.getJobImpl(),
-              msg.getInputList(),
+              Conversions.convertFileToData(msg.getInputList()),
               msg.getOutput(),
               msg.getTimeout()
       );

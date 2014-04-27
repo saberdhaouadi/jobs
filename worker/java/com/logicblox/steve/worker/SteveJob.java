@@ -2,7 +2,9 @@ package com.logicblox.steve.worker;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.sqs.model.Message;
+
 import com.logicblox.s3lib.*;
+import com.logicblox.steve.common.Data;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,43 +21,46 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 
-public class SteveJob {
-  public final OutgoingQueueHelper outgoing;
-  private String id;
-  private String impl;
-  private List<String> inputs;
-  private URI output;
-  private String drv;
-  private long timeout;
+public class SteveJob
+{
+  public final OutgoingQueueHelper _outgoing;
+  private String _id;
+  private String _impl;
+  private List<Data> _inputs;
+  private URI _output;
+  private String _drv;
+  private long _timeout;
 
-  private String s3Bucket = "steve-jobs";
-  private URI outputLog;
+  private String _s3Bucket = "steve-jobs";
+  private URI _outputLog;
 
-  private S3Client client;
+  private S3Client _client;
 
-  private File inputPath = new File("/tmp/job/in");
-  private File outputPath = new File("/tmp/job/out");
-  private File jobPath = new File("/tmp/job/job.tar.gz");
+  private File _inputPath = new File("/tmp/job/in");
+  private File _outputPath = new File("/tmp/job/out");
+  private File _jobPath = new File("/tmp/job/job.tar.gz");
 
-  public SteveJob(S3Client client, String outgoing_url, String id, String impl, List<String> inputs, String output, long timeout) throws InternalException {
-    this.id = id;
-    this.impl = impl;
-    this.inputs = inputs;
-    this.client = client;
-    this.outgoing = new OutgoingQueueHelper(outgoing_url, id);
-    this.timeout = timeout;
+  public SteveJob(S3Client client, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout)
+  throws InternalException
+  {
+    _id = id;
+    _impl = impl;
+    _inputs = inputs;
+    _client = client;
+    _outgoing = new OutgoingQueueHelper(outgoingUrl, _id);
+    _timeout = timeout;
 
     try
     {
-      this.output = new URI(output);
+      _output = new URI(output);
     }
     catch (URISyntaxException e)
     {
-      throw new InternalException("Invalid output : "+output, e);
+      throw new InternalException("Invalid output : "+ output, e);
     }
     try
     {
-      outputLog = new URI(String.format("s3://%s/jobs/%s/log", s3Bucket, id));
+      _outputLog = new URI(String.format("s3://%s/jobs/%s/log", _s3Bucket, _id));
     }
     catch(URISyntaxException e)
     {
@@ -65,22 +70,23 @@ public class SteveJob {
 
   public void log(String msg)
   {
-    System.err.println(String.format("%s: %s", id, msg));
+    System.err.println(String.format("%s: %s", _id, msg));
   }
 
-  public void run() throws Exception {
+  public void run() throws Exception
+  {
     log("Starting...");
     try
     {
-      outgoing.notifyStart();
+      _outgoing.notifyStart();
       setup();
       runJob();
-      outgoing.notifySuccess();
+      _outgoing.notifySuccess();
       log("Done!");
     }
     catch (Exception e)
     {
-      outgoing.notifyFailure(e);
+      _outgoing.notifyFailure(e);
       e.printStackTrace();
     }
     finally
@@ -91,14 +97,17 @@ public class SteveJob {
       }
       catch(InternalException e)
       {
-        outgoing.notifyFailure(e);
+        _outgoing.notifyFailure(e);
       }
     }
   }
 
-  private void deleteDirectory(File path) throws InternalException {
-    if (path.exists()) {
-      try {
+  private void deleteDirectory(File path) throws InternalException
+  {
+    if (path.exists())
+    {
+      try
+      {
         FileUtils.deleteDirectory(path);
       }
       catch(IOException e)
@@ -108,19 +117,21 @@ public class SteveJob {
     }
   }
 
-  private void cleanUp() throws InternalException {
+  private void cleanUp() throws InternalException
+  {
     deleteDirectory(new File("/tmp/job"));
   }
 
-  private void setup() throws InternalException {
+  private void setup() throws InternalException
+  {
     cleanUp();
 
-    inputPath.mkdirs();
-    outputPath.mkdirs();
+    _inputPath.mkdirs();
+    _outputPath.mkdirs();
 
     try
     {
-      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", outputPath.toString());
+      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _outputPath.toString());
       pb.start().waitFor();
     }
     catch(Exception e)
@@ -129,15 +140,16 @@ public class SteveJob {
 
     downloadJobImpl();
     // download inputs
-    for(String input: inputs)
+    for(Data input: _inputs)
     {
       downloadInput(input);
     }
-
+    
   }
 
-  private void downloadJobImpl() throws InternalException {
-    String uri = String.format("s3://%s/jobs-impl/%s.tar.gz", s3Bucket, impl);
+  private void downloadJobImpl() throws InternalException
+  {
+    String uri = String.format("s3://%s/jobs-impl/%s.tar.gz", _s3Bucket, _impl);
     log(uri);
     URI jobImplUri;
     try
@@ -151,20 +163,21 @@ public class SteveJob {
 
     try
     {
-        client.download(new File("/tmp/job/job.tar.gz"), jobImplUri).get();
+      _client.download(new File("/tmp/job/job.tar.gz"), jobImplUri).get();
     }
     catch(Exception e)
     {
-      throw new InternalException("Could not download job implementation "+impl, e);
+      throw new InternalException("Could not download job implementation '" + _impl + "' from '" + uri + "'", e);
     }
   }
 
-  private void downloadInput(String input) throws InternalException {
-    log(input);
+  private void downloadInput(Data input) throws InternalException
+  {
+    log("Downloading input '" + input.toString() + "'");
     URI inputUri;
     try
     {
-      inputUri = com.logicblox.s3lib.Utils.getURI(input);
+      inputUri = com.logicblox.s3lib.Utils.getURI(input.getLocation());
     }
     catch (URISyntaxException e)
     {
@@ -175,13 +188,13 @@ public class SteveJob {
     // Use the last part of the URL
     last = last.substring(last.lastIndexOf('/') + 1);
 
-    File f = new File(inputPath,last);
+    File f = new File(_inputPath,last);
     try
     {
-      if (input.endsWith("/"))
-        client.downloadDirectory(f, inputUri, true, true).get();
+      if (input.getLocation().endsWith("/"))
+        _client.downloadDirectory(f, inputUri, true, true).get();
       else
-        client.download(f, inputUri).get();
+        _client.download(f, inputUri).get();
     }
     catch(Exception e)
     {
@@ -195,7 +208,7 @@ public class SteveJob {
     ObjectMetadata log = null;
     try
     {
-      log = client.exists(s3Bucket, String.format("jobs/%s/log", id)).get();
+      log = _client.exists(_s3Bucket, String.format("jobs/%s/log", _id)).get();
     }
     catch(Exception e)
     {
@@ -205,9 +218,9 @@ public class SteveJob {
     if (log == null)
     {
       // client.exists(,).get();
-      if (drv != null)
+      if (_drv != null)
       {
-        File logPath = new File(Utils.nixLogPath(drv));
+        File logPath = new File(Utils.nixLogPath(_drv));
 
         if(! logPath.exists()) {
           log("No log file found, going on.");
@@ -217,12 +230,12 @@ public class SteveJob {
           // upload logs
           try
           {
-            log("Uploading log...[%s/%s]".format(logPath.toString(), outputLog));
-            client.upload(logPath, outputLog).get();
+            log("Uploading log...[%s/%s]".format(logPath.toString(), _outputLog));
+            _client.upload(logPath, _outputLog).get();
           }
           catch (Exception e)
           {
-            throw new InternalException("Error uploading log to "+outputLog,e);
+            throw new InternalException("Error uploading log to " + _outputLog, e);
           }
         }
       }
@@ -231,11 +244,11 @@ public class SteveJob {
       try
       {
         log("Uploading output...");
-        client.uploadDirectory(outputPath, output, null).get();
+        _client.uploadDirectory(_outputPath, _output, null).get();
       }
       catch (Exception e)
       {
-        throw new InternalException("Error uploading output files to "+output,e);
+        throw new InternalException("Error uploading output files to " + _output, e);
       }
     }
     else
@@ -247,39 +260,42 @@ public class SteveJob {
     cleanUp();
   }
 
-  private void runJob() throws Exception {
+  private void runJob() throws Exception
+  {
     log("Running the actual job...");
 
     String nix = "<worker/nix/job.nix>";
 
     // determine .drv
-    drv = nixInstantiate(nix);
+    _drv = nixInstantiate(nix);
 
     // build .drv
-    nixStoreRealise(drv, id);
+    nixStoreRealise(_drv, _id);
   }
 
 
-  public String nixInstantiate(String file) throws Exception {
+  public String nixInstantiate(String file) throws Exception
+  {
     ProcessBuilder pb = new ProcessBuilder("nix-instantiate", file);
 
     Process p = pb.start();
     int exit = p.waitFor();
     if (exit != 0)
     {
-      throw new Exception("nix-instantiate failed with exit code "+exit+"\n\n"+Utils.streamToString(p.getErrorStream()));
+      throw new Exception("nix-instantiate failed with exit code " + exit + "\n\n" + Utils.streamToString(p.getErrorStream()));
     }
 
     return Utils.streamToString(p.getInputStream());
   }
 
-  public void nixStoreRealise(String file, String job) throws Exception {
+  public void nixStoreRealise(String file, String job) throws Exception
+  {
     // build up the command line to using a 'java.io.File'
     CommandLine commandLine = new CommandLine("nix-store");
     commandLine.addArgument("-r");
     commandLine.addArgument(file);
     commandLine.addArgument("--timeout");
-    commandLine.addArgument(Long.toString(timeout));
+    commandLine.addArgument(Long.toString(_timeout));
 
     Executor executor = new DefaultExecutor();
     executor.setExitValues(null);
@@ -290,9 +306,12 @@ public class SteveJob {
     executor.setStreamHandler(streamHandler);
 
     int exit;
-    try {
+    try
+    {
       exit = executor.execute(commandLine);
-    } catch (Exception ex) {
+    }
+    catch (Exception ex)
+    {
       throw new InternalException("Execute exception: "+ ex.getMessage(), ex);
     }
 

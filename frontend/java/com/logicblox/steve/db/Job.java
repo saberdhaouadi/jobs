@@ -2,6 +2,7 @@ package com.logicblox.steve.db;
 
 import java.util.Collection;
 import com.google.common.collect.ImmutableList;
+import com.logicblox.steve.common.Data;
 
 public class Job
 {

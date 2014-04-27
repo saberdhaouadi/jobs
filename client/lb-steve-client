@@ -17,6 +17,9 @@ def run(args):
       'lb-web-client.jar',
       'lb-steve-client.jar',
       'lb-steve-protocols.jar',
+      'aws-java-sdk-1.7.1.jar',
+      'httpcore-4.2.jar',
+      'httpclient-4.2.3.jar'
       'jetty-client-' + jetty_version + '.jar',
       'jetty-http-' + jetty_version + '.jar',
       'jetty-io-' + jetty_version + '.jar',

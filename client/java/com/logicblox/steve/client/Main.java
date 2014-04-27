@@ -152,16 +152,16 @@ public class Main
   @Parameters(commandDescription = "Create a new job")
   class CreateJobCommand extends Command
   {
-    @Parameter(names = {"--impl"}, description = "Job implementation identifier")
+    @Parameter(names = {"--impl"}, description = "Job implementation identifier", required = true)
     String _impl;
 
     @Parameter(names = {"--corr"}, description = "Correlation identifier")
     String _correlation = null;
 
     @Parameter(names = {"-i", "--input"}, description = "S3 input file")
-    List<String> _input;
+    List<String> _inputs;
 
-    @Parameter(names = {"-o", "--output"}, description = "S3 URL prefix for output files")
+    @Parameter(names = {"-o", "--output-prefix"}, description = "S3 URL prefix for output files", required = true)
     String _output;
 
     @Override
@@ -173,11 +173,21 @@ public class Main
 
       String clientId = UUID.randomUUID().toString();
 
-      req.setCreate(
+      Frontend.CreateRequest.Builder createReq = 
         Frontend.CreateRequest.newBuilder()
         .setClientId(clientId)
-        .setJobImpl("cb-mdo-v1")
-        .setOutput("s3://voodoo"));
+        .setJobImpl(_impl)
+        .setOutput(_output);
+
+      for(String input : _inputs)
+      {
+        // TODO support automatically uploading files to S3 (using an --input-prefix option)
+        // TODO support hashes as parameters or lookup in S3
+        Frontend.File file = Frontend.File.newBuilder().setUrl(input).build();
+        createReq.addInput(file);
+      }
+
+      req.setCreate(createReq);
 
       final ProtoBufExchange exchange = new ProtoBufExchange(req, resp, Option.<String>none());
       exchange.setRequestMessage(req.build());

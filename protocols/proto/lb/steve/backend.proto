@@ -11,7 +11,7 @@ message RunJob {
   required string job = 2;
 
   // S3 urls for input
-  repeated string input = 3;
+  repeated File input = 3;
 
   // S3 url for output (prefix)
   required string output = 4;
@@ -49,4 +49,12 @@ message JobStatus {
   required string status = 3;
 
   required string machine = 4;
+}
+
+/**
+ * General
+ */
+message File {
+  required string url = 1;
+  optional string hash = 2;
 }

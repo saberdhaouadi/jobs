@@ -56,7 +56,7 @@ in
       if [[ -f ./run ]]; then
         bash run /tmp/job/in /tmp/job/out
       else
-        echo "ERROR: run.sh not found!"
+        echo "ERROR: 'run' script not found in job!"
       fi
 
       rm -rf $out

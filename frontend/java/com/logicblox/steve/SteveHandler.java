@@ -86,6 +86,8 @@ public class SteveHandler extends ProtoBufHandler
   {
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
 
+    System.out.println(request.toString());
+
     if(request.hasCreate())
     {
       ListenableFuture<Frontend.Response> resp = handleCreate(httpRequest, httpResponse, request.getCreate());
