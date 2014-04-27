@@ -27,13 +27,6 @@ let
       sha256 = "1nar28vxmzsjiw12phv77q8qr6jjnbsx9kvwidb9nd3djm8qkkg7";
     };
 
-  joda-time =
-    buildjar {
-      name = "joda-time-2.3";
-      url = http://repo1.maven.org/maven2/joda-time/joda-time/2.3/joda-time-2.3.jar;
-      sha256 = "0fwq6k98qr68graj74qgryyi4rrmkffbvb49snpv7y21cq0dhbv0";
-    };
-
   aws-java-sdk =
     pkgs.stdenv.mkDerivation rec {
       name = "aws-java-sdk-1.7.1";
@@ -95,7 +88,7 @@ rec {
         "--with-commons-exec=${commons-exec}"
         "--with-commons-cli=${commons-cli}"
         "--with-protocols=${protocols}"
-        "--with-joda-time=${joda-time}"
+        "--with-aws=${aws-java-sdk}"
         "--with-s3lib=${platform.s3lib}"
       ];
       postInstall = ''

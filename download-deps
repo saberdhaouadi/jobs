@@ -1,0 +1,26 @@
+#! /bin/sh
+
+set -e
+set -u
+
+pushd /opt/logicblox/deps
+
+cli="commons-cli-1.2"
+
+rm -f $cli-bin.tar.gz
+wget http://mirror.reverse.net/pub/apache//commons/cli/binaries/$cli-bin.tar.gz
+rm -rf $cli
+tar zxvf $cli-bin.tar.gz
+mkdir -p $cli/lib/java
+cp $cli/$cli.jar $cli/lib/java/commons-cli.jar
+
+exec="commons-exec-1.2"
+
+rm -f $exec-bin.tar.gz
+wget http://apache.mirrors.lucidnetworks.net//commons/exec/binaries/$exec-bin.tar.gz
+rm -rf $exec
+tar zxvf $exec-bin.tar.gz
+mkdir -p $exec/lib/java
+cp $exec/$exec.jar $exec/lib/java/commons-exec.jar
+
+popd
