@@ -1,17 +1,26 @@
-package com.logicblox.steve;
+package com.logicblox.steve.db;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 public class FakeDatabase implements Database
 {
   private Map<String, User> _users;
   private Map<String, Account> _accounts;
+  private Map<String, Job> _jobFromId;
+  private Map<String, Job> _jobFromClientId;
 
   public FakeDatabase()
   {
     _users = new HashMap<String, User>();
     _accounts = new HashMap<String, Account>();
+
+    _jobFromId = new HashMap<String, Job>();
+    _jobFromClientId = new HashMap<String, Job>();
 
     addUser(
       new User(
@@ -28,7 +37,7 @@ public class FakeDatabase implements Database
         "-----END PUBLIC KEY-----\n"));
     addUser(
       new User(
-        "rob", 
+        "rob",
         "logicblox.com",
         "-----BEGIN PUBLIC KEY-----\n" +
         "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvTq61D3Xp2D2LwKGcRY9\n" +
@@ -61,5 +70,31 @@ public class FakeDatabase implements Database
   public Account getAccount(String id)
   {
     return _accounts.get(id);
+  }
+
+  public synchronized ListenableFuture<Job> createJob(
+    String userid, String clientId, String jobImpl, String output)
+  {
+    Job job;
+
+    if(_jobFromClientId.containsKey(clientId))
+    {
+      job = _jobFromClientId.get(clientId);
+    }
+    else
+    {
+      String id = UUID.randomUUID().toString();
+      
+      job = new Job();
+      job.setId(id);
+      job.setImpl(jobImpl);
+      job.setClientId(clientId);
+      job.setOutput(jobImpl);
+      
+      _jobFromId.put(job.getId(), job);
+      _jobFromClientId.put(job.getClientId(), job);
+    }
+    
+    return Futures.immediateFuture(job);
   }
 }

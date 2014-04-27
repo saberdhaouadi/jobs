@@ -31,16 +31,22 @@ message Response {
  * Create a new job
  */
 message CreateRequest {
+  // Identifier set by the client to make sure that a job is created
+  // only once, even when there are networking issues. It turns a
+  // create request into an idempotent operation of the job is created
+  // more than once.
+  required string client_id = 1;
+
   // Identifier of the job implementation.
-  required string job_impl = 1;
+  required string job_impl = 2;
 
   // Identifier used to correlate executions of jobs. The assumption
   // is that jobs executed with the same correlation id have similar
   // properties in terms of expected execution time.
-  optional string correlation_id = 2;
+  optional string correlation_id = 3;
 
   // Timeout for execution of job
-  optional uint64 timeout = 3;
+  optional uint64 timeout = 4;
 
   // Parameters to be passed to the execution of the job
   repeated Param input_param = 10;

@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
@@ -23,13 +24,19 @@ import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.concurrent.MoreFutures;
 
+import com.logicblox.steve.db.Database;
+import com.logicblox.steve.db.FakeDatabase;
+import com.logicblox.steve.db.Job;
 import com.logicblox.steve.protocol.Frontend;
 
 public class SteveHandler extends ProtoBufHandler
 {
+  private Database _db;
+
   public SteveHandler()
   {
     super("Steve");
+    _db = new FakeDatabase();
   }
 
   @Override
@@ -102,9 +109,21 @@ public class SteveHandler extends ProtoBufHandler
   private ListenableFuture<Frontend.Response> handleCreate(
     HttpServletRequest httpRequest,
     HttpServletResponse httpResponse, 
-    Frontend.CreateRequest request)
+    Frontend.CreateRequest req)
   {
-    Frontend.Response.Builder response = Frontend.Response.newBuilder();
-    return Futures.immediateFuture(response.build());
+    return Futures.transform(
+      _db.createJob("martin", req.getClientId(), req.getJobImpl(), req.getOutput()),
+      new Function<Job, Frontend.Response>()
+      {
+        public Frontend.Response apply(Job job)
+        {
+          Frontend.Response.Builder response = Frontend.Response.newBuilder();
+          response.setCreate(
+            Frontend.CreateResponse.newBuilder()
+            .setJobId(job.getId()));
+          
+          return response.build();
+        }
+      });
   }
 }

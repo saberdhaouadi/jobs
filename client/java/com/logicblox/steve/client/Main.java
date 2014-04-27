@@ -171,10 +171,11 @@ public class Main
       Frontend.Request.Builder req = Frontend.Request.newBuilder();
       Frontend.Response.Builder resp = Frontend.Response.newBuilder();
 
-      // String client_id = UUID.randomUUID().toString();
+      String clientId = UUID.randomUUID().toString();
 
       req.setCreate(
         Frontend.CreateRequest.newBuilder()
+        .setClientId(clientId)
         .setJobImpl("cb-mdo-v1")
         .setOutput("s3://voodoo"));
 

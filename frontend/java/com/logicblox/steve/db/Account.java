@@ -1,4 +1,4 @@
-package com.logicblox.steve;
+package com.logicblox.steve.db;
 
 public class Account
 {
