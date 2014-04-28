@@ -101,7 +101,7 @@ public class FakeDatabase implements Database
       job.setImpl(jobImpl);
       job.setClientId(clientId);
       job.setInputData(inputs);
-      job.setOutputPrefix(jobImpl);
+      job.setOutputPrefix(output);
 
       _jobState.initialize(id);
       

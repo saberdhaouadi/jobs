@@ -39,7 +39,7 @@ public class Main
   private static int _idle = 5;
   private static String _incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String _outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
-  private static String _handle_file = "/var/lib/lb-steve-worker.handle";
+  private static String _handle_file = "/var/lib/lb-steve/lb-steve-worker.handle";
   private static boolean _return_job = false;
   private static boolean _shutdown_on_idle = false;
 
@@ -96,6 +96,9 @@ public class Main
       formatter.printHelp( "lb-steve-worker", options );
       System.exit(1);
     }
+
+    File handleFile = new File(_handle_file);
+    handleFile.mkdirs();
   }
 
   public Main()
@@ -162,6 +165,8 @@ public class Main
       {
         System.err.println(String.format("WARNING: Could not write file with current message handler to %s",_handle_file));
       }
+
+      System.err.println("received job request: " + job.getBody());
 
       try
       {
