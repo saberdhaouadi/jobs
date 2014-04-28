@@ -77,6 +77,9 @@ rec {
       src = ./protocols;
       buildInputs = with platform; [ logicblox ];
       enableLBservices = false;
+      configureFlags = [
+        "--with-aws=${aws-java-sdk}"
+      ];
     };
 
   worker =

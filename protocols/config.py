@@ -6,8 +6,11 @@ lbconfig_package(
   default_prefix='/opt/logicblox/lb-steve-protocols',
   default_targets=['jars'])
 
+aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.7.1"})
+
 depends_on(
-  logicblox_dep
+  logicblox_dep,
+  aws_dep
 )
 
 protobuf_protocol(
@@ -34,6 +37,8 @@ jar(
       java_protobuf_file('frontend', 'com.logicblox.steve.protocol'),
    ],
    classpath = [
-      '$(logicblox)/lib/java/protobuf-2.5.0.jar'
+      '$(logicblox)/lib/java/protobuf-2.5.0.jar',
+      '$(logicblox)/lib/java/guava-15.0.jar',
+      '$(logicblox)/lib/java/lb-common.jar',
+      '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
    ])
-

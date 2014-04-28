@@ -11,7 +11,8 @@ import com.logicblox.steve.protocol.Backend;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-public class OutgoingQueueHelper {
+public class OutgoingQueueHelper
+{
   AmazonSQS sqs;
   String _outgoing_url;
   String _job;
@@ -19,8 +20,8 @@ public class OutgoingQueueHelper {
   public OutgoingQueueHelper(String url, String job)
   {
     setupSQS();
-    this._outgoing_url = url;
-    this._job = job;
+    _outgoing_url = url;
+    _job = job;
   }
 
   private void setupSQS()
@@ -93,7 +94,8 @@ public class OutgoingQueueHelper {
     sendResult(msgBuilder.build());
   }
 
-  public String getHostname() {
+  public String getHostname()
+  {
     String hostName;
     try
     {

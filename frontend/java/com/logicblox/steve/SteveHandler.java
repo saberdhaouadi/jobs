@@ -115,13 +115,16 @@ public class SteveHandler extends ProtoBufHandler
     HttpServletResponse httpResponse, 
     Frontend.CreateRequest req)
   {
-    return Futures.transform(
+    ListenableFuture<Job> job =
       _db.createJob(
         "martin", // TODO require authentication and use actual user
         req.getClientId(),
         req.getJobImpl(),
         Conversions.convertFrontendFileToData(req.getInputList()),
-        req.getOutput()),
+        req.getOutput());
+
+    return Futures.transform(
+      job,
       new Function<Job, Frontend.Response>()
       {
         public Frontend.Response apply(Job job)
@@ -135,4 +138,5 @@ public class SteveHandler extends ProtoBufHandler
         }
       });
   }
+
 }
