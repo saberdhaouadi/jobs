@@ -2,11 +2,17 @@ package com.logicblox.steve.frontend;
 
 import com.logicblox.sqs.SQSClient;
 import com.logicblox.sqs.SQSQueueHandle;
+
+import com.logicblox.steve.common.Conversions;
+import com.logicblox.steve.common.Data;
 import com.logicblox.steve.db.Job;
+import com.logicblox.steve.protocol.Backend;
 
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import com.googlecode.protobuf.format.JsonFormat;
 
 public class JobQueueClient
 {
@@ -34,7 +40,19 @@ public class JobQueueClient
     if(job == null)
       throw new IllegalArgumentException("job must be non-null");
 
-    String msg = null;
+    // TODO timeout
+    Backend.RunJob.Builder request =
+      Backend.RunJob.newBuilder()
+      .setJobImpl(job.getImpl())
+      .setJob(job.getId())
+      .setOutput(job.getOutputPrefix());
+
+    for(Data d : job.getInputData())
+    {
+      request.addInput(Conversions.convertDataToBackendFile(d));
+    }
+    
+    String msg = new JsonFormat().printToString(request.build());
     return Futures.transform(_sqs.send(_queue, msg), Functions.constant(job));
   }
 }
