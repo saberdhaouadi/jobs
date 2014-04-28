@@ -1,5 +1,6 @@
 package com.logicblox.steve;
 
+import java.net.URI;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -10,30 +11,40 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 
 import com.google.common.base.Function;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 
+import com.logicblox.bloxweb.HandlerValidationException;
 import com.logicblox.bloxweb.InvalidRequestException;
 import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.bloxweb.ProtoBufHandler;
 import com.logicblox.bloxweb.config.Config;
+import com.logicblox.bloxweb.config.ConfigMap;
 import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.concurrent.MoreFutures;
+
+import com.logicblox.sqs.SQSException;
+import com.logicblox.sqs.SQSClient;
+import com.logicblox.sqs.SQSQueueHandle;
+import com.logicblox.sqs.SQSClients;
 
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.db.Database;
 import com.logicblox.steve.db.DynamoJobState;
 import com.logicblox.steve.db.FakeDatabase;
 import com.logicblox.steve.db.Job;
+import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.protocol.Frontend;
 
 public class SteveHandler extends ProtoBufHandler
 {
   private Database _db;
+  private JobQueueClient _jobQueue;
 
   public SteveHandler()
   {
@@ -45,6 +56,32 @@ public class SteveHandler extends ProtoBufHandler
   {
     super.init(handlerConfig, service);
     _db = new FakeDatabase(new DynamoJobState(handlerConfig.getParent(), _logger));
+
+    ConfigMap jobQueueConfig = handlerConfig.getParent().getSection("job-queue");
+
+    SQSClients sqsClients = new SQSClients();
+    SQSClient sqs = sqsClients.getSQSClient(jobQueueConfig);
+
+    try
+    {
+      SQSQueueHandle queue;
+      if(jobQueueConfig.contains("sqs_queue_url"))
+      {
+        queue = sqs.getQueue(URI.create(jobQueueConfig.getStringError("sqs_queue_url")), true);
+      }
+      else if(jobQueueConfig.contains("sqs_queue_name"))
+      {
+        queue = sqs.getQueue(jobQueueConfig.getStringError("sqs_queue_name"), true);
+      }
+      else
+        throw new HandlerValidationException("sqs_queue_url or sqs_queue_url is needed for job-queue", null);
+
+      _jobQueue = new JobQueueClient(sqs, queue);
+    }
+    catch(SQSException exc)
+    {
+      throw new HandlerValidationException(exc);
+    }
   }
 
   @Override
@@ -92,22 +129,20 @@ public class SteveHandler extends ProtoBufHandler
     if(request.hasCreate())
     {
       ListenableFuture<Frontend.Response> resp = handleCreate(httpRequest, httpResponse, request.getCreate());
-      MoreFutures.transferResponse(resp, exchange);
+      return MoreFutures.transferResponse(resp, exchange);
     }
     else if(request.hasState())
     {
-
+      return Futures.immediateFailedFuture(new HttpException(HttpStatus.BAD_REQUEST_400, "Not yet implemented"));
     }
     else if(request.hasKill())
     {
-
+      return Futures.immediateFailedFuture(new HttpException(HttpStatus.BAD_REQUEST_400, "Not yet implemented"));
     }
     else
     {
-      new HttpException(HttpStatus.BAD_REQUEST_400, "Request union has no request");
+      return Futures.immediateFailedFuture(new HttpException(HttpStatus.BAD_REQUEST_400, "Request union has no request"));
     }
-
-    return Futures.immediateFuture(exchange);
   }
 
   private ListenableFuture<Frontend.Response> handleCreate(
@@ -122,6 +157,14 @@ public class SteveHandler extends ProtoBufHandler
         req.getJobImpl(),
         Conversions.convertFrontendFileToData(req.getInputList()),
         req.getOutput());
+
+    job = Futures.transform(job, new AsyncFunction<Job, Job>()
+    {
+      public ListenableFuture<Job> apply(Job j)
+      {
+        return _jobQueue.submit(j);
+      }
+    });
 
     return Futures.transform(
       job,

@@ -10,6 +10,7 @@ aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.7.1"})
 
 depends_on(
   logicblox_dep,
+  lb_web_dep,
   aws_dep
 )
 
@@ -41,4 +42,5 @@ jar(
       '$(logicblox)/lib/java/guava-15.0.jar',
       '$(logicblox)/lib/java/lb-common.jar',
       '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
+      '$(lb_web)/lib/java/lb-web-client.jar',
    ])

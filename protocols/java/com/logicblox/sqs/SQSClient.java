@@ -5,15 +5,18 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlRequest;
+import com.amazonaws.services.sqs.model.SendMessageRequest;
 
 import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDLogger;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -164,5 +167,24 @@ public final class SQSClient
       _logger.error(msg, exc);
       throw new SQSException(msg, exc);
     }
+  }
+
+  /**
+   * Asynchronously send message to queue.
+   */
+  public ListenableFuture<String> send(SQSQueueHandle handle, String msg)
+  {
+    if(handle == null)
+      return Futures.immediateFailedFuture(new IllegalArgumentException("handle most not be null"));
+    if(msg == null)
+      return Futures.immediateFailedFuture(new IllegalArgumentException("message most not be null"));
+
+    final SendMessageRequest request = new SendMessageRequest(handle.getQueueUrl(), msg);
+
+    return _executor.submit(new Callable<String>() {
+        public String call() throws Exception {
+          return _sqs.sendMessage(request).getMessageId();
+        }
+      });
   }
 }
