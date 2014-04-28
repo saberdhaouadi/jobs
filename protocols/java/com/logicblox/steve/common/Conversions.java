@@ -38,6 +38,15 @@ public class Conversions
     return d;
   }
 
+  public static Backend.File convertDataToBackendFile(Data d)
+  {
+    Backend.File.Builder f = Backend.File.newBuilder();
+    f.setUrl(d.getLocation());
+    if(d.hasHash())
+      f.setHash(d.getHash());
+    return f.build();
+  }
+
   public static Data convertFileToData(Frontend.File file)
   {
     Data d = new Data();
