@@ -378,11 +378,21 @@ public final class SQSClient
       return Collections.singletonList(delete(messages.get(0)));
 
     ListenableFuture<List<Object>> future = 
-      _executor.submit(new Callable<List<Object>>() {
-          public List<Object> call() throws Exception {
+      _executor.submit(new Callable<List<Object>>()
+      {
+        public List<Object> call() throws Exception
+        {
+          try
+          {
             return deleteSync(h, messages);
           }
-        });
+          catch(Exception exc)
+          {
+            exc.printStackTrace();
+            throw exc;
+          }
+        }
+      });
 
     // Transform the Future<List> into a List<Future>
     List<ListenableFuture<SQSReceivedMessage>> result = new ArrayList<ListenableFuture<SQSReceivedMessage>>();
@@ -416,7 +426,7 @@ public final class SQSClient
     for(int i = 0; i < messages.size(); i++)
     {
       SQSReceivedMessage m = messages.get(i);
-      if(m.getQueue().equals(h))
+      if(!m.getQueue().equals(h))
         throw new IllegalArgumentException("Message does not belong to queue: " + m);
 
       entries.add(new DeleteMessageBatchRequestEntry(String.valueOf(i), m.getReceiptHandle()));

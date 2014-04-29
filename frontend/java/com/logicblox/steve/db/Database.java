@@ -34,4 +34,6 @@ public interface Database
   public ListenableFuture<Job> getState(String jobId, boolean detail);
 
   public ListenableFuture<Job> getResult(String jobId);
+
+  public ListenableFuture<Job> addStatus(String jobId, Status status);
 }

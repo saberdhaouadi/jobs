@@ -7,12 +7,13 @@ public class Status
   }
 
   public enum Event {
-    EV_QUEUED, EV_EXECUTING, EV_UNRESPONSIVE, EV_CANCEL, EV_SUCCEEDED, EV_FAILED, EV_KILLED, EV_TIMEOUT
+    EV_QUEUED, EV_STARTED, EV_PROGRESS, EV_UNRESPONSIVE, EV_CANCEL, EV_SUCCEEDED, EV_FAILED, EV_KILLED, EV_TIMEOUT
   };
 
   private long _timestamp;
   private Event _event;
   private String _machine;
+  private String _message;
 
   public void setTimestamp(long v)
   {
@@ -42,5 +43,20 @@ public class Status
   public String getMachine()
   {
     return _machine;
+  }
+
+  public boolean hasMessage()
+  {
+    return _message != null;
+  }
+  
+  public String getMessage()
+  {
+    return _message;
+  }
+
+  public void setMessage(String s)
+  {
+    _message = s;
   }
 }

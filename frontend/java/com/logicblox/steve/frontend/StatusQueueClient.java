@@ -6,6 +6,7 @@ import com.logicblox.sqs.SQSQueueHandle;
 
 import com.logicblox.steve.protocol.Backend;
 import com.logicblox.steve.db.Database;
+import com.logicblox.steve.db.Status;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -59,13 +60,22 @@ public class StatusQueueClient
 
         for(SQSReceivedMessage msg : messages)
         {
-          processStatus(msg.getBody());
+          try
+          {
+            processStatus(msg.getBody());
+          }
+          catch(Exception exc)
+          {
+            exc.printStackTrace();
+          }
         }
+
+        _sqs.delete(messages);
         
         // wait if there were no messages
         if(messages.size() == 0)
         {
-          Thread.sleep(10 * 1000);
+          Thread.sleep(5 * 1000);
         }
       }
       catch(Exception exc)
@@ -75,13 +85,15 @@ public class StatusQueueClient
     }
   }
 
-  private void processStatus(String status)
+  private void processStatus(String statusString)
   {
+    System.err.println("[status] " + statusString);
+
     Backend.JobStatus.Builder builder = Backend.JobStatus.newBuilder();
     try
     {
       JsonFormat format = new JsonFormat(JsonFormat.LOOSE);
-      format.merge(new ByteArrayInputStream(status.getBytes()), builder);
+      format.merge(new ByteArrayInputStream(statusString.getBytes()), builder);
     }
     catch(IOException exc)
     {
@@ -89,6 +101,48 @@ public class StatusQueueClient
       throw new RuntimeException(exc);
     }
 
-    System.out.println(builder.build().toString());
+    Backend.JobStatus protoStatus = builder.build();
+
+    Status status = new Status();
+    status.setMachine(protoStatus.getMachine());
+    status.setTimestamp(protoStatus.getTimestamp());
+
+    switch(protoStatus.getStatusCode())
+    {
+      case STARTED:
+      {
+        status.setEvent(Status.Event.EV_STARTED);
+        break;
+      }
+      case PROGRESS:
+      {
+        status.setEvent(Status.Event.EV_PROGRESS);
+        if(protoStatus.hasProgressDetails())
+          status.setMessage(protoStatus.getProgressDetails().getMessage());
+        break;        
+      }
+      case SUCCEEDED:
+      {
+        status.setEvent(Status.Event.EV_SUCCEEDED);
+        // TODO process output
+        break;        
+      }
+      case FAILED:
+      {
+        status.setEvent(Status.Event.EV_PROGRESS);
+        if(protoStatus.hasFailedDetails())
+        {
+          Backend.FailedDetails d = protoStatus.getFailedDetails();
+          status.setMessage(
+            (d.hasErrorCode() ? d.getErrorCode() + ": " : "") +
+            (d.hasErrorMessage() ? d.getErrorMessage() : ""));
+        }
+        break;
+      }
+      default:
+        System.err.println("error: status not yet supported");
+    }
+
+    _db.addStatus(protoStatus.getJob(), status);
   }
 }

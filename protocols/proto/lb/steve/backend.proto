@@ -33,7 +33,7 @@ message JobStatus {
   required string job = 1;
 
   // Timestamp of status update (milli-seconds)
-  required int64 datetime = 2;
+  required int64 timestamp = 2;
 
   // Code of status change
   required StatusCode status_code = 3;

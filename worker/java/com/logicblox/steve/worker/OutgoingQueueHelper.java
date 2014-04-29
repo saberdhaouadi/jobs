@@ -90,7 +90,7 @@ public class OutgoingQueueHelper
     return
       Backend.JobStatus.newBuilder()
       .setJob(_job)
-      .setDatetime(System.currentTimeMillis())
+      .setTimestamp(System.currentTimeMillis())
       .setMachine(getHostname());
   }
 

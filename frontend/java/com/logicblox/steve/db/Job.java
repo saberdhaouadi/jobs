@@ -1,6 +1,9 @@
 package com.logicblox.steve.db;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.ArrayList;
+
 import com.google.common.collect.ImmutableList;
 import com.logicblox.steve.common.Data;
 
@@ -15,7 +18,7 @@ public class Job
   private Collection<Data> _outputData;
 
   private Status.State _state;
-  private Collection<Status> _status;
+  private List<Status> _status = new ArrayList<Status>();
 
   public void setId(String v)
   {
@@ -57,14 +60,20 @@ public class Job
     return _output;
   }
 
-  public Collection<Status> getStatus()
+  public List<Status> getStatus()
   {
     return _status;
   }
 
-  public void setStatus(Collection<Status> v)
+  public void setStatus(List<Status> v)
   {
-    _status = ImmutableList.copyOf(v);
+    _status = v;
+  }
+
+  // only to be used by internal database methods
+  public void addStatus(Status status)
+  {
+    _status.add(status);
   }
 
   public boolean isSucceeded()

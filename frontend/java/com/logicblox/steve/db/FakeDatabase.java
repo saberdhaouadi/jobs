@@ -83,6 +83,7 @@ public class FakeDatabase implements Database
     return _accounts.get(id);
   }
 
+  @Override
   public synchronized ListenableFuture<Job> createJob(
     String userid, String clientId, String jobImpl, Collection<Data> inputs, String output)
   {
@@ -112,10 +113,27 @@ public class FakeDatabase implements Database
     return Futures.immediateFuture(job);
   }
 
+  @Override
   public synchronized ListenableFuture<Job> getState(String jobId, boolean detail)
   {
+    // an actual implementation would need to consider the detail
+    // option. We do not.
     ListenableFuture<Job> job = getJob(jobId);
     return job;
+  }
+
+  @Override
+  public synchronized ListenableFuture<Job> addStatus(String jobId, final Status status)
+  {
+    ListenableFuture<Job> job = getJob(jobId);
+    return Futures.transform(job, new Function<Job, Job>()
+    {
+      public Job apply(Job j)
+      {
+        j.addStatus(status);
+        return j;
+      }
+    });
   }
 
   // TODO add user account and only return job when it exists in this account.
