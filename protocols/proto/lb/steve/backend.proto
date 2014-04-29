@@ -20,35 +20,50 @@ message RunJob {
   optional int64 timeout = 5 [ default = 1800 ];
 }
 
-message JobStarted {
-  // Identifier of the job.
-  required string job = 1;
-  required int64 datetime = 2;
-
-  required string machine = 3;
-}
-
-message JobFinished {
-  // Identifier of the job.
-  required string job = 1;
-  required int64 datetime = 2;
-
-  required string machine = 3;
-
-  required bool success = 4;
-  optional string error_code = 5;
-  optional string error_message = 6;
+// TODO add timeout etc
+enum StatusCode {
+  STARTED = 0;
+  SUCCEEDED = 1;
+  FAILED = 2;
+  PROGRESS = 3;
 }
 
 message JobStatus {
   // Identifier of the job.
   required string job = 1;
 
-  // Status message and date
+  // Timestamp of status update (milli-seconds)
   required int64 datetime = 2;
-  required string status = 3;
 
+  // Code of status change
+  required StatusCode status_code = 3;
+
+  // Machine that trigger the status update
   required string machine = 4;
+
+  // If the status change is 'failed', then details on the failure
+  // can be provided.
+  optional FailedDetails failed_details = 10;
+
+  // If the status change is 'succeeded', then output of the job
+  // result can be provided.
+  optional SucceededDetails succeeded_details = 11;
+
+  // If the status change is 'progress', then details can be provided.
+  optional ProgressDetails progress_details = 12;
+}
+
+message FailedDetails {
+  optional string error_code = 1;
+  optional string error_message = 2;
+}
+
+message SucceededDetails {
+  repeated File output = 1;
+}
+
+message ProgressDetails {
+  required string message = 1;
 }
 
 /**

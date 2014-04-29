@@ -200,6 +200,12 @@ public final class SQSClient
       });
   }
 
+  public List<SQSReceivedMessage> receive(SQSQueueHandle handle)
+  throws SQSException
+  {
+    return receive(handle, 10);
+  }
+
   public List<SQSReceivedMessage> receive(SQSQueueHandle handle, int maxMessages)
   throws SQSException
   {

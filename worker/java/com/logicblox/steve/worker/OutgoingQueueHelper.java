@@ -32,12 +32,11 @@ public class OutgoingQueueHelper
 
   public void notifyStatus(String status)
   {
-    Backend.JobStatus.Builder msgBuilder = Backend.JobStatus.newBuilder();
-    msgBuilder.setJob(_job);
-    msgBuilder.setDatetime(System.currentTimeMillis() / 1000);
-
-    msgBuilder.setMachine(getHostname());
-    msgBuilder.setStatus(status);
+    Backend.JobStatus.Builder msgBuilder = getBuilder();
+    msgBuilder.setStatusCode(Backend.StatusCode.PROGRESS);
+    msgBuilder.setProgressDetails(
+      Backend.ProgressDetails.newBuilder()
+      .setMessage(status));
 
     try
     {
@@ -51,47 +50,50 @@ public class OutgoingQueueHelper
 
   public void notifyFailure(Exception e)
   {
-    Backend.JobFinished.Builder msgBuilder = getBuilder();
-    msgBuilder.setSuccess(false);
-
+    Backend.JobStatus.Builder msgBuilder = getBuilder();
+    msgBuilder.setStatusCode(Backend.StatusCode.FAILED);
+    
     if (e instanceof JobFailedException)
     {
-      msgBuilder.setErrorCode("JOB_FAILED");
-      msgBuilder.setErrorMessage(e.getMessage());
+      msgBuilder.setFailedDetails(
+        Backend.FailedDetails.newBuilder()
+        .setErrorCode("JOB_FAILED")
+        .setErrorMessage(e.getMessage()));
     }
     else
     {
-      msgBuilder.setErrorCode("INTERNAL_ERROR");
-      msgBuilder.setErrorMessage(e.getMessage());
+      msgBuilder.setFailedDetails(
+        Backend.FailedDetails.newBuilder()
+        .setErrorCode("INTERNAL_ERROR")
+        .setErrorMessage(e.getMessage()));
     }
+
     sendResult(msgBuilder.build());
   }
 
   public void notifySuccess()
   {
-    Backend.JobFinished.Builder msgBuilder = getBuilder();
-    msgBuilder.setSuccess(true);
+    Backend.JobStatus.Builder msgBuilder = getBuilder();
+    msgBuilder.setStatusCode(Backend.StatusCode.SUCCEEDED);
     sendResult(msgBuilder.build());
-  }
-
-  private Backend.JobFinished.Builder getBuilder()
-  {
-    Backend.JobFinished.Builder msgBuilder = Backend.JobFinished.newBuilder();
-    msgBuilder.setJob(_job);
-    msgBuilder.setDatetime(System.currentTimeMillis() / 1000);
-
-    msgBuilder.setMachine(getHostname());
-    return msgBuilder;
   }
 
   public void notifyStart()
   {
-    Backend.JobStarted.Builder msgBuilder = Backend.JobStarted.newBuilder();
+    Backend.JobStatus.Builder msgBuilder = Backend.JobStatus.newBuilder();
     msgBuilder.setJob(_job);
-    msgBuilder.setDatetime(System.currentTimeMillis() / 1000);
-
+    msgBuilder.setDatetime(System.currentTimeMillis());
     msgBuilder.setMachine(getHostname());
     sendResult(msgBuilder.build());
+  }
+
+  private Backend.JobStatus.Builder getBuilder()
+  {
+    return
+      Backend.JobStatus.newBuilder()
+      .setJob(_job)
+      .setDatetime(System.currentTimeMillis())
+      .setMachine(getHostname());
   }
 
   public String getHostname()
