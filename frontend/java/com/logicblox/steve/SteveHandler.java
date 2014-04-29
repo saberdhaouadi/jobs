@@ -39,6 +39,7 @@ import com.logicblox.steve.db.DynamoJobState;
 import com.logicblox.steve.db.FakeDatabase;
 import com.logicblox.steve.db.Job;
 import com.logicblox.steve.frontend.JobQueueClient;
+import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
 
 public class SteveHandler extends ProtoBufHandler
@@ -57,31 +58,42 @@ public class SteveHandler extends ProtoBufHandler
     super.init(handlerConfig, service);
     _db = new FakeDatabase(new DynamoJobState(handlerConfig.getParent(), _logger));
 
-    ConfigMap jobQueueConfig = handlerConfig.getParent().getSection("job-queue");
+    Section jobQueueConfig = handlerConfig.getParent().getSection("job-queue");
+    Section statusQueueConfig = handlerConfig.getParent().getSection("status-queue");
 
     SQSClients sqsClients = new SQSClients();
-    SQSClient sqs = sqsClients.getSQSClient(jobQueueConfig);
+    SQSClient jobClient = sqsClients.getSQSClient(jobQueueConfig);
+    SQSClient statusClient = sqsClients.getSQSClient(statusQueueConfig);
 
     try
     {
-      SQSQueueHandle queue;
-      if(jobQueueConfig.contains("sqs_queue_url"))
-      {
-        queue = sqs.getQueue(URI.create(jobQueueConfig.getStringError("sqs_queue_url")), true);
-      }
-      else if(jobQueueConfig.contains("sqs_queue_name"))
-      {
-        queue = sqs.getQueue(jobQueueConfig.getStringError("sqs_queue_name"), true);
-      }
-      else
-        throw new HandlerValidationException("sqs_queue_url or sqs_queue_url is needed for job-queue", null);
+      SQSQueueHandle jobQueue = getQueueFromConfig(jobClient, jobQueueConfig);
+      _jobQueue = new JobQueueClient(jobClient, jobQueue);
 
-      _jobQueue = new JobQueueClient(sqs, queue);
+      SQSQueueHandle statusQueue = getQueueFromConfig(statusClient, statusQueueConfig);
+      StatusQueueClient status = new StatusQueueClient(statusClient, statusQueue, _db);
+      status.start();
     }
     catch(SQSException exc)
     {
       throw new HandlerValidationException(exc);
     }
+  }
+
+  private SQSQueueHandle getQueueFromConfig(SQSClient sqs, Section config) throws SQSException
+  {
+    boolean create = true;
+    if(config.contains("sqs_queue_url"))
+    {
+      return sqs.getQueue(URI.create(config.getStringError("sqs_queue_url")), create);
+    }
+    else if(config.contains("sqs_queue_name"))
+    {
+      return sqs.getQueue(config.getStringError("sqs_queue_name"), create);
+    }
+    else
+      throw new HandlerValidationException(
+        "sqs_queue_url or sqs_queue_url is needed for section '" + config.getSectionName() + "'", null);
   }
 
   @Override
