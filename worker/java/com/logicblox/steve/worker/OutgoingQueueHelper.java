@@ -80,10 +80,8 @@ public class OutgoingQueueHelper
 
   public void notifyStart()
   {
-    Backend.JobStatus.Builder msgBuilder = Backend.JobStatus.newBuilder();
-    msgBuilder.setJob(_job);
-    msgBuilder.setDatetime(System.currentTimeMillis());
-    msgBuilder.setMachine(getHostname());
+    Backend.JobStatus.Builder msgBuilder = getBuilder();
+    msgBuilder.setStatusCode(Backend.StatusCode.STARTED);
     sendResult(msgBuilder.build());
   }
 

@@ -1,12 +1,18 @@
 package com.logicblox.steve.frontend;
 
 import com.logicblox.sqs.SQSClient;
+import com.logicblox.sqs.SQSReceivedMessage;
 import com.logicblox.sqs.SQSQueueHandle;
 
 import com.logicblox.steve.protocol.Backend;
 import com.logicblox.steve.db.Database;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.googlecode.protobuf.format.JsonFormat;
 
 public class StatusQueueClient
 {
@@ -32,7 +38,15 @@ public class StatusQueueClient
 
   public void start()
   {
-    
+    Thread t = new Thread(
+      new Runnable()
+      {
+        public void run()
+        {
+          loop();
+        }
+      });
+    t.start();
   }
 
   private void loop()
@@ -45,13 +59,13 @@ public class StatusQueueClient
 
         for(SQSReceivedMessage msg : messages)
         {
-          String body = msg.getBody();
+          processStatus(msg.getBody());
         }
         
-        // wait 30 seconds if there were no messages
+        // wait if there were no messages
         if(messages.size() == 0)
         {
-          Thread.sleep(30 * 1000);
+          Thread.sleep(10 * 1000);
         }
       }
       catch(Exception exc)
@@ -59,5 +73,22 @@ public class StatusQueueClient
         exc.printStackTrace();
       }
     }
+  }
+
+  private void processStatus(String status)
+  {
+    Backend.JobStatus.Builder builder = Backend.JobStatus.newBuilder();
+    try
+    {
+      JsonFormat format = new JsonFormat(JsonFormat.LOOSE);
+      format.merge(new ByteArrayInputStream(status.getBytes()), builder);
+    }
+    catch(IOException exc)
+    {
+      // should not be possible
+      throw new RuntimeException(exc);
+    }
+
+    System.out.println(builder.build().toString());
   }
 }
