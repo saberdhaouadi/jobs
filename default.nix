@@ -75,7 +75,7 @@ rec {
     buildLBConfig {
       name = "jobs-protocols-${version src}";
       src = ./protocols;
-      buildInputs = with platform; [ logicblox ];
+      buildInputs = with platform; [ logicblox bloxweb ];
       enableLBservices = false;
       configureFlags = [
         "--with-aws=${aws-java-sdk}"
