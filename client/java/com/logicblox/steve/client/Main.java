@@ -16,7 +16,10 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.TimeZone;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -100,6 +103,7 @@ public class Main
     _commander = new JCommander(new MainCommand());
     _commander.setProgramName("lb-steve-client");
     _commander.addCommand("create-job", new CreateJobCommand());
+    _commander.addCommand("status", new StatusCommand());
     _commander.addCommand("help", new HelpCommand());
   }
 
@@ -205,6 +209,61 @@ public class Main
       }).get();
     }
   }
+
+  /**
+   * Status
+   */
+  @Parameters(commandDescription = "Check status of jobs")
+  class StatusCommand extends Command
+  {
+    @Parameter(description = "Job identifiers")
+    List<String> _ids;
+
+    @Override
+    public void invoke() throws Exception
+    {
+      ProtobufServiceClient client = getProtobufClient();
+
+      final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS+00:00");
+      format.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+      for(String id : _ids)
+      {
+        Frontend.Request.Builder req =
+          Frontend.Request.newBuilder()
+          .setState(
+            Frontend.StateRequest.newBuilder()
+            .setJobId(id)
+            .setDetail(true));
+
+        Frontend.Response.Builder resp = Frontend.Response.newBuilder();
+
+        final ProtoBufExchange exchange = new ProtoBufExchange(req, resp, Option.<String>none());
+        exchange.setRequestMessage(req.build());
+
+        Futures.transform(client.postMessage(exchange), new AsyncFunction<Object, Object>()
+        {        
+          @Override
+          public ListenableFuture<Object> apply(Object o) throws Exception
+          {
+            Frontend.Response response = (Frontend.Response) exchange.getResponseMessage();
+            // TODO check for errors
+            for(Frontend.Status status : response.getState().getStatusList())
+            {
+              System.out.printf("%-30s %-12s %-20s %80s %n",
+                format.format(new Date(status.getTimestamp())),
+                status.getStatusCode(),
+                status.getMachine(),
+                status.hasMessage() ? status.getMessage() : "");
+            }
+
+            return Futures.immediateFuture((Object) response);
+          }
+        }).get();
+      }
+    }
+  }
+
   
   /**
    * Help

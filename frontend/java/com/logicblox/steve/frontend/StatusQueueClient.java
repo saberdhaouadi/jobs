@@ -111,25 +111,25 @@ public class StatusQueueClient
     {
       case STARTED:
       {
-        status.setEvent(Status.Event.EV_STARTED);
+        status.setEvent(Status.Event.STARTED);
         break;
       }
       case PROGRESS:
       {
-        status.setEvent(Status.Event.EV_PROGRESS);
+        status.setEvent(Status.Event.PROGRESS);
         if(protoStatus.hasProgressDetails())
           status.setMessage(protoStatus.getProgressDetails().getMessage());
         break;        
       }
       case SUCCEEDED:
       {
-        status.setEvent(Status.Event.EV_SUCCEEDED);
+        status.setEvent(Status.Event.SUCCEEDED);
         // TODO process output
         break;        
       }
       case FAILED:
       {
-        status.setEvent(Status.Event.EV_PROGRESS);
+        status.setEvent(Status.Event.PROGRESS);
         if(protoStatus.hasFailedDetails())
         {
           Backend.FailedDetails d = protoStatus.getFailedDetails();

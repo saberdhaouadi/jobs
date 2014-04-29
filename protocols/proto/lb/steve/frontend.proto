@@ -126,4 +126,6 @@ message Status {
   // TODO should we only return the machine under certain
   // authorization conditions?
   optional string machine = 3;
+
+  optional string message = 4;
 }

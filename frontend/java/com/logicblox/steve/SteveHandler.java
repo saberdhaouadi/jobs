@@ -38,6 +38,7 @@ import com.logicblox.steve.db.Database;
 import com.logicblox.steve.db.DynamoJobState;
 import com.logicblox.steve.db.FakeDatabase;
 import com.logicblox.steve.db.Job;
+import com.logicblox.steve.db.Status;
 import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
@@ -145,7 +146,8 @@ public class SteveHandler extends ProtoBufHandler
     }
     else if(request.hasState())
     {
-      return Futures.immediateFailedFuture(new HttpException(HttpStatus.BAD_REQUEST_400, "Not yet implemented"));
+      ListenableFuture<Frontend.Response> resp = handleState(httpRequest, httpResponse, request.getState());
+      return MoreFutures.transferResponse(resp, exchange);
     }
     else if(request.hasKill())
     {
@@ -194,4 +196,44 @@ public class SteveHandler extends ProtoBufHandler
       });
   }
 
+  private ListenableFuture<Frontend.Response> handleState(
+    HttpServletRequest httpRequest,
+    HttpServletResponse httpResponse, 
+    final Frontend.StateRequest req)
+  {
+    ListenableFuture<Job> job = _db.getState(req.getJobId(), req.hasDetail() && req.getDetail());
+
+    return Futures.transform(
+      job,
+      new Function<Job, Frontend.Response>()
+      {
+        public Frontend.Response apply(Job job)
+        {
+          Frontend.StateResponse.Builder b = Frontend.StateResponse.newBuilder();
+
+          b.setState("unknown");
+
+          if(req.hasDetail() && req.getDetail())
+          {
+            for(Status status : job.getStatus())
+            {
+              Frontend.Status.Builder protoStatus =
+                Frontend.Status.newBuilder()
+                .setTimestamp(status.getTimestamp())
+                .setMachine(status.getMachine())
+                .setStatusCode(status.getEvent().toString());
+
+              if(status.hasMessage())
+                protoStatus.setMessage(status.getMessage());
+              
+              b.addStatus(protoStatus);
+            }
+          }
+
+          Frontend.Response.Builder response = Frontend.Response.newBuilder();
+          response.setState(b);
+          return response.build();
+        }
+      });
+  }
 }
