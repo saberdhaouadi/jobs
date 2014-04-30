@@ -1,5 +1,6 @@
 package com.logicblox.steve.db;
 
+import java.util.List;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -136,6 +137,20 @@ public class FakeDatabase implements Database
     });
   }
 
+  @Override
+  public synchronized ListenableFuture<Job> setResult(String jobId, final List<Data> output)
+  {
+    ListenableFuture<Job> job = getJob(jobId);
+    return Futures.transform(job, new Function<Job, Job>()
+    {
+      public Job apply(Job j)
+      {
+        j.setOutputData(output);
+        return j;
+      }
+    });
+  }
+    
   // TODO add user account and only return job when it exists in this account.
   // TODO throw authorization exception if the user is not allowed to access the job
   public synchronized ListenableFuture<Job> getResult(final String jobId)

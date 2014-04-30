@@ -3,7 +3,8 @@ package com.logicblox.steve.worker;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.sqs.model.Message;
 
-import com.logicblox.s3lib.*;
+import com.logicblox.s3lib.S3Client;
+import com.logicblox.s3lib.S3File;
 import com.logicblox.steve.common.Data;
 
 import java.io.File;
@@ -75,17 +76,20 @@ public class SteveJob
 
   public void run() throws Exception
   {
-    log("Starting...");
+    log("Starting..." + _id);
     try
     {
       _outgoing.notifyStart();
       setup();
       runJob();
-      _outgoing.notifySuccess();
-      log("Done!");
+      log("Successfully executed " + _id);
+      List<S3File> output = uploadOutput();
+      _outgoing.notifySuccess(output);
+      log("Successfully uploaded output files for job " + _id);
     }
     catch (Exception e)
     {
+      log("Failure executing " + _id);
       _outgoing.notifyFailure(e);
       e.printStackTrace();
     }
@@ -202,12 +206,27 @@ public class SteveJob
     }
   }
 
-  private void teardown() throws InternalException {
+  private List<S3File> uploadOutput() throws InternalException
+  {
+    try
+    {
+      log("Uploading output...");
+      return _client.uploadDirectory(_outputPath, _output, null).get();
+    }
+    catch (Exception e)
+    {
+      throw new InternalException("Error uploading output files to " + _output, e);
+    }
+  }
+
+  private void teardown() throws InternalException
+  {
     log("Tearing down...");
 
     ObjectMetadata log = null;
     try
     {
+      // TODO make sure that jobs can be retried/re-executed
       log = _client.exists(_s3Bucket, String.format("jobs/%s/log", _id)).get();
     }
     catch(Exception e)
@@ -215,14 +234,17 @@ public class SteveJob
       throw new InternalException("Could not determine if log file already exists in S3.", e);
     }
 
+    // TODO rework to make sure we don't overwrite uploaded results
+    // from different jobs (moved this out to avoid reporting success
+    // before upload)
     if (log == null)
     {
-      // client.exists(,).get();
       if (_drv != null)
       {
         File logPath = new File(Utils.nixLogPath(_drv));
 
-        if(! logPath.exists()) {
+        if(!logPath.exists())
+        {
           log("No log file found, going on.");
         }
         else
@@ -239,22 +261,12 @@ public class SteveJob
           }
         }
       }
-
-      // upload output
-      try
-      {
-        log("Uploading output...");
-        _client.uploadDirectory(_outputPath, _output, null).get();
-      }
-      catch (Exception e)
-      {
-        throw new InternalException("Error uploading output files to " + _output, e);
-      }
     }
     else
     {
       log("ERROR: Found log file, probably means the job was executed elsewhere. Skipping upload of logs and results.");
     }
+
     // cleaning up directories
     log("Removing local in-/output...");
     cleanUp();

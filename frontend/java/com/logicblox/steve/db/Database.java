@@ -2,6 +2,7 @@ package com.logicblox.steve.db;
 
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.List;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.logicblox.steve.common.Data;
@@ -36,4 +37,6 @@ public interface Database
   public ListenableFuture<Job> getResult(String jobId);
 
   public ListenableFuture<Job> addStatus(String jobId, Status status);
+
+  public ListenableFuture<Job> setResult(String jobId, List<Data> output);
 }

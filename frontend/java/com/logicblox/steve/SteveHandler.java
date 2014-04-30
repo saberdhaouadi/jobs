@@ -34,6 +34,7 @@ import com.logicblox.sqs.SQSQueueHandle;
 import com.logicblox.sqs.SQSClients;
 
 import com.logicblox.steve.common.Conversions;
+import com.logicblox.steve.common.Data;
 import com.logicblox.steve.db.Database;
 import com.logicblox.steve.db.DynamoJobState;
 import com.logicblox.steve.db.FakeDatabase;
@@ -137,6 +138,7 @@ public class SteveHandler extends ProtoBufHandler
   {
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
 
+    // TODO remove
     System.out.println(request.toString());
 
     if(request.hasCreate())
@@ -147,6 +149,11 @@ public class SteveHandler extends ProtoBufHandler
     else if(request.hasState())
     {
       ListenableFuture<Frontend.Response> resp = handleState(httpRequest, httpResponse, request.getState());
+      return MoreFutures.transferResponse(resp, exchange);
+    }
+    else if(request.hasResult())
+    {
+      ListenableFuture<Frontend.Response> resp = handleResult(httpRequest, httpResponse, request.getResult());
       return MoreFutures.transferResponse(resp, exchange);
     }
     else if(request.hasKill())
@@ -211,7 +218,13 @@ public class SteveHandler extends ProtoBufHandler
         {
           Frontend.StateResponse.Builder b = Frontend.StateResponse.newBuilder();
 
-          b.setState("unknown");
+          if(job.isSucceeded())
+            b.setState("SUCCEEDED");
+          else if(job.isFailed())
+            b.setState("FAILED");
+          else
+            // TODO wait until we have proper state handling
+            b.setState("UNKNOWN");
 
           if(req.hasDetail() && req.getDetail())
           {
@@ -233,6 +246,39 @@ public class SteveHandler extends ProtoBufHandler
           Frontend.Response.Builder response = Frontend.Response.newBuilder();
           response.setState(b);
           return response.build();
+        }
+      });
+  }
+
+  private ListenableFuture<Frontend.Response> handleResult(
+    HttpServletRequest httpRequest,
+    HttpServletResponse httpResponse, 
+    final Frontend.ResultRequest req)
+  {
+    ListenableFuture<Job> job = _db.getResult(req.getJobId());
+    
+    return Futures.transform(
+      job,
+      new AsyncFunction<Job, Frontend.Response>()
+      {
+        public ListenableFuture<Frontend.Response> apply(Job job)
+        {
+          Frontend.ResultResponse.Builder b = Frontend.ResultResponse.newBuilder();
+
+          if(!job.isSucceeded())
+          {
+            // TODO Better error (check if failed, executing etc)
+            return Futures.immediateFailedFuture(new HttpException(HttpStatus.BAD_REQUEST_400, "Job has no output yet"));
+          }
+
+          for(Data d : job.getOutputData())
+          {
+            b.addOutput(Conversions.convertDataToFrontendFile(d));
+          }
+
+          Frontend.Response.Builder response = Frontend.Response.newBuilder();
+          response.setResult(b);
+          return Futures.immediateFuture(response.build());
         }
       });
   }

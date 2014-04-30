@@ -6,10 +6,13 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.googlecode.protobuf.format.JsonFormat;
+
+import com.logicblox.s3lib.S3File;
 import com.logicblox.steve.protocol.Backend;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 
 public class OutgoingQueueHelper
 {
@@ -71,10 +74,21 @@ public class OutgoingQueueHelper
     sendResult(msgBuilder.build());
   }
 
-  public void notifySuccess()
+  public void notifySuccess(List<S3File> result)
   {
     Backend.JobStatus.Builder msgBuilder = getBuilder();
     msgBuilder.setStatusCode(Backend.StatusCode.SUCCEEDED);
+
+    Backend.SucceededDetails.Builder details = Backend.SucceededDetails.newBuilder();
+    for(S3File f : result)
+    {
+      details.addOutput(
+        Backend.File.newBuilder()
+        .setUrl("s3://" + f.getBucketName() + "/" + f.getKey())
+        .setHash("etag:" + f.getETag()));
+    }
+
+    msgBuilder.setSucceededDetails(details);
     sendResult(msgBuilder.build());
   }
 

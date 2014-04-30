@@ -78,8 +78,24 @@ public class Job
 
   public boolean isSucceeded()
   {
-    // TODO review if this should be done differently
-    return _outputData != null;
+    for(Status st : _status)
+    {
+      if(st.getEvent() == Status.Event.SUCCEEDED)
+        return true;
+    }
+
+    return false;
+  }
+
+  public boolean isFailed()
+  {
+    for(Status st : _status)
+    {
+      if(st.getEvent() == Status.Event.FAILED)
+        return true;
+    }
+
+    return false;
   }
 
   public void setOutputData(Collection<Data> data)

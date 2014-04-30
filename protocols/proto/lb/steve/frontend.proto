@@ -115,7 +115,6 @@ message Param {
 
 message File {
   required string url = 1;
-  // TODO support SHA256/512 that we attach ourselves as metadata?
   optional string hash = 2;
 }
 

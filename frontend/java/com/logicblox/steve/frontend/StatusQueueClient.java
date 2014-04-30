@@ -4,6 +4,8 @@ import com.logicblox.sqs.SQSClient;
 import com.logicblox.sqs.SQSReceivedMessage;
 import com.logicblox.sqs.SQSQueueHandle;
 
+import com.logicblox.steve.common.Data;
+import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.protocol.Backend;
 import com.logicblox.steve.db.Database;
 import com.logicblox.steve.db.Status;
@@ -124,12 +126,16 @@ public class StatusQueueClient
       case SUCCEEDED:
       {
         status.setEvent(Status.Event.SUCCEEDED);
-        // TODO process output
+        if(protoStatus.hasSucceededDetails())
+        {
+          List<Data> output = Conversions.convertFileToData(protoStatus.getSucceededDetails().getOutputList());
+          _db.setResult(protoStatus.getJob(), output);
+        }
         break;        
       }
       case FAILED:
       {
-        status.setEvent(Status.Event.PROGRESS);
+        status.setEvent(Status.Event.FAILED);
         if(protoStatus.hasFailedDetails())
         {
           Backend.FailedDetails d = protoStatus.getFailedDetails();

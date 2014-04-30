@@ -47,6 +47,15 @@ public class Conversions
     return f.build();
   }
 
+  public static Frontend.File convertDataToFrontendFile(Data d)
+  {
+    Frontend.File.Builder f = Frontend.File.newBuilder();
+    f.setUrl(d.getLocation());
+    if(d.hasHash())
+      f.setHash(d.getHash());
+    return f.build();
+  }
+
   public static Data convertFileToData(Frontend.File file)
   {
     Data d = new Data();
