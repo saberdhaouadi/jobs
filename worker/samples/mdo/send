@@ -10,7 +10,7 @@ function send_job()
   aws sqs send-message --queue-url https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs --message-body "$(cat <<EOF
 { "job": "$jobid",
   "job_impl": "29167199-978b-408d-8abc-e3f1bcf4219a",
-  "input": ["s3://steve-jobs/data/crate/mdo/20140416/$job/sku", "s3://steve-jobs/data/crate/mdo/20140416/to_mdo_engine.tgz"],
+  "input": [ { "url": ["s3://steve-jobs/data/crate/mdo/20140424/$job/sku", "s3://steve-jobs/data/crate/mdo/20140424/to_mdo_engine_2014_04_24_1.tgz"] } ],
   "output": "s3://steve-jobs/jobs/$jobid/out"
 }
 EOF
@@ -19,5 +19,5 @@ echo "$job,$jobid" >> sent
 }
 
 export -f send_job
-cat jobs | head -1 | parallel -j 20 send_job
+cat jobs | parallel -j 20 send_job
 
