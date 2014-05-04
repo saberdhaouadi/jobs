@@ -49,7 +49,7 @@ let
     };
 
   s3lib =
-    let jobs = import s3lib { src = src_s3lib; };
+    let jobs = import src_s3lib { src = src_s3lib; };
      in jobs.build;
 
 in
