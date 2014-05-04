@@ -1,4 +1,6 @@
-{ src ? ./. }:
+{ src ? ./.
+, src_s3lib
+}:
 let
   inherit (import <config> {}) releases pkgs version buildLBConfig;
   platform = releases.platform."4.0.8";
@@ -46,6 +48,10 @@ let
       '';
     };
 
+  s3lib =
+    let jobs = import s3lib { src = src_s3lib; };
+     in jobs.build;
+
 in
 rec {
   frontend =
@@ -55,7 +61,7 @@ rec {
       buildInputs = with platform; [ logicblox bloxweb ];
       configureFlags = [
         "--with-protocols=${protocols}"
-        "--with-s3lib=${platform.s3lib}"
+        "--with-s3lib=${s3lib}"
         "--with-aws=${aws-java-sdk}"
       ];
     };
@@ -67,7 +73,7 @@ rec {
       buildInputs = with platform; [ logicblox bloxweb ];
       configureFlags = [
         "--with-protocols=${protocols}"
-        "--with-s3lib=${platform.s3lib}"
+        "--with-s3lib=${s3lib}"
       ];
     };
 
@@ -92,7 +98,7 @@ rec {
         "--with-commons-cli=${commons-cli}"
         "--with-protocols=${protocols}"
         "--with-aws=${aws-java-sdk}"
-        "--with-s3lib=${platform.s3lib}"
+        "--with-s3lib=${s3lib}"
       ];
       postInstall = ''
         wrapProgram "$out/bin/lb-steve-worker" --prefix PATH : "${pkgs.python}/bin:${pkgs.openjdk}/bin"
