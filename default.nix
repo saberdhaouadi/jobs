@@ -1,5 +1,5 @@
 { src ? ./.
-, src_s3lib
+, src_s3lib ? <src_s3lib>
 }:
 let
   inherit (import <config> {}) releases pkgs version buildLBConfig;
