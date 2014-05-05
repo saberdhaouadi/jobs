@@ -46,7 +46,8 @@ jar(
      "$(commons_cli)/lib/java/commons-cli.jar",
      "$(logicblox)/lib/java/protobuf-2.5.0.jar",
      "$(lb_web)/lib/java/protobuf-java-format-1.3.jar",
-     "$(lb_web)/lib/java/lb-web-client.jar"
+     "$(lb_web)/lib/java/lb-web-client.jar",
+     "$(lb_web)/lib/java/lb-web-server.jar",
    ])
 
 install_dir('nix','nix')
@@ -65,7 +66,8 @@ rule(
     'cp -f $(commons_exec)/lib/java/*.jar $(prefix)/lib/java',
     'cp -f $(commons_cli)/lib/java/*.jar $(prefix)/lib/java',
     'cp -f $(lb_web)/lib/java/protobuf-java*.jar $(prefix)/lib/java',
-    'cp -f $(lb_web)/lib/java/lb-web-client.jar $(prefix)/lib/java'
+    'cp -f $(lb_web)/lib/java/lb-web-client.jar $(prefix)/lib/java',
+    'cp -f $(lb_web)/lib/java/lb-web-server.jar $(prefix)/lib/java',
   ]
 )
 

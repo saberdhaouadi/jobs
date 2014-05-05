@@ -43,4 +43,5 @@ jar(
       '$(logicblox)/lib/java/lb-common.jar',
       '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
       '$(lb_web)/lib/java/lb-web-client.jar',
+      '$(lb_web)/lib/java/lb-web-server.jar',
    ])

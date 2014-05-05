@@ -16,6 +16,9 @@ message Request {
   optional StateRequest state = 2;
   optional ResultRequest result = 3;
   optional KillRequest kill = 4;
+
+  // job implementation requets
+  optional ImplAddRequest impl_add = 20;
 }
 
 message Response {
@@ -27,6 +30,9 @@ message Response {
   optional StateResponse state = 11;
   optional ResultResponse result = 12;
   optional KillResponse kill = 13;
+
+  // job implementation requets
+  optional ImplAddResponse impl_add = 20;
 }
 
 /**
@@ -103,6 +109,20 @@ message KillResponse {
   // the job (the new status will be pending-kill until the kill has
   // been handled)
   required string status = 1; 
+}
+
+/**
+ * Add a new job implementation
+ */
+message ImplAddRequest {
+  required string id = 1;
+  required File implementation = 2;
+
+  // Defaults to the account of the user.
+  optional string account = 3;
+}
+
+message ImplAddResponse {
 }
 
 /**

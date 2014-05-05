@@ -21,7 +21,6 @@ import org.apache.commons.exec.PumpStreamHandler;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
-
 public class SteveJob
 {
   public final OutgoingQueueHelper _outgoing;
@@ -171,6 +170,7 @@ public class SteveJob
     }
     catch(Exception e)
     {
+      e.printStackTrace();
       throw new InternalException("Could not download job implementation '" + _impl + "' from '" + uri + "'", e);
     }
   }

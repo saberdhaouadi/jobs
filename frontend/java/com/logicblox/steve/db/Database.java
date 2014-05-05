@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.List;
 
 import com.google.common.util.concurrent.ListenableFuture;
+
+import com.logicblox.s3lib.S3File;
 import com.logicblox.steve.common.Data;
 
 /**
@@ -27,6 +29,9 @@ public interface Database
     String jobImpl,
     Collection<Data> inputs,
     String output);
+
+  // public ListenableFuture<JobImpl> setJobImpl(String accountId, String id, S3File file);
+  // public ListenableFuture<S3File> getJobImpl(String accountId, String id);
 
   /**
    * Returns Job with the state field populated, and the full status

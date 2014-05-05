@@ -25,8 +25,9 @@ jar(
    name = 'lb-steve-frontend',
    srcdir = 'java',
    classpath = [
-      '$(protocols)/lib/java/lb-steve-protocols.jar',
       '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
+      '$(s3lib)/lib/java/s3lib-0.2.jar',
+      '$(protocols)/lib/java/lb-steve-protocols.jar',
       '$(lb_web)/lib/java/lb-web-server.jar',
       '$(lb_web)/lib/java/lb-web-client.jar',
       '$(lb_web)/lib/java/protobuf-2.5.0.jar',

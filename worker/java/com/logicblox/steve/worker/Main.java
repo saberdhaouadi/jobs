@@ -8,17 +8,12 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.googlecode.protobuf.format.JsonFormat;
 
-import com.logicblox.s3lib.DirectoryKeyProvider;
-import com.logicblox.s3lib.KeyProvider;
 import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.Utils;
 import com.logicblox.steve.protocol.Backend;
 import com.logicblox.steve.common.Conversions;
+import com.logicblox.steve.common.S3Utils;
 
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
@@ -27,7 +22,6 @@ import org.apache.commons.io.IOUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 
 public class Main
@@ -103,7 +97,9 @@ public class Main
 
   public Main()
   {
-    createS3Client();
+    // TODO pass in a configuration for S3
+    this.client = S3Utils.createS3Client(null);
+
     setupSQS();
   }
 
@@ -253,43 +249,4 @@ public class Main
       Thread.sleep(5000);
     }
   }
-
-  protected ListeningExecutorService getHttpExecutor()
-  {
-    int maxConcurrentConnections = 10;
-
-    return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
-  }
-
-  protected ListeningScheduledExecutorService getInternalExecutor()
-  {
-    return MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(50));
-  }
-
-  protected S3Client createS3Client()
-  {
-    ListeningExecutorService uploadExecutor = getHttpExecutor();
-    ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
-
-    long chunkSize = Utils.getDefaultChunkSize();
-    int _retryCount = 10;
-
-    this.client = new S3Client(
-            null,
-            uploadExecutor,
-            internalExecutor,
-            chunkSize,
-            getKeyProvider());
-
-    client.setRetryCount(_retryCount);
-
-    return client;
-  }
-
-  protected KeyProvider getKeyProvider()
-  {
-    File dir = new File(Utils.getDefaultKeyDirectory());
-    return new DirectoryKeyProvider(dir);
-  }
-
 }
