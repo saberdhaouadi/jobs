@@ -59,6 +59,7 @@ rec {
       name = "jobs-frontend-${version src}";
       src = ./frontend;
       buildInputs = with platform; [ logicblox bloxweb ];
+      enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-s3lib=${s3lib}"
@@ -71,6 +72,7 @@ rec {
       name = "jobs-client-${version src}";
       src = ./client;
       buildInputs = with platform; [ logicblox bloxweb ];
+      enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-s3lib=${s3lib}"
@@ -93,6 +95,7 @@ rec {
       name = "jobs-worker-${version src}";
       src = ./worker;
       buildInputs = with platform; [ logicblox bloxweb pkgs.makeWrapper ];
+      enableLBservices = false;
       configureFlags = [
         "--with-commons-exec=${commons-exec}"
         "--with-commons-cli=${commons-cli}"
