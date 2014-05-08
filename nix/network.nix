@@ -23,7 +23,7 @@ let
     {
       imports = [ ./worker.nix <lbdevops/logicblox/service-config/datadog.nix> ];
 
-      lb-steve-worker.arguments = "--incoming ${(getAttr (sqsName type) resources.sqsQueues).name} --outgoing ${(getAttr (sqsResultsName type) resources.sqsQueues).name}";
+      lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName type}".name} --outgoing ${resources.sqsQueues."${sqsResultsName type}".name}";
 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -110,8 +110,8 @@ with pkgs.lib;
               "Effect": "Allow",
               "Resource": [
                 ${pkgs.lib.concatStringsSep "," (map (t: ''
-                "arn:aws:sqs:${region}:${accountId}:steve-jobs-${name}-${sqsName t}",
-                "arn:aws:sqs:${region}:${accountId}:steve-jobs-${name}-${sqsResultsName t}"
+                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsName t}".name}",
+                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsResultsName t}".name}"
                 '') instanceTypes)
                 }
               ]
