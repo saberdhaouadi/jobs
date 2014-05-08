@@ -16,7 +16,8 @@ public class Main
   private AmazonSQS sqs;
   private AmazonEC2 ec2;
 
-  private static String url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
+  private static String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
+  private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
   private static String ami = "ami-38df3e50";
   private static String key = "rob";
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
@@ -36,8 +37,14 @@ public class Main
   {
     Options options = new Options();
 
-    options.addOption(OptionBuilder.withLongOpt("queue")
-            .withDescription("Job queue URL")
+    options.addOption(OptionBuilder.withLongOpt("incoming")
+            .withDescription("Job incoming queue URL")
+            .hasArg()
+            .withArgName("URL")
+            .create());
+
+    options.addOption(OptionBuilder.withLongOpt("outgoing")
+            .withDescription("Job outgoing queue URL")
             .hasArg()
             .withArgName("URL")
             .create());
@@ -97,8 +104,10 @@ public class Main
     CommandLineParser parser = new BasicParser();
     try {
       CommandLine _cmdline = parser.parse( options, args );
-      if (_cmdline.hasOption("queue"))
-        url = _cmdline.getOptionValue("queue");
+      if (_cmdline.hasOption("incoming"))
+        incoming_url = _cmdline.getOptionValue("incoming");
+      if (_cmdline.hasOption("outgoing"))
+        outgoing_url = _cmdline.getOptionValue("outgoing");
       if (_cmdline.hasOption("ami"))
         ami = _cmdline.getOptionValue("ami");
       if (_cmdline.hasOption("key"))
@@ -139,7 +148,7 @@ public class Main
 
   public void go()
   {
-    Map<String,String> result = sqs.getQueueAttributes(url, attrs).getAttributes();
+    Map<String,String> result = sqs.getQueueAttributes(incoming_url, attrs).getAttributes();
 
     int waitingMsgs = Integer.parseInt(result.get("ApproximateNumberOfMessages"));
     int busyMsgs = Integer.parseInt(result.get("ApproximateNumberOfMessagesNotVisible"));
