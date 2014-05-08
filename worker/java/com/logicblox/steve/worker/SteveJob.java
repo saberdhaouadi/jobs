@@ -31,7 +31,7 @@ public class SteveJob
   private String _drv;
   private long _timeout;
 
-  private String _s3Bucket = "steve-jobs";
+  private String _s3Bucket;
   private URI _outputLog;
 
   private S3Client _client;
@@ -40,7 +40,7 @@ public class SteveJob
   private File _outputPath = new File("/tmp/job/out");
   private File _jobPath = new File("/tmp/job/job.tar.gz");
 
-  public SteveJob(S3Client client, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout)
+  public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout)
   throws InternalException
   {
     _id = id;
@@ -49,6 +49,7 @@ public class SteveJob
     _client = client;
     _outgoing = new OutgoingQueueHelper(outgoingUrl, _id);
     _timeout = timeout;
+    _s3Bucket = s3Bucket;
 
     try
     {

@@ -31,11 +31,12 @@ public class Main
 
   // Settings
   private static int _idle = 5;
-  private static String _incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
-  private static String _outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
+  private static String _incomingUrl = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
+  private static String _outgoingUrl = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
   private static String _handle_file = "/var/lib/lb-steve/lb-steve-worker.handle";
-  private static boolean _return_job = false;
-  private static boolean _shutdown_on_idle = false;
+  private static String _s3Bucket = "steve-jobs";
+  private static boolean _returnJob = false;
+  private static boolean _shutdownOnIdle = false;
 
   public static void parseArgs(String args[])
   {
@@ -52,6 +53,12 @@ public class Main
             .withDescription("Incoming queue URL")
             .hasArg()
             .withArgName("URL")
+            .create());
+
+    options.addOption(OptionBuilder.withLongOpt("bucket")
+            .withDescription("S3 bucket name")
+            .hasArg()
+            .withArgName("NAME")
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("outgoing")
@@ -77,11 +84,13 @@ public class Main
       if (_cmdline.hasOption("idle"))
         _idle = ((Number)_cmdline.getParsedOptionValue("idle")).intValue();
       if (_cmdline.hasOption("incoming"))
-        _incoming_url = _cmdline.getOptionValue("incoming");
+        _incomingUrl = _cmdline.getOptionValue("incoming");
       if (_cmdline.hasOption("outgoing"))
-        _outgoing_url = _cmdline.getOptionValue("outgoing");
-      _return_job =  _cmdline.hasOption("return-job");
-      _shutdown_on_idle =  _cmdline.hasOption("shutdown-on-idle");
+        _outgoingUrl = _cmdline.getOptionValue("outgoing");
+      if (_cmdline.hasOption("bucket"))
+        _s3Bucket = _cmdline.getOptionValue("bucket");
+      _returnJob =  _cmdline.hasOption("return-job");
+      _shutdownOnIdle =  _cmdline.hasOption("shutdown-on-idle");
 
     }
     catch( ParseException exp ) {
@@ -107,7 +116,7 @@ public class Main
     parseArgs(args);
     Main m = new Main();
 
-    if(_return_job) {
+    if(_returnJob) {
       m.returnJob();
     }
     else
@@ -132,12 +141,12 @@ public class Main
 
       try
       {
-        System.err.println(String.format("Returning message with handle '%s' to %s.", handle, _incoming_url));
-        sqs.changeMessageVisibility(_incoming_url, handle, 0);
+        System.err.println(String.format("Returning message with handle '%s' to %s.", handle, _incomingUrl));
+        sqs.changeMessageVisibility(_incomingUrl, handle, 0);
       }
       catch(AmazonClientException e)
       {
-        throw new InternalException(String.format("ERROR: Could return message to the %s.", _incoming_url), e);
+        throw new InternalException(String.format("ERROR: Could return message to the %s.", _incomingUrl), e);
       }
     }
     else
@@ -177,7 +186,8 @@ public class Main
 
       SteveJob steve = new SteveJob(
               this.client,
-              _outgoing_url,
+              _s3Bucket,
+              _outgoingUrl,
               msg.getJob(),
               msg.getJobImpl(),
               Conversions.convertFileToData(msg.getInputList()),
@@ -204,7 +214,7 @@ public class Main
   private void removeIncoming(Message job) {
     try
     {
-      sqs.deleteMessage(new DeleteMessageRequest(_incoming_url, job.getReceiptHandle()));
+      sqs.deleteMessage(new DeleteMessageRequest(_incomingUrl, job.getReceiptHandle()));
       if( ! FileUtils.deleteQuietly(new File(_handle_file)) )
       {
         System.err.println("WARNING: Couldn't delete file with current message handler.");
@@ -226,7 +236,7 @@ public class Main
     long waitingSince = System.currentTimeMillis();
 
     while(true) {
-      ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(_incoming_url);
+      ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(_incomingUrl);
       receiveMessageRequest.setMaxNumberOfMessages(1);
       List<com.amazonaws.services.sqs.model.Message> messages = sqs.receiveMessage(receiveMessageRequest).getMessages();
 
@@ -234,7 +244,7 @@ public class Main
         return messages.get(0);
 
       // If idling for more than 5 minutes, poweroff machine
-      if (_shutdown_on_idle && (System.currentTimeMillis() - waitingSince) / 1000 > _idle*60)
+      if (_shutdownOnIdle && (System.currentTimeMillis() - waitingSince) / 1000 > _idle*60)
       {
         try
         {
