@@ -2,7 +2,7 @@
 with pkgs.lib;
 let
   builder-config = import <config> {};
-  platform = builder-config.releases.platform."3.10.12";
+  platform = builder-config.releases.platform."3.10.13";
   builds = import ../. {};
   
   cfg = config.lb-steve-worker;
@@ -86,7 +86,7 @@ in
         serviceConfig = {
           ExecStart = "${pkgs.socat}/bin/socat unix-listen:/run/sockets/gurobi,fork tcp-connect:ec2-50-17-61-66.compute-1.amazonaws.com:41954";
           Restart = "always";
-          RestartSec = "2";
+          RestartSec = "10";
         };
       };
 
@@ -103,13 +103,14 @@ in
     # 
     systemd.services.lb-steve-worker = {
       description = "LB Steve Worker";
-      after = [ "network.target" "fetch-ec2-data.service" ];
+      after = [ "network.target" "fetch-ec2-data.service" "gurobi-socket.service" ];
+      requires = [ "gurobi-socket.service" ];
       wantedBy = [ "multi-user.target" ];
       path = [ builds.worker ];
       serviceConfig = {
         ExecStart = "${workerScript}/bin/worker ${optionalString cfg.shutdownOnIdle "--shutdown-on-idle"}";
         Restart = "always";
-        RestartSec = 5;
+        RestartSec = "10";
       };
     };
 
