@@ -17,7 +17,7 @@ public class Main
   private AmazonEC2 ec2;
 
   private static String url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
-  private static String ami = "ami-c3716baa";
+  private static String ami = "ami-38df3e50";
   private static String key = "rob";
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
   private static double pctSpot = 0.9;
