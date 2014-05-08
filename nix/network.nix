@@ -23,7 +23,7 @@ let
     {
       imports = [ ./worker.nix <lbdevops/logicblox/service-config/datadog.nix> ];
 
-      lb-steve-worker.arguments = "--incoming ${(getAttr (sqsName type) resources.sqsQueues).name} --outgoing ${(getAttr (sqsName type) resources.sqsResultsQueues).name}";
+      lb-steve-worker.arguments = "--incoming ${(getAttr (sqsName type) resources.sqsQueues).name} --outgoing ${(getAttr (sqsResultsName type) resources.sqsQueues).name}";
 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -36,6 +36,30 @@ let
     };
 
   builds = import ../. {};
+  s3Name = "steve-jobs-${name}";
+  frontendConfig = pkgs.writeText "lb-steve-frontend.config" 
+    ''
+      [state]
+      implementation = dynamodb
+      table = Job
+      env_credentials = true
+      endpoint = dynamodb.${region}.amazonaws.com
+
+      [job-queue]
+      implementation = sqs
+      env_credentials = true
+      sqs_endpoint = sqs.${region}.amazonaws.com
+      sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsName "m2.xlarge"}
+
+      [status-queue]
+      implementation = sqs
+      env_credentials = true
+      sqs_endpoint = sqs.${region}.amazonaws.com
+      sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsResultsName "m2.xlarge"}
+
+      [job-implementations]
+      prefix = s3://${s3Name}/jobs-impl
+    '';
 
 in
 with pkgs.lib;
@@ -44,7 +68,7 @@ with pkgs.lib;
 
   resources.ec2KeyPairs.kp = { inherit region ; accessKeyId = account; };
   resources.sqsQueues = sqsQueues // sqsResultsQueues;
-  resources.s3Buckets."steve-jobs-${name}" = { inherit region ; accessKeyId = account; };
+  resources.s3Buckets."${s3Name}" = { inherit region ; accessKeyId = account; };
 
   resources.iamRoles.worker-role =
     { resources, ... }:
@@ -74,7 +98,7 @@ with pkgs.lib;
                 "s3:List*"
               ],
               "Effect": "Allow",
-              "Resource": ["arn:aws:s3:::steve-jobs-${name}/*", "arn:aws:s3:::steve-jobs-${name}", "arn:aws:s3:::logicblox-downloads" , "arn:aws:s3:::logicblox-downloads/*"]
+              "Resource": ["arn:aws:s3:::${s3Name}/*", "arn:aws:s3:::${s3Name}", "arn:aws:s3:::logicblox-downloads" , "arn:aws:s3:::logicblox-downloads/*"]
             },
             {
               "Action": [
@@ -87,7 +111,7 @@ with pkgs.lib;
               "Resource": [
                 ${pkgs.lib.concatStringsSep "," (map (t: ''
                 "arn:aws:sqs:${region}:${accountId}:steve-jobs-${name}-${sqsName t}",
-                "arn:aws:sqs:${region}:${accountId}:steve-jobs-${name}-${sqsName t}-results"
+                "arn:aws:sqs:${region}:${accountId}:steve-jobs-${name}-${sqsResultsName t}"
                 '') instanceTypes)
                 }
               ]
@@ -98,6 +122,7 @@ with pkgs.lib;
     };
 
   resources.iamRoles.frontend-role =
+    { resources, ... }:
     {
       accessKeyId = account;
       policy = ''
@@ -112,8 +137,11 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [
-                "arn:aws:sqs:us-east-1:${accountId}:steve-jobs",
-                "arn:aws:sqs:us-east-1:${accountId}:steve-jobs-results"
+               ${pkgs.lib.concatStringsSep "," (map (t: ''
+                "arn:aws:sqs:${region}:${accountId}:steve-jobs-${name}-${sqsName t}",
+                "arn:aws:sqs:${region}:${accountId}:steve-jobs-${name}-${sqsResultsName t}"
+                '') instanceTypes)
+                }
               ]
             },
             { 
@@ -123,7 +151,7 @@ with pkgs.lib;
                 "s3:List*"
               ],
               "Effect": "Allow",
-              "Resource": ["arn:aws:s3:::steve-jobs/*", "arn:aws:s3:::steve-jobs"]
+              "Resource": ["arn:aws:s3:::${s3Name}/*", "arn:aws:s3:::${s3Name}"]
             }
           ]
         }
