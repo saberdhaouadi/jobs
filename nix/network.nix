@@ -1,20 +1,36 @@
-{ workers ? 1
+{ workers ? { "m2.xlarge" = 1; "m2.4xlarge" = 0; }
+, instanceTypes ? [ "m2.xlarge" "m2.4xlarge" ]
 , region ? "us-east-1"
 , account ? "logicblox-dev"
+, accountId ? "297794765570"
+, name
 }:
 let
+  workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
+  sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
+  sqsResultsName = type: "${sqsName type}-results";
+  sqsQueue = { inherit region ; accessKeyId = account; visibilityTimeout = 1800; };
+  sqsResultsQueue = { inherit region ; accessKeyId = account; };
+  sqsQueues = with pkgs.lib; listToAttrs (map (n: nameValuePair (sqsName n) sqsQueue) instanceTypes) ;
+  sqsResultsQueues = with pkgs.lib; listToAttrs (map (n: nameValuePair (sqsResultsName n) sqsResultsQueue) instanceTypes) ;
+
   pkgs = import <nixpkgs> {};
   builder-config = import <config> {};
-  worker = 
+  inherit (pkgs.lib) getAttr;
+
+  worker = type:
     { config, pkgs, resources, ... }:
     {
-      imports = [ ./worker.nix ];
+      imports = [ ./worker.nix <lbdevops/logicblox/service-config/datadog.nix> ];
+
+      lb-steve-worker.arguments = "--incoming ${(getAttr (sqsName type) resources.sqsQueues).name} --outgoing ${(getAttr (sqsName type) resources.sqsResultsQueues).name}";
+
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" "ssh-world" "lb-steve-worker" ];
+      deployment.ec2.securityGroups = [ "admin" "ssh-world" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "m2.xlarge";
+      deployment.ec2.instanceType = type;
       deployment.ec2.instanceProfile = resources.iamRoles.worker-role.name;
       ec2.metadata = true;
     };
@@ -24,16 +40,33 @@ let
 in
 with pkgs.lib;
 {
-  network.description = "Steve Jobs";
+  network.description = "Steve Jobs [${name}]";
 
   resources.ec2KeyPairs.kp = { inherit region ; accessKeyId = account; };
+  resources.sqsQueues = sqsQueues // sqsResultsQueues;
+  resources.s3Buckets."steve-jobs-${name}" = { inherit region ; accessKeyId = account; };
 
   resources.iamRoles.worker-role =
+    { resources, ... }:
     {
       accessKeyId = account;
       policy = ''
         {
           "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ec2:TerminateInstances"
+              ],
+              "Condition": {
+                "ArnEquals": {
+                  "ec2:InstanceProfile": "arn:aws:iam::${accountId}:instance-profile/${resources.iamRoles.worker-role.name}"
+                }
+              },
+              "Resource": [
+                "arn:aws:ec2:${region}:${accountId}:instance/*"
+              ]
+            },
             {
               "Action": [
                 "s3:Get*",
@@ -41,7 +74,7 @@ with pkgs.lib;
                 "s3:List*"
               ],
               "Effect": "Allow",
-              "Resource": ["arn:aws:s3:::steve-jobs/*", "arn:aws:s3:::steve-jobs", "arn:aws:s3:::logicblox-downloads" , "arn:aws:s3:::logicblox-downloads/*"]
+              "Resource": ["arn:aws:s3:::steve-jobs-${name}/*", "arn:aws:s3:::steve-jobs-${name}", "arn:aws:s3:::logicblox-downloads" , "arn:aws:s3:::logicblox-downloads/*"]
             },
             {
               "Action": [
@@ -52,8 +85,11 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [
-                "arn:aws:sqs:us-east-1:297794765570:steve-jobs",
-                "arn:aws:sqs:us-east-1:297794765570:steve-jobs-results"
+                ${pkgs.lib.concatStringsSep "," (map (t: ''
+                "arn:aws:sqs:${region}:${accountId}:steve-jobs-${name}-${sqsName t}",
+                "arn:aws:sqs:${region}:${accountId}:steve-jobs-${name}-${sqsName t}-results"
+                '') instanceTypes)
+                }
               ]
             }
           ]
@@ -76,16 +112,24 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [
-                "arn:aws:sqs:us-east-1:297794765570:steve-jobs",
-                "arn:aws:sqs:us-east-1:297794765570:steve-jobs-results"
+                "arn:aws:sqs:us-east-1:${accountId}:steve-jobs",
+                "arn:aws:sqs:us-east-1:${accountId}:steve-jobs-results"
               ]
+            },
+            { 
+              "Action": [
+                "s3:Get*",
+                "s3:Put*",
+                "s3:List*"
+              ],
+              "Effect": "Allow",
+              "Resource": ["arn:aws:s3:::steve-jobs/*", "arn:aws:s3:::steve-jobs"]
             }
           ]
         }
       '';
     };
 
-/*
   frontend =
     { config, pkgs, resources, ... }:
     {
@@ -97,8 +141,6 @@ with pkgs.lib;
       deployment.ec2.instanceType = "m1.medium";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       ec2.metadata = true;
-      networking.enableIPv6 = false;
     };
-*/
 
-} // (listToAttrs (map (n: nameValuePair "worker${toString n}" worker) (range 1 workers)))
+} // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${workerName t}-worker${toString n}" (worker t)) (range 1 (getAttr t workers))) instanceTypes ) ) )
