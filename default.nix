@@ -58,13 +58,17 @@ rec {
     buildLBConfig {
       name = "jobs-frontend-${version src}";
       src = ./frontend;
-      buildInputs = with platform; [ logicblox bloxweb ];
+      buildInputs = with platform; [ logicblox bloxweb pkgs.makeWrapper ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-s3lib=${s3lib}"
         "--with-aws=${aws-java-sdk}"
+        "--with-commons-cli=${commons-cli}"
       ];
+      postInstall = ''
+        wrapProgram $out/bin/lb-steve-frontend --set LOGICBLOX_HOME ${platform.logicblox} --set LB_WEBSERVER_HOME ${platform.bloxweb}
+      '';
     };
 
   client =
