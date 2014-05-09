@@ -20,6 +20,7 @@ public class Main
   private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
   private static String ami = "ami-38df3e50";
   private static String key = "rob";
+  private static String s3Bucket = "steve-jobs";
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
   private static double pctSpot = 0.9;
   private static double spotPrice = 0.6;
@@ -36,6 +37,12 @@ public class Main
   public static void parseArgs(String args[])
   {
     Options options = new Options();
+
+    options.addOption(OptionBuilder.withLongOpt("bucket")
+            .withDescription("S3 bucket name")
+            .hasArg()
+            .withArgName("NAME")
+            .create());
 
     options.addOption(OptionBuilder.withLongOpt("incoming")
             .withDescription("Job incoming queue URL")
@@ -104,6 +111,8 @@ public class Main
     CommandLineParser parser = new BasicParser();
     try {
       CommandLine _cmdline = parser.parse( options, args );
+      if (_cmdline.hasOption("bucket"))
+        s3Bucket = _cmdline.getOptionValue("bucket");
       if (_cmdline.hasOption("incoming"))
         incoming_url = _cmdline.getOptionValue("incoming");
       if (_cmdline.hasOption("outgoing"))
@@ -234,7 +243,7 @@ public class Main
         }
       }
     }
-
+    
     return result;
   }
 
@@ -249,13 +258,21 @@ public class Main
     req.setInstanceType(instanceType);
     req.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
     req.setKeyName(key);
+    req.setUserData(
+      String.format("WORKERARGS=\"--bucket %s --incoming %s --outgoing %s\"",
+        s3Bucket,
+        incoming_url,
+        outgoing_url
+      )
+    );
+
     Collection<String> groups = new ArrayList<String>();
     groups.add("lb-steve-worker");
     req.setSecurityGroups(groups);
-
+    
     RunInstancesResult res = ec2.runInstances(req);
   }
-
+    
   public void createSpotInstances(int nr)
   {
     System.err.println(String.format("Creating %d spot instances", nr));
