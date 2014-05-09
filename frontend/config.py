@@ -43,12 +43,21 @@ rule(
   output='install',
   input = [],
   commands = [
+    'cp -f $(protocols)/lib/java/*.jar $(prefix)/lib/java',
+    'cp -f $(commons_cli)/lib/java/*.jar $(prefix)/lib/java',
+    'cp -Rf $(lb_web)/lib/java/* $(prefix)/lib/java',
+    'cp -f $(lb_web)/config/lb-web-server.config $(prefix)/config',
+    'cp -f $(logicblox)/lib/java/lb-common*.jar $(prefix)/lib/java',
+    'cp -f $(logicblox)/lib/java/guava-15.0.jar $(prefix)/lib/java',
+
+    'rm $(prefix)/lib/java/s3lib*.jar',
+    'rm $(prefix)/lib/java/aws-java*.jar',
+    'rm $(prefix)/lib/java/http*.jar',
+
+    'cp -f $(s3lib)/lib/java/*.jar $(prefix)/lib/java',
     'cp -f $(aws)/lib/java/jackson*.jar $(prefix)/lib/java',
     'cp -f $(aws)/lib/java/aws-java-sdk-1.7.1.jar $(prefix)/lib/java',
     'cp -f $(aws)/lib/java/http*.jar $(prefix)/lib/java',
     'cp -f $(aws)/lib/java/joda-*.jar $(prefix)/lib/java',
-    'cp -f $(lb_web)/config/lb-web-server.config $(prefix)/config',
-    'cp -f $(protocols)/lib/java/*.jar $(prefix)/lib/java',
-    'cp -f $(commons_cli)/lib/java/*.jar $(prefix)/lib/java',
   ]
 )

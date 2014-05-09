@@ -9,22 +9,31 @@ let
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
   sqsResultsName = type: "${sqsName type}-results";
-  sqsQueue = { inherit region ; accessKeyId = account; visibilityTimeout = 1800; };
-  sqsResultsQueue = { inherit region ; accessKeyId = account; };
-  sqsQueues = with pkgs.lib; listToAttrs (map (n: nameValuePair (sqsName n) sqsQueue) instanceTypes) ;
-  sqsResultsQueues = with pkgs.lib; listToAttrs (map (n: nameValuePair (sqsResultsName n) sqsResultsQueue) instanceTypes) ;
+  sqsQueue = type: { inherit region ; accessKeyId = account; visibilityTimeout = 1800; name = sqsName type;};
+  sqsResultsQueue = type: { inherit region ; accessKeyId = account; name = sqsResultsName type; };
+  sqsURL = type: "https://sqs.${region}.amazonaws.com/${accountId}/${sqsName type}";
+  sqsResultsURL = type: "https://sqs.${region}.amazonaws.com/${accountId}/${sqsResultsName type}";
+  sqsQueues = with pkgs.lib; listToAttrs (map (n: nameValuePair (sqsName n) (sqsQueue n)) instanceTypes) ;
+  sqsResultsQueues = with pkgs.lib; listToAttrs (map (n: nameValuePair (sqsResultsName n) (sqsResultsQueue n)) instanceTypes) ;
 
   pkgs = import <nixpkgs> { config.allowUnfree = true; };
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
   jdk7_jce = pkgs.oraclejdk7.override (a: { installjce = true; }) ;
 
+  run-provisioner =
+    pkgs.writeScriptBin "run-provisioner"
+      ''
+        #! /bin/sh
+        exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL "m2.xlarge"} --outgoing ${sqsResultsURL "m2.xlarge"} $@
+      '';
+
   worker = type:
     { config, pkgs, resources, ... }:
     {
       imports = [ ./worker.nix <lbdevops/logicblox/service-config/datadog.nix> ];
 
-      lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName type}".name} --outgoing ${resources.sqsQueues."${sqsResultsName type}".name}";
+      lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName type}".name} --outgoing ${resources.sqsQueues."${sqsResultsName type}".name} --bucket ${s3Name}";
 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -45,22 +54,22 @@ let
       logdir_access = /var/log/lb-steve-worker
       logdir = /var/log/lb-steve-worker
       authentication_cache = $(LB_DEPLOYMENT_HOME)/authentication_cache
+      tmpdir = /tmp
 
       [state]
       implementation = dynamodb
       table = Job
-      env_credentials = true
       endpoint = dynamodb.${region}.amazonaws.com
 
       [job-queue]
       implementation = sqs
-      env_credentials = true
+      iam_role = default
       sqs_endpoint = sqs.${region}.amazonaws.com
       sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsName "m2.xlarge"}
 
       [status-queue]
       implementation = sqs
-      env_credentials = true
+      iam_role = default
       sqs_endpoint = sqs.${region}.amazonaws.com
       sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsResultsName "m2.xlarge"}
 
@@ -75,7 +84,7 @@ with pkgs.lib;
 
   resources.ec2KeyPairs.kp = { inherit region ; accessKeyId = account; };
   resources.sqsQueues = sqsQueues // sqsResultsQueues;
-  resources.s3Buckets."${s3Name}" = { inherit region ; accessKeyId = account; };
+  resources.s3Buckets."${s3Name}-bucket" = { inherit region ; accessKeyId = account; name = s3Name; };
 
   resources.iamRoles.worker-role =
     { resources, ... }:
@@ -105,14 +114,23 @@ with pkgs.lib;
                 "s3:List*"
               ],
               "Effect": "Allow",
-              "Resource": ["arn:aws:s3:::${s3Name}/*", "arn:aws:s3:::${s3Name}", "arn:aws:s3:::logicblox-downloads" , "arn:aws:s3:::logicblox-downloads/*"]
+              "Resource": [
+                "arn:aws:s3:::steve-jobs/*",
+                "arn:aws:s3:::steve-jobs",
+                "arn:aws:s3:::${s3Name}/*",
+                "arn:aws:s3:::${s3Name}",
+                "arn:aws:s3:::logicblox-downloads",
+                "arn:aws:s3:::logicblox-downloads/*"
+              ]
             },
             {
               "Action": [
                 "sqs:ChangeMessageVisibility",
                 "sqs:DeleteMessage",
                 "sqs:ReceiveMessage",
-                "sqs:SendMessage"
+                "sqs:SendMessage",
+                "sqs:SetQueueAttributes",
+                "sqs:GetQueueAttributes"
               ],
               "Effect": "Allow",
               "Resource": [
@@ -122,6 +140,13 @@ with pkgs.lib;
                 '') instanceTypes)
                 }
               ]
+            },
+            {
+              "Action": [
+                "sqs:ListQueues"
+              ],
+              "Effect": "Allow",
+              "Resource": [ "*" ]
             }
           ]
         }
@@ -140,16 +165,27 @@ with pkgs.lib;
                 "sqs:ChangeMessageVisibility",
                 "sqs:DeleteMessage",
                 "sqs:ReceiveMessage",
-                "sqs:SendMessage"
+                "sqs:SendMessage",
+                "sqs:GetQueue",
+                "sqs:GetQueueUrl",
+                "sqs:SetQueueAttributes",
+                "sqs:GetQueueAttributes"
               ],
               "Effect": "Allow",
               "Resource": [
                ${pkgs.lib.concatStringsSep "," (map (t: ''
-                "arn:aws:sqs:${region}:${accountId}:steve-jobs-${name}-${sqsName t}",
-                "arn:aws:sqs:${region}:${accountId}:steve-jobs-${name}-${sqsResultsName t}"
+                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsName t}".name}",
+                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsResultsName t}".name}"
                 '') instanceTypes)
                 }
               ]
+            },
+            {
+              "Action": [
+                "sqs:ListQueues"
+              ],
+              "Effect": "Allow",
+              "Resource": [ "*" ]
             },
             { 
               "Action": [
@@ -163,6 +199,16 @@ with pkgs.lib;
             {
               "Action": [
                 "dynamodb:*"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+                "ec2:Describe*",
+                "ec2:RunInstances",
+                "ec2:RequestSpotInstances",
+                "ec2:CreateTags"
               ],
               "Effect": "Allow",
               "Resource": "*"
@@ -184,6 +230,7 @@ with pkgs.lib;
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       ec2.metadata = true;
 
+      environment.systemPackages = [ builds.frontend builds.worker run-provisioner ];
       systemd.services.lb-steve-frontend = {
         description = "LB Steve Frontend";
         after = [ "network.target" ];

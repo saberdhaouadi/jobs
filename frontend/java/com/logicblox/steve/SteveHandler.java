@@ -107,7 +107,7 @@ public class SteveHandler extends ProtoBufHandler
 
   private SQSQueueHandle getQueueFromConfig(SQSClient sqs, Section config) throws SQSException
   {
-    boolean create = true;
+    boolean create = false;
     if(config.contains("sqs_queue_url"))
     {
       return sqs.getQueue(URI.create(config.getStringError("sqs_queue_url")), create);

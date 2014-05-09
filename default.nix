@@ -4,6 +4,7 @@
 let
   inherit (import <config> {}) releases pkgs version buildLBConfig;
   platform = releases.platform."4.1.1";
+  jdk7_jce = pkgs.oraclejdk7.override (a: { installjce = true; }) ;
 
   buildjar = {name, url, sha256} :
     with pkgs; stdenv.mkDerivation rec {
@@ -66,9 +67,6 @@ rec {
         "--with-aws=${aws-java-sdk}"
         "--with-commons-cli=${commons-cli}"
       ];
-      postInstall = ''
-        wrapProgram $out/bin/lb-steve-frontend --set LOGICBLOX_HOME ${platform.logicblox} --set LB_WEBSERVER_HOME ${platform.bloxweb}
-      '';
     };
 
   client =
@@ -108,7 +106,9 @@ rec {
         "--with-s3lib=${s3lib}"
       ];
       postInstall = ''
-        wrapProgram "$out/bin/lb-steve-worker" --prefix PATH : "${pkgs.python}/bin:${pkgs.openjdk}/bin"
+        for b in lb-steve-worker lb-steve-provisioner; do 
+          wrapProgram "$out/bin/$b" --prefix PATH : "${pkgs.python}/bin:${jdk7_jce}/bin"
+        done
       '';
     };
 
