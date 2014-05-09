@@ -14,9 +14,10 @@ let
   sqsQueues = with pkgs.lib; listToAttrs (map (n: nameValuePair (sqsName n) sqsQueue) instanceTypes) ;
   sqsResultsQueues = with pkgs.lib; listToAttrs (map (n: nameValuePair (sqsResultsName n) sqsResultsQueue) instanceTypes) ;
 
-  pkgs = import <nixpkgs> {};
+  pkgs = import <nixpkgs> { config.allowUnfree = true; };
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
+  jdk7_jce = pkgs.oraclejdk7.override (a: { installjce = true; }) ;
 
   worker = type:
     { config, pkgs, resources, ... }:
@@ -158,6 +159,13 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": ["arn:aws:s3:::${s3Name}/*", "arn:aws:s3:::${s3Name}"]
+            },
+            {
+              "Action": [
+                "dynamodb:*"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
             }
           ]
         }
@@ -180,7 +188,10 @@ with pkgs.lib;
         description = "LB Steve Frontend";
         after = [ "network.target" ];
         wantedBy = [ "multi-user.target" ];
-        path = [ builds.worker ];
+        path = [ jdk7_jce pkgs.bash builds.frontend ];
+        preStart = ''
+          mkdir -p /var/log/lb-steve-worker
+        '';
         serviceConfig = {
           ExecStart = "${builds.frontend}/bin/lb-steve-frontend --config ${frontendConfig}";
           Restart = "always";
