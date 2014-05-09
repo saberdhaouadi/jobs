@@ -39,6 +39,12 @@ let
   s3Name = "steve-jobs-${name}";
   frontendConfig = pkgs.writeText "lb-steve-frontend.config" 
     ''
+      [global]
+      jvm_dump_dir = /tmp
+      logdir_access = /var/log/lb-steve-worker
+      logdir = /var/log/lb-steve-worker
+      authentication_cache = $(LB_DEPLOYMENT_HOME)/authentication_cache
+
       [state]
       implementation = dynamodb
       table = Job
@@ -169,6 +175,18 @@ with pkgs.lib;
       deployment.ec2.instanceType = "m1.medium";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       ec2.metadata = true;
+
+      systemd.services.lb-steve-frontend = {
+        description = "LB Steve Frontend";
+        after = [ "network.target" ];
+        wantedBy = [ "multi-user.target" ];
+        path = [ builds.worker ];
+        serviceConfig = {
+          ExecStart = "${builds.frontend}/bin/lb-steve-frontend --config ${frontendConfig}";
+          Restart = "always";
+          RestartSec = "10";
+        };
+      };
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${workerName t}-worker${toString n}" (worker t)) (range 1 (getAttr t workers))) instanceTypes ) ) )
