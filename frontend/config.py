@@ -9,12 +9,14 @@ lbconfig_package(
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib"})
 aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.7.1"})
+commons_cli_dep = ( "commons_cli", {'default_path': "/opt/logicblox/deps/commons-cli-1.2"})
 
 depends_on(
   logicblox_dep,
   lb_web_dep,
   s3lib_dep,
   aws_dep,
+  commons_cli_dep,
   protocols_dep)
 
 bin_program('lb-steve-frontend')
@@ -34,6 +36,7 @@ jar(
       '$(lb_web)/lib/java/servlet-api-2.5.jar',
       '$(lb_web)/lib/java/jetty-http-7.6.7.v20120910.jar',
       '$(logicblox)/lib/java/guava-15.0.jar',
+      "$(commons_cli)/lib/java/commons-cli.jar",
    ])
 
 rule(
@@ -46,5 +49,6 @@ rule(
     'cp -f $(aws)/lib/java/joda-*.jar $(prefix)/lib/java',
     'cp -f $(lb_web)/config/lb-web-server.config $(prefix)/config',
     'cp -f $(protocols)/lib/java/*.jar $(prefix)/lib/java',
+    'cp -f $(commons_cli)/lib/java/*.jar $(prefix)/lib/java',
   ]
 )

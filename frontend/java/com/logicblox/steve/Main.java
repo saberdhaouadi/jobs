@@ -23,6 +23,7 @@ import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
+import org.apache.commons.cli.*;
 
 public class Main
 {
@@ -115,9 +116,30 @@ public class Main
   private boolean processArgs(String[] args) throws Exception
   {
     String configFilename = "lb-steve-frontend.config";
+    
     File file1 = ConfigLocator.getDefaultConfigFile("lb-web-server.config");
     File file2 = ConfigLocator.getDefaultConfigFile("lb-steve-frontend.config");
-    File file3 = ConfigLocator.getDeploymentConfigFile("lb-steve-frontend.config", _logger);
+    File file3 = null;
+
+    Options options = new Options();
+    options.addOption(OptionBuilder.withLongOpt("config")
+            .withDescription("Configuration file")
+            .hasArg()
+            .withArgName("FILE")
+            .create());
+            
+    CommandLineParser parser = new BasicParser();
+    try {
+      CommandLine _cmdline = parser.parse( options, args );
+      if (_cmdline.hasOption("config"))
+        file3 = new File(_cmdline.getOptionValue("config"));
+    }
+    catch( ParseException exp ) {
+      System.err.println( "Error: " + exp.getMessage() );
+      HelpFormatter formatter = new HelpFormatter();
+      formatter.printHelp( "lb-steve-provisioner", options );
+      System.exit(1);
+    }
 
     if(file1 != null)
       _config = new Config(file1, _config);
