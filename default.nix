@@ -3,7 +3,7 @@
 }:
 let
   inherit (import <config> {}) releases pkgs version buildLBConfig;
-  platform = releases.platform."4.0.8";
+  platform = releases.platform."4.1.1";
 
   buildjar = {name, url, sha256} :
     with pkgs; stdenv.mkDerivation rec {
