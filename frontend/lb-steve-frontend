@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 prefix=$(readlink -f $(dirname $BASH_SOURCE)/..)
-cp=$LOGICBLOX_HOME/\*:$LB_WEBSERVER_HOME/lib/java/\*:$prefix/lib/java/\*
+cp=$prefix/lib/java/\*
 
 # Need to set LB_WEBSERVER_HOME to prefix to allow bloxweb config to find default config
 export LB_WEBSERVER_HOME=$prefix
