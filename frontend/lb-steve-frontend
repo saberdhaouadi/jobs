@@ -1,100 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env bash
 
-import sys
-import os
-import StringIO
-import time
+prefix=$(readlink -f $(dirname $BASH_SOURCE)/..)
+cp=$LOGICBLOX_HOME/\*:$LB_WEBSERVER_HOME/lib/java/\*:$prefix/lib/java/\*
 
-bindir = os.path.dirname(os.path.realpath(__file__))
-prefix = os.path.dirname(bindir)
-lbprefix = os.environ.get('LOGICBLOX_HOME')
-lbwebprefix = os.environ.get('LB_WEBSERVER_HOME')
+# Need to set LB_WEBSERVER_HOME to prefix to allow bloxweb config to find default config
+export LB_WEBSERVER_HOME=$prefix
 
-sys.path.insert(0, '%s/lib/python' % lbprefix)
-sys.path.insert(0, '%s/lib/python' % lbwebprefix)
-sys.path.insert(0, '%s/lib/python' % prefix)
+export LB_DEPLOYMENT_HOME=${LB_DEPLOYMENT_HOME:=$HOME}
+mkdir -p $LB_DEPLOYMENT_HOME/logs/current
 
-import argparse
-
-def cmd_start(args):
-    jetty_version = '7.6.7.v20120910'
-
-    lb_deps = [
-      'lb-common.jar',
-      'lb-connectblox.jar',
-      'lb-common-protocol.jar',
-      'junit-4.8.2.jar',
-      'slf4j-api-1.7.1.jar',
-      'slf4j-log4j12-1.7.1.jar',
-    ]
-
-    lbweb_deps = [
-      'lb-web-server.jar',
-      'bloxweb-credentials.jar',
-      'bloxweb-email.jar',
-    ]
-
-    prefix_deps = [
-        'jcommander-1.29.jar',
-        'aws-java-sdk-1.7.1.jar',
-        'httpcore-4.2.jar',
-        'httpclient-4.2.3.jar',
-        'joda-time-2.2.jar',
-        'lb-steve-frontend.jar',
-        'lb-steve-protocols.jar',
-        'jackson-annotations-2.1.1.jar',
-        'jackson-core-2.1.1.jar',
-        'jackson-databind-2.1.1.jar',
-    ]
-# commons-codec-1.9.jar
-# s3lib-0.2.jar
-# commons-io-2.4.ja
-# commons-logging-1.1.1.jar
-
-    lb_deps_paths = [lbprefix + '/lib/java/' + name for name in lb_deps]
-    lbweb_deps_paths = [lbwebprefix + '/lib/java/' + name for name in lbweb_deps]
-    prefix_deps_paths = [prefix + '/lib/java/' + name for name in prefix_deps]
-
-    classpath = ':'.join(prefix_deps_paths + lbweb_deps_paths + lb_deps_paths)
-
-    subenv = os.environ.copy()
-    subenv['LB_WEBSERVER_HOME'] = prefix
-
-    java_args = ['java']
-    java_args.extend(['-cp', classpath, 'com.logicblox.steve.Main', prefix])
-    java_args = [os.path.expandvars(arg) for arg in java_args]
-
-    os.execvpe('java', java_args, subenv)
-
-class MyFormatter(argparse.ArgumentDefaultsHelpFormatter):
-    def __init__(self, prog):
-        super(MyFormatter, self).__init__(prog, width=110, max_help_position=30)
-
-def argparser():
-
-    parser = argparse.ArgumentParser(prog="lb-steve-frontend", formatter_class=MyFormatter)
-
-    subparsers = parser.add_subparsers(title='commands')
-
-    # Use better formatter for commands, and use the standard of
-    # invoking the function cmd_{subcommand}
-    def add_command(cmd, help):
-        p = subparsers.add_parser(cmd, help=help, formatter_class=MyFormatter)
-        fun = globals()['cmd_' + cmd.replace('-', '_')]
-        p.set_defaults(func=fun)
-        return p
-
-    p = add_command('start', help="Start the lb-steve-frontend")
-    return parser
-
-def run(command_line):
-    parser = argparser()
-    args = parser.parse_args(command_line)
-    return args.func(args)
-
-def main():
-    command_line = sys.argv[1:]
-    run(command_line)
-
-if __name__ == '__main__':
-    main()
+exec java -cp "$cp" com.logicblox.steve.Main $@
