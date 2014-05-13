@@ -230,7 +230,7 @@ with pkgs.lib;
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       ec2.metadata = true;
 
-      environment.systemPackages = [ builds.frontend builds.worker run-provisioner ];
+      environment.systemPackages = [ builds.frontend builds.worker run-provisioner jdk7_jce ];
       systemd.services.lb-steve-frontend = {
         description = "LB Steve Frontend";
         after = [ "network.target" ];
