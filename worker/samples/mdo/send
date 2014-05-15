@@ -1,6 +1,9 @@
 #! /usr/bin/env bash
 set -e
 
+date=$1
+date=${date:="20140515"}
+
 function send_job() 
 {
   job=$1
@@ -10,7 +13,7 @@ function send_job()
   aws sqs send-message --queue-url https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs --message-body "$(cat <<EOF
 { "job": "$jobid",
   "job_impl": "00cdf625-70b1-4096-9114-fbe04b6d21ff",
-  "input": [ { "url": "s3://steve-jobs/data/crate/mdo/20140503/$job/sku" }, { "url": "s3://steve-jobs/data/crate/mdo/20140503/to_mdo_engine_20140503.tgz" } ],
+  "input": [ { "url": "s3://steve-jobs/data/crate/mdo/$date/$job/sku" }, { "url": "s3://steve-jobs/data/crate/mdo/$date/to_mdo_engine_$date.tgz" } ],
   "output": "s3://steve-jobs/jobs/$jobid/out"
 }
 EOF
