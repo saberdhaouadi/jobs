@@ -192,6 +192,17 @@ public class Main
       createOnDemandInstances(odNeeded);
   }
 
+  private String getUserData()
+  {
+    return Base64.encodeBase64String(
+            String.format("WORKERARGS=\"--bucket %s --incoming %s --outgoing %s\"",
+              s3Bucket,
+              incoming_url,
+              outgoing_url
+             ).getBytes()
+          );
+  }
+
   // get number of spot instances that are not yet terminated
   private int getNumberOfCurrentSpotInstances()
   {
@@ -206,7 +217,6 @@ public class Main
     DescribeSpotInstanceRequestsResult spres = ec2.describeSpotInstanceRequests(spreq);
     for(SpotInstanceRequest r: spres.getSpotInstanceRequests())
     {
-      System.out.println(r.getStatus().getCode());
       if( r.getStatus().getCode().startsWith("pending") || r.getStatus().getCode().equals("fulfilled"))
       {
         result++;
@@ -256,21 +266,19 @@ public class Main
     req.setInstanceType(instanceType);
     req.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
     req.setKeyName(key);
-    req.setUserData(
-      Base64.encodeBase64String(
-        String.format("WORKERARGS=\"--bucket %s --incoming %s --outgoing %s\"",
-          s3Bucket,
-          incoming_url,
-          outgoing_url
-        ).getBytes()
-      )
-    );
+    req.setUserData(getUserData);
 
     Collection<String> groups = new ArrayList<String>();
     groups.add("lb-steve-worker");
     req.setSecurityGroups(groups);
 
     RunInstancesResult res = ec2.runInstances(req);
+
+    try {
+        Thread.sleep(60000);
+    }
+    catch(Exception e) {
+    }
 
     for (Instance instance : res.getReservation().getInstances())
     {
@@ -307,6 +315,7 @@ public class Main
     spec.setInstanceType(instanceType);
     spec.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
     spec.setKeyName(key);
+    spec.setUserData(getUserData());
 
     Collection<String> groups = new ArrayList<String>();
     groups.add("lb-steve-worker");
@@ -314,6 +323,11 @@ public class Main
     req.setLaunchSpecification(spec);
 
     RequestSpotInstancesResult res = ec2.requestSpotInstances(req);
+    try {
+        Thread.sleep(60000);
+    }
+    catch(Exception e) {
+    }
     for(SpotInstanceRequest sir: res.getSpotInstanceRequests())
     {
       createTags(sir.getSpotInstanceRequestId());
