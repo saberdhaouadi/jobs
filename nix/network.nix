@@ -21,13 +21,6 @@ let
   inherit (pkgs.lib) getAttr;
   jdk7_jce = pkgs.oraclejdk7.override (a: { installjce = true; }) ;
 
-  run-provisioner =
-    pkgs.writeScriptBin "run-provisioner"
-      ''
-        #! /bin/sh
-        exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL "m2.xlarge"} --outgoing ${sqsResultsURL "m2.xlarge"} $@
-      '';
-
   worker = type:
     { config, pkgs, resources, ... }:
     {
@@ -58,6 +51,7 @@ let
 
       [state]
       implementation = dynamodb
+      iam_role = default
       table = Job
       endpoint = dynamodb.${region}.amazonaws.com
 
@@ -208,10 +202,11 @@ with pkgs.lib;
                 "ec2:Describe*",
                 "ec2:RunInstances",
                 "ec2:RequestSpotInstances",
-                "ec2:CreateTags"
+                "ec2:CreateTags",
+                "iam:PassRole"
               ],
               "Effect": "Allow",
-              "Resource": "*"
+              "Resource": [ "*" ]
             }
           ]
         }
@@ -220,6 +215,15 @@ with pkgs.lib;
 
   frontend =
     { config, pkgs, resources, ... }:
+    let
+      run-provisioner =
+        pkgs.writeScriptBin "run-provisioner"
+          ''
+            #! /bin/sh
+            source /etc/profile
+            exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL "m2.xlarge"} --outgoing ${sqsResultsURL "m2.xlarge"} --max 200 --role ${resources.iamRoles.worker-role.name} $@
+          '';
+    in
     {
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -230,7 +234,9 @@ with pkgs.lib;
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       ec2.metadata = true;
 
-      environment.systemPackages = [ builds.frontend builds.worker run-provisioner jdk7_jce ];
+      networking.firewall.allowedTCPPorts = [8080];
+
+      environment.systemPackages = [ builds.frontend builds.client builds.worker run-provisioner jdk7_jce pkgs.awscli ];
       systemd.services.lb-steve-frontend = {
         description = "LB Steve Frontend";
         after = [ "network.target" ];
@@ -245,6 +251,19 @@ with pkgs.lib;
           RestartSec = "10";
         };
       };
+
+      systemd.services.run-provisioner = {
+        description = "Steve Provisioner";
+        path = [ jdk7_jce ];
+        serviceConfig = {
+          ExecStart = "${run-provisioner}/bin/run-provisioner";
+        };
+      };
+
+      systemd.timers.run-provisioner =
+        { wantedBy = [ "timers.target" ];
+          timerConfig.OnCalendar = "*:0/5";
+        };
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${workerName t}-worker${toString n}" (worker t)) (range 1 (getAttr t workers))) instanceTypes ) ) )
