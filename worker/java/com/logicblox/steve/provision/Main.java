@@ -269,7 +269,7 @@ public class Main
     req.setUserData(getUserData);
 
     Collection<String> groups = new ArrayList<String>();
-    groups.add("lb-steve-worker");
+    groups.add("admin");
     req.setSecurityGroups(groups);
 
     RunInstancesResult res = ec2.runInstances(req);
@@ -318,7 +318,7 @@ public class Main
     spec.setUserData(getUserData());
 
     Collection<String> groups = new ArrayList<String>();
-    groups.add("lb-steve-worker");
+    groups.add("admin");
     spec.setSecurityGroups(groups);
     req.setLaunchSpecification(spec);
 
