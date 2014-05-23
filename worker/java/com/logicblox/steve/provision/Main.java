@@ -266,7 +266,7 @@ public class Main
     req.setInstanceType(instanceType);
     req.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
     req.setKeyName(key);
-    req.setUserData(getUserData);
+    req.setUserData(getUserData());
 
     Collection<String> groups = new ArrayList<String>();
     groups.add("admin");

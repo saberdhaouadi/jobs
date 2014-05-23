@@ -47,6 +47,7 @@ jar(
      "$(logicblox)/lib/java/protobuf-2.5.0.jar",
      "$(lb_web)/lib/java/protobuf-java-format-1.3.jar",
      "$(lb_web)/lib/java/gson-2.2.4.jar",
+     "$(aws)/lib/java/joda-time-2.2.jar",
      "$(lb_web)/lib/java/lb-web-client.jar",
      "$(lb_web)/lib/java/lb-web-server.jar",
    ])

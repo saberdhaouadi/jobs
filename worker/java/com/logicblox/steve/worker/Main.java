@@ -9,6 +9,7 @@ import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.googlecode.protobuf.format.JsonFormat;
+import com.amazonaws.util.EC2MetadataUtils;
 
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.steve.protocol.Backend;
@@ -23,9 +24,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import org.joda.time.format.ISODateTimeFormat;
+import com.google.gson.Gson;
+import org.joda.time.DateTime;
+
 
 public class Main
 {
+  class EC2DynamicMetadata {
+    String pendingTime;
+  }
+
   private S3Client client;
   AmazonSQS sqs;
 
@@ -232,6 +241,13 @@ public class Main
     sqs.setRegion(Region.getRegion(Regions.US_EAST_1));
   }
 
+  private EC2DynamicMetadata getMetadata()
+  {
+    String js = EC2MetadataUtils.getData("/latest/dynamic/instance-identity/document");
+    EC2DynamicMetadata md = new Gson().fromJson(js, EC2DynamicMetadata.class);
+    return md;
+  }
+
   private com.amazonaws.services.sqs.model.Message fetchJob() throws InterruptedException, IOException {
     long waitingSince = System.currentTimeMillis();
 
@@ -243,8 +259,28 @@ public class Main
       if (messages.size() == 1)
         return messages.get(0);
 
-      // If idling for more than 5 minutes, poweroff machine
-      if (_shutdownOnIdle && (System.currentTimeMillis() - waitingSince) / 1000 > _idle*60)
+      // If idling for more than x minutes, poweroff machine
+      boolean idleTooLong = (System.currentTimeMillis() - waitingSince) / 1000 > _idle*60;
+
+      long nextInstanceHour;
+      try
+      {
+        DateTime dt = ISODateTimeFormat.dateTimeParser().parseDateTime(getMetadata().pendingTime);
+
+        long diffInMillis = DateTime.now().getMillis() - dt.getMillis();
+        nextInstanceHour = 60 - ((diffInMillis % 3600000) / 60000);
+      }
+      catch(Exception e)
+      {
+        // If anything goes wrong in determining the number of minutes till next instance
+        // hour, default to 0, which will cause the instance to shutdown when idling for x
+        // minutes
+        nextInstanceHour = 0;
+        System.err.println("Error determining start of next instance hour.");
+        e.printStackTrace();
+      }
+
+      if (_shutdownOnIdle && idleTooLong && nextInstanceHour <= 3)
       {
         try
         {
