@@ -86,18 +86,19 @@ with open('./jobs') as f:
 
 jobs = [ s.strip() for s in jobs]
 ts = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+ds = sys.argv[1]
 
 reqs = []
 def worker(j):
     reqs.append((j, json.dumps(
       { 'create': { 
           'client_id': str(uuid.uuid4()),
-          'job_impl': '00cdf625-70b1-4096-9114-fbe04b6d21ff',
+          'job_impl': '10b19000-ce92-41c2-b6af-db4dbb8ccae3',
           'input': [ 
-            { 'url': 's3://steve-jobs/data/crate/mdo/20140517/'+j+'/sku' }, 
-            { 'url': 's3://steve-jobs/data/crate/mdo/20140517/to_mdo_engine_20140517.tgz' }
+            { 'url': 's3://steve-jobs/data/crate/mdo/'+ds+'/'+j+'/sku' }, 
+            { 'url': 's3://steve-jobs/data/crate/mdo/'+ds+'/to_mdo_engine_'+ds+'.tgz' }
           ],
-          'output': 's3://steve-jobs/data/crate/mdo/20140517/out/'+ts+'/'+j
+          'output': 's3://steve-jobs/data/crate/mdo/'+ds+'/out/'+ts+'/'+j
         }
       })))
 
@@ -107,14 +108,14 @@ headers = {'content-type': 'application/json'}
 res = []
 def post_worker(t):
     (j, k) = t 
-    res.append((j, json.loads(requests.post('http://75.101.216.239:8080/job', data=k, headers=headers).text)['create']['job_id']))
+    res.append((j, json.loads(requests.post('http://54.237.180.56:8080/job', data=k, headers=headers).text)['create']['job_id']))
 
 try:
     run_tasks(nr_workers=20, tasks=reqs, worker_fun=post_worker)
 except:
     1
 
-print res
+print 's3://steve-jobs/data/crate/mdo/'+ds+'/out/'+ts
 
 with open('./sent','w') as f:
     for (j,i) in res:
