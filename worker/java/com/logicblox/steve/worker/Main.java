@@ -49,7 +49,6 @@ public class Main
         try
         {
           sqs.changeMessageVisibility(_incomingUrl, _handle, 300);
-          System.err.println("WARNING: Updated message visibility timeout to 300 seconds.");
         }
         catch(Exception e)
         {
