@@ -28,11 +28,46 @@ import org.joda.time.format.ISODateTimeFormat;
 import com.google.gson.Gson;
 import org.joda.time.DateTime;
 
-
 public class Main
 {
   class EC2DynamicMetadata {
     String pendingTime;
+  }
+
+  private class ResetMessageVisibilityTimeout implements Runnable
+  {
+    private String _handle;
+    public ResetMessageVisibilityTimeout(String handle)
+    {
+      _handle = handle;
+    }
+
+    @Override
+    public void run() {
+      while(!Thread.currentThread().isInterrupted())
+      {
+        try
+        {
+          sqs.changeMessageVisibility(_incomingUrl, _handle, 300);
+          System.err.println("WARNING: Updated message visibility timeout to 300 seconds.");
+        }
+        catch(Exception e)
+        {
+          // We don't care much about exceptions updating the message
+          // visibility timeout, we'll just log it.
+          System.err.println("WARNING: Failed to update visibility timeout for message: " + e.getMessage());
+        }
+
+        try
+        {
+          Thread.sleep(60000);
+        }
+        catch(InterruptedException e)
+        {
+          Thread.currentThread().interrupt();
+        }
+      }
+    }
   }
 
   private S3Client client;
@@ -204,6 +239,8 @@ public class Main
               msg.getTimeout()
       );
 
+      Thread resetTimeout = new Thread(new ResetMessageVisibilityTimeout(job.getReceiptHandle()));
+      resetTimeout.start();
       try
       {
         steve.run();
@@ -215,6 +252,7 @@ public class Main
       }
       finally
       {
+        resetTimeout.interrupt();
         removeIncoming(job);
       }
     }
