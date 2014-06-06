@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.google.common.base.Function;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -21,6 +23,7 @@ public class FakeDatabase implements Database
   private Map<String, Account> _accounts;
   private Map<String, Job> _jobFromId;
   private Map<String, Job> _jobFromClientId;
+  private Table<String, String, JobImpl> _jobImpls;
 
   private JobState _jobState;
 
@@ -33,6 +36,7 @@ public class FakeDatabase implements Database
     _jobFromClientId = new HashMap<String, Job>();
 
     _jobState = jobState;
+    _jobImpls = HashBasedTable.create();
 
     addUser(
       new User(
@@ -86,7 +90,7 @@ public class FakeDatabase implements Database
 
   @Override
   public synchronized ListenableFuture<Job> createJob(
-    String userid, String clientId, String jobImpl, Collection<Data> inputs, String output)
+    String userId, String clientId, String implId, Collection<Data> inputs, String output)
   {
     Job job;
 
@@ -96,11 +100,22 @@ public class FakeDatabase implements Database
     }
     else
     {
+      User user = getUser(userId);
+      Account account = getAccount(user.getAccountId());
+
+      JobImpl impl = getJobImpl(account, implId);
+      if(impl == null)
+      {
+        return Futures.immediateFailedFuture(
+          new ServiceException(
+            new SimpleErrorCode("NO_SUCH_JOB_IMPL", 400, "Job implementation '" + implId + "' does not exist")));
+      }
+
       String id = UUID.randomUUID().toString();
       
       job = new Job();
       job.setId(id);
-      job.setImpl(jobImpl);
+      job.impl = impl;
       job.setClientId(clientId);
       job.setInputData(inputs);
       job.setOutputPrefix(output);
@@ -182,5 +197,43 @@ public class FakeDatabase implements Database
     }
     else
       return Futures.immediateFuture(job);
+  }
+
+  @Override
+  public synchronized ListenableFuture<JobImpl> getJobImpl(String userId, String implId)
+  {
+    User user = getUser(userId);
+    Account account = getAccount(user.getAccountId());
+
+    JobImpl impl = getJobImpl(account, implId);
+    if(impl == null)
+    {
+      return Futures.immediateFailedFuture(
+        new ServiceException(
+          new SimpleErrorCode("NO_SUCH_JOB_IMPL", 400, "Job implementation '" + implId + "' does not exist")));
+    }
+    else
+      return Futures.immediateFuture(impl);
+  }
+
+  public synchronized JobImpl getJobImpl(Account account, String implId)
+  {
+    return _jobImpls.get(account.getId(), implId);
+  }
+
+  @Override
+  public synchronized ListenableFuture<JobImpl> setJobImpl(String userId, String implId, Data archive)
+  {
+    User user = getUser(userId);
+    Account account = getAccount(user.getAccountId());
+
+    JobImpl impl = new JobImpl();
+    impl.account = account.getId();
+    impl.id = implId;
+    impl.archive = archive;
+    
+    _jobImpls.put(impl.account, impl.id, impl);
+
+    return Futures.immediateFuture(impl);
   }
 }

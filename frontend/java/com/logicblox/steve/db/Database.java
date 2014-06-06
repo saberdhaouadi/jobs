@@ -13,7 +13,9 @@ import com.logicblox.steve.common.Data;
  * Interface for storing data about jobs. The implementations also
  * need to include necessary verifications. The methods are on purpose
  * coarse grained to give the implementations freedom of using single
- * vs many transactions to check requests.
+ * vs many transactions to check requests. This is also the reason why
+ * most arguments are primivite types, and not classes like Account or
+ * User.
  */
 public interface Database
 {
@@ -30,8 +32,15 @@ public interface Database
     Collection<Data> inputs,
     String output);
 
-  // public ListenableFuture<JobImpl> setJobImpl(String accountId, String id, S3File file);
-  // public ListenableFuture<S3File> getJobImpl(String accountId, String id);
+  /**
+   * Store a job a implementation
+   */
+  public ListenableFuture<JobImpl> setJobImpl(String userid, String id, Data file);
+
+  /**
+   * Get information on a job implementation
+   */
+  public ListenableFuture<JobImpl> getJobImpl(String userid, String id);
 
   /**
    * Returns Job with the state field populated, and the full status

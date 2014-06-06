@@ -11,8 +11,9 @@ public class Job
 {
   private String _id;
   private String _clientId;
-  private String _impl;
   private String _output;
+
+  public JobImpl impl;
 
   private Collection<Data> _inputData;
   private Collection<Data> _outputData;
@@ -28,16 +29,6 @@ public class Job
   public String getId()
   {
     return _id;
-  }
-
-  public void setImpl(String v)
-  {
-    _impl = v;
-  }
-
-  public String getImpl()
-  {
-    return _impl;
   }
 
   public void setClientId(String v)

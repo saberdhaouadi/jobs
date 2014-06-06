@@ -7,10 +7,12 @@ lbconfig_package(
   default_targets=['jars'])
 
 aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.7.1"})
+s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
 
 depends_on(
   logicblox_dep,
   lb_web_dep,
+  s3lib_dep,
   aws_dep
 )
 
@@ -41,6 +43,7 @@ jar(
       '$(logicblox)/lib/java/protobuf-2.5.0.jar',
       '$(logicblox)/lib/java/guava-15.0.jar',
       '$(logicblox)/lib/java/lb-common.jar',
+      '$(s3lib)/lib/java/s3lib-0.2.jar',
       '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
       '$(lb_web)/lib/java/lb-web-client.jar',
       '$(lb_web)/lib/java/lb-web-server.jar',

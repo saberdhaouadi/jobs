@@ -51,6 +51,7 @@ import com.logicblox.steve.db.Database;
 import com.logicblox.steve.db.DynamoJobState;
 import com.logicblox.steve.db.FakeDatabase;
 import com.logicblox.steve.db.Job;
+import com.logicblox.steve.db.JobImpl;
 import com.logicblox.steve.db.Status;
 import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
@@ -161,7 +162,7 @@ public class SteveHandler extends ProtoBufHandler
   {
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
 
-    // TODO remove
+    // TODO remove debugging
     System.out.println(request.toString());
 
     ListenableFuture<Frontend.Response> resp;
@@ -177,7 +178,7 @@ public class SteveHandler extends ProtoBufHandler
     {
       resp = handleResult(httpRequest, httpResponse, request.getResult());
     }
-    else if(request.hasKill())
+    else if(request.hasCancel())
     {
       resp = Futures.immediateFailedFuture(
         new HttpException(HttpStatus.BAD_REQUEST_400, "Not yet implemented"));
@@ -198,16 +199,18 @@ public class SteveHandler extends ProtoBufHandler
   private ListenableFuture<Frontend.Response> handleCreate(
     HttpServletRequest httpRequest,
     HttpServletResponse httpResponse, 
-    Frontend.CreateRequest req)
+    Frontend.JobCreateRequest req)
   {
+    // TODO require authentication and use actual user
     ListenableFuture<Job> job =
       _db.createJob(
-        "martin", // TODO require authentication and use actual user
+        "martin",
         req.getClientId(),
         req.getJobImpl(),
         Conversions.convertFrontendFileToData(req.getInputList()),
         req.getOutput());
 
+    // Once we have the job stored in the database, submit it to the queue
     job = Futures.transform(job, new AsyncFunction<Job, Job>()
     {
       public ListenableFuture<Job> apply(Job j)
@@ -216,6 +219,8 @@ public class SteveHandler extends ProtoBufHandler
       }
     });
 
+    // Once the job is submitted, construct a response to return the
+    // client
     return Futures.transform(
       job,
       new Function<Job, Frontend.Response>()
@@ -224,7 +229,7 @@ public class SteveHandler extends ProtoBufHandler
         {
           Frontend.Response.Builder response = Frontend.Response.newBuilder();
           response.setCreate(
-            Frontend.CreateResponse.newBuilder()
+            Frontend.JobCreateResponse.newBuilder()
             .setJobId(job.getId()));
           
           return response.build();
@@ -237,7 +242,7 @@ public class SteveHandler extends ProtoBufHandler
     HttpServletResponse httpResponse, 
     final Frontend.StateRequest req)
   {
-    ListenableFuture<Job> job = _db.getState(req.getJobId(), req.hasDetail() && req.getDetail());
+    ListenableFuture<Job> job = _db.getState(req.getId(), req.hasDetail() && req.getDetail());
 
     return Futures.transform(
       job,
@@ -282,7 +287,7 @@ public class SteveHandler extends ProtoBufHandler
   private ListenableFuture<Frontend.Response> handleResult(
     HttpServletRequest httpRequest,
     HttpServletResponse httpResponse, 
-    final Frontend.ResultRequest req)
+    final Frontend.JobResultRequest req)
   {
     ListenableFuture<Job> job = _db.getResult(req.getJobId());
     
@@ -292,7 +297,7 @@ public class SteveHandler extends ProtoBufHandler
       {
         public ListenableFuture<Frontend.Response> apply(Job job)
         {
-          Frontend.ResultResponse.Builder b = Frontend.ResultResponse.newBuilder();
+          Frontend.JobResultResponse.Builder b = Frontend.JobResultResponse.newBuilder();
 
           if(!job.isSucceeded())
           {
@@ -319,7 +324,7 @@ public class SteveHandler extends ProtoBufHandler
     final Frontend.ImplAddRequest req)
   throws IOException
   {
-    // TODO finally remove
+    // TODO finally remove the temporary file
     final File tmpFile = File.createTempFile("jobimpl", null, _tmpDir);
     final String id = UUID.randomUUID().toString();
 
@@ -372,11 +377,42 @@ public class SteveHandler extends ProtoBufHandler
       {
         public ListenableFuture<S3File> apply(S3File input) throws IOException
         {
+          URI jobUri = URI.create(_jobImplPrefix + "/" + id + ".tar.gz");
+
           // TODO verify etag again
-          return _s3client.upload(input.getLocalFile(), URI.create(_jobImplPrefix + "/" + id));
+          return _s3client.upload(input.getLocalFile(), jobUri);
         }
       });
 
-    return null;
+    ListenableFuture<JobImpl> jobImpl = Futures.transform(
+      newFile,
+      new AsyncFunction<S3File, JobImpl>()
+      {
+        public ListenableFuture<JobImpl> apply(S3File input) throws IOException
+        {
+          // TODO use actual authenticated user
+          return _db.setJobImpl(
+            "martin",
+            req.getId(),
+            Conversions.convertS3FileToData(input));
+        }
+      });
+
+    return Futures.transform(
+      jobImpl,
+      new Function<JobImpl, Frontend.Response>()
+      {
+        public Frontend.Response apply(JobImpl impl)
+        {
+          // TODO revise server-side implementation to correctly use an
+          // identifier (not TODO)
+          Frontend.Response.Builder response = Frontend.Response.newBuilder();
+          response.setImplAdd(
+            Frontend.ImplAddResponse.newBuilder()
+            .setId("TODO"));
+          
+          return response.build();
+        }
+      });
   }
 }

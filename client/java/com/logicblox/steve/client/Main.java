@@ -31,6 +31,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
+import com.google.common.base.Function;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -59,12 +60,19 @@ import com.logicblox.bloxweb.client.ClientConfigUtils;
 import com.logicblox.bloxweb.client.ProtobufServiceClient;
 import com.logicblox.bloxweb.client.ServiceConnector;
 import com.logicblox.bloxweb.client.Transport;
+import com.logicblox.bloxweb.config.Config;
+import com.logicblox.bloxweb.config.ConfigLocator;
+
 import com.logicblox.common.Option;
 import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
 
+import com.logicblox.s3lib.S3Client;
+import com.logicblox.s3lib.S3File;
+
+import com.logicblox.steve.common.S3Utils;
 import com.logicblox.steve.protocol.Frontend;
 
 public class Main
@@ -95,6 +103,7 @@ public class Main
   }
 
   private JCommander _commander = new JCommander();
+  private Config _config = null;
   private final Logger _logger;
 
   public Main()
@@ -105,7 +114,17 @@ public class Main
     _commander.addCommand("create-job", new CreateJobCommand());
     _commander.addCommand("status", new StatusCommand());
     _commander.addCommand("output", new OutputCommand());
+    _commander.addCommand("upload-impl", new UploadJobImplCommand());
+    // _commander.addCommand("list-impl", new ListJobImplCommand());
     _commander.addCommand("help", new HelpCommand());
+
+    File file1 = ConfigLocator.getDefaultConfigFile("lb-steve-client.config");
+    File file2 = ConfigLocator.getDeploymentConfigFile("lb-steve-client.config", _logger);
+
+    if(file1 != null)
+      _config = new Config(file1, _config);
+    if(file2 != null)
+      _config = new Config(file2, _config);
   }
 
   class MainCommand
@@ -122,9 +141,15 @@ public class Main
     public abstract void invoke() throws Exception;
   }
 
+  protected URI createUniqueInputURI() throws URISyntaxException
+  {
+    String id = UUID.randomUUID().toString();
+    return URI.create(_config.getStringError("default_input_prefix") + "/" + id);
+  }
+
   protected ProtobufServiceClient getProtobufClient() throws URISyntaxException
   {
-    String service = "http://localhost:8080/job";
+    String service = _config.getStringError("service");
     URI serviceUri = new URI(service);
     ServiceConnector connector = ServiceConnector.create(serviceUri.toString());
 
@@ -178,8 +203,8 @@ public class Main
 
       String clientId = UUID.randomUUID().toString();
 
-      Frontend.CreateRequest.Builder createReq = 
-        Frontend.CreateRequest.newBuilder()
+      Frontend.JobCreateRequest.Builder createReq = 
+        Frontend.JobCreateRequest.newBuilder()
         .setClientId(clientId)
         .setJobImpl(_impl)
         .setOutput(_output);
@@ -218,7 +243,7 @@ public class Main
   @Parameters(commandDescription = "Check status of jobs")
   class StatusCommand extends Command
   {
-    @Parameter(description = "Job identifiers")
+    @Parameter(description = "Job identifiers", required = true)
     List<String> _ids;
 
     @Override
@@ -235,7 +260,7 @@ public class Main
           Frontend.Request.newBuilder()
           .setState(
             Frontend.StateRequest.newBuilder()
-            .setJobId(id)
+            .setId(id)
             .setDetail(true));
 
         Frontend.Response.Builder resp = Frontend.Response.newBuilder();
@@ -273,7 +298,7 @@ public class Main
   @Parameters(commandDescription = "Get output of a job")
   class OutputCommand extends Command
   {
-    @Parameter(description = "Job identifiers")
+    @Parameter(description = "Job identifiers", required = true)
     List<String> _ids;
 
     @Override
@@ -285,7 +310,7 @@ public class Main
         Frontend.Request.Builder req =
           Frontend.Request.newBuilder()
           .setResult(
-            Frontend.ResultRequest.newBuilder()
+            Frontend.JobResultRequest.newBuilder()
             .setJobId(id));
 
         Frontend.Response.Builder resp = Frontend.Response.newBuilder();
@@ -320,6 +345,77 @@ public class Main
     }
   }
 
+  /**
+   * Upload job implementation
+   */
+  @Parameters(commandDescription = "Upload new job implementation")
+  class UploadJobImplCommand extends Command
+  {
+    @Parameter(names = {"--impl"}, description = "Job implementation identifier", required = true)
+    String _impl;
+
+    @Parameter(
+      names = {"-i", "--input"},
+      description = "Job implementation tarball (S3 URL or local file)",
+      required = true)
+    String _input;
+
+    @Override
+    public void invoke() throws Exception
+    {
+      // TODO abstract this in a separate function for usage by normal create-job
+      URI inputURI; 
+      S3File inputS3File = null;
+      if(_input.startsWith("s3://"))
+      {
+        inputURI = new URI(_input);
+      }
+      else
+      {
+        File inputFile = new File(_input);
+        if(!inputFile.exists())
+          throw new UsageException("Input file does not exist");
+
+        S3Client s3client = S3Utils.createS3Client(_config);
+        inputURI = createUniqueInputURI();
+        inputS3File = s3client.upload(inputFile, inputURI).get();
+      }
+
+      Frontend.File.Builder fileBuilder = 
+        Frontend.File.newBuilder()
+        .setUrl(inputURI.toString());
+
+      if(inputS3File != null)
+        fileBuilder.setHash("etag:" + inputS3File.getETag());
+
+      Frontend.Request.Builder req =
+        Frontend.Request.newBuilder()
+        .setImplAdd(
+            Frontend.ImplAddRequest.newBuilder()
+            .setId(_impl)
+            .setImplementation(fileBuilder));
+
+      Frontend.Response.Builder resp = Frontend.Response.newBuilder();
+
+      final ProtoBufExchange exchange = new ProtoBufExchange(req, resp, Option.<String>none());
+      exchange.setRequestMessage(req.build());
+
+      Futures.transform(
+        getProtobufClient().postMessage(exchange),
+        new AsyncFunction<Object, Object>()
+        {        
+          @Override
+          public ListenableFuture<Object> apply(Object o) throws Exception
+          {
+            // TODO check for errors
+            String json = exchange.getResponseJSON();
+            json = formatJSON(json);
+            System.out.println(json);
+            return Futures.immediateFuture((Object) json);
+          }
+        }).get();
+    }
+  }
   
   /**
    * Help

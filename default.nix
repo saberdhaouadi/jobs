@@ -77,6 +77,7 @@ rec {
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
+        "--with-aws=${aws-java-sdk}"
         "--with-s3lib=${s3lib}"
       ];
     };
@@ -89,6 +90,7 @@ rec {
       enableLBservices = false;
       configureFlags = [
         "--with-aws=${aws-java-sdk}"
+        "--with-s3lib=${s3lib}"
       ];
     };
 
