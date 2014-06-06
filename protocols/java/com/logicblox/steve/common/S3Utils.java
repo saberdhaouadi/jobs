@@ -66,8 +66,6 @@ public class S3Utils
   /**
    * The hash needs to have the syntax "hash-type:hash-value", where
    * the supported hash-type is currently only 'etag'.
-   *
-   * Throws a bad request service exception if the hash type is not supported.
    */
   public static boolean verifyHash(ObjectMetadata metadata, String hash)
   {
@@ -82,10 +80,7 @@ public class S3Utils
       etag = hash.substring("etag:".length());
     }
     else
-    {
-      throw new ServiceException(
-        new SimpleErrorCode("UNSUPPORTED_HASH", 400, "Unsupported hash '" + hash + "'"));
-    }
+      throw new IllegalArgumentException("Unsupported hash '" + hash + "'");
 
     return metadata.getETag().equals(etag);
   }

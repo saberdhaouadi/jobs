@@ -43,7 +43,8 @@ public class JobQueueClient
     // TODO timeout
     Backend.RunJob.Builder request =
       Backend.RunJob.newBuilder()
-      .setJobImpl(job.getImpl())
+      // TODO include ETag of implementation
+      .setJobImpl(job.impl.archive.getLocation())
       .setJob(job.getId())
       .setOutput(job.getOutputPrefix());
 

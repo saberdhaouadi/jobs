@@ -1,0 +1,19 @@
+To start the front-end:
+
+    $ lb-steve-frontend start
+
+To start a worker:
+
+    $ lb-steve-worker --incoming https://sqs.us-east-1.amazonaws.com/297794765570/martin-steve-jobs \
+                      --outgoing https://sqs.us-east-1.amazonaws.com/297794765570/martin-steve-jobs-status
+
+To upload a job implementation:
+
+    $ lb-steve-client upload-impl --impl total-v1 -i ~/total.tar.gz
+
+To run a job:
+
+    $ lb-steve-client create-job \
+        --impl total-v1 \
+        -i s3://steve-jobs/data/total/input/data.txt \
+        -o s3://steve-jobs/data/total/output

@@ -12,12 +12,15 @@ option java_package = "com.logicblox.steve.protocol";
  * Request/response unions
  */
 message Request {
-  optional CreateRequest create = 1;
+  // ask about the state of any asynchronous request
   optional StateRequest state = 2;
-  optional ResultRequest result = 3;
-  optional KillRequest kill = 4;
 
-  // job implementation requets
+  // job
+  optional JobCreateRequest create = 1;
+  optional JobResultRequest result = 3;
+  optional JobCancelRequest cancel = 4;
+
+  // job implementation request
   optional ImplAddRequest impl_add = 20;
 }
 
@@ -26,19 +29,34 @@ message Response {
   optional string error = 1;
   optional string error_code = 2;
 
-  optional CreateResponse create = 10;
   optional StateResponse state = 11;
-  optional ResultResponse result = 12;
-  optional KillResponse kill = 13;
 
-  // job implementation requets
+  // job
+  optional JobCreateResponse create = 10;
+  optional JobResultResponse result = 12;
+  optional JobCancelResponse cancel = 13;
+
+  // job implementation
   optional ImplAddResponse impl_add = 20;
+}
+
+/**
+ * State
+ */
+message StateRequest {
+  required string id = 1;
+  optional bool detail = 2;
+}
+
+message StateResponse {
+  required string state = 1;
+  repeated Status status = 2;
 }
 
 /**
  * Create a new job
  */
-message CreateRequest {
+message JobCreateRequest {
   // Identifier set by the client to make sure that a job is created
   // only once, even when there are networking issues. It turns a
   // create request into an idempotent operation of the job is created
@@ -67,44 +85,30 @@ message CreateRequest {
   optional string output_encryption_key = 21;
 }
 
-message CreateResponse {
+message JobCreateResponse {
   required string job_id = 1;
-}
-
-
-/**
- * Request status of a job
- */
-message StateRequest {
-  required string job_id = 1;
-  optional bool detail = 2;
-}
-
-message StateResponse {
-  required string state = 1;
-  repeated Status status = 2;
 }
 
 /**
  * Request result of a job execution
  */
-message ResultRequest {
+message JobResultRequest {
   required string job_id = 1;
 }
 
-message ResultResponse {
+message JobResultResponse {
   repeated File output = 2;
 }
 
 
 /**
- * Kill a queued or executing job.
+ * Cancel a queued or executing job.
  */
-message KillRequest {
+message JobCancelRequest {
   required string job_id = 1;
 }
 
-message KillResponse {
+message JobCancelResponse {
   // As a convenience to the client, we return the previous status of
   // the job (the new status will be pending-kill until the kill has
   // been handled)
@@ -115,6 +119,10 @@ message KillResponse {
  * Add a new job implementation
  */
 message ImplAddRequest {
+  // TODO consider to add client id
+
+  // Implementation identifier to be used when submitting jobs for
+  // this implementation.
   required string id = 1;
   required File implementation = 2;
 
@@ -123,6 +131,9 @@ message ImplAddRequest {
 }
 
 message ImplAddResponse {
+  // Identifier for the asynchronous addition of this job
+  // implementation.
+  required string id = 1;
 }
 
 /**

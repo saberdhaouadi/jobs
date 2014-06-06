@@ -8,9 +8,9 @@ in
     name = "job-${toString builtins.currentTime}";
     buildInputs = [
       pkgs.pythonFull
-      platform.logicblox
-      platform.bloxweb
-      releases.pdxscience."4.0.0".pdxscience
+      # platform.logicblox
+      # platform.bloxweb
+      # releases.pdxscience."4.0.0".pdxscience
       pkgs.socat
     ];
 
@@ -48,7 +48,7 @@ in
         socat tcp4-listen:41954,fork unix-connect:/sockets/gurobi &> /dev/null &
       fi
 
-      start_lb
+      # start_lb
       tar --strip-components=1 -xf /tmp/job/job.tar.gz
 
       echo ""

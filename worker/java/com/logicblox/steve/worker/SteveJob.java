@@ -152,7 +152,12 @@ public class SteveJob
 
   private void downloadJobImpl() throws InternalException
   {
-    String uri = String.format("s3://%s/jobs-impl/%s.tar.gz", _s3Bucket, _impl);
+    String uri;
+    if(_impl.startsWith("s3://"))
+      uri = _impl;
+    else
+      uri = String.format("s3://%s/jobs-impl/%s.tar.gz", _s3Bucket, _impl);
+
     log(uri);
     URI jobImplUri;
     try

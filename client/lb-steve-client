@@ -17,9 +17,16 @@ def run(args):
       'lb-web-client.jar',
       'lb-steve-client.jar',
       'lb-steve-protocols.jar',
+      's3lib-0.2.jar',
+      'commons-configuration-1.8.jar',
+      'commons-lang-2.6.jar',
+      'commons-codec-1.9.jar',
       'aws-java-sdk-1.7.1.jar',
       'httpcore-4.2.jar',
-      'httpclient-4.2.3.jar'
+      'httpclient-4.2.3.jar',
+      'jackson-core-2.1.1.jar',
+      'jackson-databind-2.1.1.jar',
+      'jackson-annotations-2.1.1.jar',
       'jetty-client-' + jetty_version + '.jar',
       'jetty-http-' + jetty_version + '.jar',
       'jetty-io-' + jetty_version + '.jar',
@@ -29,11 +36,14 @@ def run(args):
     deps_paths = [prefix + '/lib/java/' + name for name in prefix_deps]
     classpath = ':'.join(deps_paths)
 
+    subenv = os.environ.copy()
+    subenv['LB_WEBSERVER_HOME'] = prefix
+
     jvm_args = []
     java_args = ['java'] + jvm_args + ['-cp', classpath, 'com.logicblox.steve.client.Main']
     java_args.extend(args)
 
-    os.execvp('java', java_args)
+    os.execvpe('java', java_args, subenv)
 
 def main():
     command_line = sys.argv[1:]

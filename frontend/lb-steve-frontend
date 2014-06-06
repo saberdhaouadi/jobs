@@ -7,34 +7,28 @@ import time
 
 bindir = os.path.dirname(os.path.realpath(__file__))
 prefix = os.path.dirname(bindir)
-lbprefix = os.environ.get('LOGICBLOX_HOME')
-lbwebprefix = os.environ.get('LB_WEBSERVER_HOME')
-
-sys.path.insert(0, '%s/lib/python' % lbprefix)
-sys.path.insert(0, '%s/lib/python' % lbwebprefix)
-sys.path.insert(0, '%s/lib/python' % prefix)
 
 import argparse
 
 def cmd_start(args):
     jetty_version = '7.6.7.v20120910'
 
-    lb_deps = [
-      'lb-common.jar',
-      'lb-connectblox.jar',
-      'lb-common-protocol.jar',
-      'junit-4.8.2.jar',
-      'slf4j-api-1.7.1.jar',
-      'slf4j-log4j12-1.7.1.jar',
-    ]
-
-    lbweb_deps = [
-      'lb-web-server.jar',
-      'bloxweb-credentials.jar',
-      'bloxweb-email.jar',
-    ]
+    # lb_deps = [
+    #   
+    #   'lb-connectblox.jar',
+    #   'lb-common-protocol.jar',
+    #   'junit-4.8.2.jar',
+    #   'slf4j-api-1.7.1.jar',
+    #   'slf4j-log4j12-1.7.1.jar',
+    # ]
 
     prefix_deps = [
+        'lb-common.jar',
+        's3lib-0.2.jar',
+        'lb-web-client.jar',
+        'lb-web-server.jar',
+        'bloxweb-credentials.jar',
+        'bloxweb-email.jar',
         'jcommander-1.29.jar',
         'aws-java-sdk-1.7.1.jar',
         'httpcore-4.2.jar',
@@ -45,17 +39,19 @@ def cmd_start(args):
         'jackson-annotations-2.1.1.jar',
         'jackson-core-2.1.1.jar',
         'jackson-databind-2.1.1.jar',
+        'jetty-client-' + jetty_version + '.jar',
+        'jetty-contination-' + jetty_version + '.jar',
+        'jetty-http-' + jetty_version + '.jar',
+        'jetty-io-' + jetty_version + '.jar',
+        'jetty-util-' + jetty_version + '.jar',
+        'jetty-security-' + jetty_version + '.jar',
+        'jetty-server-' + jetty_version + '.jar',
+        'jetty-servlet-' + jetty_version + '.jar',
     ]
-# commons-codec-1.9.jar
-# s3lib-0.2.jar
-# commons-io-2.4.ja
-# commons-logging-1.1.1.jar
 
-    lb_deps_paths = [lbprefix + '/lib/java/' + name for name in lb_deps]
-    lbweb_deps_paths = [lbwebprefix + '/lib/java/' + name for name in lbweb_deps]
     prefix_deps_paths = [prefix + '/lib/java/' + name for name in prefix_deps]
 
-    classpath = ':'.join(prefix_deps_paths + lbweb_deps_paths + lb_deps_paths)
+    classpath = ':'.join(prefix_deps_paths)
 
     subenv = os.environ.copy()
     subenv['LB_WEBSERVER_HOME'] = prefix

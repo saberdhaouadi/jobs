@@ -3,6 +3,7 @@ package com.logicblox.steve.common;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.logicblox.s3lib.S3File;
 import com.logicblox.steve.protocol.Frontend;
 import com.logicblox.steve.protocol.Backend;
 
@@ -63,6 +64,14 @@ public class Conversions
     if(file.hasHash())
       d.setHash(file.getHash());
 
+    return d;
+  }
+
+  public static Data convertS3FileToData(S3File file)
+  {
+    Data d = new Data();
+    d.setHash("etag:" + file.getETag());
+    d.setLocation("s3://" + file.getBucketName() + "/" + file.getKey());
     return d;
   }
 }
