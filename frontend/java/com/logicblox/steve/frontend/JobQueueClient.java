@@ -54,6 +54,10 @@ public class JobQueueClient
     }
     
     String msg = new JsonFormat().printToString(request.build());
+
+    System.err.println("submitting to " + _queue.getQueueUrl() + ":");
+    System.err.println(msg);
+
     return Futures.transform(_sqs.send(_queue, msg), Functions.constant(job));
   }
 

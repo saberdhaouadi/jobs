@@ -1,9 +1,28 @@
+Typical environment needs:
+
+    $ export PATH="/opt/logicblox/lb-steve-client/bin:/opt/logicblox/lb-steve-frontend/bin:/opt/logicblox/lb-steve-worker/bin:$PATH"
+    $ export AWS_ACCESS_KEY_ID="..."
+    $ export AWS_SECRET_KEY="..."
+
 To start the front-end:
 
-    $ lb-steve-frontend start
+    $ lb-steve-frontend --config ./custom.config
+
+where custom.config is for example:
+
+    ----------------------------------
+    tmpdir = /tmp
+
+    [job-queue]
+    sqs_queue_url = https://sqs.us-east-1.amazonaws.com/297794765570/martin-steve-jobs
+
+    [status-queue]
+    sqs_queue_url = https://sqs.us-east-1.amazonaws.com/297794765570/martin-steve-jobs-status
+    ----------------------------------
 
 To start a worker:
 
+    $ export NIX_PATH=worker=$PWD/worker-minimal:$NIX_PATH
     $ lb-steve-worker --incoming https://sqs.us-east-1.amazonaws.com/297794765570/martin-steve-jobs \
                       --outgoing https://sqs.us-east-1.amazonaws.com/297794765570/martin-steve-jobs-status
 

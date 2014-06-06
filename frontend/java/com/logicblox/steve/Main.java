@@ -129,12 +129,14 @@ public class Main
             .create());
             
     CommandLineParser parser = new BasicParser();
-    try {
+    try
+    {
       CommandLine _cmdline = parser.parse( options, args );
       if (_cmdline.hasOption("config"))
         file3 = new File(_cmdline.getOptionValue("config"));
     }
-    catch( ParseException exp ) {
+    catch( ParseException exp )
+    {
       System.err.println( "Error: " + exp.getMessage() );
       HelpFormatter formatter = new HelpFormatter();
       formatter.printHelp( "lb-steve-provisioner", options );
