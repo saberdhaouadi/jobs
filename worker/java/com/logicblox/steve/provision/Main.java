@@ -24,6 +24,7 @@ public class Main
   private static String s3Bucket = "steve-jobs";
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
   private static double pctSpot = 0.9;
+  private static double pctQueue = 1 / 3f;
   private static double spotPrice = 0.6;
   private static String instanceType = "m2.xlarge";
   private static String role = "steve-jobs-worker";
@@ -68,6 +69,13 @@ public class Main
             .withDescription("Amazon EC2 keypair")
             .hasArg()
             .withArgName("KEY")
+            .create());
+
+    options.addOption(OptionBuilder.withLongOpt("percentage-queue")
+            .withDescription("Set total instances to the given percentage of total messages that are in the queue. Only valid when --total is not used.")
+            .hasArg()
+            .withArgName("percentage")
+            .withType(Number.class)
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("percentage-spot")
@@ -140,6 +148,8 @@ public class Main
         spotPrice = ((Number)_cmdline.getParsedOptionValue("spot-price")).doubleValue();
       if (_cmdline.hasOption("percentage-spot"))
         pctSpot = ((Number)_cmdline.getParsedOptionValue("percentage-spot")).doubleValue();
+      if (_cmdline.hasOption("percentage-queue"))
+        pctQueue = ((Number)_cmdline.getParsedOptionValue("percentage-queue")).doubleValue();
 
       dryRun = _cmdline.hasOption("dry-run");
     }
@@ -174,7 +184,7 @@ public class Main
 
     if(totalNeeded == 0)
     {
-      totalNeeded = (int) Math.ceil((busyMsgs + waitingMsgs) / 3f);
+      totalNeeded = (int) Math.ceil((busyMsgs + waitingMsgs) * pctQueue);
     }
     totalNeeded = Math.min(totalNeeded, maxInstances);
 
