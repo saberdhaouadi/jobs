@@ -138,6 +138,9 @@ public class Main
     @Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
     boolean help = false;
 
+    @Parameter(names = { "-c", "--config" }, description = "Configuration file", help = true)
+    String config = null;
+
     public abstract void invoke() throws Exception;
   }
 
@@ -455,6 +458,9 @@ public class Main
           printCommandUsage(command);
           System.exit(1);
         }
+
+        if(cmd.config != null)
+          _config = new Config(new File(cmd.config), _config);
 
         cmd.invoke();
       }
