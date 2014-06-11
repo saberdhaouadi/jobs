@@ -409,7 +409,7 @@ public class SteveHandler extends ProtoBufHandler
           Frontend.Response.Builder response = Frontend.Response.newBuilder();
           response.setImplAdd(
             Frontend.ImplAddResponse.newBuilder()
-            .setId(impl.id));
+            .setId(id));
           
           return response.build();
         }
