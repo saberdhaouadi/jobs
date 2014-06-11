@@ -139,7 +139,7 @@ public class Main
     {
       System.err.println( "Error: " + exp.getMessage() );
       HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp( "lb-steve-provisioner", options );
+      formatter.printHelp( "lb-steve-frontend", options );
       System.exit(1);
     }
 
