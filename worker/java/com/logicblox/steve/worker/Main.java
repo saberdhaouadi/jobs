@@ -76,7 +76,8 @@ public class Main
   private static int _idle = 5;
   private static String _incomingUrl = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String _outgoingUrl = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
-  private static String _handle_file = "/var/lib/lb-steve/lb-steve-worker.handle";
+  private static String _handle_dir = "/var/lib/lb-steve";
+  private static String _handle_file = _handle_dir + "/lb-steve-worker.handle";
   private static String _s3Bucket = "steve-jobs";
   private static boolean _returnJob = false;
   private static boolean _shutdownOnIdle = false;
@@ -143,8 +144,8 @@ public class Main
       System.exit(1);
     }
 
-    File handleFile = new File(_handle_file);
-    handleFile.mkdirs();
+    File handleDir = new File(_handle_dir);
+    handleDir.mkdirs();
   }
 
   public Main()
