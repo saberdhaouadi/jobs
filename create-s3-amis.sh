@@ -3,15 +3,14 @@
 export NIXOS_CONFIG=$(dirname $(readlink -f $0))/nix/worker-ec2-image.nix
 export TIMESTAMP=$(date +%Y%m%d%H%M)
 
-buildAndUploadFor() {
-    system="$1"
-    arch="$2"
+    system="x86_64-linux"
+    arch="x86_64"
 
     echo "building $system image..."
-    nix-build '<nixpkgs/nixos>' \
+    nix-build '<nixpkgs/nixos>' -j 4 \
         -A config.system.build.amazonImage --argstr system "$system" -o ec2-ami
 
-    ec2-bundle-image -i ./ec2-ami/nixos.img --user "$AWS_ACCOUNT" --arch "$arch" \
+    ec2-bundle-image -i ec2-ami/nixos.img --user "$AWS_ACCOUNT" --arch "$arch" \
         -c "$EC2_CERT" -k "$EC2_PRIVATE_KEY"
 
     for region in us-east-1; do
@@ -34,11 +33,9 @@ buildAndUploadFor() {
 
         ami=$(ec2-register "$bucket/$TIMESTAMP/nixos.img.manifest.xml" -n "$name $TIMESTAMP" -d "NixOS $system r$revision" \
             --region "$region" --kernel "$kernel" | cut -f 2)
-
+#aws ec2 register-image --image-location steve-jobs-worker-x86-64-s3-us-east-1/201405211909/nixos.img.manifest.xml --name "steve-jobs-worker-x86_64-s3 201405211909-hvm" --region us-east-1 --virtualization-type hvm
         echo "AMI ID is $ami"
 
         echo $ami >> $region.s3.ami-id
     done
-}
 
-buildAndUploadFor x86_64-linux x86_64

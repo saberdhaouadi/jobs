@@ -1,5 +1,5 @@
-{ workers ? { "m2.xlarge" = 1; "m2.4xlarge" = 0; }
-, instanceTypes ? [ "m2.xlarge" "m2.4xlarge" ]
+{ workers ? { "c3.xlarge" = 0; "c3.4xlarge" = 0; }
+, instanceTypes ? [ "c3.xlarge" ]
 , region ? "us-east-1"
 , account ? "logicblox-dev"
 , accountId ? "297794765570"
@@ -59,13 +59,13 @@ let
       implementation = sqs
       iam_role = default
       sqs_endpoint = sqs.${region}.amazonaws.com
-      sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsName "m2.xlarge"}
+      sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsName "c3.xlarge"}
 
       [status-queue]
       implementation = sqs
       iam_role = default
       sqs_endpoint = sqs.${region}.amazonaws.com
-      sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsResultsName "m2.xlarge"}
+      sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsResultsName "c3.xlarge"}
 
       [job-implementations]
       prefix = s3://${s3Name}/jobs-impl
@@ -221,7 +221,7 @@ with pkgs.lib;
           ''
             #! /bin/sh
             source /etc/profile
-            exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL "m2.xlarge"} --outgoing ${sqsResultsURL "m2.xlarge"} --max 200 --role ${resources.iamRoles.worker-role.name} $@
+            exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL "c3.xlarge"} --outgoing ${sqsResultsURL "c3.xlarge"} --max 200 --role ${resources.iamRoles.worker-role.name} --instance-type c3.xlarge $@
           '';
     in
     {
