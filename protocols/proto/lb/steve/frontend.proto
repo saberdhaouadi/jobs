@@ -22,6 +22,7 @@ message Request {
 
   // job implementation request
   optional ImplAddRequest impl_add = 20;
+  optional ImplListRequest impl_list = 21;
 }
 
 message Response {
@@ -38,6 +39,7 @@ message Response {
 
   // job implementation
   optional ImplAddResponse impl_add = 20;
+  optional ImplListResponse impl_list = 21;
 }
 
 /**
@@ -128,6 +130,8 @@ message ImplAddRequest {
 
   // Defaults to the account of the user.
   optional string account = 3;
+
+  repeated Param tag = 4;
 }
 
 message ImplAddResponse {
@@ -135,6 +139,22 @@ message ImplAddResponse {
   // implementation.
   required string id = 1;
 }
+
+/**
+ * List implementations
+ */
+message ImplListRequest {
+}
+
+message ImplListResponse {
+  message ImplInfo {
+    required string id = 1;
+    repeated Param tag = 2;
+  }
+
+  
+}
+
 
 /**
  * General
