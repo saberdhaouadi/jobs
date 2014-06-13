@@ -445,17 +445,17 @@ public class Main
 
           for(Frontend.ImplListResponse.ImplInfo info : infos)
           {
-            System.out.print(info.getId());
+            System.out.print("{ \"id\" : \"" + info.getId() + "\"");
             for(Frontend.Param param : info.getTagList())
             {
-              System.out.print(" ");
+              System.out.print(", \"");
               System.out.print(param.getKey());
-              System.out.print(":\"");
+              System.out.print("\" : \"");
               System.out.print(param.getValue());
               System.out.print("\"");
             }
 
-            System.out.println("");
+            System.out.println("}");
           }
 
           return Futures.immediateFuture((Object) response);
