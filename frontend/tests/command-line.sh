@@ -3,6 +3,7 @@
 set -e
 set -u
 set -x
+set -o pipefail
 
 scriptdir=$(readlink -f $(dirname $BASH_SOURCE))
 topdir=$scriptdir/../..
@@ -31,6 +32,15 @@ function stop_servers()
 start_servers
 trap stop_servers EXIT
 
+# Check basics of uploading job implementations
+
 tar czvf total.tar.gz -C $topdir/sample-jobs total
-lb-steve-client upload-impl --impl total-v1 -i total.tar.gz
+lb-steve-client upload-impl --impl total-v1 -i total.tar.gz --metadata revision=1 another=bar
+lb-steve-client upload-impl --impl total-v2 -i total.tar.gz --metadata revision=2 another=foo
+
 lb-steve-client list-impl
+test $(lb-steve-client list-impl | wc --lines) = "2"
+test "$(lb-steve-client list-impl | grep total-v1 | jq -c '[.id, .revision, .another]')" = '["total-v1","1","bar"]'
+test "$(lb-steve-client list-impl | grep total-v2 | jq -c '[.id, .revision, .another]')" = '["total-v2","2","foo"]'
+
+echo "****************** SUCCESS *******************"

@@ -1,7 +1,9 @@
 package com.logicblox.steve.common;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -94,5 +96,22 @@ public class Conversions
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS+00:00");
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
     return format.format(date);
+  }
+
+  public static Frontend.Param createFrontendParam(String key, String value)
+  {
+    return
+      Frontend.Param.newBuilder()
+      .setKey(key)
+      .setValue(value)
+      .build();
+  }
+
+  public static Map<String, String> createMap(Iterable<Frontend.Param> params)
+  {
+    Map<String, String> result = new HashMap<String, String>();
+    for(Frontend.Param param : params)
+      result.put(param.getKey(), param.getValue());
+    return result;
   }
 }

@@ -190,10 +190,22 @@ public class Main
     @Parameter(names = {"--corr"}, description = "Correlation identifier")
     String _correlation = null;
 
+    @Parameter(names = {"--timeout"}, description = "Timeout in seconds")
+    long _timeout = 0;
+
+    @Parameter(
+      names = {"-m", "--metadata"},
+      description = "Metadata of the form key=value ",
+      variableArity = true)
+    List<String> _metadata;
+
     @Parameter(names = {"-i", "--input"}, description = "S3 input file")
     List<String> _inputs;
 
-    @Parameter(names = {"-o", "--output-prefix"}, description = "S3 URL prefix for output files", required = true)
+    @Parameter(
+      names = {"-o", "--output-prefix"},
+      description = "S3 URL prefix for output files",
+      required = true)
     String _output;
 
     @Override
@@ -359,6 +371,9 @@ public class Main
       required = true)
     String _input;
 
+    @Parameter(names = {"-m", "--metadata"}, description = "Metadata of the form key=value ", variableArity = true)
+    List<String> _metadata;
+
     @Override
     public void invoke() throws Exception
     {
@@ -387,12 +402,20 @@ public class Main
       if(inputS3File != null)
         fileBuilder.setHash("etag:" + inputS3File.getETag());
 
+      Frontend.ImplAddRequest.Builder addReq =
+        Frontend.ImplAddRequest.newBuilder()
+        .setId(_impl)
+        .setImplementation(fileBuilder);
+
+      for(Frontend.Param param : convertCommandLineMetadata(_metadata))
+        addReq.addMetadata(param);
+
+      if(_timeout != 0)
+        addReq.addMetadata(param);
+
       Frontend.Request.Builder req =
         Frontend.Request.newBuilder()
-        .setImplAdd(
-            Frontend.ImplAddRequest.newBuilder()
-            .setId(_impl)
-            .setImplementation(fileBuilder));
+        .setImplAdd(addReq);
 
       Frontend.Response.Builder resp = Frontend.Response.newBuilder();
 
@@ -414,6 +437,19 @@ public class Main
           }
         }).get();
     }
+  }
+
+  private static Iterable<Frontend.Param> convertCommandLineMetadata(List<String> pairs)
+  {
+    List<Frontend.Param> result = new ArrayList<Frontend.Param>();
+    for(String pair : pairs)
+    {
+      String key = pair.substring(0, pair.indexOf('='));
+      String value = pair.substring(pair.indexOf('=') + 1);
+      result.add(Conversions.createFrontendParam(key, value));
+    }
+
+    return result;
   }
 
   /**
@@ -453,12 +489,11 @@ public class Main
               .value(info.getId());
 
             for(Frontend.Param param : info.getMetadataList())
-            {
               w.name(param.getKey()).value(param.getValue());
-            }
 
             w.endObject();
-            w.close();
+            w.flush();
+            System.out.println("");
           }
 
           return Futures.immediateFuture((Object) response);

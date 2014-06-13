@@ -68,13 +68,16 @@ message JobCreateRequest {
   // Identifier of the job implementation.
   required string job_impl = 2;
 
-  // Identifier used to correlate executions of jobs. The assumption
-  // is that jobs executed with the same correlation id have similar
-  // properties in terms of expected execution time.
-  optional string correlation_id = 3;
-
-  // Timeout for execution of job
-  optional uint64 timeout = 4;
+  // Metadata on the job.
+  //
+  // Some keys are resevered:
+  // - date           Automatically set when the job is created
+  // - timeout        Timeout in seconds
+  // - correlation-id Identifier used to correlate executions of
+  //                  jobs. The assumption is that jobs executed with
+  //                  the same correlation id have similar properties
+  //                  in terms of expected execution time.
+  repeated Param metadata = 3;
 
   // Parameters to be passed to the execution of the job
   repeated Param input_param = 10;
@@ -131,6 +134,10 @@ message ImplAddRequest {
   // Defaults to the account of the user.
   optional string account = 3;
 
+  // Metadata on the job.
+  //
+  // Some keys are resevered:
+  // - date  Automatically set when the job implementation is added
   repeated Param metadata = 4;
 }
 

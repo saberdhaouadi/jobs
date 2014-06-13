@@ -165,7 +165,7 @@ public class SteveHandler extends ProtoBufHandler
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
 
     // TODO remove debugging
-    System.out.println(request.toString());
+    _logger.info(request.toString());
 
     ListenableFuture<Frontend.Response> resp;
     if(request.hasCreate())
@@ -399,7 +399,7 @@ public class SteveHandler extends ProtoBufHandler
       {
         public ListenableFuture<JobImpl> apply(S3File input) throws IOException
         {
-          Map<String, String> tags = createMap(req.getMetadataList());
+          Map<String, String> tags = Conversions.createMap(req.getMetadataList());
           tags.put("date", Conversions.getCurrentISO8601());
 
           // TODO use actual authenticated user
@@ -465,25 +465,8 @@ public class SteveHandler extends ProtoBufHandler
     info.setId(impl.id);
     for(Map.Entry<String, String> entry : impl.tags.entrySet())
     {
-      info.addMetadata(createParam(entry.getKey(), entry.getValue()));
+      info.addMetadata(Conversions.createFrontendParam(entry.getKey(), entry.getValue()));
     }
     return info.build();
-  }
-
-  private static Frontend.Param createParam(String key, String value)
-  {
-    return
-      Frontend.Param.newBuilder()
-      .setKey(key)
-      .setValue(value)
-      .build();
-  }
-
-  private static Map<String, String> createMap(Iterable<Frontend.Param> params)
-  {
-    Map<String, String> result = new HashMap<String, String>();
-    for(Frontend.Param param : params)
-      result.put(param.getKey(), param.getValue());
-    return result;
   }
 }
