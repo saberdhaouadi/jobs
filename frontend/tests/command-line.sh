@@ -33,3 +33,4 @@ trap stop_servers EXIT
 
 tar czvf total.tar.gz -C $topdir/sample-jobs total
 lb-steve-client upload-impl --impl total-v1 -i total.tar.gz
+lb-steve-client list-impl

@@ -16,10 +16,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.TimeZone;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -72,6 +69,7 @@ import com.logicblox.common.logging.SystemDLogger;
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.S3File;
 
+import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.S3Utils;
 import com.logicblox.steve.protocol.Frontend;
 
@@ -115,7 +113,7 @@ public class Main
     _commander.addCommand("status", new StatusCommand());
     _commander.addCommand("output", new OutputCommand());
     _commander.addCommand("upload-impl", new UploadJobImplCommand());
-    // _commander.addCommand("list-impl", new ListJobImplCommand());
+    _commander.addCommand("list-impl", new ListJobImplCommand());
     _commander.addCommand("help", new HelpCommand());
 
     File file1 = ConfigLocator.getDefaultConfigFile("lb-steve-client.config");
@@ -254,9 +252,6 @@ public class Main
     {
       ProtobufServiceClient client = getProtobufClient();
 
-      final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS+00:00");
-      format.setTimeZone(TimeZone.getTimeZone("UTC"));
-
       for(String id : _ids)
       {
         Frontend.Request.Builder req =
@@ -282,7 +277,7 @@ public class Main
             for(Frontend.Status status : response.getState().getStatusList())
             {
               System.out.printf("%-30s %-12s %-20s %80s %n",
-                format.format(new Date(status.getTimestamp())),
+                Conversions.getISO8601(status.getTimestamp()),
                 status.getStatusCode(),
                 status.getMachine(),
                 status.hasMessage() ? status.getMessage() : "");
@@ -417,6 +412,44 @@ public class Main
             return Futures.immediateFuture((Object) json);
           }
         }).get();
+    }
+  }
+
+  /**
+   * List job implementation
+   */
+  @Parameters(commandDescription = "List job implementations")
+  class ListJobImplCommand extends Command
+  {
+    @Override
+    public void invoke() throws Exception
+    {
+      ProtobufServiceClient client = getProtobufClient();
+
+      Frontend.Request.Builder req =
+        Frontend.Request.newBuilder()
+        .setImplList(Frontend.ImplListRequest.newBuilder());
+
+      Frontend.Response.Builder resp = Frontend.Response.newBuilder();
+      
+      final ProtoBufExchange exchange = new ProtoBufExchange(req, resp, Option.<String>none());
+      exchange.setRequestMessage(req.build());
+      
+      Futures.transform(client.postMessage(exchange), new AsyncFunction<Object, Object>()
+      {        
+        @Override
+        public ListenableFuture<Object> apply(Object o) throws Exception
+        {
+          Frontend.Response response = (Frontend.Response) exchange.getResponseMessage();
+          List<Frontend.ImplListResponse.ImplInfo> infos = response.getImplList().getJobImplList();
+
+          // TODO format better
+          for(Frontend.ImplListResponse.ImplInfo info : infos)
+            System.out.println(info.toString().replaceAll("\n", " "));
+
+          return Futures.immediateFuture((Object) response);
+        }
+      }).get();
     }
   }
   

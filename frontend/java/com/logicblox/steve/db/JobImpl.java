@@ -1,5 +1,8 @@
 package com.logicblox.steve.db;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.logicblox.steve.common.Data;
 
 public class JobImpl
@@ -9,4 +12,6 @@ public class JobImpl
   public String id;
 
   public Data archive;
+
+  public Map<String, String> tags = new HashMap<String, String>();
 }

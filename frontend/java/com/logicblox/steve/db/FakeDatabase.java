@@ -216,13 +216,23 @@ public class FakeDatabase implements Database
       return Futures.immediateFuture(impl);
   }
 
+  @Override
+  public synchronized ListenableFuture<Iterable<JobImpl>> getJobImpl(String userId)
+  {
+    User user = getUser(userId);
+    Account account = getAccount(user.getAccountId());
+
+    Map<String, JobImpl> all = _jobImpls.row(account.getId());
+    return Futures.immediateFuture((Iterable<JobImpl>) all.values());
+  }
+
   public synchronized JobImpl getJobImpl(Account account, String implId)
   {
     return _jobImpls.get(account.getId(), implId);
   }
 
   @Override
-  public synchronized ListenableFuture<JobImpl> setJobImpl(String userId, String implId, Data archive)
+  public synchronized ListenableFuture<JobImpl> setJobImpl(String userId, String implId, Data archive, Map<String, String> tags)
   {
     User user = getUser(userId);
     Account account = getAccount(user.getAccountId());
@@ -231,6 +241,7 @@ public class FakeDatabase implements Database
     impl.account = account.getId();
     impl.id = implId;
     impl.archive = archive;
+    impl.tags = tags;
     
     _jobImpls.put(impl.account, impl.id, impl);
 

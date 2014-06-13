@@ -4,6 +4,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.io.IOException;
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.servlet.ServletException;
@@ -187,6 +189,10 @@ public class SteveHandler extends ProtoBufHandler
     {
       resp = handleImplAdd(httpRequest, httpResponse, request.getImplAdd());
     }
+    else if(request.hasImplList())
+    {
+      resp = handleImplList(httpRequest, httpResponse, request.getImplList());
+    }
     else
     {
       resp = Futures.immediateFailedFuture(
@@ -318,6 +324,9 @@ public class SteveHandler extends ProtoBufHandler
       });
   }
 
+  /**
+   * Handle a request to add a new job implementation.
+   */
   private ListenableFuture<Frontend.Response> handleImplAdd(
     HttpServletRequest httpRequest,
     HttpServletResponse httpResponse, 
@@ -390,11 +399,15 @@ public class SteveHandler extends ProtoBufHandler
       {
         public ListenableFuture<JobImpl> apply(S3File input) throws IOException
         {
+          Map<String, String> tags = createMap(req.getTagList());
+          tags.put("date", Conversions.getCurrentISO8601());
+
           // TODO use actual authenticated user
           return _db.setJobImpl(
             "martin",
             req.getId(),
-            Conversions.convertS3FileToData(input));
+            Conversions.convertS3FileToData(input),
+            tags);
         }
       });
 
@@ -414,5 +427,60 @@ public class SteveHandler extends ProtoBufHandler
           return response.build();
         }
       });
+  }
+
+  /**
+   * Handle a request to list job implementations.
+   */
+  private ListenableFuture<Frontend.Response> handleImplList(
+    HttpServletRequest httpRequest,
+    HttpServletResponse httpResponse, 
+    Frontend.ImplListRequest req)
+  {
+    // TODO use actual authenticated user
+    return Futures.transform(
+      _db.getJobImpl("martin"),
+      new Function<Iterable<JobImpl>, Frontend.Response>()
+      {
+        public Frontend.Response apply(Iterable<JobImpl> impls)
+        {
+          Frontend.ImplListResponse.Builder resp = Frontend.ImplListResponse.newBuilder();
+          for(JobImpl impl : impls)
+            resp.addJobImpl(createImplInfo(impl));
+
+          return
+            Frontend.Response.newBuilder()
+            .setImplList(resp)
+            .build();
+        }
+      });
+  }
+
+  private static Frontend.ImplListResponse.ImplInfo createImplInfo(JobImpl impl)
+  {
+    Frontend.ImplListResponse.ImplInfo.Builder info = Frontend.ImplListResponse.ImplInfo.newBuilder();
+    info.setId(impl.id);
+    for(Map.Entry<String, String> entry : impl.tags.entrySet())
+    {
+      info.addTag(createParam(entry.getKey(), entry.getValue()));
+    }
+    return info.build();
+  }
+
+  private static Frontend.Param createParam(String key, String value)
+  {
+    return
+      Frontend.Param.newBuilder()
+      .setKey(key)
+      .setValue(value)
+      .build();
+  }
+
+  private static Map<String, String> createMap(Iterable<Frontend.Param> params)
+  {
+    Map<String, String> result = new HashMap<String, String>();
+    for(Frontend.Param param : params)
+      result.put(param.getKey(), param.getValue());
+    return result;
   }
 }

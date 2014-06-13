@@ -152,9 +152,8 @@ message ImplListResponse {
     repeated Param tag = 2;
   }
 
-  
+  repeated ImplInfo job_impl = 1;  
 }
-
 
 /**
  * General

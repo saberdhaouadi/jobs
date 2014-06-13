@@ -3,6 +3,7 @@ package com.logicblox.steve.db;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -33,14 +34,19 @@ public interface Database
     String output);
 
   /**
-   * Store a job a implementation
+   * Store a job a implementation.
    */
-  public ListenableFuture<JobImpl> setJobImpl(String userid, String id, Data file);
+  public ListenableFuture<JobImpl> setJobImpl(String userid, String id, Data file, Map<String, String> tags);
 
   /**
-   * Get information on a job implementation
+   * Get information on a job implementation.
    */
   public ListenableFuture<JobImpl> getJobImpl(String userid, String id);
+
+  /**
+   * Get all job implementations available to a user.
+   */
+  public ListenableFuture<Iterable<JobImpl>> getJobImpl(String userid);
 
   /**
    * Returns Job with the state field populated, and the full status
