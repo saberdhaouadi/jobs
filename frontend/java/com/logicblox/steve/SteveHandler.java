@@ -417,8 +417,11 @@ public class SteveHandler extends ProtoBufHandler
       {
         public Frontend.Response apply(JobImpl impl)
         {
-          // TODO revise server-side implementation to correctly use an
-          // identifier (not TODO)
+          // TODO revise server-side implementation to correctly use
+          // an identifier (not TODO). The identifier should be used
+          // by the client to later verify that the job implementation
+          // has correctly been added (which is currently not actually
+          // asynchronously done).
           Frontend.Response.Builder response = Frontend.Response.newBuilder();
           response.setImplAdd(
             Frontend.ImplAddResponse.newBuilder()
