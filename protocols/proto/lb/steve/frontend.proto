@@ -131,7 +131,7 @@ message ImplAddRequest {
   // Defaults to the account of the user.
   optional string account = 3;
 
-  repeated Param tag = 4;
+  repeated Param metadata = 4;
 }
 
 message ImplAddResponse {
@@ -149,7 +149,7 @@ message ImplListRequest {
 message ImplListResponse {
   message ImplInfo {
     required string id = 1;
-    repeated Param tag = 2;
+    repeated Param metadata = 2;
   }
 
   repeated ImplInfo job_impl = 1;  

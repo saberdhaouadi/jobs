@@ -399,7 +399,7 @@ public class SteveHandler extends ProtoBufHandler
       {
         public ListenableFuture<JobImpl> apply(S3File input) throws IOException
         {
-          Map<String, String> tags = createMap(req.getTagList());
+          Map<String, String> tags = createMap(req.getMetadataList());
           tags.put("date", Conversions.getCurrentISO8601());
 
           // TODO use actual authenticated user
@@ -465,7 +465,7 @@ public class SteveHandler extends ProtoBufHandler
     info.setId(impl.id);
     for(Map.Entry<String, String> entry : impl.tags.entrySet())
     {
-      info.addTag(createParam(entry.getKey(), entry.getValue()));
+      info.addMetadata(createParam(entry.getKey(), entry.getValue()));
     }
     return info.build();
   }

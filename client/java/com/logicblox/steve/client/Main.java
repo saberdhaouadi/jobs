@@ -43,6 +43,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonWriter;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ExtensionRegistry;
@@ -445,17 +446,19 @@ public class Main
 
           for(Frontend.ImplListResponse.ImplInfo info : infos)
           {
-            System.out.print("{ \"id\" : \"" + info.getId() + "\"");
-            for(Frontend.Param param : info.getTagList())
+            JsonWriter w = new JsonWriter(new OutputStreamWriter(System.out));
+
+            w.beginObject()
+              .name("id")
+              .value(info.getId());
+
+            for(Frontend.Param param : info.getMetadataList())
             {
-              System.out.print(", \"");
-              System.out.print(param.getKey());
-              System.out.print("\" : \"");
-              System.out.print(param.getValue());
-              System.out.print("\"");
+              w.name(param.getKey()).value(param.getValue());
             }
 
-            System.out.println("}");
+            w.endObject();
+            w.close();
           }
 
           return Futures.immediateFuture((Object) response);
