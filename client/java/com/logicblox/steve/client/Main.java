@@ -443,9 +443,20 @@ public class Main
           Frontend.Response response = (Frontend.Response) exchange.getResponseMessage();
           List<Frontend.ImplListResponse.ImplInfo> infos = response.getImplList().getJobImplList();
 
-          // TODO format better
           for(Frontend.ImplListResponse.ImplInfo info : infos)
-            System.out.println(info.toString().replaceAll("\n", " "));
+          {
+            System.out.print(info.getId());
+            for(Frontend.Param param : info.getTagList())
+            {
+              System.out.print(" ");
+              System.out.print(param.getKey());
+              System.out.print(":\"");
+              System.out.print(param.getValue());
+              System.out.print("\"");
+            }
+
+            System.out.println("");
+          }
 
           return Futures.immediateFuture((Object) response);
         }
