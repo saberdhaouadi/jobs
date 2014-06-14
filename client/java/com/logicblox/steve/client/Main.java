@@ -418,11 +418,15 @@ public class Main
   private static Iterable<Frontend.Param> convertCommandLineMetadata(List<String> pairs)
   {
     List<Frontend.Param> result = new ArrayList<Frontend.Param>();
-    for(String pair : pairs)
+
+    if(pairs != null)
     {
-      String key = pair.substring(0, pair.indexOf('='));
-      String value = pair.substring(pair.indexOf('=') + 1);
-      result.add(Conversions.createFrontendParam(key, value));
+      for(String pair : pairs)
+      {
+        String key = pair.substring(0, pair.indexOf('='));
+        String value = pair.substring(pair.indexOf('=') + 1);
+        result.add(Conversions.createFrontendParam(key, value));
+      }
     }
 
     return result;
@@ -547,7 +551,10 @@ public class Main
     catch(ExecutionException exc)
     {
       if(exc.getCause() instanceof SteveClientException)
-        System.err.println(exc.getCause().toString());
+      {
+        SteveClientException e = (SteveClientException) exc.getCause();
+        System.err.println(e.toJSON());
+      }
       else
         exc.getCause().printStackTrace();
       System.exit(1);

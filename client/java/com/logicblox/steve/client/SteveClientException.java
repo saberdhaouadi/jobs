@@ -2,6 +2,9 @@ package com.logicblox.steve.client;
 
 import com.logicblox.steve.protocol.Frontend;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
 public class SteveClientException extends Exception
 {
   /**
@@ -47,5 +50,27 @@ public class SteveClientException extends Exception
       builder.append(", http-status " + this.status);
 
     return builder.toString();
+  }
+
+  public String toJSON() 
+  {
+    JsonObject o = new JsonObject();
+
+    if(this.response != null)
+    {
+      if(this.response.hasError())
+        o.addProperty("error", response.getError());
+      
+      if(this.response.hasErrorCode())
+        o.addProperty("error_code", response.getErrorCode());
+    }
+
+    if(this.service != null)
+      o.addProperty("service", this.service);
+
+    if(this.status != -1)
+      o.addProperty("http_status", this.status);
+
+    return new Gson().toJson(o);
   }
 }
