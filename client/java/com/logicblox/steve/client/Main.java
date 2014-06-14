@@ -42,8 +42,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonWriter;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ExtensionRegistry;
@@ -251,7 +251,7 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      SteveClient client = new SteveClient(getProtobufClient());
+      SteveClientInterface client = new SteveClient(getProtobufClient());
 
       List<Frontend.File> inputs = new ArrayList<Frontend.File>();
       if(_inputs != null)
@@ -272,12 +272,7 @@ public class Main
           @Override
           public ListenableFuture<Object> apply(String id) throws Exception
           {
-            // Print line with json representation of job_id
-            JsonWriter w = createJsonWriter();
-            w.beginObject().name("job_id").value(id).endObject();
-            w.flush();
-            System.out.println("");
-            
+            System.out.println(getJobIdAsJSON(id));
             return Futures.immediateFuture((Object) id);
           }
         }).get();
@@ -296,7 +291,7 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      SteveClient client = new SteveClient(getProtobufClient());
+      SteveClientInterface client = new SteveClient(getProtobufClient());
       for(String id : _ids)
       {
         Futures.transform(
@@ -334,9 +329,7 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      // TODO bad requests return in crappy stacktraces
-      // TODO check for errors
-      SteveClient client = new SteveClient(getProtobufClient());
+      SteveClientInterface client = new SteveClient(getProtobufClient());
       for(String id : _ids)
       {
         Futures.transform(
@@ -381,35 +374,16 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      Frontend.ImplAddRequest.Builder addReq =
-        Frontend.ImplAddRequest.newBuilder()
-        .setId(_impl)
-        .setImplementation(createInput(_input));
-
-      for(Frontend.Param param : convertCommandLineMetadata(_metadata))
-        addReq.addMetadata(param);
-
-      Frontend.Request.Builder req =
-        Frontend.Request.newBuilder()
-        .setImplAdd(addReq);
-
-      Frontend.Response.Builder resp = Frontend.Response.newBuilder();
-
-      final ProtoBufExchange exchange = new ProtoBufExchange(req, resp, Option.<String>none());
-      exchange.setRequestMessage(req.build());
-
+      SteveClientInterface client = new SteveClient(getProtobufClient());
       Futures.transform(
-        getProtobufClient().postMessage(exchange),
-        new AsyncFunction<Object, Object>()
+        client.addJobImpl(_impl, createInput(_input), convertCommandLineMetadata(_metadata)),
+        new Function<String, Object>()
         {        
           @Override
-          public ListenableFuture<Object> apply(Object o) throws Exception
+          public ListenableFuture<Object> apply(String id)
           {
-            // TODO check for errors
-            String json = exchange.getResponseJSON();
-            json = formatJSON(json);
-            System.out.println(json);
-            return Futures.immediateFuture((Object) json);
+            System.out.println(getJobIdAsJSON(id));
+            return Futures.immediateFuture((Object) id);
           }
         }).get();
     }
@@ -432,6 +406,13 @@ public class Main
     return result;
   }
 
+  private static String getJobIdAsJSON(String id)
+  {
+    JsonObject o = new JsonObject();
+    o.addProperty("job_id", id);
+    return new Gson().toJson(o);    
+  }
+
   /**
    * List job implementation
    */
@@ -441,7 +422,7 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      SteveClient client = new SteveClient(getProtobufClient());
+      SteveClientInterface client = new SteveClient(getProtobufClient());
       Futures.transform(
         client.getJobImplList(),
         new Function<List<Frontend.JobImplInfo>, Object>()
@@ -458,11 +439,6 @@ public class Main
     }
   }
 
-  private JsonWriter createJsonWriter()
-  {
-    return new JsonWriter(new OutputStreamWriter(System.out));
-  }
-  
   /**
    * Help
    */

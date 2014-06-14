@@ -54,21 +54,25 @@ test "$(lb-steve-client list-impl | grep total-v3 | jq -c '[.id]')" \
 #####################################################
 # Test that executing a job for a non-existing implementation gives a
 # proper error.
-test "$(lb-steve-client create-job --impl does-not-exist -o ./foo 2>&1 | head -1 | jq -c '[.error_code, .http_status]')" \
+test "$(lb-steve-client create-job --impl does-not-exist -o ./foo 2>&1 \
+        | head -1 | jq -c '[.error_code, .http_status]')" \
      = '["NO_SUCH_JOB_IMPL",400]'
 
 #####################################################
 # Test that asking for the status/result of a non-existing job gives a proper error
-test "$(lb-steve-client status does-not-exist 2>&1 | head -1 | jq -c '[.error_code, .http_status]')" \
+test "$(lb-steve-client status does-not-exist 2>&1 \
+        | head -1 | jq -c '[.error_code, .http_status]')" \
      = '["NO_SUCH_JOB",400]'
 
-test "$(lb-steve-client output does-not-exist 2>&1 | head -1 | jq -c '[.error_code, .http_status]')" \
+test "$(lb-steve-client output does-not-exist 2>&1 \
+        | head -1 | jq -c '[.error_code, .http_status]')" \
      = '["NO_SUCH_JOB",400]'
 
 #####################################################
 # Test that uploading a job implementation that does not exist gives a proper error
 
-test "$(lb-steve-client upload-impl --impl foo -i s3://steve-jobs/does-not-exist | head -1 | jq -c '[.error_code, .http_status]')" \
+test "$(lb-steve-client upload-impl --impl foo -i s3://steve-jobs/does-not-exist 2>&1 \
+        | head -1 | jq -c '[.error_code, .http_status]')" \
      = '["FILE_NOT_FOUND",400]'
 
 #####################################################

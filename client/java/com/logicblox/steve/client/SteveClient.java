@@ -19,7 +19,7 @@ import com.logicblox.steve.protocol.Frontend;
  * Client-side API for making calls to steve. This is used by the
  * lb-steve-client, but is also intended to be used in applications.
  */ 
-public class SteveClient
+public class SteveClient implements SteveClientInterface
 {
   private ProtobufServiceClient _client;
 
@@ -107,6 +107,38 @@ public class SteveClient
         public List<Frontend.File> apply(Frontend.Response response)
         {
           return response.getResult().getOutputList();
+        }
+      });
+  }
+
+  /**
+   * Asynchronously upload a new job implementation. This returns a
+   * job id, which should be used to check for the status of
+   * completion.
+   */
+  public ListenableFuture<String> addJobImpl(String jobImpl, Frontend.File archive, Iterable<Frontend.Param> metadata)
+  throws ServiceClientException
+  {
+    Frontend.ImplAddRequest.Builder addReq =
+      Frontend.ImplAddRequest.newBuilder()
+      .setId(jobImpl)
+      .setImplementation(archive);
+    
+    for(Frontend.Param param : metadata)
+      addReq.addMetadata(param);
+    
+    Frontend.Request.Builder req =
+      Frontend.Request.newBuilder()
+      .setImplAdd(addReq);
+
+    return Futures.transform(
+      post(req.build()),
+      new Function<Frontend.Response, String>()
+      {        
+        @Override
+        public String apply(Frontend.Response response)
+        {
+          return response.getImplAdd().getId();
         }
       });
   }
