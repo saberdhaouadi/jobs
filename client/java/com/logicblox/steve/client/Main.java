@@ -88,11 +88,6 @@ public class Main
       Main main = new Main();
       main.execute(args);
     }
-    catch(UsageException exc)
-    {
-      System.err.println("error: " + exc.getMessage());
-      System.exit(1);
-    }
     catch(Exception exc)
     {
       exc.printStackTrace();
@@ -147,6 +142,41 @@ public class Main
   {
     String id = UUID.randomUUID().toString();
     return URI.create(_config.getStringError("default_input_prefix") + "/" + id);
+  }
+
+  /**
+   * Transparantly uploads input to S3 if it is a local file.
+   */
+  protected Frontend.File createInput(String input) throws Exception
+  {
+    // TODO support hashes as parameters or lookup in S3
+
+    // TODO should we delete the input or rely on an automatic retention policy on the bucket?
+    URI inputURI; 
+    S3File inputS3File = null;
+    if(input.startsWith("s3://"))
+    {
+      inputURI = new URI(input);
+    }
+    else
+    {
+      File inputFile = new File(input);
+      if(!inputFile.exists())
+        throw new UsageException("Input file does not exist");
+      
+      S3Client s3client = S3Utils.createS3Client(_config);
+      inputURI = createUniqueInputURI();
+      inputS3File = s3client.upload(inputFile, inputURI).get();
+    }
+    
+    Frontend.File.Builder fileBuilder = 
+      Frontend.File.newBuilder()
+      .setUrl(inputURI.toString());
+    
+    if(inputS3File != null)
+      fileBuilder.setHash("etag:" + inputS3File.getETag());
+
+    return fileBuilder.build();
   }
 
   protected ProtobufServiceClient getProtobufClient() throws URISyntaxException
@@ -208,46 +238,49 @@ public class Main
       required = true)
     String _output;
 
+    @Parameter(
+      names = {"--wait"},
+      description = "Wait for completion of the job by polling for the result")    
+    boolean _wait = false;
+
+    @Parameter(
+      names = {"--poll-delay"},
+      description = "Delay in seconds for polling for the result")
+    long _pollDelay;
+
     @Override
     public void invoke() throws Exception
     {
-      ProtobufServiceClient client = getProtobufClient();
-      Frontend.Request.Builder req = Frontend.Request.newBuilder();
-      Frontend.Response.Builder resp = Frontend.Response.newBuilder();
+      SteveClient client = new SteveClient(getProtobufClient());
 
-      String clientId = UUID.randomUUID().toString();
-
-      Frontend.JobCreateRequest.Builder createReq = 
-        Frontend.JobCreateRequest.newBuilder()
-        .setClientId(clientId)
-        .setJobImpl(_impl)
-        .setOutput(_output);
-
-      for(String input : _inputs)
+      List<Frontend.File> inputs = new ArrayList<Frontend.File>();
+      if(_inputs != null)
       {
-        // TODO support automatically uploading files to S3 (using an --input-prefix option)
-        // TODO support hashes as parameters or lookup in S3
-        Frontend.File file = Frontend.File.newBuilder().setUrl(input).build();
-        createReq.addInput(file);
+        for(String input : _inputs)
+          inputs.add(createInput(input));
       }
+      
+      // If the output is to be stored locally, then we automatically
+      // wait for completion (can't do anything else)
+      if(!_output.startsWith("s3://"))
+        _wait = true;
 
-      req.setCreate(createReq);
-
-      final ProtoBufExchange exchange = new ProtoBufExchange(req, resp, Option.<String>none());
-      exchange.setRequestMessage(req.build());
-
-      Futures.transform(client.postMessage(exchange), new AsyncFunction<Object, Object>()
-      {        
-        @Override
-        public ListenableFuture<Object> apply(Object o) throws Exception
-        {
-          // TODO check for errors
-          String json = exchange.getResponseJSON();
-          json = formatJSON(json);
-          System.out.println(json);
-          return Futures.immediateFuture((Object) json);
-        }
-      }).get();
+      Futures.transform(
+        client.createJob(_impl, inputs, _output),
+        new AsyncFunction<String, Object>()
+        {        
+          @Override
+          public ListenableFuture<Object> apply(String id) throws Exception
+          {
+            // Print line with json representation of job_id
+            JsonWriter w = createJsonWriter();
+            w.beginObject().name("job_id").value(id).endObject();
+            w.flush();
+            System.out.println("");
+            
+            return Futures.immediateFuture((Object) id);
+          }
+        }).get();
     }
   }
 
@@ -263,42 +296,28 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      ProtobufServiceClient client = getProtobufClient();
-
+      SteveClient client = new SteveClient(getProtobufClient());
       for(String id : _ids)
       {
-        Frontend.Request.Builder req =
-          Frontend.Request.newBuilder()
-          .setState(
-            Frontend.StateRequest.newBuilder()
-            .setId(id)
-            .setDetail(true));
-
-        Frontend.Response.Builder resp = Frontend.Response.newBuilder();
-
-        final ProtoBufExchange exchange = new ProtoBufExchange(req, resp, Option.<String>none());
-        exchange.setRequestMessage(req.build());
-
-        Futures.transform(client.postMessage(exchange), new AsyncFunction<Object, Object>()
-        {        
-          @Override
-          public ListenableFuture<Object> apply(Object o) throws Exception
-          {
-            Frontend.Response response = (Frontend.Response) exchange.getResponseMessage();
-            // TODO bad requests return in crappy stacktraces
-            // TODO check for errors
-            for(Frontend.Status status : response.getState().getStatusList())
+        Futures.transform(
+          client.getStatus(id),
+          new Function<List<Frontend.Status>, Object>()
+          {        
+            @Override
+            public Object apply(List<Frontend.Status> list)
             {
-              System.out.printf("%-30s %-12s %-20s %80s %n",
-                Conversions.getISO8601(status.getTimestamp()),
-                status.getStatusCode(),
-                status.getMachine(),
-                status.hasMessage() ? status.getMessage() : "");
+              for(Frontend.Status status : list)
+              {
+                System.out.printf("%-30s %-12s %-20s %80s %n",
+                  Conversions.getISO8601(status.getTimestamp()),
+                  status.getStatusCode(),
+                  status.getMachine(),
+                  status.hasMessage() ? status.getMessage() : "");
+              }
+              
+              return Futures.immediateFuture((Object) list);
             }
-
-            return Futures.immediateFuture((Object) response);
-          }
-        }).get();
+          }).get();
       }
     }
   }
@@ -315,43 +334,28 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      ProtobufServiceClient client = getProtobufClient();
+      // TODO bad requests return in crappy stacktraces
+      // TODO check for errors
+      SteveClient client = new SteveClient(getProtobufClient());
       for(String id : _ids)
       {
-        Frontend.Request.Builder req =
-          Frontend.Request.newBuilder()
-          .setResult(
-            Frontend.JobResultRequest.newBuilder()
-            .setJobId(id));
-
-        Frontend.Response.Builder resp = Frontend.Response.newBuilder();
-
-        final ProtoBufExchange exchange = new ProtoBufExchange(req, resp, Option.<String>none());
-        exchange.setRequestMessage(req.build());
-
-        Futures.transform(client.postMessage(exchange), new AsyncFunction<Object, Object>()
-        {        
-          @Override
-          public ListenableFuture<Object> apply(Object o) throws Exception
-          {
-            Frontend.Response response = (Frontend.Response) exchange.getResponseMessage();
-
-            // TODO bad requests return in crappy stacktraces
-            // TODO check for errors
-            int max = 5;
-            for(Frontend.File f : response.getResult().getOutputList())
+        Futures.transform(
+          client.getResult(id),
+          new Function<List<Frontend.File>, Object>()
+          {        
+            @Override
+            public Object apply(List<Frontend.File> list)
             {
-              max = Math.max(max, f.getUrl().length());
+              int max = 5;
+              for(Frontend.File f : list)
+                max = Math.max(max, f.getUrl().length());
+              
+              for(Frontend.File f : list)
+                System.out.printf("%-" + max + "s %s%n", f.getUrl(), f.getHash());
+              
+              return Futures.immediateFuture((Object) list);
             }
-
-            for(Frontend.File f : response.getResult().getOutputList())
-            {
-              System.out.printf("%-" + max + "s %s%n", f.getUrl(), f.getHash());
-            }
-
-            return Futures.immediateFuture((Object) response);
-          }
-        }).get();
+          }).get();
       }
     }
   }
@@ -377,40 +381,12 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      // TODO abstract this in a separate function for usage by normal create-job
-      URI inputURI; 
-      S3File inputS3File = null;
-      if(_input.startsWith("s3://"))
-      {
-        inputURI = new URI(_input);
-      }
-      else
-      {
-        File inputFile = new File(_input);
-        if(!inputFile.exists())
-          throw new UsageException("Input file does not exist");
-
-        S3Client s3client = S3Utils.createS3Client(_config);
-        inputURI = createUniqueInputURI();
-        inputS3File = s3client.upload(inputFile, inputURI).get();
-      }
-
-      Frontend.File.Builder fileBuilder = 
-        Frontend.File.newBuilder()
-        .setUrl(inputURI.toString());
-
-      if(inputS3File != null)
-        fileBuilder.setHash("etag:" + inputS3File.getETag());
-
       Frontend.ImplAddRequest.Builder addReq =
         Frontend.ImplAddRequest.newBuilder()
         .setId(_impl)
-        .setImplementation(fileBuilder);
+        .setImplementation(createInput(_input));
 
       for(Frontend.Param param : convertCommandLineMetadata(_metadata))
-        addReq.addMetadata(param);
-
-      if(_timeout != 0)
         addReq.addMetadata(param);
 
       Frontend.Request.Builder req =
@@ -482,7 +458,7 @@ public class Main
 
           for(Frontend.ImplListResponse.ImplInfo info : infos)
           {
-            JsonWriter w = new JsonWriter(new OutputStreamWriter(System.out));
+            JsonWriter w = createJsonWriter();
 
             w.beginObject()
               .name("id")
@@ -500,6 +476,11 @@ public class Main
         }
       }).get();
     }
+  }
+
+  private JsonWriter createJsonWriter()
+  {
+    return new JsonWriter(new OutputStreamWriter(System.out));
   }
   
   /**
@@ -561,6 +542,14 @@ public class Main
     catch(UsageException exc)
     {
       System.err.println("error: " + exc.getMessage());
+      System.exit(1);
+    }
+    catch(ExecutionException exc)
+    {
+      if(exc.getCause() instanceof SteveClientException)
+        System.err.println(exc.getCause().toString());
+      else
+        exc.getCause().printStackTrace();
       System.exit(1);
     }
     catch(Exception exc)

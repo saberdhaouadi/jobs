@@ -165,7 +165,7 @@ public class SteveHandler extends ProtoBufHandler
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
 
     // TODO remove debugging
-    _logger.info(request.toString());
+    // _logger.info(request.toString());
 
     ListenableFuture<Frontend.Response> resp;
     if(request.hasCreate())
@@ -196,9 +196,11 @@ public class SteveHandler extends ProtoBufHandler
     else
     {
       resp = Futures.immediateFailedFuture(
-        new HttpException(HttpStatus.BAD_REQUEST_400, "Request union has no request"));
+        new ServiceException(
+          new SimpleErrorCode(
+            "REQUEST_INVALID", HttpStatus.BAD_REQUEST_400, "Request union requires one request")));
     }
-
+    
     return MoreFutures.transferResponse(resp, exchange);
   }
 

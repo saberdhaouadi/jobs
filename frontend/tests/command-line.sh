@@ -43,4 +43,19 @@ test $(lb-steve-client list-impl | wc --lines) = "2"
 test "$(lb-steve-client list-impl | grep total-v1 | jq -c '[.id, .revision, .another]')" = '["total-v1","1","bar"]'
 test "$(lb-steve-client list-impl | grep total-v2 | jq -c '[.id, .revision, .another]')" = '["total-v2","2","foo"]'
 
+seq 100 > data.txt
+job_id=$(lb-steve-client create-job --impl total-v1 \
+             -i ./data.txt -o s3://steve-jobs/data/total/output | jq -r -c '.job_id')
+
+lb-steve-client status $job_id
+sleep 10
+
+lb-steve-client status $job_id
+sleep 10
+
+lb-steve-client status $job_id
+sleep 10
+
+lb-steve-client output $job_id
+
 echo "****************** SUCCESS *******************"
