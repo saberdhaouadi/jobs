@@ -154,12 +154,7 @@ message ImplListRequest {
 }
 
 message ImplListResponse {
-  message ImplInfo {
-    required string id = 1;
-    repeated Param metadata = 2;
-  }
-
-  repeated ImplInfo job_impl = 1;  
+  repeated JobImplInfo job_impl = 1;  
 }
 
 /**
@@ -184,4 +179,9 @@ message Status {
   optional string machine = 3;
 
   optional string message = 4;
+}
+
+message JobImplInfo {
+  required string id = 1;
+  repeated Param metadata = 2;
 }

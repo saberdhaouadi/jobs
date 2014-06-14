@@ -441,44 +441,20 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      ProtobufServiceClient client = getProtobufClient();
-
-      Frontend.Request.Builder req =
-        Frontend.Request.newBuilder()
-        .setImplList(Frontend.ImplListRequest.newBuilder());
-
-      Frontend.Response.Builder resp = Frontend.Response.newBuilder();
-      
-      final ProtoBufExchange exchange = new ProtoBufExchange(req, resp, Option.<String>none());
-      exchange.setRequestMessage(req.build());
-      
-      Futures.transform(client.postMessage(exchange), new AsyncFunction<Object, Object>()
-      {        
-        @Override
-        public ListenableFuture<Object> apply(Object o) throws Exception
-        {
-          Frontend.Response response = (Frontend.Response) exchange.getResponseMessage();
-          List<Frontend.ImplListResponse.ImplInfo> infos = response.getImplList().getJobImplList();
-
-          for(Frontend.ImplListResponse.ImplInfo info : infos)
+      SteveClient client = new SteveClient(getProtobufClient());
+      Futures.transform(
+        client.getJobImplList(),
+        new Function<List<Frontend.JobImplInfo>, Object>()
+        {        
+          @Override
+          public Object apply(List<Frontend.JobImplInfo> infos)
           {
-            JsonWriter w = createJsonWriter();
-
-            w.beginObject()
-              .name("id")
-              .value(info.getId());
-
-            for(Frontend.Param param : info.getMetadataList())
-              w.name(param.getKey()).value(param.getValue());
-
-            w.endObject();
-            w.flush();
-            System.out.println("");
+            for(Frontend.JobImplInfo info : infos)
+              System.out.println(Conversions.toJSON(info));
+           
+            return infos;
           }
-
-          return Futures.immediateFuture((Object) response);
-        }
-      }).get();
+        }).get();
     }
   }
 

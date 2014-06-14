@@ -9,6 +9,9 @@ import java.util.TimeZone;
 
 import java.text.SimpleDateFormat;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
 import com.logicblox.s3lib.S3File;
 import com.logicblox.steve.protocol.Frontend;
 import com.logicblox.steve.protocol.Backend;
@@ -113,5 +116,17 @@ public class Conversions
     for(Frontend.Param param : params)
       result.put(param.getKey(), param.getValue());
     return result;
+  }
+
+  public static String toJSON(Frontend.JobImplInfo info)
+  {
+    JsonObject o = new JsonObject();
+
+    o.addProperty("id", info.getId());
+
+    for(Frontend.Param param : info.getMetadataList())
+      o.addProperty(param.getKey(), param.getValue());
+
+    return new Gson().toJson(o);
   }
 }

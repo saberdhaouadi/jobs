@@ -461,9 +461,9 @@ public class SteveHandler extends ProtoBufHandler
       });
   }
 
-  private static Frontend.ImplListResponse.ImplInfo createImplInfo(JobImpl impl)
+  private static Frontend.JobImplInfo createImplInfo(JobImpl impl)
   {
-    Frontend.ImplListResponse.ImplInfo.Builder info = Frontend.ImplListResponse.ImplInfo.newBuilder();
+    Frontend.JobImplInfo.Builder info = Frontend.JobImplInfo.newBuilder();
     info.setId(impl.id);
     for(Map.Entry<String, String> entry : impl.tags.entrySet())
     {

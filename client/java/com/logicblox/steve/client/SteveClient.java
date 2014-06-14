@@ -112,6 +112,28 @@ public class SteveClient
   }
 
   /**
+   * List job implementations
+   */
+  public ListenableFuture<List<Frontend.JobImplInfo>> getJobImplList()
+  throws ServiceClientException
+  {
+    Frontend.Request.Builder req =
+      Frontend.Request.newBuilder()
+      .setImplList(Frontend.ImplListRequest.newBuilder());
+
+    return Futures.transform(
+      post(req.build()),
+      new Function<Frontend.Response, List<Frontend.JobImplInfo>>()
+      {        
+        @Override
+        public List<Frontend.JobImplInfo> apply(Frontend.Response response)
+        {
+          return response.getImplList().getJobImplList();
+        }
+      });
+  }
+
+  /**
    * Utility for the end-to-end posting of a request.
    */
   private ListenableFuture<Frontend.Response> post(Frontend.Request req)
