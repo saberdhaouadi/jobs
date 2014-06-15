@@ -77,6 +77,10 @@ test "$(lb-steve-client upload-impl --impl foo -i s3://steve-jobs/does-not-exist
 
 #####################################################
 # Test executing a simple job
+lb-steve-client create-job --impl total-v1 -i ./data.txt -o s3://steve-jobs/data/total/output --wait
+
+#####################################################
+# Test executing a simple job
 seq 100 > data.txt
 job_id=$(lb-steve-client create-job --impl total-v1 \
              -i ./data.txt -o s3://steve-jobs/data/total/output | jq -r -c '.job_id')

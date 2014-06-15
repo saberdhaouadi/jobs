@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 import org.apache.log4j.PatternLayout;
 
@@ -52,7 +53,6 @@ import com.google.protobuf.TextFormat;
 import com.googlecode.protobuf.format.JsonFormat;
 
 import com.logicblox.bloxweb.Encoding;
-import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.bloxweb.UsageException;
 import com.logicblox.bloxweb.client.ClientConfigUtils;
 import com.logicblox.bloxweb.client.ProtobufServiceClient;
@@ -179,7 +179,8 @@ public class Main
     return fileBuilder.build();
   }
 
-  protected ProtobufServiceClient getProtobufClient() throws URISyntaxException
+  protected ProtobufServiceClient getProtobufClient()
+  throws URISyntaxException
   {
     String service = _config.getStringError("service");
     URI serviceUri = new URI(service);
@@ -191,6 +192,12 @@ public class Main
     connector.setEncoding(Encoding.JSON);
     connector.setGZIP(true);
     return connector.createProtobufClient();
+  }
+
+  protected SteveClientInterface getSteveClient()
+  throws URISyntaxException
+  {
+    return new SteveClient(getProtobufClient(), Executors.newScheduledThreadPool(25));
   }
 
   private static String formatJSON(String json)
@@ -246,12 +253,12 @@ public class Main
     @Parameter(
       names = {"--poll-delay"},
       description = "Delay in seconds for polling for the result")
-    long _pollDelay;
+    long _pollDelay = 5;
 
     @Override
     public void invoke() throws Exception
     {
-      SteveClientInterface client = new SteveClient(getProtobufClient());
+      final SteveClientInterface client = getSteveClient();
 
       List<Frontend.File> inputs = new ArrayList<Frontend.File>();
       if(_inputs != null)
@@ -273,7 +280,11 @@ public class Main
           public ListenableFuture<Object> apply(String id) throws Exception
           {
             System.out.println(getJobIdAsJSON(id));
-            return Futures.immediateFuture((Object) id);
+
+            if(_wait)
+              return (ListenableFuture) client.wait(id, _pollDelay, new IncrementalStateNotify());
+            else
+              return Futures.immediateFuture((Object) id);
           }
         }).get();
     }
@@ -291,24 +302,21 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      SteveClientInterface client = new SteveClient(getProtobufClient());
+      SteveClientInterface client = getSteveClient();
       for(String id : _ids)
       {
         Futures.transform(
-          client.getStatus(id),
-          new Function<List<Frontend.Status>, Object>()
+          client.getState(id),
+          new Function<Frontend.State, Object>()
           {        
             @Override
-            public Object apply(List<Frontend.Status> list)
+            public Object apply(Frontend.State state)
             {
+              System.out.println("State: " + state.getState());
+
+              List<Frontend.Status> list = state.getStatusList();
               for(Frontend.Status status : list)
-              {
-                System.out.printf("%-30s %-12s %-20s %80s %n",
-                  Conversions.getISO8601(status.getTimestamp()),
-                  status.getStatusCode(),
-                  status.getMachine(),
-                  status.hasMessage() ? status.getMessage() : "");
-              }
+                Printers.print(status);
               
               return Futures.immediateFuture((Object) list);
             }
@@ -329,7 +337,7 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      SteveClientInterface client = new SteveClient(getProtobufClient());
+      SteveClientInterface client = getSteveClient();
       for(String id : _ids)
       {
         Futures.transform(
@@ -374,7 +382,7 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      SteveClientInterface client = new SteveClient(getProtobufClient());
+      SteveClientInterface client = getSteveClient();
       Futures.transform(
         client.addJobImpl(_impl, createInput(_input), convertCommandLineMetadata(_metadata)),
         new Function<String, Object>()
@@ -422,7 +430,7 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      SteveClientInterface client = new SteveClient(getProtobufClient());
+      SteveClientInterface client = getSteveClient();
       Futures.transform(
         client.getJobImplList(),
         new Function<List<Frontend.JobImplInfo>, Object>()

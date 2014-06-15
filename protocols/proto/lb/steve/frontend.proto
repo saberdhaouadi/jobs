@@ -51,8 +51,7 @@ message StateRequest {
 }
 
 message StateResponse {
-  required string state = 1;
-  repeated Status status = 2;
+  required State state = 1;
 }
 
 /**
@@ -168,6 +167,15 @@ message Param {
 message File {
   required string url = 1;
   optional string hash = 2;
+}
+
+message State {
+  // Jobs use the following states:
+  // - SUCCEEDED
+  // - FAILED
+  // - UNKNOWN (temporary)
+  required string state = 1;
+  repeated Status status = 2;
 }
 
 message Status {

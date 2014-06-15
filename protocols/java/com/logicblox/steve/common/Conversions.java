@@ -129,4 +129,10 @@ public class Conversions
 
     return new Gson().toJson(o);
   }
+
+  public static boolean isComplete(Frontend.State state)
+  {
+    // TODO refine based on actual state diagram
+    return "SUCCEEDED".equals(state.getState()) || "FAILED".equals(state.getState());
+  }
 }

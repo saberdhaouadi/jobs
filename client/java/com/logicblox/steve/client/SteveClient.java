@@ -2,17 +2,26 @@ package com.logicblox.steve.client;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Function;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 
-import com.logicblox.concurrent.MoreFutures;
 import com.logicblox.concurrent.FutureTransform;
+import com.logicblox.concurrent.MoreFutures;
+
 import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.bloxweb.client.ProtobufServiceClient;
 import com.logicblox.bloxweb.client.ServiceClientException;
 import com.logicblox.common.Option;
+
+import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.protocol.Frontend;
 
 /**
@@ -22,10 +31,13 @@ import com.logicblox.steve.protocol.Frontend;
 public class SteveClient implements SteveClientInterface
 {
   private ProtobufServiceClient _client;
+  private ListeningScheduledExecutorService _scheduler;
 
-  public SteveClient(ProtobufServiceClient client)
+  public SteveClient(ProtobufServiceClient client, ScheduledExecutorService scheduler)
   {
     _client = client;
+    if(scheduler != null)
+      _scheduler = MoreExecutors.listeningDecorator(scheduler);
   }
 
   /**
@@ -65,7 +77,7 @@ public class SteveClient implements SteveClientInterface
   /**
    * Get the status of the specified job id.
    */
-  public ListenableFuture<List<Frontend.Status>> getStatus(String id)
+  public ListenableFuture<Frontend.State> getState(String id)
   throws ServiceClientException
   {
     Frontend.Request.Builder req =
@@ -77,12 +89,12 @@ public class SteveClient implements SteveClientInterface
 
     return Futures.transform(
       post(req.build()),
-      new Function<Frontend.Response, List<Frontend.Status>>()
+      new Function<Frontend.Response, Frontend.State>()
       {        
         @Override
-        public List<Frontend.Status> apply(Frontend.Response response)
+        public Frontend.State apply(Frontend.Response response)
         {
-          return response.getState().getStatusList();
+          return response.getState().getState();
         }
       });
   }
@@ -112,9 +124,45 @@ public class SteveClient implements SteveClientInterface
   }
 
   /**
-   * Asynchronously upload a new job implementation. This returns a
-   * job id, which should be used to check for the status of
-   * completion.
+   * Wait for completion of a job id, with a fixed delay (see interface for more docs)
+   */
+  public ListenableFuture<Frontend.State> wait(final String id, final long pollDelaySeconds, final StateNotify notify)
+  {
+    return Futures.dereference(
+      _scheduler.schedule(
+        new Callable<ListenableFuture<Frontend.State>>()
+        {
+          public ListenableFuture<Frontend.State> call() throws ServiceClientException
+          {
+            return Futures.transform(
+              getState(id),
+              new AsyncFunction<Frontend.State, Frontend.State>()
+              {
+                public ListenableFuture<Frontend.State> apply(Frontend.State state)
+                {
+                  if(notify != null)
+                  {
+                    try
+                    {
+                      notify.notify(state);
+                    }
+                    catch(Exception exc) {}
+                  }
+                  
+                  if(Conversions.isComplete(state))
+                    return Futures.immediateFuture(state);
+                  else
+                    return wait(id, pollDelaySeconds, notify);
+                }
+              });
+          }
+        },
+        pollDelaySeconds,
+        TimeUnit.SECONDS));
+  }
+
+  /**
+   * Asynchronously upload a new job implementation.
    */
   public ListenableFuture<String> addJobImpl(String jobImpl, Frontend.File archive, Iterable<Frontend.Param> metadata)
   throws ServiceClientException

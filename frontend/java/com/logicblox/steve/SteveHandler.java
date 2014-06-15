@@ -258,7 +258,7 @@ public class SteveHandler extends ProtoBufHandler
       {
         public Frontend.Response apply(Job job)
         {
-          Frontend.StateResponse.Builder b = Frontend.StateResponse.newBuilder();
+          Frontend.State.Builder b = Frontend.State.newBuilder();
 
           if(job.isSucceeded())
             b.setState("SUCCEEDED");
@@ -285,8 +285,12 @@ public class SteveHandler extends ProtoBufHandler
             }
           }
 
-          Frontend.Response.Builder response = Frontend.Response.newBuilder();
-          response.setState(b);
+          Frontend.Response.Builder response =
+            Frontend.Response.newBuilder()
+            .setState(
+              Frontend.StateResponse.newBuilder()
+              .setState(b));
+
           return response.build();
         }
       });
