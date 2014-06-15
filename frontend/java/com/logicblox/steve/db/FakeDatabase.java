@@ -114,16 +114,16 @@ public class FakeDatabase implements Database
       String id = UUID.randomUUID().toString();
       
       job = new Job();
-      job.setId(id);
+      job.id = id;
       job.impl = impl;
-      job.setClientId(clientId);
+      job.clientId = clientId;
+      job.outputPrefix = output;
       job.setInputData(inputs);
-      job.setOutputPrefix(output);
 
       _jobState.initialize(id);
       
-      _jobFromId.put(job.getId(), job);
-      _jobFromClientId.put(job.getClientId(), job);
+      _jobFromId.put(job.id, job);
+      _jobFromClientId.put(job.clientId, job);
     }
     
     return Futures.immediateFuture(job);
@@ -177,8 +177,16 @@ public class FakeDatabase implements Database
       {
         if(!j.isSucceeded())
         {
-          throw new ServiceException(
-            new SimpleErrorCode("INVALID_STATE", 400, "Job '" + jobId + "' does not have SUCCEEDED state"));
+          if(j.isFailed())
+          {
+            throw new ServiceException(
+              new SimpleErrorCode("JOB_FAILED", 400, "Job '" + j.id + "' failed and has no output"));
+          }
+          else
+          {
+            throw new ServiceException(
+              new SimpleErrorCode("JOB_INCOMPLETE", 400, "Job '" + j.id + "' has not completed and has no output"));
+          }
         }
 
         return j;

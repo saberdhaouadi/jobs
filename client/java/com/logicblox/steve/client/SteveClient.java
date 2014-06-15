@@ -128,6 +128,7 @@ public class SteveClient implements SteveClientInterface
    */
   public ListenableFuture<Frontend.State> wait(final String id, final long pollDelaySeconds, final StateNotify notify)
   {
+    // TODO extend to accept temporary connectivity issues while waiting
     return Futures.dereference(
       _scheduler.schedule(
         new Callable<ListenableFuture<Frontend.State>>()
@@ -159,6 +160,27 @@ public class SteveClient implements SteveClientInterface
         },
         pollDelaySeconds,
         TimeUnit.SECONDS));
+  }
+
+  public ListenableFuture<List<Frontend.File>> waitForJob(final String id, final long pollDelaySeconds, final StateNotify notify)
+  {
+    return Futures.transform(
+      wait(id, pollDelaySeconds, notify),
+      new AsyncFunction<Frontend.State, List<Frontend.File>>()
+      {
+        @Override
+        public ListenableFuture<List<Frontend.File>> apply(Frontend.State state) throws Exception
+        {
+          if("SUCCEEDED".equals(state.getState()))
+            return getResult(id);
+          else
+            return Futures.immediateFailedFuture(
+              new SteveClientException(
+                _client.getURI(),
+                "Job '" + id + "' failed and has no output",
+                "JOB_FAILED"));
+        }
+      });
   }
 
   /**

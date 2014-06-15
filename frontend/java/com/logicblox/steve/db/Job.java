@@ -9,9 +9,9 @@ import com.logicblox.steve.common.Data;
 
 public class Job
 {
-  private String _id;
-  private String _clientId;
-  private String _output;
+  public String id;
+  public String clientId;
+  public String outputPrefix;
 
   public JobImpl impl;
 
@@ -20,36 +20,6 @@ public class Job
 
   private Status.State _state;
   private List<Status> _status = new ArrayList<Status>();
-
-  public void setId(String v)
-  {
-    _id = v;
-  }
-
-  public String getId()
-  {
-    return _id;
-  }
-
-  public void setClientId(String v)
-  {
-    _clientId = v;
-  }
-
-  public String getClientId()
-  {
-    return _clientId;
-  }
-
-  public void setOutputPrefix(String v)
-  {
-    _output = v;
-  }
-
-  public String getOutputPrefix()
-  {
-    return _output;
-  }
 
   public List<Status> getStatus()
   {

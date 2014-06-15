@@ -10,60 +10,59 @@ public class SteveClientException extends Exception
   /**
    * HTTP status of the response.
    */
-  public final int status;
-
-  /**
-   * Response message
-   */
-  public final Frontend.Response response;
+  public int status = -1;
 
   /**
    * Service URL
    */
-  public final String service;
+  public String service = null;
+
+  /**
+   * Error message
+   */
+  public String error = null;
+
+  /**
+   * Error code
+   */
+  public String error_code = null;
+
+  public SteveClientException(String service, String error, String error_code)
+  {
+    this.service = service;
+    this.error = error;
+    this.error_code = error_code;
+  }
 
   public SteveClientException(String service, int status, Frontend.Response response)
   {
     this.status = status;
     this.service = service;
-    this.response = response;
+
+    if(response != null)
+    {
+      if(response.hasError())
+        this.error = response.getError();
+      if(response.hasErrorCode())      
+        this.error_code = response.getErrorCode();
+    }
   }
 
   @Override
   public String toString() 
   {
-    StringBuilder builder = new StringBuilder();
-
-    if(this.response != null)
-    {
-      if(this.response.hasError())
-        builder.append("error: " + response.getError());
-      
-      if(this.response.hasErrorCode())
-        builder.append(", code " + this.response.getErrorCode());
-    }
-
-    if(this.service != null)
-      builder.append(", service '" + this.service + "'");
-    
-    if(this.status != -1)
-      builder.append(", http-status " + this.status);
-
-    return builder.toString();
+    return toJSON();
   }
 
   public String toJSON() 
   {
     JsonObject o = new JsonObject();
 
-    if(this.response != null)
-    {
-      if(this.response.hasError())
-        o.addProperty("error", response.getError());
-      
-      if(this.response.hasErrorCode())
-        o.addProperty("error_code", response.getErrorCode());
-    }
+    if(this.error != null)
+      o.addProperty("error", this.error);
+    
+    if(this.error_code != null)
+      o.addProperty("error_code", this.error_code);
 
     if(this.service != null)
       o.addProperty("service", this.service);

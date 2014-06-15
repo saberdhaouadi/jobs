@@ -77,7 +77,7 @@ test "$(lb-steve-client upload-impl --impl foo -i s3://steve-jobs/does-not-exist
      = '["FILE_NOT_FOUND",400]'
 
 #####################################################
-# Test executing a simple job
+# Test executing a simple job and wait for the result
 lb-steve-client create-job --impl total-v1 -i ./data.txt -o s3://steve-jobs/data/total/output --wait
 
 #####################################################
@@ -85,6 +85,11 @@ lb-steve-client create-job --impl total-v1 -i ./data.txt -o s3://steve-jobs/data
 seq 100 > data.txt
 job_id=$(lb-steve-client create-job --impl total-v1 \
              -i ./data.txt -o s3://steve-jobs/data/total/output | jq -r -c '.job_id')
+
+# Immediately asking for the output gives a bad request
+test "$(lb-steve-client output $job_id  2>&1 \
+        | head -1 | jq -c '[.error_code, .http_status]')" \
+     = '["JOB_INCOMPLETE",400]'
 
 lb-steve-client status $job_id
 sleep 10

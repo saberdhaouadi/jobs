@@ -45,9 +45,10 @@ public interface SteveClientInterface
    * Wait for completion of a job id, with a fixed delay. Returns the output of the job.
    *
    * If notify is not null, then every state response during polling is reported to the notify object.
+   * Future throws SteveClientException if the job completed, but did not succeed.
    */
-  // public ListenableFuture<List<Frontend.File>> waitForJob(String id, long pollDelaySeconds, StateNotify notify)
-  // throws ServiceClientException;
+  public ListenableFuture<List<Frontend.File>> waitForJob(String id, long pollDelaySeconds, StateNotify notify)
+  throws ServiceClientException;
 
   /**
    * Asynchronously upload a new job implementation.

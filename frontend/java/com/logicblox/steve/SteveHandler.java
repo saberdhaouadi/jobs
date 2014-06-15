@@ -238,7 +238,7 @@ public class SteveHandler extends ProtoBufHandler
           Frontend.Response.Builder response = Frontend.Response.newBuilder();
           response.setCreate(
             Frontend.JobCreateResponse.newBuilder()
-            .setJobId(job.getId()));
+            .setJobId(job.id));
           
           return response.build();
         }
@@ -310,13 +310,6 @@ public class SteveHandler extends ProtoBufHandler
         public ListenableFuture<Frontend.Response> apply(Job job)
         {
           Frontend.JobResultResponse.Builder b = Frontend.JobResultResponse.newBuilder();
-
-          if(!job.isSucceeded())
-          {
-            // TODO Better error (check if failed, executing etc)
-            return Futures.immediateFailedFuture(
-              new HttpException(HttpStatus.BAD_REQUEST_400, "Job has no output yet"));
-          }
 
           for(Data d : job.getOutputData())
           {
