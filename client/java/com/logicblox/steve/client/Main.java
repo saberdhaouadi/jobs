@@ -282,7 +282,10 @@ public class Main
             System.out.println(getJobIdAsJSON(id));
 
             if(_wait)
-              return (ListenableFuture) client.wait(id, _pollDelay, new IncrementalStateNotify());
+            {
+              return (ListenableFuture) printResult(
+                client.waitForJob(id, _pollDelay, new IncrementalStateNotify()));
+            }
             else
               return Futures.immediateFuture((Object) id);
           }
@@ -352,31 +355,36 @@ public class Main
       for(String id : _ids)
       {
         ListenableFuture<List<Frontend.File>> files;
-
         if(_wait)
           files = client.waitForJob(id, _pollDelay, new IncrementalStateNotify());
         else
           files = client.getResult(id);
 
-        Futures.transform(
-          files,
-          new Function<List<Frontend.File>, Object>()
-          {        
-            @Override
-            public Object apply(List<Frontend.File> list)
-            {
-              int max = 5;
-              for(Frontend.File f : list)
-                max = Math.max(max, f.getUrl().length());
-              
-              for(Frontend.File f : list)
-                System.out.printf("%-" + max + "s %s%n", f.getUrl(), f.getHash());
-              
-              return Futures.immediateFuture((Object) list);
-            }
-          }).get();
+        printResult(files).get();
       }
     }
+  }
+
+  private ListenableFuture<List<Frontend.File>> printResult(ListenableFuture<List<Frontend.File>> files)
+  {
+    return
+      Futures.transform(
+        files,
+        new Function<List<Frontend.File>, List<Frontend.File>>()
+        {        
+          @Override
+          public List<Frontend.File> apply(List<Frontend.File> list)
+          {
+            int max = 5;
+            for(Frontend.File f : list)
+              max = Math.max(max, f.getUrl().length());
+            
+            for(Frontend.File f : list)
+              System.out.printf("%-" + max + "s %s%n", f.getUrl(), f.getHash());
+            
+            return list;
+          }
+        }); 
   }
 
   /**

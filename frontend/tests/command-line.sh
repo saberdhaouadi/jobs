@@ -110,7 +110,14 @@ function test_create_job()
 
     lb-steve-client status $job_id
     lb-steve-client output $job_id --wait
+
+    # Waiting twice is fine ...
+    lb-steve-client output $job_id --wait
+
+    # Asking for status again is fine ...
     lb-steve-client status $job_id
+
+    # Make sure state line contains SUCCEEEDED
     lb-steve-client status $job_id | head -1 | grep SUCCEEDED
 }
 
@@ -130,6 +137,9 @@ function test_create_job_fail()
 
     # Make sure we also report failure if not waiting
     ! lb-steve-client output $job_id
+
+    # Make sure we also report failure if waiting again
+    ! lb-steve-client output $job_id --wait
     
     # Asking for status succeeds even if the job failed
     lb-steve-client status $job_id
