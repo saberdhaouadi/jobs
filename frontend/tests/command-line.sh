@@ -12,14 +12,15 @@ function start_servers()
 {
   killall java || echo "failure okay"
 
-  lb-steve-frontend --config ./frontend.config &
+  lb-steve-frontend --config ./frontend.config &> frontend.log &
   frontend_pid=$!
   # pure evil, but okay
   sleep 3
 
   export NIX_PATH=worker=$topdir/worker-minimal:$NIX_PATH
   lb-steve-worker --incoming $(cat $scriptdir/frontend.config | awk '$1 == "sqs_queue_url" {print $3}' | sed '1q;d') \
-                  --outgoing $(cat $scriptdir/frontend.config | awk '$1 == "sqs_queue_url" {print $3}' | sed '2q;d') &
+                  --outgoing $(cat $scriptdir/frontend.config | awk '$1 == "sqs_queue_url" {print $3}' | sed '2q;d') \
+                  &> worker.log &
   worker_pid=$!
 }
 

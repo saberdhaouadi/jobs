@@ -12,7 +12,7 @@ public class IncrementalStateNotify implements SteveClientInterface.StateNotify
 
   public synchronized void notify(Frontend.State state)
   {
-    if(state.getState().equals(_prevState))
+    if(!state.getState().equals(_prevState))
       System.out.println("State: " + state.getState());
 
     for(int i = _prevCount; i < state.getStatusCount(); i++)
