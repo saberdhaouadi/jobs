@@ -188,12 +188,12 @@ function test_create_job_fail()
 start_servers
 trap stop_servers EXIT
 
-# test_upload_impl
-# test_upload_impl_no_file
-# test_create_job_wrong_impl
-# test_status_no_such_job
-# test_create_job_wait
+test_upload_impl
+test_upload_impl_no_file
+test_create_job_wrong_impl
+test_status_no_such_job
+test_create_job_wait
 test_create_job
-# test_create_job_fail
+test_create_job_fail
 
 echo "****************** SUCCESS *******************"
