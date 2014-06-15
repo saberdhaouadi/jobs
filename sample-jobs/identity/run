@@ -1,0 +1,11 @@
+#! /bin/sh
+
+set -e
+set -u
+
+input=$1
+output=$2
+
+for f in $input/*; do
+  cp $f $output
+done

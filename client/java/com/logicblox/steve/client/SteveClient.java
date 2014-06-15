@@ -1,5 +1,6 @@
 package com.logicblox.steve.client;
 
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -43,7 +44,7 @@ public class SteveClient implements SteveClientInterface
   /**
    * Create a new job, returns an asynchronous job id.
    */
-  public ListenableFuture<String> createJob(String jobImpl, List<Frontend.File> inputs, String output)
+  public ListenableFuture<String> createJob(String jobImpl, Iterable<Frontend.File> inputs, URI outputPrefix)
   throws ServiceClientException
   {
     // TODO retry on connection issues with the same clientId
@@ -53,7 +54,7 @@ public class SteveClient implements SteveClientInterface
       Frontend.JobCreateRequest.newBuilder()
       .setClientId(clientId)
       .setJobImpl(jobImpl)
-      .setOutput(output);
+      .setOutput(outputPrefix.toString());
     
     for(Frontend.File input : inputs)
       createReq.addInput(input);

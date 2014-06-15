@@ -1,6 +1,8 @@
 package com.logicblox.steve.client;
 
+import java.net.URI;
 import java.util.List;
+
 import com.google.common.util.concurrent.ListenableFuture;
 import com.logicblox.bloxweb.client.ServiceClientException;
 import com.logicblox.steve.protocol.Frontend;
@@ -18,7 +20,7 @@ public interface SteveClientInterface
   /**
    * Create a new job, returns an asynchronous job id.
    */
-  public ListenableFuture<String> createJob(String jobImpl, List<Frontend.File> inputs, String output)
+  public ListenableFuture<String> createJob(String jobImpl, Iterable<Frontend.File> inputs, URI outputPrefix)
   throws ServiceClientException;
 
   /**

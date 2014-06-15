@@ -45,6 +45,7 @@ rule(
     'cp -f $(s3lib)/lib/java/jcommander* $(prefix)/lib/java',
     'cp -f $(s3lib)/lib/java/guava* $(prefix)/lib/java',
     'cp -f $(s3lib)/lib/java/commons-codec-*.jar $(prefix)/lib/java',
+    'cp -f $(s3lib)/lib/java/commons-io-*.jar $(prefix)/lib/java',
     'cp -f $(logicblox)/lib/java/lb-common.jar $(prefix)/lib/java',
     'cp -f $(logicblox)/lib/java/protobuf-2.5.0.jar $(prefix)/lib/java',
     'cp -f $(lb_web)/lib/java/protobuf-java*.jar $(prefix)/lib/java',

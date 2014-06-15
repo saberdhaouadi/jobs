@@ -16,7 +16,11 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -30,6 +34,7 @@ import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -66,6 +71,7 @@ import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
+import com.logicblox.concurrent.MoreFutures;
 
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.S3File;
@@ -144,39 +150,65 @@ public class Main
     return URI.create(_config.getStringError("default_input_prefix") + "/" + id);
   }
 
+  protected URI createUniqueOutputPrefixURI() throws URISyntaxException
+  {
+    String id = UUID.randomUUID().toString();
+    return URI.create(_config.getStringError("default_output_prefix") + "/" + id);
+  }
+
   /**
    * Transparantly uploads input to S3 if it is a local file.
    */
-  protected Frontend.File createInput(String input) throws Exception
+  protected ListenableFuture<List<Frontend.File>> createInput(String input) throws Exception
   {
     // TODO support hashes as parameters or lookup in S3
-
     // TODO should we delete the input or rely on an automatic retention policy on the bucket?
-    URI inputURI; 
-    S3File inputS3File = null;
     if(input.startsWith("s3://"))
     {
-      inputURI = new URI(input);
+      Frontend.File.Builder fileBuilder = 
+        Frontend.File.newBuilder()
+        .setUrl(input);
+      
+      return Futures.immediateFuture(
+        Collections.singletonList(
+          fileBuilder.build()));
     }
     else
     {
+      S3Client s3client = S3Utils.createS3Client(_config);
+
       File inputFile = new File(input);
       if(!inputFile.exists())
         throw new UsageException("Input file does not exist");
-      
-      S3Client s3client = S3Utils.createS3Client(_config);
-      inputURI = createUniqueInputURI();
-      inputS3File = s3client.upload(inputFile, inputURI).get();
-    }
-    
-    Frontend.File.Builder fileBuilder = 
-      Frontend.File.newBuilder()
-      .setUrl(inputURI.toString());
-    
-    if(inputS3File != null)
-      fileBuilder.setHash("etag:" + inputS3File.getETag());
 
-    return fileBuilder.build();
+      if(inputFile.isDirectory())
+      {
+        return Futures.transform(
+          s3client.uploadDirectory(inputFile, createUniqueInputURI(), null),
+          new Function<List<S3File>, List<Frontend.File>>()
+          {
+            public List<Frontend.File> apply(List<S3File> files)
+            {
+              List<Frontend.File> result = new ArrayList<Frontend.File>();
+              for(S3File f : files)
+                result.add(Conversions.convertToFrontendFile(f));
+              return result;
+            }
+          });
+      }
+      else
+      {
+        return Futures.transform(
+          s3client.upload(inputFile, createUniqueInputURI()),
+          new Function<S3File, List<Frontend.File>>()
+          {
+            public List<Frontend.File> apply(S3File file)
+            {
+              return Collections.singletonList(Conversions.convertToFrontendFile(file));
+            }
+          });
+      }
+    }
   }
 
   protected ProtobufServiceClient getProtobufClient()
@@ -236,13 +268,14 @@ public class Main
       variableArity = true)
     List<String> _metadata;
 
-    @Parameter(names = {"-i", "--input"}, description = "S3 input file")
+    @Parameter(names = {"-i", "--input"}, description = "Local or S3 input file (S3 files use s3://bucket/key URLs)")
     List<String> _inputs;
 
     @Parameter(
-      names = {"-o", "--output-prefix"},
-      description = "S3 URL prefix for output files",
-      required = true)
+      names = {"-o", "--output"},
+      description = "Output of job, to be stored in either a local directory, single output file, " + 
+         "or S3 output prefix (S3 files use s3://bucket/key URLs). If local output is requested, then the S3 default_output_prefix" +
+         "will be used to store the outputs")
     String _output;
 
     @Parameter(
@@ -260,20 +293,35 @@ public class Main
     {
       final SteveClientInterface client = getSteveClient();
 
-      List<Frontend.File> inputs = new ArrayList<Frontend.File>();
+      List<ListenableFuture<List<Frontend.File>>> inputFutures = new ArrayList<ListenableFuture<List<Frontend.File>>>();
       if(_inputs != null)
       {
         for(String input : _inputs)
-          inputs.add(createInput(input));
+        {
+          inputFutures.add(createInput(input));
+        }
       }
-      
-      // If the output is to be stored locally, then we automatically
-      // wait for completion (can't do anything else)
-      if(!_output.startsWith("s3://"))
+
+      Iterable<Frontend.File> inputs = MoreFutures.concat(Futures.allAsList(inputFutures)).get();
+
+      if(_output == null)
+        _output = createUniqueOutputPrefixURI().toString();
+
+      URI outputPrefix;
+      final boolean autoDownload = !_output.startsWith("s3://");
+      if(autoDownload)
+      {
+        outputPrefix = createUniqueOutputPrefixURI();
+
+        // If the output is to be stored locally, then we
+        // automatically wait for completion (can't do anything else)
         _wait = true;
+      }
+      else
+        outputPrefix = URI.create(_output);
 
       Futures.transform(
-        client.createJob(_impl, inputs, _output),
+        client.createJob(_impl, inputs, outputPrefix),
         new AsyncFunction<String, Object>()
         {        
           @Override
@@ -283,8 +331,13 @@ public class Main
 
             if(_wait)
             {
-              return (ListenableFuture) printResult(
+              ListenableFuture<List<Frontend.File>> files = printResult(
                 client.waitForJob(id, _pollDelay, new IncrementalStateNotify()));
+
+              if(autoDownload)
+                files = downloadResult(_output, files);
+
+              return (ListenableFuture) files;
             }
             else
               return Futures.immediateFuture((Object) id);
@@ -347,6 +400,11 @@ public class Main
       description = "Delay in seconds for polling for the result")
     long _pollDelay = 5;
 
+    @Parameter(
+      names = {"-o", "--output"},
+      description = "Download the job output to the specified file or directory")
+    String _output;
+
     @Override
     public void invoke() throws Exception
     {
@@ -360,7 +418,12 @@ public class Main
         else
           files = client.getResult(id);
 
-        printResult(files).get();
+        files = printResult(files);
+
+        if(_output != null)
+          files = downloadResult(_output, files);
+
+        files.get();
       }
     }
   }
@@ -372,19 +435,58 @@ public class Main
         files,
         new Function<List<Frontend.File>, List<Frontend.File>>()
         {        
-          @Override
           public List<Frontend.File> apply(List<Frontend.File> list)
           {
-            int max = 5;
             for(Frontend.File f : list)
-              max = Math.max(max, f.getUrl().length());
-            
-            for(Frontend.File f : list)
-              System.out.printf("%-" + max + "s %s%n", f.getUrl(), f.getHash());
-            
+              System.out.println(Conversions.toJSON(f));
             return list;
           }
         }); 
+  }
+
+  private ListenableFuture<List<Frontend.File>> downloadResult(final String output, ListenableFuture<List<Frontend.File>> future)
+  {
+    return
+      Futures.transform(
+        future,
+        new AsyncFunction<List<Frontend.File>, List<Frontend.File>>()
+        {
+          public ListenableFuture<List<Frontend.File>> apply(List<Frontend.File> list)
+          throws Exception
+          {
+            return downloadResult(output, list);
+          }
+        });
+  }
+
+  private ListenableFuture<List<Frontend.File>> downloadResult(final String output, List<Frontend.File> files)
+  throws IOException
+  {
+    S3Client s3client = S3Utils.createS3Client(_config);
+
+    Path p = Paths.get(output);
+    if(Files.isDirectory(p) || output.endsWith("/") || files.size() > 1)
+    {
+      // Assume that we want to download the list of files to a directory.
+      List<ListenableFuture<S3File>> downloads = new ArrayList<ListenableFuture<S3File>>();
+
+      for(Frontend.File file : files)
+      {
+        Path targetFile = p.resolve(Conversions.getBasename(file));
+        downloads.add(s3client.download(targetFile.toFile(), URI.create(file.getUrl())));
+      }
+
+      return Futures.transform(Futures.allAsList(downloads), Functions.constant(files));
+    }
+    else
+    {
+      // Assume that we want to download to a single file
+      // TOOD check the ETag from the download
+      return
+        Futures.transform(
+          s3client.download(p.toFile(), URI.create(files.get(0).getUrl())),
+          Functions.constant(files));
+    }
   }
 
   /**
@@ -410,7 +512,7 @@ public class Main
     {
       SteveClientInterface client = getSteveClient();
       Futures.transform(
-        client.addJobImpl(_impl, createInput(_input), convertCommandLineMetadata(_metadata)),
+        client.addJobImpl(_impl, createInput(_input).get().get(0), convertCommandLineMetadata(_metadata)),
         new Function<String, Object>()
         {        
           @Override

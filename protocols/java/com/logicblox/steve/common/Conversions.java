@@ -1,13 +1,13 @@
 package com.logicblox.steve.common;
 
+import java.net.URI;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Date;
 import java.util.TimeZone;
-
-import java.text.SimpleDateFormat;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -76,11 +76,20 @@ public class Conversions
     return d;
   }
 
+  public static Frontend.File convertToFrontendFile(S3File file)
+  {
+    return 
+      Frontend.File.newBuilder()
+      .setUrl(getURI(file).toString())
+      .setHash("etag:" + file.getETag())
+      .build();
+  }
+
   public static Data convertS3FileToData(S3File file)
   {
     Data d = new Data();
     d.setHash("etag:" + file.getETag());
-    d.setLocation("s3://" + file.getBucketName() + "/" + file.getKey());
+    d.setLocation(getURI(file).toString());
     return d;
   }
 
@@ -118,6 +127,15 @@ public class Conversions
     return result;
   }
 
+  public static String toJSON(Frontend.File file)
+  {
+    JsonObject o = new JsonObject();
+    o.addProperty("url", file.getUrl());
+    if(file.hasHash())
+      o.addProperty("hash", file.getHash());
+    return new Gson().toJson(o);
+  }
+
   public static String toJSON(Frontend.JobImplInfo info)
   {
     JsonObject o = new JsonObject();
@@ -134,5 +152,16 @@ public class Conversions
   {
     // TODO refine based on actual state diagram
     return "SUCCEEDED".equals(state.getState()) || "FAILED".equals(state.getState());
+  }
+
+  public static String getBasename(Frontend.File file)
+  {
+    String url = file.getUrl();
+    return url.substring(url.lastIndexOf("/") + 1);
+  }
+
+  public static URI getURI(S3File file)
+  {
+    return URI.create("s3://" + file.getBucketName() + "/" + file.getKey());
   }
 }

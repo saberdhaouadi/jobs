@@ -30,9 +30,23 @@ To upload a job implementation:
 
     $ lb-steve-client upload-impl --impl total-v1 -i ~/total.tar.gz
 
-To run a job:
 
-    $ lb-steve-client create-job \
-        --impl total-v1 \
-        -i s3://steve-jobs/data/total/input/data.txt \
-        -o s3://steve-jobs/data/total/output
+Running jobs
+------------
+
+    To run a job:
+
+        $ lb-steve-client create-job --impl total-v1 -i input.txt -o output.txt
+
+    To run a job while keeping results in S3:
+
+        $ lb-steve-client create-job --impl total-v1 -i s3://bucket/data.txt -o s3://bucket/output
+
+    The input/output can be mixed between S3 and local files:
+
+        $ lb-steve-client create-job --impl total-v1 -i input.txt -o s3://bucket/output
+        $ lb-steve-client create-job --impl total-v1 -i s3://bucket/data.txt -o output.txt
+
+    Diretories can also be used as input and output:
+
+        $ lb-steve-client create-job --impl total-v1 -i input-dir -o output-dir
