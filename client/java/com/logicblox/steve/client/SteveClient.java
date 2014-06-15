@@ -128,6 +128,12 @@ public class SteveClient implements SteveClientInterface
    */
   public ListenableFuture<Frontend.State> wait(final String id, final long pollDelaySeconds, final StateNotify notify)
   {
+    return waitInternal(0, id, pollDelaySeconds, notify);
+  }
+
+  private ListenableFuture<Frontend.State> waitInternal(
+    final int count, final String id, final long pollDelaySeconds, final StateNotify notify)
+  {
     // TODO extend to accept temporary connectivity issues while waiting
     return Futures.dereference(
       _scheduler.schedule(
@@ -153,12 +159,13 @@ public class SteveClient implements SteveClientInterface
                   if(Conversions.isComplete(state))
                     return Futures.immediateFuture(state);
                   else
-                    return wait(id, pollDelaySeconds, notify);
+                    return waitInternal(count + 1, id, pollDelaySeconds, notify);
                 }
               });
           }
         },
-        pollDelaySeconds,
+        // do not delay initial execution
+        (count == 0 ? 0 : pollDelaySeconds),
         TimeUnit.SECONDS));
   }
 

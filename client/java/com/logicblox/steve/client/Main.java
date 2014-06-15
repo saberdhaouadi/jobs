@@ -334,14 +334,32 @@ public class Main
     @Parameter(description = "Job identifiers", required = true)
     List<String> _ids;
 
+    @Parameter(
+      names = {"--wait"},
+      description = "Wait for completion of the job by polling for the result")    
+    boolean _wait = false;
+
+    @Parameter(
+      names = {"--poll-delay"},
+      description = "Delay in seconds for polling for the result")
+    long _pollDelay = 5;
+
     @Override
     public void invoke() throws Exception
     {
       SteveClientInterface client = getSteveClient();
+
       for(String id : _ids)
       {
+        ListenableFuture<List<Frontend.File>> files;
+
+        if(_wait)
+          files = client.waitForJob(id, _pollDelay, new IncrementalStateNotify());
+        else
+          files = client.getResult(id);
+
         Futures.transform(
-          client.getResult(id),
+          files,
           new Function<List<Frontend.File>, Object>()
           {        
             @Override

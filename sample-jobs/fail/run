@@ -1,0 +1,12 @@
+#! /bin/sh
+
+set -e
+set -u
+
+input=$1
+output=$2
+
+echo "just an echo for creating a log"
+echo "bla" > $output/result.txt
+
+exit 1
