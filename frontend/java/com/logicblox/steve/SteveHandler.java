@@ -165,7 +165,7 @@ public class SteveHandler extends ProtoBufHandler
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
 
     // TODO remove debugging
-    // _logger.info(request.toString());
+    _logger.info(request.toString());
 
     ListenableFuture<Frontend.Response> resp;
     if(request.hasCreate())
@@ -210,13 +210,18 @@ public class SteveHandler extends ProtoBufHandler
     Frontend.JobCreateRequest req)
   {
     // TODO require authentication and use actual user
+
+    Map<String, String> tags = Conversions.createMap(req.getMetadataList());
+    tags.put("date", Conversions.getCurrentISO8601());
+
     ListenableFuture<Job> job =
       _db.createJob(
         "martin",
         req.getClientId(),
         req.getJobImpl(),
         Conversions.convertFrontendFileToData(req.getInputList()),
-        req.getOutput());
+        req.getOutput(),
+        tags);
 
     // Once we have the job stored in the database, submit it to the queue
     job = Futures.transform(job, new AsyncFunction<Job, Job>()
@@ -351,8 +356,8 @@ public class SteveHandler extends ProtoBufHandler
 
     ListenableFuture<ObjectMetadata> metadata = _s3client.exists(inputUrl);
 
-    // Check the metadata, and if we're okay, then download the file
-    // from S3 to a temporary file
+    // Check the S3 metadata, and if we're okay, then download the
+    // file from S3 to a temporary file
     ListenableFuture<S3File> inputFile = Futures.transform(
       metadata,
       new AsyncFunction<ObjectMetadata, S3File>()
@@ -462,7 +467,7 @@ public class SteveHandler extends ProtoBufHandler
   {
     Frontend.JobImplInfo.Builder info = Frontend.JobImplInfo.newBuilder();
     info.setId(impl.id);
-    for(Map.Entry<String, String> entry : impl.tags.entrySet())
+    for(Map.Entry<String, String> entry : impl.metadata.entrySet())
     {
       info.addMetadata(Conversions.createFrontendParam(entry.getKey(), entry.getValue()));
     }

@@ -13,5 +13,5 @@ public class JobImpl
 
   public Data archive;
 
-  public Map<String, String> tags = new HashMap<String, String>();
+  public Map<String, String> metadata = new HashMap<String, String>();
 }

@@ -3,6 +3,8 @@ package com.logicblox.steve.db;
 import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 import com.logicblox.steve.common.Data;
@@ -15,24 +17,28 @@ public class Job
 
   public JobImpl impl;
 
+  public Map<String, String> metadata = new HashMap<String, String>();
+
   private Collection<Data> _inputData;
   private Collection<Data> _outputData;
 
   private Status.State _state;
   private List<Status> _status = new ArrayList<Status>();
 
-  public List<Status> getStatus()
+  public synchronized List<Status> getStatus()
   {
-    return _status;
+    // Note: status is mutable, so we protect it here against
+    // concurrent access issues.
+    return ImmutableList.copyOf(_status);
   }
 
-  public void setStatus(List<Status> v)
+  public synchronized void setStatus(List<Status> v)
   {
     _status = v;
   }
 
-  // only to be used by internal database methods
-  public void addStatus(Status status)
+  // Note: this method is only to be used by internal database methods
+  public synchronized void addStatus(Status status)
   {
     _status.add(status);
   }

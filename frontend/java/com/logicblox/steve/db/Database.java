@@ -31,12 +31,17 @@ public interface Database
     String clientid,
     String jobImpl,
     Collection<Data> inputs,
-    String output);
+    String output,
+    Map<String, String> metadata);
 
   /**
    * Store a job a implementation.
    */
-  public ListenableFuture<JobImpl> setJobImpl(String userid, String id, Data file, Map<String, String> tags);
+  public ListenableFuture<JobImpl> setJobImpl(
+    String userid,
+    String id,
+    Data file,
+    Map<String, String> metadata);
 
   /**
    * Get information on a job implementation.

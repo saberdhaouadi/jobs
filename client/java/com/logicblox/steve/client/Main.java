@@ -266,7 +266,7 @@ public class Main
       names = {"-m", "--metadata"},
       description = "Metadata of the form key=value ",
       variableArity = true)
-    List<String> _metadata;
+    List<String> _metadata = new ArrayList<String>();
 
     @Parameter(names = {"-i", "--input"}, description = "Local or S3 input file (S3 files use s3://bucket/key URLs)")
     List<String> _inputs;
@@ -291,8 +291,7 @@ public class Main
     @Override
     public void invoke() throws Exception
     {
-      final SteveClientInterface client = getSteveClient();
-
+      // Collect inputs, uploading local files to S3 if needed.
       List<ListenableFuture<List<Frontend.File>>> inputFutures = new ArrayList<ListenableFuture<List<Frontend.File>>>();
       if(_inputs != null)
       {
@@ -301,9 +300,10 @@ public class Main
           inputFutures.add(createInput(input));
         }
       }
-
       Iterable<Frontend.File> inputs = MoreFutures.concat(Futures.allAsList(inputFutures)).get();
 
+      // Output is optional. If no output is specified, then we create
+      // a unique location in the default output prefix.
       if(_output == null)
         _output = createUniqueOutputPrefixURI().toString();
 
@@ -320,8 +320,16 @@ public class Main
       else
         outputPrefix = URI.create(_output);
 
+      // Handle metadata that is also offered as explicit options
+      if(_timeout != 0)
+        _metadata.add("timeout=" + _timeout);
+
+      if(_correlation != null)
+        _metadata.add("correlation-id=" + _correlation);
+
+      final SteveClientInterface client = getSteveClient();
       Futures.transform(
-        client.createJob(_impl, inputs, outputPrefix),
+        client.createJob(_impl, inputs, outputPrefix, convertCommandLineMetadata(_metadata)),
         new AsyncFunction<String, Object>()
         {        
           @Override

@@ -44,7 +44,11 @@ public class SteveClient implements SteveClientInterface
   /**
    * Create a new job, returns an asynchronous job id.
    */
-  public ListenableFuture<String> createJob(String jobImpl, Iterable<Frontend.File> inputs, URI outputPrefix)
+  public ListenableFuture<String> createJob(
+    String jobImpl,
+    Iterable<Frontend.File> inputs,
+    URI outputPrefix,
+    Iterable<Frontend.Param> metadata)
   throws ServiceClientException
   {
     // TODO retry on connection issues with the same clientId
@@ -58,6 +62,9 @@ public class SteveClient implements SteveClientInterface
     
     for(Frontend.File input : inputs)
       createReq.addInput(input);
+
+    for(Frontend.Param param : metadata)
+      createReq.addMetadata(param);
 
     Frontend.Request.Builder req =
       Frontend.Request.newBuilder()

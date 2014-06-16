@@ -90,7 +90,12 @@ public class FakeDatabase implements Database
 
   @Override
   public synchronized ListenableFuture<Job> createJob(
-    String userId, String clientId, String implId, Collection<Data> inputs, String output)
+    String userId,
+    String clientId,
+    String implId,
+    Collection<Data> inputs,
+    String output,
+    Map<String, String> metadata)
   {
     Job job;
 
@@ -117,6 +122,7 @@ public class FakeDatabase implements Database
       job.id = id;
       job.impl = impl;
       job.clientId = clientId;
+      job.metadata = metadata;
       job.outputPrefix = output;
       job.setInputData(inputs);
 
@@ -240,7 +246,11 @@ public class FakeDatabase implements Database
   }
 
   @Override
-  public synchronized ListenableFuture<JobImpl> setJobImpl(String userId, String implId, Data archive, Map<String, String> tags)
+  public synchronized ListenableFuture<JobImpl> setJobImpl(
+    String userId,
+    String implId,
+    Data archive,
+    Map<String, String> metadata)
   {
     User user = getUser(userId);
     Account account = getAccount(user.getAccountId());
@@ -249,7 +259,7 @@ public class FakeDatabase implements Database
     impl.account = account.getId();
     impl.id = implId;
     impl.archive = archive;
-    impl.tags = tags;
+    impl.metadata = metadata;
     
     _jobImpls.put(impl.account, impl.id, impl);
 

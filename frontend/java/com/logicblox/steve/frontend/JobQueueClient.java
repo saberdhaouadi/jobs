@@ -40,13 +40,15 @@ public class JobQueueClient
     if(job == null)
       throw new IllegalArgumentException("job must be non-null");
 
-    // TODO timeout
     Backend.RunJob.Builder request =
       Backend.RunJob.newBuilder()
       // TODO include ETag of implementation
       .setJobImpl(job.impl.archive.getLocation())
       .setJob(job.id)
       .setOutput(job.outputPrefix);
+
+    if(job.metadata.containsKey("timeout"))
+      request.setTimeout(Integer.parseInt(job.metadata.get("timeout")));
 
     for(Data d : job.getInputData())
     {
