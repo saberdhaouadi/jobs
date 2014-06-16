@@ -1,9 +1,10 @@
 { src ? ./.
 , src_s3lib ? <src_s3lib>
+, platform_release ? "4.1.1"
 }:
 let
-  inherit (import <config> {}) releases pkgs version buildLBConfig;
-  platform = releases.platform."4.1.1";
+  inherit (import <config> {}) releases pkgs version buildLBConfig getPlatform;
+  platform = getPlatform platform_release;
   jdk7_jce = pkgs.oraclejdk7.override (a: { installjce = true; }) ;
 
   buildjar = {name, url, sha256} :
