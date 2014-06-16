@@ -268,14 +268,16 @@ public class Main
       variableArity = true)
     List<String> _metadata = new ArrayList<String>();
 
-    @Parameter(names = {"-i", "--input"}, description = "Local or S3 input file (S3 files use s3://bucket/key URLs)")
+    @Parameter(
+      names = {"-i", "--input"},
+      description = "Local or S3 input file (S3 files use s3://bucket/key URLs)")
     List<String> _inputs;
 
     @Parameter(
       names = {"-o", "--output"},
       description = "Output of job, to be stored in either a local directory, single output file, " + 
-         "or S3 output prefix (S3 files use s3://bucket/key URLs). If local output is requested, then the S3 default_output_prefix" +
-         "will be used to store the outputs")
+         "or S3 output prefix (S3 files use s3://bucket/key URLs). If local output is requested, " + 
+         "then the S3 default_output_prefix will be used to store the outputs")
     String _output;
 
     @Parameter(
@@ -292,7 +294,8 @@ public class Main
     public void invoke() throws Exception
     {
       // Collect inputs, uploading local files to S3 if needed.
-      List<ListenableFuture<List<Frontend.File>>> inputFutures = new ArrayList<ListenableFuture<List<Frontend.File>>>();
+      List<ListenableFuture<List<Frontend.File>>> inputFutures =
+        new ArrayList<ListenableFuture<List<Frontend.File>>>();
       if(_inputs != null)
       {
         for(String input : _inputs)
@@ -503,7 +506,10 @@ public class Main
   @Parameters(commandDescription = "Upload new job implementation")
   class UploadJobImplCommand extends Command
   {
-    @Parameter(names = {"--impl"}, description = "Job implementation identifier", required = true)
+    @Parameter(
+      names = {"--impl"},
+      description = "Job implementation identifier",
+      required = true)
     String _impl;
 
     @Parameter(
@@ -512,23 +518,40 @@ public class Main
       required = true)
     String _input;
 
-    @Parameter(names = {"-m", "--metadata"}, description = "Metadata of the form key=value ", variableArity = true)
+    @Parameter(
+      names = {"-m", "--metadata"},
+      description = "Metadata of the form key=value ",
+      variableArity = true)
     List<String> _metadata;
+
+    @Parameter(
+      names = {"--wait"},
+      description = "Wait for completion by polling for the result")
+    boolean _wait = false;
+
+    @Parameter(
+      names = {"--poll-delay"},
+      description = "Delay in seconds for polling for the result")
+    long _pollDelay = 5;
 
     @Override
     public void invoke() throws Exception
     {
-      SteveClientInterface client = getSteveClient();
+      final SteveClientInterface client = getSteveClient();
       Futures.transform(
         client.addJobImpl(_impl, createInput(_input).get().get(0), convertCommandLineMetadata(_metadata)),
-        new Function<String, Object>()
+        new AsyncFunction<String, Object>()
         {        
           @Override
-          public ListenableFuture<Object> apply(String id)
+          public ListenableFuture<Object> apply(String id) throws Exception
           {
             System.out.println(getJobIdAsJSON(id));
-            return Futures.immediateFuture((Object) id);
-          }
+
+            if(_wait)
+              return (ListenableFuture) client.waitForJob(id, _pollDelay, new IncrementalStateNotify());
+            else
+              return Futures.immediateFuture((Object) id);
+        }
         }).get();
     }
   }

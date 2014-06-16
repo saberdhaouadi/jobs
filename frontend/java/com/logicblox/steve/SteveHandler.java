@@ -4,6 +4,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.io.IOException;
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -397,15 +398,15 @@ public class SteveHandler extends ProtoBufHandler
         }
       });
 
+    final Map<String, String> tags = Conversions.createMap(req.getMetadataList());
+    tags.put("date", Conversions.getCurrentISO8601());
+
     ListenableFuture<JobImpl> jobImpl = Futures.transform(
       newFile,
       new AsyncFunction<S3File, JobImpl>()
       {
         public ListenableFuture<JobImpl> apply(S3File input) throws IOException
         {
-          Map<String, String> tags = Conversions.createMap(req.getMetadataList());
-          tags.put("date", Conversions.getCurrentISO8601());
-
           // TODO use actual authenticated user
           return _db.setJobImpl(
             "martin",
@@ -415,23 +416,36 @@ public class SteveHandler extends ProtoBufHandler
         }
       });
 
-    return Futures.transform(
+    ListenableFuture<Job> fakeJob = Futures.transform(
       jobImpl,
-      new Function<JobImpl, Frontend.Response>()
+      new AsyncFunction<JobImpl, Job>()
       {
-        public Frontend.Response apply(JobImpl impl)
+        public ListenableFuture<Job> apply(JobImpl impl)
         {
-          // TODO revise server-side implementation to correctly use
-          // an identifier (not TODO). The identifier should be used
-          // by the client to later verify that the job implementation
-          // has correctly been added (which is currently not actually
-          // asynchronously done).
-          Frontend.Response.Builder response = Frontend.Response.newBuilder();
-          response.setImplAdd(
-            Frontend.ImplAddResponse.newBuilder()
-            .setId("TODO"));
-          
-          return response.build();
+          // TODO use actual authenticated user
+          return _db.createJob(
+            "martin",
+            req.getClientId(),
+            "steve:internal:process-jobimpl",
+            Conversions.convertFrontendFileToData(
+              Collections.singletonList(req.getImplementation())),
+            null,
+            tags);
+        }
+      });
+
+    return Futures.transform(
+      fakeJob,
+      new Function<Job, Frontend.Response>()
+      {
+        public Frontend.Response apply(Job job)
+        {
+          return
+            Frontend.Response.newBuilder()
+            .setImplAdd(
+              Frontend.ImplAddResponse.newBuilder()
+              .setId(job.id))
+            .build();
         }
       });
   }

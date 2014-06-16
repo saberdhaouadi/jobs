@@ -177,7 +177,10 @@ public class SteveClient implements SteveClientInterface
         TimeUnit.SECONDS));
   }
 
-  public ListenableFuture<List<Frontend.File>> waitForJob(final String id, final long pollDelaySeconds, final StateNotify notify)
+  public ListenableFuture<List<Frontend.File>> waitForJob(
+    final String id,
+    final long pollDelaySeconds,
+    final StateNotify notify)
   {
     return Futures.transform(
       wait(id, pollDelaySeconds, notify),
@@ -201,11 +204,18 @@ public class SteveClient implements SteveClientInterface
   /**
    * Asynchronously upload a new job implementation.
    */
-  public ListenableFuture<String> addJobImpl(String jobImpl, Frontend.File archive, Iterable<Frontend.Param> metadata)
+  public ListenableFuture<String> addJobImpl(
+    String jobImpl,
+    Frontend.File archive,
+    Iterable<Frontend.Param> metadata)
   throws ServiceClientException
   {
+    // TODO retry on connection issues with the same clientId
+    String clientId = UUID.randomUUID().toString();
+
     Frontend.ImplAddRequest.Builder addReq =
       Frontend.ImplAddRequest.newBuilder()
+      .setClientId(clientId)
       .setId(jobImpl)
       .setImplementation(archive);
     

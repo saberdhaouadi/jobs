@@ -27,13 +27,13 @@ function start_servers()
 
     # Job implementations used by various tests
     tar czvf fail.tar.gz -C $topdir/sample-jobs fail
-    lb-steve-client upload-impl --impl fail -i fail.tar.gz
+    lb-steve-client upload-impl --impl fail -i fail.tar.gz --wait
 
     tar czvf identity.tar.gz -C $topdir/sample-jobs identity
-    lb-steve-client upload-impl --impl identity -i identity.tar.gz
+    lb-steve-client upload-impl --impl identity -i identity.tar.gz --wait
 
     tar czvf total.tar.gz -C $topdir/sample-jobs total
-    lb-steve-client upload-impl --impl total -i total.tar.gz    
+    lb-steve-client upload-impl --impl total -i total.tar.gz --wait
 }
 
 #####################################################

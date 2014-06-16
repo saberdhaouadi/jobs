@@ -123,21 +123,26 @@ message JobCancelResponse {
  * Add a new job implementation
  */
 message ImplAddRequest {
-  // TODO consider to add client id
+  // Identifier set by the client to make sure that a job is created
+  // only once, even when there are networking issues. It turns a
+  // create request into an idempotent operation of the job is created
+  // more than once.
+  required string client_id = 1;
 
   // Implementation identifier to be used when submitting jobs for
   // this implementation.
-  required string id = 1;
-  required File implementation = 2;
+  required string id = 2;
+
+  required File implementation = 3;
 
   // Defaults to the account of the user.
-  optional string account = 3;
+  optional string account = 4;
 
   // Metadata on the job.
   //
   // Some keys are resevered:
   // - date  Automatically set when the job implementation is added
-  repeated Param metadata = 4;
+  repeated Param metadata = 5;
 }
 
 message ImplAddResponse {

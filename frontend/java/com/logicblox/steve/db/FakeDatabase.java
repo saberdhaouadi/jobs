@@ -66,6 +66,9 @@ public class FakeDatabase implements Database
         "-----END PUBLIC KEY-----\n"));
     
     addAccount(new Account("logicblox.com"));
+
+    // TODO bit of a hack
+    setJobImpl("martin", "steve:internal:process-jobimpl", null, null);
   }
 
   private void addUser(User user)
