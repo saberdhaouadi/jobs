@@ -32,7 +32,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
-public final class SQSClient
+public final class SQSClient implements SQSClientInterface
 { 
   private final String _endpoint;
   private final ListeningExecutorService _executor;
