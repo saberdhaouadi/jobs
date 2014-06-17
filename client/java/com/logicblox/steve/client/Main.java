@@ -548,7 +548,7 @@ public class Main
             System.out.println(getJobIdAsJSON(id));
 
             if(_wait)
-              return (ListenableFuture) client.waitForJob(id, _pollDelay, new IncrementalStateNotify());
+              return (ListenableFuture) client.wait(id, _pollDelay, new IncrementalStateNotify());
             else
               return Futures.immediateFuture((Object) id);
         }

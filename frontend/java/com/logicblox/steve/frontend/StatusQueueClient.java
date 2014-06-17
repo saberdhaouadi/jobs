@@ -121,7 +121,7 @@ public class StatusQueueClient
         status.setEvent(Status.Event.PROGRESS);
         if(protoStatus.hasProgressDetails())
           status.setMessage(protoStatus.getProgressDetails().getMessage());
-        break;        
+        break;
       }
       case SUCCEEDED:
       {
@@ -131,7 +131,7 @@ public class StatusQueueClient
           List<Data> output = Conversions.convertFileToData(protoStatus.getSucceededDetails().getOutputList());
           _db.setResult(protoStatus.getJob(), output);
         }
-        break;        
+        break;
       }
       case FAILED:
       {

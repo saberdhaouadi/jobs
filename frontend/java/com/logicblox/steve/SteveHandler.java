@@ -434,6 +434,21 @@ public class SteveHandler extends ProtoBufHandler
         }
       });
 
+    fakeJob = Futures.transform(
+      fakeJob,
+      new AsyncFunction<Job, Job>()
+      {
+        public ListenableFuture<Job> apply(Job job)
+        {
+          Status status = new Status();
+          status.setEvent(Status.Event.SUCCEEDED);
+          status.setMachine("frontend");
+          status.setTimestamp(System.currentTimeMillis());
+
+          return _db.addStatus(job.id, status);
+        }
+      });
+
     return Futures.transform(
       fakeJob,
       new Function<Job, Frontend.Response>()
@@ -467,7 +482,10 @@ public class SteveHandler extends ProtoBufHandler
         {
           Frontend.ImplListResponse.Builder resp = Frontend.ImplListResponse.newBuilder();
           for(JobImpl impl : impls)
-            resp.addJobImpl(createImplInfo(impl));
+          {
+            if(!impl.id.startsWith("steve:internal:"))
+              resp.addJobImpl(createImplInfo(impl));
+          }
 
           return
             Frontend.Response.newBuilder()
