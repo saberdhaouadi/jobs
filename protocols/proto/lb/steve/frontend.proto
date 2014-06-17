@@ -76,6 +76,7 @@ message JobCreateRequest {
   //                  jobs. The assumption is that jobs executed with
   //                  the same correlation id have similar properties
   //                  in terms of expected execution time.
+  // - job-queue      Use a specific job queue (usually to select hardware)
   repeated Param metadata = 3;
 
   // Parameters to be passed to the execution of the job

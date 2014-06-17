@@ -21,9 +21,14 @@ function start_servers()
     
     export NIX_PATH=worker=$topdir/worker-minimal:$NIX_PATH
     lb-steve-worker --incoming $(cat $scriptdir/frontend.config | awk '$1 == "sqs_queue_url" {print $3}' | sed '1q;d') \
-                    --outgoing $(cat $scriptdir/frontend.config | awk '$1 == "sqs_queue_url" {print $3}' | sed '2q;d') \
-                    &> worker.log &
-    worker_pid=$!
+                    --outgoing $(cat $scriptdir/frontend.config | awk '$1 == "sqs_queue_url" {print $3}' | sed '3q;d') \
+                    &> worker1.log &
+    worker1_pid=$!
+
+    lb-steve-worker --incoming $(cat $scriptdir/frontend.config | awk '$1 == "sqs_queue_url" {print $3}' | sed '2q;d') \
+                    --outgoing $(cat $scriptdir/frontend.config | awk '$1 == "sqs_queue_url" {print $3}' | sed '3q;d') \
+                    &> worker2.log &
+    worker2_pid=$!
 
     # Job implementations used by various tests
     tar czvf fail.tar.gz -C $topdir/sample-jobs fail
@@ -41,7 +46,8 @@ function start_servers()
 function stop_servers()
 {
     kill $frontend_pid
-    kill $worker_pid
+    kill $worker1_pid
+    kill $worker2_pid
 }
 
 #####################################################
@@ -85,6 +91,16 @@ function test_create_job_wrong_impl()
 }
 
 #####################################################
+# Test that executing a job for a non-existing queue gives a proper
+# error.
+function test_create_job_wrong_queue()
+{
+    test "$(lb-steve-client create-job --impl identity -o ./foo --queue does-not-exist 2>&1 \
+         | head -1 | jq -c '[.error_code, .http_status]')" \
+         = '["NO_SUCH_JOB_QUEUE",400]'
+}
+
+#####################################################
 # Test that asking for the status/result of a non-existing job gives a proper error
 function test_status_no_such_job()
 {
@@ -120,6 +136,11 @@ function test_create_job_wait()
     test "$(cat test-output-data/a.txt)" = "a"
     test "$(cat test-output-data/b.txt)" = "b"
     test "$(cat test-output-data/c.txt)" = "c"
+
+    # Test file input/output to specific queue
+    seq 100 > input.txt
+    lb-steve-client create-job --impl total -i input.txt -o output.txt --queue large --wait
+    test "$(cat output.txt)" = "5050"
 }
 
 #####################################################
@@ -191,6 +212,7 @@ trap stop_servers EXIT
 test_upload_impl
 test_upload_impl_no_file
 test_create_job_wrong_impl
+test_create_job_wrong_queue
 test_status_no_such_job
 test_create_job_wait
 test_create_job

@@ -222,9 +222,10 @@ public class Main
         new JsonFormat().merge(IOUtils.toInputStream(job.getBody()), msgBuilder);
         msg = msgBuilder.build();
       }
-      catch(IOException e)
+      catch(Exception e)
       {
         System.err.println("ERROR: Invalid input message:\n"+job.getBody());
+        removeIncoming(job);
         continue;
       }
 

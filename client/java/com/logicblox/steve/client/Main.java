@@ -259,6 +259,9 @@ public class Main
     @Parameter(names = {"--corr"}, description = "Correlation identifier")
     String _correlation = null;
 
+    @Parameter(names = {"--queue"}, description = "Job queue to use")
+    String _queue = null;
+
     @Parameter(names = {"--timeout"}, description = "Timeout in seconds")
     long _timeout = 0;
 
@@ -329,6 +332,9 @@ public class Main
 
       if(_correlation != null)
         _metadata.add("correlation-id=" + _correlation);
+
+      if(_queue != null)
+        _metadata.add("job-queue=" + _queue);
 
       final SteveClientInterface client = getSteveClient();
       Futures.transform(

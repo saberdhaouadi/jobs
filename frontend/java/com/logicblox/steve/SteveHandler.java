@@ -41,6 +41,7 @@ import com.logicblox.s3lib.S3File;
 
 import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.bloxweb.SimpleErrorCode;
+import com.logicblox.bloxweb.UsageException;
 
 import com.logicblox.sqs.SQSException;
 import com.logicblox.sqs.SQSClient;
@@ -65,7 +66,7 @@ public class SteveHandler extends ProtoBufHandler
   private static final long MAX_IMPL_SIZE = 1;
 
   private Database _db;
-  private JobQueueClient _jobQueue;
+  private Map<String, JobQueueClient> _jobQueues = new HashMap<String, JobQueueClient>();
   private S3Client _s3client;
   private File _tmpDir;
   private String _jobImplPrefix;
@@ -87,18 +88,42 @@ public class SteveHandler extends ProtoBufHandler
     Section jobImplConfig = handlerConfig.getParent().getSection("job-implementations");
     _jobImplPrefix = jobImplConfig.getStringError("prefix");
 
-    Section jobQueueConfig = handlerConfig.getParent().getSection("job-queue");
-    Section statusQueueConfig = handlerConfig.getParent().getSection("status-queue");
-
-    SQSClients sqsClients = new SQSClients();
-    SQSClient jobClient = sqsClients.getSQSClient(jobQueueConfig);
-    SQSClient statusClient = sqsClients.getSQSClient(statusQueueConfig);
-
     try
     {
-      SQSQueueHandle jobQueue = getQueueFromConfig(jobClient, jobQueueConfig);
-      _jobQueue = new JobQueueClient(jobClient, jobQueue);
+      SQSClients sqsClients = new SQSClients();
+      
+      for(String sectionName : handlerConfig.getParent().getSectionNames())
+      {
+        if(sectionName.startsWith("job-queue:"))
+        {
+          Section jobQueueConfig = handlerConfig.getParent().getSection(sectionName);
+          SQSClient jobClient = sqsClients.getSQSClient(jobQueueConfig);
+          SQSQueueHandle jobQueue = getQueueFromConfig(jobClient, jobQueueConfig);
+          JobQueueClient client = new JobQueueClient(jobClient, jobQueue);
+          String key = sectionName.substring(sectionName.indexOf(':') + 1);
+          
+          _jobQueues.put(key, client);
+          if(jobQueueConfig.getBool("default", false))
+            _jobQueues.put(null, client);
+        }
+      }
+      
+      // If there is only a single job-queue section, and it was not
+      // marked as the default, then automatically make it the default.
+      if(_jobQueues.size() == 1)
+      {
+        JobQueueClient single = null;
+        for(Map.Entry<String, JobQueueClient> entry : _jobQueues.entrySet())
+          single = entry.getValue();
+        _jobQueues.put(null, single);
+      }
 
+      if(!_jobQueues.containsKey(null))
+        throw new UsageException("No default job queue is configured");
+      
+      Section statusQueueConfig = handlerConfig.getParent().getSection("status-queue");
+      SQSClient statusClient = sqsClients.getSQSClient(statusQueueConfig);
+      
       SQSQueueHandle statusQueue = getQueueFromConfig(statusClient, statusQueueConfig);
       StatusQueueClient status = new StatusQueueClient(statusClient, statusQueue, _db);
       status.start();
@@ -111,7 +136,7 @@ public class SteveHandler extends ProtoBufHandler
 
   private SQSQueueHandle getQueueFromConfig(SQSClient sqs, Section config) throws SQSException
   {
-    boolean create = false;
+    boolean create = config.getBool("create", false);
     if(config.contains("sqs_queue_url"))
     {
       return sqs.getQueue(URI.create(config.getStringError("sqs_queue_url")), create);
@@ -215,6 +240,15 @@ public class SteveHandler extends ProtoBufHandler
     Map<String, String> tags = Conversions.createMap(req.getMetadataList());
     tags.put("date", Conversions.getCurrentISO8601());
 
+    final String jobQueueId = tags.get("job-queue");
+    if(jobQueueId != null && !_jobQueues.containsKey(jobQueueId))
+    {
+      return Futures.immediateFailedFuture(
+        new ServiceException(
+          new SimpleErrorCode(
+            "NO_SUCH_JOB_QUEUE", HttpStatus.BAD_REQUEST_400, "Job queue '" + jobQueueId + "' does not exist")));
+    }
+
     ListenableFuture<Job> job =
       _db.createJob(
         "martin",
@@ -229,7 +263,7 @@ public class SteveHandler extends ProtoBufHandler
     {
       public ListenableFuture<Job> apply(Job j)
       {
-        return _jobQueue.submit(j);
+        return _jobQueues.get(jobQueueId).submit(j);
       }
     });
 
