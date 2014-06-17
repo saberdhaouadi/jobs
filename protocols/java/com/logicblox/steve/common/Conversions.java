@@ -119,6 +119,15 @@ public class Conversions
       .build();
   }
 
+  public static Backend.Param createBackendParam(String key, String value)
+  {
+    return
+      Backend.Param.newBuilder()
+      .setKey(key)
+      .setValue(value)
+      .build();
+  }
+
   public static Map<String, String> createMap(Iterable<Frontend.Param> params)
   {
     Map<String, String> result = new HashMap<String, String>();

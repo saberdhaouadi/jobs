@@ -18,6 +18,9 @@ message RunJob {
 
   // Timeout for the job
   optional int64 timeout = 5 [ default = 1800 ];
+
+  // Metadata on the job.
+  repeated Param metadata = 6;
 }
 
 // TODO add timeout etc
@@ -72,4 +75,9 @@ message ProgressDetails {
 message File {
   required string url = 1;
   optional string hash = 2;
+}
+
+message Param {
+  required string key = 1;
+  required string value = 2;
 }

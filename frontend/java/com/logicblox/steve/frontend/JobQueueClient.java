@@ -1,5 +1,7 @@
 package com.logicblox.steve.frontend;
 
+import java.util.Map;
+
 import com.logicblox.sqs.SQSClient;
 import com.logicblox.sqs.SQSQueueHandle;
 
@@ -51,9 +53,10 @@ public class JobQueueClient
       request.setTimeout(Integer.parseInt(job.metadata.get("timeout")));
 
     for(Data d : job.getInputData())
-    {
       request.addInput(Conversions.convertDataToBackendFile(d));
-    }
+
+    for(Map.Entry<String, String>  pair : job.metadata.entrySet())
+      request.addMetadata(Conversions.createBackendParam(pair.getKey(), pair.getValue()));
     
     String msg = new JsonFormat().printToString(request.build());
 
