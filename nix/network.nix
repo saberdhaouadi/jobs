@@ -1,5 +1,5 @@
-{ workers ? { "c3.xlarge" = 0; "c3.4xlarge" = 0; }
-, instanceTypes ? [ "c3.xlarge" ]
+{ workers ? { "c3.2xlarge" = 0; "c3.8xlarge" = 0; }
+, instanceTypes ? builtins.attrNames workers
 , region ? "us-east-1"
 , account ? "logicblox-dev"
 , accountId ? "297794765570"
@@ -8,13 +8,12 @@
 let
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
-  sqsResultsName = type: "${sqsName type}-results";
+  sqsStatusName = "steve-jobs-${name}-status";
   sqsQueue = type: { inherit region ; accessKeyId = account; visibilityTimeout = 1800; name = sqsName type;};
-  sqsResultsQueue = type: { inherit region ; accessKeyId = account; name = sqsResultsName type; };
+  sqsStatusQueue = { inherit region ; accessKeyId = account; name = sqsStatusName; };
   sqsURL = type: "https://sqs.${region}.amazonaws.com/${accountId}/${sqsName type}";
-  sqsResultsURL = type: "https://sqs.${region}.amazonaws.com/${accountId}/${sqsResultsName type}";
+  sqsStatusURL = "https://sqs.${region}.amazonaws.com/${accountId}/${sqsStatusName}";
   sqsQueues = with pkgs.lib; listToAttrs (map (n: nameValuePair (sqsName n) (sqsQueue n)) instanceTypes) ;
-  sqsResultsQueues = with pkgs.lib; listToAttrs (map (n: nameValuePair (sqsResultsName n) (sqsResultsQueue n)) instanceTypes) ;
 
   pkgs = import <nixpkgs> { config.allowUnfree = true; };
   builder-config = import <config> {};
@@ -26,7 +25,7 @@ let
     {
       imports = [ ./worker.nix <lbdevops/logicblox/service-config/datadog.nix> ];
 
-      lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName type}".name} --outgoing ${resources.sqsQueues."${sqsResultsName type}".name} --bucket ${s3Name}";
+      lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName type}".name} --outgoing ${resources.sqsQueues."${sqsStatusName}".name} --bucket ${s3Name}";
 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -54,18 +53,24 @@ let
       iam_role = default
       table = Job
       endpoint = dynamodb.${region}.amazonaws.com
+      env_credentials = false
 
-      [job-queue]
+      ${pkgs.lib.concatMapStrings (t: ''
+      [job-queue:${workerName t}]
       implementation = sqs
       iam_role = default
+      env_credentials = false
       sqs_endpoint = sqs.${region}.amazonaws.com
-      sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsName "c3.xlarge"}
+      sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsName t}
+      ${if (pkgs.lib.head instanceTypes == t) then "default = true" else ""}
+      '') instanceTypes}
 
       [status-queue]
       implementation = sqs
       iam_role = default
+      env_credentials = false
       sqs_endpoint = sqs.${region}.amazonaws.com
-      sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsResultsName "c3.xlarge"}
+      sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsStatusName}
 
       [job-implementations]
       prefix = s3://${s3Name}/jobs-impl
@@ -77,7 +82,7 @@ with pkgs.lib;
   network.description = "Steve Jobs [${name}]";
 
   resources.ec2KeyPairs.kp = { inherit region ; accessKeyId = account; };
-  resources.sqsQueues = sqsQueues // sqsResultsQueues;
+  resources.sqsQueues = sqsQueues // { "${sqsStatusName}" = sqsStatusQueue;  };
   resources.s3Buckets."${s3Name}-bucket" = { inherit region ; accessKeyId = account; name = s3Name; };
 
   resources.iamRoles.worker-role =
@@ -128,11 +133,11 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [
-                ${pkgs.lib.concatStringsSep "," (map (t: ''
+                ${pkgs.lib.concatStrings (map (t: ''
                 "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsName t}".name}",
-                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsResultsName t}".name}"
                 '') instanceTypes)
                 }
+                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsStatusName}".name}"
               ]
             },
             {
@@ -167,11 +172,11 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [
-               ${pkgs.lib.concatStringsSep "," (map (t: ''
+               ${pkgs.lib.concatStrings (map (t: ''
                 "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsName t}".name}",
-                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsResultsName t}".name}"
                 '') instanceTypes)
                 }
+                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsStatusName}".name}"
               ]
             },
             {
@@ -216,13 +221,22 @@ with pkgs.lib;
   frontend =
     { config, pkgs, resources, ... }:
     let
-      run-provisioner =
-        pkgs.writeScriptBin "run-provisioner"
+      run-provisioner = t:
+        pkgs.writeScript "run-provisioner-${workerName t}"
           ''
             #! /bin/sh
             source /etc/profile
-            exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL "c3.xlarge"} --outgoing ${sqsResultsURL "c3.xlarge"} --max 200 --role ${resources.iamRoles.worker-role.name} --instance-type c3.xlarge $@
+            exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --max 200 --role ${resources.iamRoles.worker-role.name} --instance-type ${t} $@
           '';
+      provisioner-service = t: {
+        description = "Steve Provisioner";
+        path = [ jdk7_jce ];
+        serviceConfig = {
+          ExecStart = "${run-provisioner t}";
+        };
+        startAt = "*:0/5";
+      };
+
     in
     {
       deployment.targetEnv = "ec2";
@@ -236,34 +250,25 @@ with pkgs.lib;
 
       networking.firewall.allowedTCPPorts = [8080];
 
-      environment.systemPackages = [ builds.frontend builds.client builds.worker run-provisioner jdk7_jce pkgs.awscli ];
-      systemd.services.lb-steve-frontend = {
-        description = "LB Steve Frontend";
-        after = [ "network.target" ];
-        wantedBy = [ "multi-user.target" ];
-        path = [ jdk7_jce pkgs.bash builds.frontend ];
-        preStart = ''
-          mkdir -p /var/log/lb-steve-worker
-        '';
-        serviceConfig = {
-          ExecStart = "${builds.frontend}/bin/lb-steve-frontend --config ${frontendConfig}";
-          Restart = "always";
-          RestartSec = "10";
-        };
-      };
+      environment.systemPackages = [ builds.frontend builds.client builds.worker jdk7_jce pkgs.awscli ];
 
-      systemd.services.run-provisioner = {
-        description = "Steve Provisioner";
-        path = [ jdk7_jce ];
-        serviceConfig = {
-          ExecStart = "${run-provisioner}/bin/run-provisioner";
+      systemd.services = {
+        lb-steve-frontend = {
+          description = "LB Steve Frontend";
+          after = [ "network.target" ];
+          wantedBy = [ "multi-user.target" ];
+          path = [ jdk7_jce pkgs.bash builds.frontend ];
+          preStart = ''
+            mkdir -p /var/log/lb-steve-worker
+          '';
+          serviceConfig = {
+            ExecStart = "${builds.frontend}/bin/lb-steve-frontend --config ${frontendConfig}";
+            Restart = "always";
+            RestartSec = "10";
+          };
         };
-      };
+      } // (listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes));
 
-      systemd.timers.run-provisioner =
-        { wantedBy = [ "timers.target" ];
-          timerConfig.OnCalendar = "*:0/5";
-        };
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${workerName t}-worker${toString n}" (worker t)) (range 1 (getAttr t workers))) instanceTypes ) ) )
