@@ -544,6 +544,23 @@ public class Main
     public void invoke() throws Exception
     {
       final SteveClientInterface client = getSteveClient();
+
+      if(new File(_input).isDirectory())
+      {
+        File temp = File.createTempFile("impl",".tar.gz");
+        temp.deleteOnExit();
+
+        File abs = new File(_input).getAbsoluteFile();
+        _logger.info("Packaging directory "+_input);
+        Process p = Runtime.getRuntime().exec("tar -C "+abs.getParent()+" -cvzf " + temp + " " + abs.toString().substring(abs.toString().lastIndexOf('/') + 1));
+        p.waitFor();
+
+        if(p.exitValue() != 0) {
+          throw new Exception("Error packaging up input directory "+_input);
+        }
+        _input = temp.toString();
+      }
+
       Futures.transform(
         client.addJobImpl(_impl, createInput(_input).get().get(0), convertCommandLineMetadata(_metadata)),
         new AsyncFunction<String, Object>()
