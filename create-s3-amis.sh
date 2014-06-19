@@ -8,7 +8,7 @@ export TIMESTAMP=$(date +%Y%m%d%H%M)
 
     echo "building $system image..."
     nix-build '<nixpkgs/nixos>' -j 4 \
-        -A config.system.build.amazonImage --argstr system "$system" -o ec2-ami
+        -A config.system.build.amazonImage --argstr system "$system" -o ec2-ami 
 
     ec2-bundle-image -i ec2-ami/nixos.img --user "$AWS_ACCOUNT" --arch "$arch" \
         -c "$EC2_CERT" -k "$EC2_PRIVATE_KEY"
@@ -28,14 +28,6 @@ export TIMESTAMP=$(date +%Y%m%d%H%M)
             -a "$EC2_ACCESS_KEY" -s "$EC2_SECRET_KEY" --location "$s3location" \
             --url http://s3.amazonaws.com
 
-        kernel=$(ec2-describe-images -o amazon --filter "manifest-location=*pv-grub-hd0_1.03-$arch*" --region "$region" | cut -f 2)
-        echo "using PV-GRUB kernel $kernel"
-
-        ami=$(ec2-register "$bucket/$TIMESTAMP/nixos.img.manifest.xml" -n "$name $TIMESTAMP" -d "NixOS $system r$revision" \
-            --region "$region" --kernel "$kernel" | cut -f 2)
-#aws ec2 register-image --image-location steve-jobs-worker-x86-64-s3-us-east-1/201405211909/nixos.img.manifest.xml --name "steve-jobs-worker-x86_64-s3 201405211909-hvm" --region us-east-1 --virtualization-type hvm
-        echo "AMI ID is $ami"
-
-        echo $ami >> $region.s3.ami-id
+        aws ec2 register-image --image-location $bucket/$TIMESTAMP/nixos.img.manifest.xml --name "$name $TIMESTAMP" --region us-east-1 --virtualization-type hvm
     done
 

@@ -7,6 +7,7 @@
   ];
 
   ec2.metadata = true;
+  ec2.hvm = true;
   networking.hostName = pkgs.lib.mkForce "i-worker";
 
   lb-steve-worker.shutdownOnIdle = true;
