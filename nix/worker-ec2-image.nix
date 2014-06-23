@@ -23,4 +23,22 @@
       '';
     };
 
+  boot.initrd.extraUtilsCommands =
+    ''
+      cp -v ${pkgs.e2fsprogs}/sbin/mke2fs $out/bin
+    '';
+
+  boot.initrd.postDeviceCommands =
+    ''
+      for device in /dev/xvd[bcde]*; do
+        # If the disk image appears to be empty, run mke2fs to initialise.
+        # This way instances with instance storage without a filesystem 
+        # will behave the same on first boot, allowing nix store and tmp
+        # to be on instance storage.
+        FSTYPE=$(blkid -o value -s TYPE $device || true)
+        if test -z "$FSTYPE"; then
+            mke2fs -t ext3 $device
+        fi
+      done
+    '';
 }
