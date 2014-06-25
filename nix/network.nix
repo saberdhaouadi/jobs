@@ -1,4 +1,4 @@
-{ workers ? { "c3.2xlarge" = 0; "c3.8xlarge" = 0; }
+{ workers ? { "c3.2xlarge" = { number = 0; price = "0.40"; };  "c3.8xlarge" = { number = 0; price = "1.00"; }; }
 , instanceTypes ? builtins.attrNames workers
 , region ? "us-east-1"
 , account ? "logicblox-dev"
@@ -226,7 +226,7 @@ with pkgs.lib;
           ''
             #! /bin/sh
             source /etc/profile
-            exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --max 200 --role ${resources.iamRoles.worker-role.name} --instance-type ${t} $@
+            exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --max 200 --role ${resources.iamRoles.worker-role.name} --instance-type ${t} --spot-price ${workers."${t}".price} $@
           '';
       provisioner-service = t: {
         description = "Steve Provisioner";
@@ -271,4 +271,4 @@ with pkgs.lib;
 
     };
 
-} // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${workerName t}-worker${toString n}" (worker t)) (range 1 (getAttr t workers))) instanceTypes ) ) )
+} // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${workerName t}-worker${toString n}" (worker t)) (range 1 workers."${t}".number)) instanceTypes ) ) )
