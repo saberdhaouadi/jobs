@@ -121,7 +121,7 @@ rec {
     in 
       with pkgs; runCommand "worker-ec2-image-${version src}" {} ''
         mkdir -p $out/nix-support
-        xz -z ${image}/nixos.img  > $out/worker-${version src}.img.xz
+        xz -z -c ${image}/nixos.img  > $out/worker-${version src}.img.xz
         echo "file img $out/worker-${version src}.img.xz" > $out/nix-support/hydra-build-products
       '';
 
