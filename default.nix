@@ -70,7 +70,7 @@ rec {
       ];
     };
 
-  client =
+  client.build =
     buildLBConfig {
       name = "jobs-client-${version src}";
       src = ./client;
@@ -81,6 +81,11 @@ rec {
         "--with-aws=${aws-java-sdk}"
         "--with-s3lib=${s3lib}"
       ];
+    };
+
+  client.binary_tarball =
+    release_helper {
+      inherit (client) name build;
     };
 
   protocols =
