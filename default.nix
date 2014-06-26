@@ -85,7 +85,8 @@ rec {
 
   client.binary_tarball =
     release_helper {
-      inherit (client) name build;
+      name = "jobs-client-${version src}";
+      inherit (client) build;
     };
 
   protocols =
