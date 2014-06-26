@@ -1,8 +1,9 @@
-{ workers ? { "c3.2xlarge" = { number = 0; price = "0.40"; };  "c3.8xlarge" = { number = 0; price = "1.00"; }; }
+{ workers ? { "c3.xlarge" = { number = 0; price = "0.25"; }; "r3.xlarge" = { number = 0; price = "0.40"; };  "r3.2xlarge" = { number = 0; price = "0.75"; }; }
 , instanceTypes ? builtins.attrNames workers
 , region ? "us-east-1"
-, account ? "logicblox-dev"
-, accountId ? "297794765570"
+, account ? "lb-jobs"
+, accountId ? "826045886586"
+, elasticIPv4 ? ""
 , name
 }:
 let
@@ -23,14 +24,14 @@ let
   worker = type:
     { config, pkgs, resources, ... }:
     {
-      imports = [ ./worker.nix <lbdevops/logicblox/service-config/datadog.nix> ];
+      imports = [ ./worker.nix ];
 
       lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName type}".name} --outgoing ${resources.sqsQueues."${sqsStatusName}".name} --bucket ${s3Name}";
 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" "ssh-world" ];
+      deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
       deployment.ec2.instanceType = type;
       deployment.ec2.instanceProfile = resources.iamRoles.worker-role.name;
@@ -114,8 +115,6 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [
-                "arn:aws:s3:::steve-jobs/*",
-                "arn:aws:s3:::steve-jobs",
                 "arn:aws:s3:::${s3Name}/*",
                 "arn:aws:s3:::${s3Name}",
                 "arn:aws:s3:::logicblox-downloads",
@@ -218,6 +217,24 @@ with pkgs.lib;
       '';
     };
 
+  resources.ec2SecurityGroups.frontend-sg = {
+    inherit region;
+    accessKeyId = account;
+    description = "Security group for frontend";
+    rules = [
+      {
+        fromPort = 80;
+        toPort = 80;
+        sourceIp = "38.104.0.30/0";
+      } 
+      {
+        fromPort = 443;
+        toPort = 443;
+        sourceIp = "38.104.0.30/0";
+      } 
+    ];
+  };
+
   frontend =
     { config, pkgs, resources, ... }:
     let
@@ -242,15 +259,18 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" "ssh-world" ];
+      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.frontend-sg.name ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "m1.medium";
+      deployment.ec2.instanceType = "c3.xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
+      deployment.ec2.elasticIPv4 = elasticIPv4;
       ec2.metadata = true;
 
-      networking.firewall.allowedTCPPorts = [8080];
+      imports = [ <lbdevops/logicblox/production.nix> ];
 
-      environment.systemPackages = [ builds.frontend builds.client builds.worker jdk7_jce pkgs.awscli ];
+      networking.hostName = "steve-${name}";
+
+      environment.systemPackages = [ builds.frontend builds.client.build builds.worker jdk7_jce pkgs.awscli ];
 
       systemd.services = {
         lb-steve-frontend = {
@@ -268,7 +288,6 @@ with pkgs.lib;
           };
         };
       } // (listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes));
-
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${workerName t}-worker${toString n}" (worker t)) (range 1 workers."${t}".number)) instanceTypes ) ) )
