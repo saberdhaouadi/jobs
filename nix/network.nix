@@ -264,13 +264,66 @@ with pkgs.lib;
       deployment.ec2.instanceType = "c3.xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       deployment.ec2.elasticIPv4 = elasticIPv4;
+      deployment.keys."server.key" = builtins.readFile <global_creds/logicblox/server.key>;
+      deployment.keys."server.crt" = builtins.readFile <global_creds/logicblox/server.crt>;
       ec2.metadata = true;
 
       imports = [ <lbdevops/logicblox/production.nix> ];
 
       networking.hostName = "steve-${name}";
+      networking.firewall.allowedTCPPorts = [ 80 443 ];
 
       environment.systemPackages = [ builds.frontend builds.client.build builds.worker jdk7_jce pkgs.awscli ];
+
+      services.nginx.enable = true;
+      services.nginx.httpConfig = ''
+        server {
+          server_name steve.logicblox.com;
+          listen [::]:80 default_server ipv6only=off;
+          location / {
+            return 302 https://$host$request_uri;
+          }
+        }
+
+        server {
+          server_name steve.logicblox.com;
+          listen [::]:443 default_server ssl spdy ipv6only=off;
+
+          ssl_certificate         /run/keys/server.crt;
+          ssl_trusted_certificate /run/keys/server.crt;
+          ssl_certificate_key     /run/keys/server.key;
+
+          resolver 8.8.8.8;
+          ssl_stapling on;
+          ssl_stapling_verify on;
+          ssl_session_cache shared:SSL:10m;
+          ssl_session_timeout 5m;
+          ssl_protocols TLSv1.2 TLSv1.1 TLSv1;
+          ssl_prefer_server_ciphers on;
+
+          ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK;
+
+
+          location / {
+              proxy_pass         http://localhost:8080/;
+              proxy_redirect     off;
+              proxy_set_header   Host             $host;
+              proxy_set_header   X-Real-IP        $remote_addr;
+              proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+              proxy_set_header   X-Forwarded-Proto https;
+
+              proxy_connect_timeout      90;
+              proxy_send_timeout         600;
+              proxy_read_timeout         600;
+
+              client_max_body_size 0;
+
+              break;
+          }
+
+        }
+
+      '';
 
       systemd.services = {
         lb-steve-frontend = {
