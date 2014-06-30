@@ -29,7 +29,10 @@ function start_servers()
                     --outgoing $(cat $scriptdir/frontend.config | awk '$1 == "sqs_queue_url" {print $3}' | sed '3q;d') \
                     &> worker2.log &
     worker2_pid=$!
+}
 
+function upload_impls()
+{
     # Job implementations used by various tests
     tar czvf fail.tar.gz -C $topdir/sample-jobs fail
     lb-steve-client upload-impl --impl fail -i fail.tar.gz --wait
@@ -206,9 +209,12 @@ function test_create_job_fail()
     ! lb-steve-client create-job --impl fail --wait
 }
 
-start_servers
-trap stop_servers EXIT
+if [[ "$1" != "--no-start" ]]; then
+  start_servers
+  trap stop_servers EXIT
+fi
 
+upload_impls
 test_upload_impl
 test_upload_impl_no_file
 test_create_job_wrong_impl
