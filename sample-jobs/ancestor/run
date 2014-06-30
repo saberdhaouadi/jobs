@@ -1,0 +1,27 @@
+#!/bin/sh
+
+set -e
+
+cat > run.lb <<EOF
+  echo "making database ..."
+  create workspace
+
+  echo "adding logic ..."
+  transaction
+  addBlock --file ancestor.logic
+  commit
+
+  echo "adding facts ..."
+  transaction
+  exec --file facts.logic
+  commit
+
+  echo "printing results ..."
+  transaction
+  print person
+  print parent
+  print ancestor
+  commit
+EOF
+
+dlbatch run.lb

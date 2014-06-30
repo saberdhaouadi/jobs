@@ -1,0 +1,14 @@
++person(x), +name(x:"dave").
++person(x), +name(x:"john").
++person(x), +name(x:"harry").
+
++parent(x,y) <- name(x:"dave"), name(y:"john").
++parent(x,y) <- name(x:"john"), name(y:"harry").
+
+/*
++person(dave), +name(dave:"dave"),
++person(john), +name(john:"john"),
++person(harry), +name(harry:"harry"),
++parent(dave, john),
++parent(john, harry).
+*/
