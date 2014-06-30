@@ -1,27 +1,13 @@
 #!/bin/sh
 
-set -e
+echo "making database ..."
+lb create --overwrite ancestor
 
-cat > run.lb <<EOF
-  echo "making database ..."
-  create workspace
+echo "adding logic ..."
+lb addblock -f ancestor.logic ancestor
 
-  echo "adding logic ..."
-  transaction
-  addBlock --file ancestor.logic
-  commit
+echo "adding facts ..."
+lb exec -f facts.logic ancestor
 
-  echo "adding facts ..."
-  transaction
-  exec --file facts.logic
-  commit
-
-  echo "printing results ..."
-  transaction
-  print person
-  print parent
-  print ancestor
-  commit
-EOF
-
-dlbatch run.lb
+echo "printing results ..."
+lb print ancestor ancestor
