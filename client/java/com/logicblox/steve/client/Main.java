@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 import org.apache.log4j.PatternLayout;
+import org.apache.log4j.Level;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -85,9 +86,7 @@ public class Main
   public static void main(String[] args)
   {
     org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
-    SystemDAppender appender = new SystemDAppender(new PatternLayout("%d{ISO8601} %5p %-15c{1} - %m%n"));
-    rootLogger.addAppender(appender);
-    rootLogger.setLevel(SystemDLevel.INFO);
+    rootLogger.setLevel(Level.WARN);
 
     try
     {
