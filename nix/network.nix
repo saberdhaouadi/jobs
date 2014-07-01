@@ -214,23 +214,24 @@ with pkgs.lib;
       '';
     };
 
-  resources.ec2SecurityGroups.frontend-sg = {
-    inherit region;
-    accessKeyId = account;
-    description = "Security group for frontend";
-    rules = [
+  resources.ec2SecurityGroups.frontend-sg = 
+    let 
+      entry = ip: port: 
+        {
+          fromPort = port;
+          toPort = port;
+          sourceIp = "${ip}/32";
+        } ;
+    in
       {
-        fromPort = 80;
-        toPort = 80;
-        sourceIp = "38.104.0.30/32";
-      } 
-      {
-        fromPort = 443;
-        toPort = 443;
-        sourceIp = "38.104.0.30/32";
-      } 
-    ];
-  };
+        inherit region;
+        accessKeyId = account;
+        description = "Security group for frontend";
+        rules = [
+          (entry "38.104.0.30" 443)
+          (entry "107.20.158.107" 443)
+        ];
+      };
 
   frontend =
     { config, pkgs, resources, ... }:
@@ -268,20 +269,12 @@ with pkgs.lib;
       imports = [ <lbdevops/logicblox/production.nix> ];
 
       networking.hostName = "steve-${name}";
-      networking.firewall.allowedTCPPorts = [ 80 443 ];
+      networking.firewall.allowedTCPPorts = [ 443 ];
 
       environment.systemPackages = [ builds.frontend builds.client.build builds.worker jdk7_jce pkgs.awscli ];
 
       services.nginx.enable = true;
       services.nginx.httpConfig = ''
-        server {
-          server_name steve.logicblox.com;
-          listen [::]:80 default_server ipv6only=off;
-          location / {
-            return 302 https://$host$request_uri;
-          }
-        }
-
         server {
           server_name steve.logicblox.com;
           listen [::]:443 default_server ssl spdy ipv6only=off;
