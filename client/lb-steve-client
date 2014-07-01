@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-prefix=$(readlink -f $(dirname $BASH_SOURCE)/..)
+prefix=$(cd $(dirname $BASH_SOURCE)/.. ; pwd)
 export LB_WEBSERVER_HOME=$prefix
 exec java -cp "$prefix/lib/java/*" com.logicblox.steve.client.Main $@
