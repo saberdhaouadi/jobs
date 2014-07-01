@@ -1,5 +1,8 @@
 #!/bin/sh
 
+input=$1
+output=$2
+
 echo "making database ..."
 lb create --overwrite ancestor
 
@@ -10,4 +13,4 @@ echo "adding facts ..."
 lb exec -f facts.logic ancestor
 
 echo "printing results ..."
-lb print ancestor ancestor
+lb print ancestor ancestor > $output/output.txt
