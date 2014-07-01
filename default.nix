@@ -1,6 +1,6 @@
 { src ? ./.
 , src_s3lib ? <src_s3lib>
-, platform_release ? "4.1.1"
+, platform_release ? <platform> # "4.1.1"
 }:
 let
   inherit (import <config> {}) releases pkgs version buildLBConfig getPlatform release_helper;
@@ -72,7 +72,7 @@ rec {
 
   client.build =
     buildLBConfig {
-      name = "jobs-client-${version src}";
+      name = "lb-steve-client-${version src}";
       src = ./client;
       buildInputs = with platform; [ logicblox bloxweb ];
       enableLBservices = false;
@@ -85,7 +85,7 @@ rec {
 
   client.binary_tarball =
     release_helper {
-      name = "jobs-client-${version src}";
+      name = "lb-steve-client";
       inherit (client) build;
     };
 
