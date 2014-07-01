@@ -1,4 +1,4 @@
-{ workers ? { "c3.xlarge" = { number = 0; price = "0.25"; }; "r3.xlarge" = { number = 0; price = "0.40"; };  "r3.2xlarge" = { number = 0; price = "0.75"; }; }
+{ workers ? { "c3.xlarge" = { number = 2; price = "0.25"; }; "r3.xlarge" = { number = 0; price = "0.40"; }; "r3.2xlarge" = { number = 0; price = "0.75"; }; }
 , instanceTypes ? builtins.attrNames workers
 , region ? "us-east-1"
 , account ? "lb-jobs"
@@ -115,10 +115,7 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [
-                "arn:aws:s3:::${s3Name}/*",
-                "arn:aws:s3:::${s3Name}",
-                "arn:aws:s3:::logicblox-downloads",
-                "arn:aws:s3:::logicblox-downloads/*"
+                "arn:aws:s3:::*"
               ]
             },
             {
@@ -192,7 +189,7 @@ with pkgs.lib;
                 "s3:List*"
               ],
               "Effect": "Allow",
-              "Resource": ["arn:aws:s3:::${s3Name}/*", "arn:aws:s3:::${s3Name}"]
+              "Resource": [ "*" ]
             },
             {
               "Action": [
@@ -225,12 +222,12 @@ with pkgs.lib;
       {
         fromPort = 80;
         toPort = 80;
-        sourceIp = "38.104.0.30/0";
+        sourceIp = "38.104.0.30/32";
       } 
       {
         fromPort = 443;
         toPort = 443;
-        sourceIp = "38.104.0.30/0";
+        sourceIp = "38.104.0.30/32";
       } 
     ];
   };
@@ -304,6 +301,18 @@ with pkgs.lib;
           ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK;
 
 
+          location = / {
+              try_files $uri /index.html;
+              break;
+          }
+          location = /index.html {
+              alias ${../www/index.html};
+              break;
+          }
+          location = /lb-steve-client.tgz {
+              alias ${builds.client.binary_tarball}/lb-steve-client.tgz;
+              break;
+          }
           location / {
               proxy_pass         http://localhost:8080/;
               proxy_redirect     off;

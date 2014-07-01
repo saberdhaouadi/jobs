@@ -18,7 +18,7 @@
       <div class="container">
         <img src="http://www.logicblox.com/images/logo2x.png" align="middle" />
         <p></p>
-        <a href="/lb-steve-client.tar.gz" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-download"></span> Download client</a>
+        <a href="/lb-steve-client.tgz" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-download"></span> Download client</a>
       </div>
     </div>
 
@@ -26,23 +26,87 @@
       <h3>Introduction</h3>
       <p>Steve Jobs is ...</p>
 
-      <h3>Step-by-step setup</h3>
+      <h4>Queues</h4>
+      <ul>
+        <li><i>c3-xlarge</i> - Default, 4 vCPU, 7.5GB, 40GB SSD</li>
+        <li><i>r3-xlarge</i> - 4 vCPU, 30.5GB, 80 GB SSD</li>
+        <li><i>r3-2xlarge</i> - 8 vCPU, 61GB, 160 GB SSD</li>
+      </ul>
+
+      <h3>Getting started!</h3>
       <p>
         To start experimenting with Steve Jobs, you need the following:
         <ul>
-          <li><a href="/lb-steve-client.tar.gz">Download lb-steve-client</a></li>
+          <li><a href="/lb-steve-client.tgz">Download lb-steve-client</a></li>
           <li>Access to the AWS console</li>
-          <li></li>
         </ul>
       </p>
+
+      <p>
+        Extract the client, and the <i>bin/</i> subdirectory in the <i>PATH</i>.
+      </p>
+
+      <p>
+        Give Steve Jobs access to one of your S3 buckets, e.g. by setting the following bucket policy:
+      </p>
+<pre>
+{
+	"Version": "2008-10-17",
+	"Id": "Policy1335892530063",
+	"Statement": [
+		{
+			"Sid": "AccountLBJobs",
+			"Effect": "Allow",
+			"Principal": {
+				"AWS": "arn:aws:iam::826045886586:root"
+			},
+			"Action": ["s3:Get*", "s3:Put*", "s3:List*"],
+			"Resource": [
+				"arn:aws:s3:::&lt;bucket-name&gt;/*",
+				"arn:aws:s3:::&lt;bucket-name&gt;"
+			]
+		}
+	]
+}
+</pre>
 
       <p>
         You can find some trivial examples of job implementations at <a href="https://bitbucket.org/logicblox/jobs">https://bitbucket.org/logicblox/jobs</a>:
       </p>
 
       <pre>
-$ hg clone https://bitbucket.org/logicblox/jobs
-$ cd jobs/sample-jobs
+<b>$ hg clone https://bitbucket.org/logicblox/jobs</b>
+<b>$ cd jobs/sample-jobs</b>
+</pre>
+
+      <p>
+        Create <i>~/lb_deployment/config/lb-steve-client.config</i> with the following, which defines the default output location:
+      </p>
+
+<pre>
+default_output_prefix = s3://&lt;bucket-name&gt;/tmp
+</pre>
+
+      <p>
+        To run the ancestor example, you can run:
+      </p>
+
+      <pre>
+<b>$ lb-steve-client upload-impl --impl ancestor -i ./ancestor --wait</b>
+{"job_id":"045cbf3e-49d2-40ae-b54a-d0460895b330"}
+
+<b>$ lb-steve-client create-job --impl ancestor -o output.txt --wait</b>
+{"job_id":"d8f2917d-84e7-49a4-be7d-61b1f9bdb2ee"}
+State: UNKNOWN
+State: SUCCEEDED
+2014-06-30 17:27:16.858+00:00  STARTED      c3-xlarge-worker2                                                                                     
+2014-06-30 17:27:28.485+00:00  SUCCEEDED    c3-xlarge-worker2                                                                                     
+{"url":"s3://steve-jobs/tmp/fbe0757e-ea36-4017-bb4b-2f51c679e0e5/output.txt","hash":"etag:8bef1dd99d9024fc23a7ac94260d192c-1"}
+
+<b>$ cat output.txt</b>
+[1] "john" [0] "harry"
+[2] "dave" [0] "harry"
+[2] "dave" [1] "john" 
 </pre>
 
     </div>
