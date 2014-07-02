@@ -6,18 +6,18 @@ export TIMESTAMP=$(date +%Y%m%d%H%M)
     system="x86_64-linux"
     arch="x86_64"
 
-    echo "building $system image..."
-    nix-build '<nixpkgs/nixos>' -j 4 \
-        -A config.system.build.amazonImage --argstr system "$system" -o ec2-ami 
+    echo "downloading $system image..."
+    rm -f /tmp/nixos.img.*
+    curl -L https://bob.logicblox.com/job/jobs/default/worker_image.ec2/latest/download-by-type/file/img | xz -d > /tmp/nixos.img
 
-    ec2-bundle-image -i ec2-ami/nixos.img --user "$AWS_ACCOUNT" --arch "$arch" \
+    ec2-bundle-image -i /tmp/nixos.img --user "$AWS_ACCOUNT" --arch "$arch" \
         -c "$EC2_CERT" -k "$EC2_PRIVATE_KEY"
 
     for region in us-east-1; do
         echo "uploading $system image for $region..."
 
         name=steve-jobs-worker-$arch-s3
-        bucket="$(echo $name-$region | tr '[A-Z]_' '[a-z]-')"
+        bucket="steve-jobs-worker"
 
         if [ "$region" = eu-west-1 ]; then s3location=EU;
         elif [ "$region" = us-east-1 ]; then s3location=US;
