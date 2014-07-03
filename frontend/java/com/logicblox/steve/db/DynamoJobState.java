@@ -14,12 +14,14 @@ import com.logicblox.common.logging.Logger;
 public class DynamoJobState implements JobState
 {
   private AmazonDynamoDB _db;
+  private String _table;
 
   public DynamoJobState(Config config, Logger logger)
   {
     AWSCredentialsProvider provider = ClientConfigUtils.getAWSCredentials(config, "state", logger);
     _db = new AmazonDynamoDBClient(provider);
-    _db.setEndpoint(config.getSection("state").getString("endpoint"));
+    _db.setEndpoint(config.getSection("state").getStringError("endpoint"));
+    _table = config.getSection("state").getStringError("table");
   }
 
   public void initialize(String jobId)
@@ -27,7 +29,7 @@ public class DynamoJobState implements JobState
     Map<String, AttributeValue> item = new HashMap<String, AttributeValue>();
     item.put("Id", new AttributeValue(jobId));
     item.put("State", new AttributeValue(Status.State.INITIAL.toString()));
-    PutItemRequest req = new PutItemRequest("Job", item);
+    PutItemRequest req = new PutItemRequest(_table, item);
     PutItemResult result = _db.putItem(req);
   }
 }
