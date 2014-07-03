@@ -104,11 +104,12 @@ public class Main
   private JCommander _commander = new JCommander();
   private Config _config = null;
   private final Logger _logger;
+  private MainCommand _mainCmd = new MainCommand();
 
   public Main()
   {
     _logger = SystemDLogger.getLogger("SteveClient");
-    _commander = new JCommander(new MainCommand());
+    _commander = new JCommander(_mainCmd);
     _commander.setProgramName("lb-steve-client");
     _commander.addCommand("create-job", new CreateJobCommand());
     _commander.addCommand("status", new StatusCommand());
@@ -126,10 +127,13 @@ public class Main
       _config = new Config(file2, _config);
   }
 
-  class MainCommand
+  public class MainCommand
   {
     @Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
     boolean help = false;
+
+    @Parameter(names = { "-c", "--config" }, description = "Configuration file")
+    String config = null;
   }
 
   abstract class Command
@@ -666,6 +670,9 @@ public class Main
           printCommandUsage(command);
           System.exit(1);
         }
+
+        if(_mainCmd.config != null)
+          _config = new Config(new File(_mainCmd.config), _config);
 
         if(cmd.config != null)
           _config = new Config(new File(cmd.config), _config);
