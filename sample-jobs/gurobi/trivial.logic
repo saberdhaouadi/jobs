@@ -1,0 +1,16 @@
+lang:solver:variable(`x). 
+lang:solver:variable(`y). 
+x[]=v -> float[64](v). 
+y[]=v -> float[64](v). 
+objective[]=v <-  v = x[] + y[]. 
+
+x[] =v -> v >= 0. 
+x[] =v -> v <= 10. 
+y[] =v -> v >= 0. 
+y[] =v -> v <= 10. 
+
+x[] + y[]= v -> v <= 6. 
+x[] + y []= v -> v >= 2.
+
+lang:solver:minimal(`objective). 
+optimization:solverName[]="debug_gurobi5".
