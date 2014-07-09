@@ -34,22 +34,29 @@ public class SQSClients
     CredentialsConfig creds = new CredentialsConfig(config);
     String key = endpoint + "@" + String.valueOf(creds);
 
-    if(!_clients.containsKey(key))
+    boolean shared = config.getBool("shared", true);
+
+    if(shared && _clients.containsKey(key))
     {
-      AWSCredentialsProvider provider = creds.getAWSCredentialsProvider();
-      AmazonSQSClient sqs = new AmazonSQSClient(provider);
-      sqs.setEndpoint(endpoint);
+      return _clients.get(key);
+    }
 
-      // TODO make configurable?
-      ListeningExecutorService executor =
-        MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(
-            com.amazonaws.ClientConfiguration.DEFAULT_MAX_CONNECTIONS));
+    AWSCredentialsProvider provider = creds.getAWSCredentialsProvider();
+    AmazonSQSClient sqs = new AmazonSQSClient(provider);
+    sqs.setEndpoint(endpoint);
 
-      SQSClient client = new SQSClient(endpoint, sqs, executor);
+    // TODO make configurable?
+    ListeningExecutorService executor =
+      MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(
+          com.amazonaws.ClientConfiguration.DEFAULT_MAX_CONNECTIONS));
+
+    SQSClient client = new SQSClient(endpoint, sqs, executor);
+    if(shared)
+    {
       _clients.put(key, client);
     }
     
-    return _clients.get(key);
+    return client;
   }
 
   /**
