@@ -11,6 +11,7 @@
   networking.hostName = pkgs.lib.mkForce "i-worker";
 
   lb-steve-worker.shutdownOnIdle = true;
+  services.rsyslogd.enable = true;
 
   systemd.services.lb-steve-worker =
     {
