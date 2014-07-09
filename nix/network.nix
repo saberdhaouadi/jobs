@@ -1,4 +1,4 @@
-{ workers ? { "c3.xlarge" = { number = 2; price = "0.25"; }; "r3.xlarge" = { number = 0; price = "0.40"; }; "r3.2xlarge" = { number = 0; price = "0.75"; }; }
+{ workers ? { "c3.xlarge" = { number = 2; price = "0.25"; }; "r3.xlarge" = { number = 1; price = "0.40"; }; "r3.2xlarge" = { number = 0; price = "0.75"; }; }
 , instanceTypes ? builtins.attrNames workers
 , region ? "us-east-1"
 , account ? "lb-jobs"
@@ -115,7 +115,7 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [
-                "arn:aws:s3:::*"
+                "*"
               ]
             },
             {
@@ -216,21 +216,23 @@ with pkgs.lib;
 
   resources.ec2SecurityGroups.frontend-sg = 
     let 
-      entry = ip: port: 
+      entry = ip: port:
         {
           fromPort = port;
           toPort = port;
           sourceIp = "${ip}/32";
         } ;
+      ips = [
+        "38.104.0.30"
+        "107.20.158.107"
+        "54.198.12.247"
+      ];
     in
       {
         inherit region;
         accessKeyId = account;
         description = "Security group for frontend";
-        rules = [
-          (entry "38.104.0.30" 443)
-          (entry "107.20.158.107" 443)
-        ];
+        rules = map (ip: entry ip 443) ips;
       };
 
   frontend =
