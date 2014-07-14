@@ -1,4 +1,4 @@
-{ platform_version ? "3.10.13"
+{ platform_version ? "3.10.15"
 }:
 let
   inherit (import <config/lib> {}) releases version buildLB pkgs;

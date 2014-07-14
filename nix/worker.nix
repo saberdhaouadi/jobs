@@ -2,7 +2,7 @@
 with pkgs.lib;
 let
   builder-config = import <config> {};
-  platform = builder-config.releases.platform."3.10.13";
+  platform = builder-config.releases.platform."3.10.15";
   builds = import ../. {};
   
   cfg = config.lb-steve-worker;
