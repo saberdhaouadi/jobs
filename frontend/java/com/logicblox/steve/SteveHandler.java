@@ -3,6 +3,7 @@ package com.logicblox.steve;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.io.IOException;
+import java.lang.SecurityException;
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
@@ -432,7 +433,7 @@ public class SteveHandler extends ProtoBufHandler
         }
       });
 
-    return Futures.transform(
+    ListenableFuture<Frontend.Response> futureRes = Futures.transform(
       log,
       new AsyncFunction<String, Frontend.Response>()
       {
@@ -446,6 +447,15 @@ public class SteveHandler extends ProtoBufHandler
           return Futures.immediateFuture(response.build());
         }
       });
+
+    return MoreFutures.compose(futureRes, new Runnable()
+      {
+        @Override
+        public void run() throws SecurityException
+        {
+          tmpFile.delete();
+        }
+      });
   }
 
   /**
@@ -457,7 +467,6 @@ public class SteveHandler extends ProtoBufHandler
     final Frontend.ImplAddRequest req)
   throws IOException
   {
-    // TODO finally remove the temporary file
     final File tmpFile = File.createTempFile("jobimpl", null, _tmpDir);
     final String id = UUID.randomUUID().toString();
 
@@ -568,7 +577,7 @@ public class SteveHandler extends ProtoBufHandler
         }
       });
 
-    return Futures.transform(
+    ListenableFuture<Frontend.Response> futureRes = Futures.transform(
       fakeJob,
       new Function<Job, Frontend.Response>()
       {
@@ -580,6 +589,15 @@ public class SteveHandler extends ProtoBufHandler
               Frontend.ImplAddResponse.newBuilder()
               .setId(job.id))
             .build();
+        }
+      });
+
+    return MoreFutures.compose(futureRes, new Runnable()
+      {
+        @Override
+        public void run() throws SecurityException
+        {
+          tmpFile.delete();
         }
       });
   }
