@@ -37,6 +37,7 @@ message Response {
   optional JobCreateResponse create = 10;
   optional JobResultResponse result = 12;
   optional JobCancelResponse cancel = 13;
+  optional JobLogResponse log = 14;
 
   // job implementation
   optional ImplAddResponse impl_add = 20;

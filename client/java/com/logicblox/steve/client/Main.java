@@ -113,6 +113,7 @@ public class Main
     _commander.setProgramName("lb-steve-client");
     _commander.addCommand("create-job", new CreateJobCommand());
     _commander.addCommand("status", new StatusCommand());
+    _commander.addCommand("log", new LogCommand());
     _commander.addCommand("output", new OutputCommand());
     _commander.addCommand("upload-impl", new UploadJobImplCommand());
     _commander.addCommand("list-impl", new ListJobImplCommand());
@@ -398,6 +399,34 @@ public class Main
             }
           }).get();
       }
+    }
+  }
+
+  /**
+   * Log
+   */
+  @Parameters(commandDescription = "Get log of a job")
+  class LogCommand extends Command
+  {
+    @Parameter(names = {"-j", "--job"}, description = "Job identifier", required = true)
+    String _id;
+
+    @Override
+    public void invoke() throws Exception
+    {
+      SteveClientInterface client = getSteveClient();
+      Futures.transform(
+        client.getLog(_id),
+        new Function<String, Object>()
+        {
+          @Override
+          public Object apply(String log)
+          {
+            System.out.println(log);
+
+            return Futures.immediateFuture(null);
+          }
+        }).get();
     }
   }
 

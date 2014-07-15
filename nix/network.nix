@@ -75,6 +75,9 @@ let
 
       [job-implementations]
       prefix = s3://${s3Name}/jobs-impl
+
+      [job-logs]
+      prefix = s3://${s3Name}/jobs
     '';
 
 in

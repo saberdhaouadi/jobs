@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -61,6 +62,10 @@ import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
 
+import com.google.common.io.Files;
+import com.google.common.base.Joiner;
+import com.google.common.base.Charsets;
+
 public class SteveHandler extends ProtoBufHandler
 {
   private static final long MAX_IMPL_SIZE = 1;
@@ -70,6 +75,7 @@ public class SteveHandler extends ProtoBufHandler
   private S3Client _s3client;
   private File _tmpDir;
   private String _jobImplPrefix;
+  private String _jobLogPrefix;
 
   public SteveHandler()
   {
@@ -87,6 +93,9 @@ public class SteveHandler extends ProtoBufHandler
 
     Section jobImplConfig = handlerConfig.getParent().getSection("job-implementations");
     _jobImplPrefix = jobImplConfig.getStringError("prefix");
+
+    Section jobLogConfig = handlerConfig.getParent().getSection("job-logs");
+    _jobLogPrefix = jobLogConfig.getStringError("prefix");
 
     try
     {
@@ -210,6 +219,10 @@ public class SteveHandler extends ProtoBufHandler
     {
       resp = Futures.immediateFailedFuture(
         new HttpException(HttpStatus.BAD_REQUEST_400, "Not yet implemented"));
+    }
+    else if(request.hasLog())
+    {
+      resp = handleLog(httpRequest, httpResponse, request.getLog());
     }
     else if(request.hasImplAdd())
     {
@@ -358,6 +371,78 @@ public class SteveHandler extends ProtoBufHandler
 
           Frontend.Response.Builder response = Frontend.Response.newBuilder();
           response.setResult(b);
+          return Futures.immediateFuture(response.build());
+        }
+      });
+  }
+
+  private ListenableFuture<Frontend.Response> handleLog(
+    HttpServletRequest httpRequest,
+    HttpServletResponse httpResponse,
+    final Frontend.JobLogRequest req)
+  throws IOException
+  {
+    ListenableFuture<Job> job = _db.getResult(req.getJobId());
+
+    final File tmpFile = File.createTempFile("joblog", null, _tmpDir);
+    URI tmpUrl;
+    try
+    {
+      tmpUrl = new URI(_jobLogPrefix+"/"+req.getJobId()+"/log");
+    }
+    catch(URISyntaxException exc)
+    {
+      throw new ServiceException(
+        new SimpleErrorCode("INVALID_URL_SYNTAX", 500, "Invalid URL syntax"));
+    }
+    final URI inputUrl = tmpUrl;
+
+    ListenableFuture<ObjectMetadata> metadata = _s3client.exists(inputUrl);
+
+    // Check the S3 metadata, and if we're okay, then download the
+    // log from S3 to a temporary file
+    ListenableFuture<S3File> inputFile = Futures.transform(
+      metadata,
+      new AsyncFunction<ObjectMetadata, S3File>()
+      {
+        public ListenableFuture<S3File> apply(ObjectMetadata m) throws IOException
+        {
+          if(m == null)
+            throw new ServiceException(
+              new SimpleErrorCode("FILE_NOT_FOUND", 400, "Log does not exist"));
+            
+          if(m.getContentLength() > MAX_IMPL_SIZE * 1048576L)
+            throw new ServiceException(
+              new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Log is too big"));
+
+          return _s3client.download(tmpFile, inputUrl);
+        }
+      });
+
+    ListenableFuture<String> log = Futures.transform(
+      inputFile,
+      new AsyncFunction<S3File, String>()
+      {
+        public ListenableFuture<String> apply(S3File logfile) throws IOException
+        {
+          List<String> lines = Files.readLines(logfile.getLocalFile(), Charsets.UTF_8);
+          Joiner joiner = Joiner.on("\n");
+          String log = joiner.join(lines);
+          return Futures.immediateFuture(log);
+        }
+      });
+
+    return Futures.transform(
+      log,
+      new AsyncFunction<String, Frontend.Response>()
+      {
+        public ListenableFuture<Frontend.Response> apply(String log)
+        {
+          Frontend.JobLogResponse.Builder b = Frontend.JobLogResponse.newBuilder();
+          b.setLog(log);
+
+          Frontend.Response.Builder response = Frontend.Response.newBuilder();
+          response.setLog(b);
           return Futures.immediateFuture(response.build());
         }
       });

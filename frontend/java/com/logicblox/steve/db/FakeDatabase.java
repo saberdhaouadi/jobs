@@ -17,6 +17,8 @@ import com.logicblox.bloxweb.SimpleErrorCode;
 
 import com.logicblox.steve.common.Data;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 public class FakeDatabase implements Database
 {
   private Map<String, User> _users;
@@ -29,11 +31,11 @@ public class FakeDatabase implements Database
 
   public FakeDatabase(JobState jobState)
   {
-    _users = new HashMap<String, User>();
-    _accounts = new HashMap<String, Account>();
+    _users = new ConcurrentHashMap<String, User>();
+    _accounts = new ConcurrentHashMap<String, Account>();
 
-    _jobFromId = new HashMap<String, Job>();
-    _jobFromClientId = new HashMap<String, Job>();
+    _jobFromId = new ConcurrentHashMap<String, Job>();
+    _jobFromClientId = new ConcurrentHashMap<String, Job>();
 
     _jobState = jobState;
     _jobImpls = HashBasedTable.create();
