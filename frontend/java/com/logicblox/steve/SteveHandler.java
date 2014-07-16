@@ -37,7 +37,6 @@ import com.logicblox.bloxweb.config.ConfigMap;
 import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.concurrent.MoreFutures;
-import com.logicblox.concurrent.FutureTransform;
 
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.S3File;
@@ -488,12 +487,11 @@ public class SteveHandler extends ProtoBufHandler
 
     // Check the S3 metadata, and if we're okay, then download the
     // file from S3 to a temporary file
-    ListenableFuture<S3File> inputFile = MoreFutures.transform(
+    ListenableFuture<S3File> inputFile = Futures.transform(
       metadata,
-      new FutureTransform<ObjectMetadata, S3File>()
+      new AsyncFunction<ObjectMetadata, S3File>()
       {
-        @Override
-        public ListenableFuture<S3File> transform(ObjectMetadata m) throws Exception
+        public ListenableFuture<S3File> apply(ObjectMetadata m) throws IOException
         {
           if(m == null)
             throw new ServiceException(
@@ -512,14 +510,6 @@ public class SteveHandler extends ProtoBufHandler
           // TODO check the account of the encryption key used.
           return _s3client.download(tmpFile, inputUrl);
         }
-
-        @Override
-        public ListenableFuture<S3File> create(Throwable t)
-        {
-          throw new ServiceException(
-            new SimpleErrorCode("ERROR_FETCHING", 500, "Could not fetch job implementation"));
-        }
-
       });
 
     // Upload file to S3
