@@ -512,7 +512,7 @@ public class SteveHandler extends ProtoBufHandler
           }
         });
 
-    Futures.withFallback(inputFile, new FutureFallback<S3File>()
+    inputFile = Futures.withFallback(inputFile, new FutureFallback<S3File>()
       {
         @Override
         public ListenableFuture<S3File> create(Throwable t)
