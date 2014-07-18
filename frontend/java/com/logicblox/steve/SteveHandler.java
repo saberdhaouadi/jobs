@@ -71,7 +71,8 @@ import com.google.common.base.Charsets;
 
 public class SteveHandler extends ProtoBufHandler
 {
-  private static final long MAX_IMPL_SIZE = 1;
+  private static final long MAX_IMPL_SIZE = 50;
+  private static final long MAX_LOG_SIZE = 50;
 
   private Database _db;
   private Map<String, JobQueueClient> _jobQueues = new HashMap<String, JobQueueClient>();
@@ -414,7 +415,7 @@ public class SteveHandler extends ProtoBufHandler
             throw new ServiceException(
               new SimpleErrorCode("FILE_NOT_FOUND", 400, "Log does not exist"));
 
-          if(m.getContentLength() > MAX_IMPL_SIZE * 1048576L)
+          if(m.getContentLength() > MAX_LOG_SIZE * 1048576L)
             throw new ServiceException(
               new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Log is too big"));
 
@@ -517,8 +518,15 @@ public class SteveHandler extends ProtoBufHandler
         @Override
         public ListenableFuture<S3File> create(Throwable t)
         {
-          throw new ServiceException(
-            new SimpleErrorCode("ERROR_FETCHING", 500, "Could not fetch job implementation"));
+          if(t instanceof ServiceException)
+          {
+            return Futures.immediateFailedFuture(t);
+          }
+          else
+          {
+            return Futures.immediateFailedFuture(new ServiceException(
+              new SimpleErrorCode("ERROR_FETCHING", 500, "Could not fetch job implementation")));
+          }
         }
       });
 
