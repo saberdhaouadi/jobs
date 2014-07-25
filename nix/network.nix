@@ -78,6 +78,11 @@ let
 
       [job-logs]
       prefix = s3://${s3Name}/jobs
+
+      [statsd]
+      prefix = lb.web
+      hostname = 127.0.0.1
+      port = 8125
     '';
 
 in
