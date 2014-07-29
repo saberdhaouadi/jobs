@@ -70,6 +70,7 @@ rule(
     'cp -f $(lb_web)/lib/java/commons-configuration-* $(prefix)/lib/java',
     'cp -f $(lb_web)/lib/java/commons-lang-* $(prefix)/lib/java',
     'cp -f $(lb_web)/lib/java/commons-logging-* $(prefix)/lib/java',
+    'cp -f $(lb_web)/lib/java/java-statsd-* $(prefix)/lib/java',
     'cp -f $(lb_web)/config/lb-web-server.config $(prefix)/config',
 
     'cp -f $(protocols)/lib/java/*.jar $(prefix)/lib/java',
