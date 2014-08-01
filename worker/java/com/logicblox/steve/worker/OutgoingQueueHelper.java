@@ -63,6 +63,12 @@ public class OutgoingQueueHelper
         .setErrorCode("JOB_FAILED")
         .setErrorMessage(e.getMessage()));
     }
+    else if (e instanceof JobTimedOutException)
+    {
+      msgBuilder.setFailedDetails(
+        Backend.FailedDetails.newBuilder()
+        .setErrorCode("JOB_TIMED_OUT"));
+    }
     else
     {
       msgBuilder.setFailedDetails(

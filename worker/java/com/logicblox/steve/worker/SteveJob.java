@@ -40,6 +40,8 @@ public class SteveJob
   private File _outputPath = new File("/tmp/job/out");
   private File _jobPath = new File("/tmp/job/job.tar.gz");
 
+  private boolean _timedOut = false;
+
   public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout)
   throws InternalException
   {
@@ -336,7 +338,11 @@ public class SteveJob
     if (exit != 0)
     {
       File logPath = new File(Utils.nixLogPath(file));
-      if(logPath.exists())
+      if(_timedOut)
+      {
+        throw new JobTimedOutException();
+      }
+      else if(logPath.exists())
       {
         throw new JobFailedException("nix-store failed with exit code "+exit);
       }
@@ -347,5 +353,13 @@ public class SteveJob
     }
   }
 
+  public long getTimeout()
+  {
+    return _timeout;
+  }
 
+  public void setTimedOut()
+  {
+    _timedOut = true;
+  }
 }

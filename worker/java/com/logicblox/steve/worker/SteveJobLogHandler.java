@@ -26,5 +26,9 @@ public class SteveJobLogHandler extends LogOutputStream
       _job._outgoing.notifyStatus(line.substring(PREFIX.length()).trim());
     }
 
+    if(line.endsWith("timed out after "+_job.getTimeout()+" seconds"))
+    {
+      _job.setTimedOut();
+    }
   }
 }
