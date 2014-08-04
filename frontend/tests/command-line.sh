@@ -210,6 +210,14 @@ function test_create_job_fail()
     ! $client create-job --impl fail --wait
 }
 
+#####################################################
+# Test executing a job that times out
+function test_create_job_timeout()
+{
+    $client upload-impl --impl timeout --wait -i $topdir/sample-jobs/timeout
+    ! $client create-job --impl timeout --wait --timeout 30
+}
+
 if [[ "${1+$1}" != "--no-start" ]]; then
   start_servers
   trap stop_servers EXIT
@@ -224,5 +232,6 @@ test_status_no_such_job
 test_create_job_wait
 test_create_job
 test_create_job_fail
+test_create_job_timeout
 
 echo "****************** SUCCESS *******************"
