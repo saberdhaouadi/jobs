@@ -32,7 +32,7 @@ in
         cmd=start
         for i in $(seq 1 5); do
           echo "starting LogicBlox services [$i]"
-          $lbservices $cmd &> /dev/null
+          timeout -k 10 60 $lbservices $cmd &> /dev/null
           if [[ "$?" == "0" ]]; then
             break
           else
