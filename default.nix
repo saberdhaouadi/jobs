@@ -1,6 +1,6 @@
 { src ? ./.
 , src_s3lib ? <src_s3lib>
-, platform_release
+, platform_release ? <platform_release> # "4.1.1"
 }:
 let
   inherit (import <config> {}) releases pkgs version buildLBConfig getPlatform release_helper;
