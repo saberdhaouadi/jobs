@@ -57,6 +57,7 @@ in
         bash run /tmp/job/in /tmp/job/out
       else
         echo "ERROR: 'run' script not found in job!"
+        exit 1
       fi
 
       rm -rf $out
