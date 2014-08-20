@@ -60,6 +60,9 @@ in
         exit 1
       fi
 
+      # hack to workaround size in steve with filesize 0
+      for f in $(find /tmp/job/out -size 0); do echo "" > $f; done
+
       rm -rf $out
       mkdir -p $out
     '';
