@@ -9,7 +9,6 @@ in
   imports = [
     ./worker.nix
     <nixpkgs/nixos/modules/virtualisation/amazon-config.nix>
-    <lbdevops/logicblox/config/logging/papertrail.nix>
   ];
 
   ec2.metadata = true;
