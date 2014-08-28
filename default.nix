@@ -125,7 +125,7 @@ rec {
     let
       image = (import <nixpkgs/nixos> { system = "x86_64-linux"; configuration = ./nix/worker-ec2-image.nix; }).config.system.build.amazonImage;
     in 
-      with pkgs; runCommand "worker-ec2-image-${version src}" {} ''
+      with pkgs; runCommand "worker-ec2-image-${version src}" { preferLocalBuild = true; } ''
         mkdir -p $out/nix-support
         xz -z -c ${image}/nixos.img  > $out/worker-${version src}.img.xz
         echo "file img $out/worker-${version src}.img.xz" > $out/nix-support/hydra-build-products
