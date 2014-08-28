@@ -1,4 +1,10 @@
 { config, pkgs, ...}:
+let
+  papertrail-crt = pkgs.fetchurl {
+    url = https://papertrailapp.com/tools/syslog.papertrail.crt;
+    md5 = "cee9b8d2d503188ccecbb22b49cd3bec";
+  };
+in
 {
   imports = [
     ./worker.nix
@@ -11,7 +17,31 @@
   networking.hostName = pkgs.lib.mkForce "i-worker";
 
   lb-steve-worker.shutdownOnIdle = true;
+
   services.rsyslogd.enable = true;
+  services.rsyslogd.extraConfig =
+    ''
+      $DefaultNetstreamDriverCAFile ${papertrail-crt}
+
+      $ActionSendStreamDriver gtls
+      $ActionSendStreamDriverMode 1
+      $ActionSendStreamDriverAuthMode x509/name
+
+      $ActionResumeInterval 10
+      $ActionQueueSize 100000
+      $ActionQueueDiscardMark 97500
+      $ActionQueueHighWaterMark 80000
+      $ActionQueueType LinkedList
+      $ActionQueueFileName papertrailqueue
+      $ActionQueueCheckpointInterval 100
+      $ActionQueueMaxDiskSpace 2g
+      $ActionResumeRetryCount -1
+      $ActionQueueSaveOnShutdown on
+      $ActionQueueTimeoutEnqueue 10
+      $ActionQueueDiscardSeverity 0
+
+      *.* @@logs.papertrailapp.com:24237
+    '';
 
   systemd.services.lb-steve-worker =
     {
