@@ -17,7 +17,7 @@ depends_on(
   aws_dep,
   protocols_dep)
 
-bin_program('lb-steve-client')
+bin_program('lb-steve')
 config_file('config/lb-steve-client.config')
 
 jar(
