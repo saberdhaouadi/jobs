@@ -408,15 +408,18 @@ public class Main
   @Parameters(commandDescription = "Get log of a job")
   class LogCommand extends Command
   {
-    @Parameter(names = {"-j", "--job"}, description = "Job identifier", required = true)
-    String _id;
+    @Parameter(description = "Job identifier", required = true)
+    List<String> _ids;
 
     @Override
     public void invoke() throws Exception
     {
       SteveClientInterface client = getSteveClient();
+      if(_ids.size() != 1)
+        throw new UsageException("Must specify exactly one job identifier.");
+
       Futures.transform(
-        client.getLog(_id),
+        client.getLog(_ids.get(0)),
         new Function<String, Object>()
         {
           @Override
