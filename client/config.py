@@ -59,5 +59,6 @@ rule(
     'cp -f $(lb_web)/lib/java/commons-lang-* $(prefix)/lib/java',
     'cp -f $(lb_web)/lib/java/commons-logging-* $(prefix)/lib/java',
     'cp -f $(protocols)/lib/java/*.jar $(prefix)/lib/java',
+    'ln -sf lb-steve $(prefix)/bin/lb-steve-client',
   ]
 )

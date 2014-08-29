@@ -7,7 +7,7 @@ set -o pipefail
 
 scriptdir=$(readlink -f $(dirname $BASH_SOURCE))
 topdir=$scriptdir/../..
-client="lb-steve-client --config ./client.config"
+client="lb-steve --config ./client.config"
 
 #####################################################
 # Start servers before running tests
