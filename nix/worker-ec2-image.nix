@@ -42,15 +42,18 @@ in
       *.* @@logs.papertrailapp.com:24237
     '';
 
-  systemd.services.lb-steve-worker =
+  systemd.services.set-hostname =
     {
-      path = [ pkgs.curl pkgs.coreutils pkgs.nettools ];
-      preStart = ''
-        hostname $(curl --retry 5 --retry-delay 5 -m 10 http://169.254.169.254/latest/meta-data/instance-id)
-        if [[ -f /var/run/rsyslogd.pid ]]; then
-          kill -HUP `cat /var/run/rsyslogd.pid`
-        fi
+      before = [ "syslog.service" ];
+      wantedBy = [ "multi-user.target" ];
+      path = [ pkgs.wget pkgs.coreutils pkgs.nettools ];
+      script = ''
+        hostname $(wget -q --retry-connrefused -t 6 --waitretry=10 -O -  http://169.254.169.254/latest/meta-data/instance-id)
       '';
+      serviceConfig =
+        { Type = "oneshot";
+          RemainAfterExit = true;
+        };
     };
 
   boot.initrd.extraUtilsCommands =
