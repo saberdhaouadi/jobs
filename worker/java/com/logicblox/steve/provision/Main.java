@@ -19,7 +19,7 @@ public class Main
 
   private static String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
-  private static String ami = "ami-5453f63c";
+  private static String ami = "ami-5c3e9834";
   private static String key = "rob";
   private static String s3Bucket = "steve-jobs";
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
