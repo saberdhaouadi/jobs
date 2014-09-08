@@ -1,4 +1,4 @@
-{ workers ? { "c3.xlarge" = { number = 2; price = "0.25"; }; "r3.xlarge" = { number = 1; price = "0.40"; }; "r3.2xlarge" = { number = 0; price = "0.75"; }; }
+{ workers ? { "c3.xlarge" = { number = 1; price = "0.25"; }; "r3.xlarge" = { number = 0; price = "0.40"; }; "r3.2xlarge" = { number = 0; price = "0.75"; }; }
 , instanceTypes ? builtins.attrNames workers
 , region ? "us-east-1"
 , account ? "lb-jobs"
@@ -252,7 +252,7 @@ with pkgs.lib;
           ''
             #! /bin/sh
             source /etc/profile
-            exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --max 200 --role ${resources.iamRoles.worker-role.name} --instance-type ${t} --spot-price ${workers."${t}".price} $@
+            exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --max 300 --role ${resources.iamRoles.worker-role.name} --instance-type ${t} --spot-price ${workers."${t}".price} $@
           '';
       provisioner-service = t: {
         description = "Steve Provisioner";
