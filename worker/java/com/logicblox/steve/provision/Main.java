@@ -26,11 +26,11 @@ public class Main
   private static double pctSpot = 0.9;
   private static double pctQueue = 1 / 3f;
   private static double spotPrice = 0.6;
-  private static String instanceType = "m2.xlarge";
+  private static String instanceType = "c3.xlarge";
   private static String role = "steve-jobs-worker";
   private static int permanent = 0;
   private static int totalNeeded = 0;
-  private static int maxInstances = 40;
+  private static int maxInstances = 300;
   private static boolean dryRun = true;
 
   public Main()

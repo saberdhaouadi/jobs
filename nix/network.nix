@@ -247,13 +247,14 @@ with pkgs.lib;
   frontend =
     { config, pkgs, resources, ... }:
     let
-      run-provisioner = t:
-        pkgs.writeScript "run-provisioner-${workerName t}"
-          ''
-            #! /bin/sh
-            source /etc/profile
-            exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --max 300 --role ${resources.iamRoles.worker-role.name} --instance-type ${t} --spot-price ${workers."${t}".price} $@
-          '';
+      script = t: pkgs.writeScriptBin "run-provisioner-${workerName t}"
+        ''
+          #! /bin/sh
+          source /etc/profile
+          exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --role ${resources.iamRoles.worker-role.name} --instance-type ${t} --spot-price ${workers."${t}".price} $@
+        '';
+      provisionScripts = map script instanceTypes;
+      run-provisioner = t: "${script t}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
         path = [ jdk7_jce ];
@@ -282,7 +283,7 @@ with pkgs.lib;
       networking.hostName = "steve-${name}";
       networking.firewall.allowedTCPPorts = [ 443 ];
 
-      environment.systemPackages = [ builds.frontend builds.client.build builds.worker jdk7_jce pkgs.awscli ];
+      environment.systemPackages = [ builds.frontend builds.client.build builds.worker jdk7_jce pkgs.awscli pkgs.nodejs] ++ provisionScripts;
 
       services.nginx.enable = true;
       services.nginx.httpConfig = ''
@@ -311,6 +312,10 @@ with pkgs.lib;
           }
           location = /index.html {
               alias ${../www/index.html};
+              break;
+          }
+          location = /status.html {
+              alias /tmp/status.html;
               break;
           }
           location = /lb-steve-client.tgz {
