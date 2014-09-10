@@ -152,6 +152,11 @@ public class Main
       if (_cmdline.hasOption("percentage-queue"))
         pctQueue = ((Number)_cmdline.getParsedOptionValue("percentage-queue")).doubleValue();
 
+      if(maxInstances < totalNeeded)
+      {
+        maxInstances = totalNeeded;
+      }
+
       dryRun = _cmdline.hasOption("dry-run");
     }
     catch( ParseException exp ) {
