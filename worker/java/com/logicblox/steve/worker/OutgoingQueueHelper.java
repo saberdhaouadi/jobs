@@ -69,6 +69,13 @@ public class OutgoingQueueHelper
         Backend.FailedDetails.newBuilder()
         .setErrorCode("JOB_TIMED_OUT"));
     }
+    else if (e instanceof DownloadInputFailedException)
+    {
+      msgBuilder.setFailedDetails(
+        Backend.FailedDetails.newBuilder()
+        .setErrorCode("DOWNLOAD_FAILED")
+        .setErrorMessage(e.getMessage()));
+    }
     else
     {
       msgBuilder.setFailedDetails(

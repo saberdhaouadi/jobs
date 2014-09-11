@@ -128,7 +128,7 @@ public class SteveJob
     deleteDirectory(new File("/tmp/job"));
   }
 
-  private void setup() throws InternalException
+  private void setup() throws Exception
   {
     cleanUp();
 
@@ -183,7 +183,7 @@ public class SteveJob
     }
   }
 
-  private void downloadInput(Data input) throws InternalException
+  private void downloadInput(Data input) throws InternalException, DownloadInputFailedException
   {
     log("Downloading input '" + input.toString() + "'");
     URI inputUri;
@@ -210,7 +210,7 @@ public class SteveJob
     }
     catch(Exception e)
     {
-      throw new InternalException("Could not download input '"+input, e);
+      throw new DownloadInputFailedException("Could not download input '"+input, e);
     }
   }
 
