@@ -89,8 +89,6 @@ public class StatusQueueClient
 
   private void processStatus(String statusString)
   {
-    System.err.println("[status] " + statusString);
-
     Backend.JobStatus.Builder builder = Backend.JobStatus.newBuilder();
     try
     {
@@ -146,7 +144,7 @@ public class StatusQueueClient
         break;
       }
       default:
-        System.err.println("error: status not yet supported");
+        System.err.println("error: status not yet supported: "+statusString);
     }
 
     _db.addStatus(protoStatus.getJob(), status);
