@@ -20,7 +20,6 @@ public class Main
   private static String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
   private static String ami = "ami-5c3e9834";
-  private static String key = "rob";
   private static String s3Bucket = "steve-jobs";
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
   private static double pctSpot = 0.9;
@@ -64,12 +63,6 @@ public class Main
             .withDescription("Amazon Machine Image ID")
             .hasArg()
             .withArgName("AMI")
-            .create());
-
-    options.addOption(OptionBuilder.withLongOpt("key")
-            .withDescription("Amazon EC2 keypair")
-            .hasArg()
-            .withArgName("KEY")
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("percentage-queue")
@@ -134,8 +127,6 @@ public class Main
         outgoing_url = _cmdline.getOptionValue("outgoing");
       if (_cmdline.hasOption("ami"))
         ami = _cmdline.getOptionValue("ami");
-      if (_cmdline.hasOption("key"))
-        key = _cmdline.getOptionValue("key");
       if (_cmdline.hasOption("role"))
         role = _cmdline.getOptionValue("role");
       if (_cmdline.hasOption("instance-type"))
@@ -281,7 +272,6 @@ public class Main
     req.setImageId(ami);
     req.setInstanceType(instanceType);
     req.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
-    req.setKeyName(key);
     req.setUserData(getUserData());
 
     Collection<String> groups = new ArrayList<String>();
@@ -330,7 +320,6 @@ public class Main
     spec.setImageId(ami);
     spec.setInstanceType(instanceType);
     spec.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
-    spec.setKeyName(key);
     spec.setUserData(getUserData());
 
     Collection<String> groups = new ArrayList<String>();
