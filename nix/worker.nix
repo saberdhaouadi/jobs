@@ -37,6 +37,8 @@ let
 
 in
 {
+  imports = [ <lbdevops/logicblox/config/users.nix> ];
+
   options = {
     lb-steve-worker.shutdownOnIdle = mkOption {
       default = false;
