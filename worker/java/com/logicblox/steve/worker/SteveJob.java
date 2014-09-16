@@ -376,4 +376,9 @@ public class SteveJob
   {
     _timedOut = true;
   }
+
+  public boolean wasKilled()
+  {
+    return _killed;
+  }
 }

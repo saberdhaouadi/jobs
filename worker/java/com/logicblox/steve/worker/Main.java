@@ -254,7 +254,7 @@ public class Main
       finally
       {
         resetTimeout.interrupt();
-        removeIncoming(job);
+        if(!steve.wasKilled()) removeIncoming(job);
       }
     }
   }
