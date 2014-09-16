@@ -41,6 +41,7 @@ public class SteveJob
   private File _jobPath = new File("/tmp/job/job.tar.gz");
 
   private boolean _timedOut = false;
+  private boolean _killed = false;
 
   public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout)
   throws InternalException
@@ -88,6 +89,11 @@ public class SteveJob
       List<S3File> output = uploadOutput();
       _outgoing.notifySuccess(output);
       log("Successfully uploaded output files for job " + _id);
+    }
+    catch (JobKilledException k)
+    {
+      _outgoing.notifyStatus("Job was killed. It will be restarted on another worker.");
+      _killed = true;
     }
     catch (Exception e)
     {
@@ -251,7 +257,11 @@ public class SteveJob
       {
         File logPath = new File(Utils.nixLogPath(_drv));
 
-        if(!logPath.exists())
+        if(_killed)
+        {
+          log("Job was killed, not uploading log file.");
+        }
+        else if(!logPath.exists())
         {
           log("No log file found, going on.");
         }
@@ -341,6 +351,10 @@ public class SteveJob
       if(_timedOut)
       {
         throw new JobTimedOutException();
+      }
+      else if(exit == 1)
+      {
+        throw new JobKilledException();
       }
       else if(logPath.exists())
       {
