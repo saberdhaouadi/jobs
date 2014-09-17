@@ -244,7 +244,7 @@ with pkgs.lib;
         rules = map (ip: entry ip 443) ips;
       };
 
-  frontend =
+  "steve-${name}" =
     { config, pkgs, resources, ... }:
     let
       script = t: pkgs.writeScriptBin "run-provisioner-${workerName t}"
@@ -280,7 +280,6 @@ with pkgs.lib;
 
       imports = [ <lbdevops/logicblox/production.nix> ];
 
-      networking.hostName = "steve-${name}";
       networking.firewall.allowedTCPPorts = [ 443 ];
 
       environment.systemPackages = [ builds.frontend builds.client.build builds.worker jdk7_jce pkgs.awscli pkgs.nodejs] ++ provisionScripts;
@@ -361,4 +360,4 @@ with pkgs.lib;
       } // (listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes));
     };
 
-} // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${workerName t}-worker${toString n}" (worker t)) (range 1 workers."${t}".number)) instanceTypes ) ) )
+} // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${name}-${workerName t}-${toString n}" (worker t)) (range 1 workers."${t}".number)) instanceTypes ) ) )
