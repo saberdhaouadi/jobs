@@ -234,10 +234,10 @@ with pkgs.lib;
 
   resources.ec2SecurityGroups.frontend-sg = 
     let 
-      entry = ip: port:
+      entry = ip:
         {
-          fromPort = port;
-          toPort = port;
+          fromPort = 443;
+          toPort = 443;
           sourceIp = "${ip}/32";
         } ;
       ips = [
@@ -246,12 +246,24 @@ with pkgs.lib;
         "54.198.12.247"
         "196.203.15.130"
       ];
+      accountEntry = account:
+        {
+          fromPort = 443;
+          toPort = 443;
+          sourceGroup.ownerId = account;
+          sourceGroup.groupName = "admin";
+        } ;
+      accounts = [
+        "297794765570"
+        "414877248210"
+        "162071310369"
+      ];
     in
       {
         inherit region;
         accessKeyId = account;
         description = "Security group for frontend";
-        rules = map (ip: entry ip 443) ips;
+        rules = map entry ips ++ map accountEntry accounts;
       };
 
   "steve-${name}" =
