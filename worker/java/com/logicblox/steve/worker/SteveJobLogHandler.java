@@ -5,6 +5,7 @@ import org.apache.commons.exec.LogOutputStream;
 public class SteveJobLogHandler extends LogOutputStream
 {
   private SteveJob _job;
+  private String PREFIX = "PROGRESS:";
 
   public SteveJobLogHandler(SteveJob job)
   {
@@ -20,6 +21,14 @@ public class SteveJobLogHandler extends LogOutputStream
     if (line.startsWith("Executing stage: "))
     {
       _job._outgoing.notifyStatus(line);
+    } else if (line.startsWith(PREFIX))
+    {
+      _job._outgoing.notifyStatus(line.substring(PREFIX.length()).trim());
+    }
+
+    if(line.endsWith("timed out after "+_job.getTimeout()+" seconds"))
+    {
+      _job.setTimedOut();
     }
   }
 }

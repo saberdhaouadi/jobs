@@ -1,4 +1,4 @@
 #! /bin/sh
 set -e
 
-echo "Did nothing!"
+echo "PROGRESS: Did nothing!"

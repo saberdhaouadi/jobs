@@ -1,8 +1,13 @@
 { config, pkgs, ... }:
 with pkgs.lib;
 let
+  papertrail-crt = pkgs.fetchurl {
+    url = https://papertrailapp.com/tools/syslog.papertrail.crt;
+    md5 = "cee9b8d2d503188ccecbb22b49cd3bec";
+  };
+
   builder-config = import <config> {};
-  platform = builder-config.releases.platform."3.10.13";
+  platform = builder-config.releases.platform."3.10.15";
   builds = import ../. {};
   
   cfg = config.lb-steve-worker;
@@ -32,6 +37,8 @@ let
 
 in
 {
+  imports = [ <lbdevops/logicblox/config/users.nix> ];
+
   options = {
     lb-steve-worker.shutdownOnIdle = mkOption {
       default = false;
@@ -134,5 +141,30 @@ in
     time.timeZone = "UTC";
 
     nixpkgs.config.allowUnfree = true;
+
+    services.rsyslogd.enable = true;
+    services.rsyslogd.extraConfig = ''
+      $DefaultNetstreamDriverCAFile ${papertrail-crt}
+
+      $ActionSendStreamDriver gtls
+      $ActionSendStreamDriverMode 1
+      $ActionSendStreamDriverAuthMode x509/name
+
+      $ActionResumeInterval 10
+      $ActionQueueSize 100000
+      $ActionQueueDiscardMark 97500
+      $ActionQueueHighWaterMark 80000
+      $ActionQueueType LinkedList
+      $ActionQueueFileName papertrailqueue
+      $ActionQueueCheckpointInterval 100
+      $ActionQueueMaxDiskSpace 2g
+      $ActionResumeRetryCount -1
+      $ActionQueueSaveOnShutdown on
+      $ActionQueueTimeoutEnqueue 10
+      $ActionQueueDiscardSeverity 0
+
+      *.* @@logs.papertrailapp.com:24237
+    '';
   };
+
 }

@@ -1,0 +1,5 @@
+#! /bin/sh
+set -e
+
+echo "PROGRESS: Sleeping for 600 seconds!"
+sleep 600

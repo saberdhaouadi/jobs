@@ -3,11 +3,13 @@ package com.logicblox.steve;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.io.IOException;
+import java.lang.SecurityException;
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -22,6 +24,7 @@ import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.FutureFallback;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
@@ -35,6 +38,7 @@ import com.logicblox.bloxweb.config.ConfigMap;
 import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.concurrent.MoreFutures;
+import com.logicblox.concurrent.FutureTransform;
 
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.S3File;
@@ -61,15 +65,21 @@ import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
 
+import com.google.common.io.Files;
+import com.google.common.base.Joiner;
+import com.google.common.base.Charsets;
+
 public class SteveHandler extends ProtoBufHandler
 {
-  private static final long MAX_IMPL_SIZE = 1;
+  private static final long MAX_IMPL_SIZE = 50;
+  private static final long MAX_LOG_SIZE = 50;
 
   private Database _db;
   private Map<String, JobQueueClient> _jobQueues = new HashMap<String, JobQueueClient>();
   private S3Client _s3client;
   private File _tmpDir;
   private String _jobImplPrefix;
+  private String _jobLogPrefix;
 
   public SteveHandler()
   {
@@ -87,6 +97,9 @@ public class SteveHandler extends ProtoBufHandler
 
     Section jobImplConfig = handlerConfig.getParent().getSection("job-implementations");
     _jobImplPrefix = jobImplConfig.getStringError("prefix");
+
+    Section jobLogConfig = handlerConfig.getParent().getSection("job-logs");
+    _jobLogPrefix = jobLogConfig.getStringError("prefix");
 
     try
     {
@@ -210,6 +223,10 @@ public class SteveHandler extends ProtoBufHandler
     {
       resp = Futures.immediateFailedFuture(
         new HttpException(HttpStatus.BAD_REQUEST_400, "Not yet implemented"));
+    }
+    else if(request.hasLog())
+    {
+      resp = handleLog(httpRequest, httpResponse, request.getLog());
     }
     else if(request.hasImplAdd())
     {
@@ -363,6 +380,87 @@ public class SteveHandler extends ProtoBufHandler
       });
   }
 
+  private ListenableFuture<Frontend.Response> handleLog(
+    HttpServletRequest httpRequest,
+    HttpServletResponse httpResponse,
+    final Frontend.JobLogRequest req)
+  throws IOException
+  {
+    ListenableFuture<Job> job = _db.getResult(req.getJobId());
+
+    final File tmpFile = File.createTempFile("joblog", null, _tmpDir);
+    URI tmpUrl;
+    try
+    {
+      tmpUrl = new URI(_jobLogPrefix+"/"+req.getJobId()+"/log");
+    }
+    catch(URISyntaxException exc)
+    {
+      throw new ServiceException(
+        new SimpleErrorCode("INVALID_URL_SYNTAX", 500, "Invalid URL syntax"));
+    }
+    final URI inputUrl = tmpUrl;
+
+    ListenableFuture<ObjectMetadata> metadata = _s3client.exists(inputUrl);
+
+    // Check the S3 metadata, and if we're okay, then download the
+    // log from S3 to a temporary file
+    ListenableFuture<S3File> inputFile = Futures.transform(
+      metadata,
+      new AsyncFunction<ObjectMetadata, S3File>()
+      {
+        public ListenableFuture<S3File> apply(ObjectMetadata m) throws IOException
+        {
+          if(m == null)
+            throw new ServiceException(
+              new SimpleErrorCode("FILE_NOT_FOUND", 400, "Log does not exist"));
+
+          if(m.getContentLength() > MAX_LOG_SIZE * 1048576L)
+            throw new ServiceException(
+              new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Log is too big"));
+
+          return _s3client.download(tmpFile, inputUrl);
+        }
+      });
+
+    ListenableFuture<String> log = Futures.transform(
+      inputFile,
+      new AsyncFunction<S3File, String>()
+      {
+        public ListenableFuture<String> apply(S3File logfile) throws IOException
+        {
+          List<String> lines = Files.readLines(logfile.getLocalFile(), Charsets.UTF_8);
+          Joiner joiner = Joiner.on("\n");
+          String log = joiner.join(lines);
+          return Futures.immediateFuture(log);
+        }
+      });
+
+    ListenableFuture<Frontend.Response> futureRes = Futures.transform(
+      log,
+      new AsyncFunction<String, Frontend.Response>()
+      {
+        public ListenableFuture<Frontend.Response> apply(String log)
+        {
+          Frontend.JobLogResponse.Builder b = Frontend.JobLogResponse.newBuilder();
+          b.setLog(log);
+
+          Frontend.Response.Builder response = Frontend.Response.newBuilder();
+          response.setLog(b);
+          return Futures.immediateFuture(response.build());
+        }
+      });
+
+    return MoreFutures.compose(futureRes, new Runnable()
+      {
+        @Override
+        public void run() throws SecurityException
+        {
+          tmpFile.delete();
+        }
+      });
+  }
+
   /**
    * Handle a request to add a new job implementation.
    */
@@ -372,7 +470,6 @@ public class SteveHandler extends ProtoBufHandler
     final Frontend.ImplAddRequest req)
   throws IOException
   {
-    // TODO finally remove the temporary file
     final File tmpFile = File.createTempFile("jobimpl", null, _tmpDir);
     final String id = UUID.randomUUID().toString();
 
@@ -391,30 +488,45 @@ public class SteveHandler extends ProtoBufHandler
 
     ListenableFuture<ObjectMetadata> metadata = _s3client.exists(inputUrl);
 
-    // Check the S3 metadata, and if we're okay, then download the
-    // file from S3 to a temporary file
-    ListenableFuture<S3File> inputFile = Futures.transform(
-      metadata,
-      new AsyncFunction<ObjectMetadata, S3File>()
-      {
-        public ListenableFuture<S3File> apply(ObjectMetadata m) throws IOException
+    ListenableFuture<S3File> inputFile =
+      Futures.transform(metadata, new AsyncFunction<ObjectMetadata, S3File>()
         {
-          if(m == null)
-            throw new ServiceException(
-              new SimpleErrorCode("FILE_NOT_FOUND", 400, "S3 file does not exist"));
-            
-          if(req.getImplementation().hasHash())
-            if(!S3Utils.verifyHash(m, req.getImplementation().getHash()))
+          @Override
+          public ListenableFuture<S3File> apply(ObjectMetadata m) throws Exception
+          {
+            if(m == null)
               throw new ServiceException(
-                new SimpleErrorCode("INVALID_HASH", 400,
-                  "Specified hash does not correspond to actual hash"));
+                new SimpleErrorCode("FILE_NOT_FOUND", 400, "S3 file does not exist"));
 
-          if(m.getContentLength() > MAX_IMPL_SIZE * 1048576L)
-            throw new ServiceException(
-              new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Implementation is too big"));
+            if(req.getImplementation().hasHash())
+              if(!S3Utils.verifyHash(m, req.getImplementation().getHash()))
+                throw new ServiceException(
+                  new SimpleErrorCode("INVALID_HASH", 400,
+                    "Specified hash does not correspond to actual hash"));
 
-          // TODO check the account of the encryption key used.
-          return _s3client.download(tmpFile, inputUrl);
+            if(m.getContentLength() > MAX_IMPL_SIZE * 1048576L)
+              throw new ServiceException(
+                new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Implementation is too big"));
+
+            // TODO check the account of the encryption key used.
+            return _s3client.download(tmpFile, inputUrl);
+          }
+        });
+
+    inputFile = Futures.withFallback(inputFile, new FutureFallback<S3File>()
+      {
+        @Override
+        public ListenableFuture<S3File> create(Throwable t)
+        {
+          if(t instanceof ServiceException)
+          {
+            return Futures.immediateFailedFuture(t);
+          }
+          else
+          {
+            return Futures.immediateFailedFuture(new ServiceException(
+              new SimpleErrorCode("ERROR_FETCHING", 500, "Could not fetch job implementation")));
+          }
         }
       });
 
@@ -483,7 +595,7 @@ public class SteveHandler extends ProtoBufHandler
         }
       });
 
-    return Futures.transform(
+    ListenableFuture<Frontend.Response> futureRes = Futures.transform(
       fakeJob,
       new Function<Job, Frontend.Response>()
       {
@@ -495,6 +607,15 @@ public class SteveHandler extends ProtoBufHandler
               Frontend.ImplAddResponse.newBuilder()
               .setId(job.id))
             .build();
+        }
+      });
+
+    return MoreFutures.compose(futureRes, new Runnable()
+      {
+        @Override
+        public void run() throws SecurityException
+        {
+          tmpFile.delete();
         }
       });
   }

@@ -73,7 +73,7 @@ public class Main
   AmazonSQS sqs;
 
   // Settings
-  private static int _idle = 5;
+  private static int _idle = 2;
   private static String _incomingUrl = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String _outgoingUrl = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
   private static String _handle_dir = "/var/lib/lb-steve";
@@ -87,7 +87,7 @@ public class Main
     Options options = new Options();
 
     options.addOption(OptionBuilder.withLongOpt("idle")
-            .withDescription("Number of minutes to stay idle before shutting down.")
+            .withDescription("Minimum number of minutes idling before shutting down.")
             .withType(Number.class)
             .hasArg()
             .withArgName("minutes")
@@ -254,7 +254,7 @@ public class Main
       finally
       {
         resetTimeout.interrupt();
-        removeIncoming(job);
+        if(!steve.wasKilled()) removeIncoming(job);
       }
     }
   }
@@ -331,7 +331,7 @@ public class Main
           System.exit(0);
         }
       }
-      Thread.sleep(5000);
+      Thread.sleep(2000);
     }
   }
 }

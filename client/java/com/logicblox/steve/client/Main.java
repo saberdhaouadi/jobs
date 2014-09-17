@@ -113,6 +113,7 @@ public class Main
     _commander.setProgramName("lb-steve-client");
     _commander.addCommand("create-job", new CreateJobCommand());
     _commander.addCommand("status", new StatusCommand());
+    _commander.addCommand("log", new LogCommand());
     _commander.addCommand("output", new OutputCommand());
     _commander.addCommand("upload-impl", new UploadJobImplCommand());
     _commander.addCommand("list-impl", new ListJobImplCommand());
@@ -398,6 +399,37 @@ public class Main
             }
           }).get();
       }
+    }
+  }
+
+  /**
+   * Log
+   */
+  @Parameters(commandDescription = "Get log of a job")
+  class LogCommand extends Command
+  {
+    @Parameter(description = "Job identifier", required = true)
+    List<String> _ids;
+
+    @Override
+    public void invoke() throws Exception
+    {
+      SteveClientInterface client = getSteveClient();
+      if(_ids.size() != 1)
+        throw new UsageException("Must specify exactly one job identifier.");
+
+      Futures.transform(
+        client.getLog(_ids.get(0)),
+        new Function<String, Object>()
+        {
+          @Override
+          public Object apply(String log)
+          {
+            System.out.println(log);
+
+            return Futures.immediateFuture(null);
+          }
+        }).get();
     }
   }
 

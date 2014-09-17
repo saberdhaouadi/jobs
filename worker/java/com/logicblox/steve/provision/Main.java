@@ -19,18 +19,17 @@ public class Main
 
   private static String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
-  private static String ami = "ami-ce70b4a6";
-  private static String key = "rob";
+  private static String ami = "ami-9ee44af6";
   private static String s3Bucket = "steve-jobs";
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
   private static double pctSpot = 0.9;
   private static double pctQueue = 1 / 3f;
   private static double spotPrice = 0.6;
-  private static String instanceType = "m2.xlarge";
+  private static String instanceType = "c3.xlarge";
   private static String role = "steve-jobs-worker";
   private static int permanent = 0;
   private static int totalNeeded = 0;
-  private static int maxInstances = 40;
+  private static int maxInstances = 300;
   private static boolean dryRun = true;
 
   public Main()
@@ -64,12 +63,6 @@ public class Main
             .withDescription("Amazon Machine Image ID")
             .hasArg()
             .withArgName("AMI")
-            .create());
-
-    options.addOption(OptionBuilder.withLongOpt("key")
-            .withDescription("Amazon EC2 keypair")
-            .hasArg()
-            .withArgName("KEY")
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("percentage-queue")
@@ -134,8 +127,6 @@ public class Main
         outgoing_url = _cmdline.getOptionValue("outgoing");
       if (_cmdline.hasOption("ami"))
         ami = _cmdline.getOptionValue("ami");
-      if (_cmdline.hasOption("key"))
-        key = _cmdline.getOptionValue("key");
       if (_cmdline.hasOption("role"))
         role = _cmdline.getOptionValue("role");
       if (_cmdline.hasOption("instance-type"))
@@ -151,6 +142,11 @@ public class Main
         pctSpot = ((Number)_cmdline.getParsedOptionValue("percentage-spot")).doubleValue();
       if (_cmdline.hasOption("percentage-queue"))
         pctQueue = ((Number)_cmdline.getParsedOptionValue("percentage-queue")).doubleValue();
+
+      if(maxInstances < totalNeeded)
+      {
+        maxInstances = totalNeeded;
+      }
 
       dryRun = _cmdline.hasOption("dry-run");
     }
@@ -276,7 +272,6 @@ public class Main
     req.setImageId(ami);
     req.setInstanceType(instanceType);
     req.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
-    req.setKeyName(key);
     req.setUserData(getUserData());
 
     Collection<String> groups = new ArrayList<String>();
@@ -325,7 +320,6 @@ public class Main
     spec.setImageId(ami);
     spec.setInstanceType(instanceType);
     spec.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
-    spec.setKeyName(key);
     spec.setUserData(getUserData());
 
     Collection<String> groups = new ArrayList<String>();

@@ -40,6 +40,9 @@ public class SteveJob
   private File _outputPath = new File("/tmp/job/out");
   private File _jobPath = new File("/tmp/job/job.tar.gz");
 
+  private boolean _timedOut = false;
+  private boolean _killed = false;
+
   public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout)
   throws InternalException
   {
@@ -87,6 +90,11 @@ public class SteveJob
       _outgoing.notifySuccess(output);
       log("Successfully uploaded output files for job " + _id);
     }
+    catch (JobKilledException k)
+    {
+      _outgoing.notifyStatus("Job was killed. It will be restarted on another worker.");
+      _killed = true;
+    }
     catch (Exception e)
     {
       log("Failure executing " + _id);
@@ -126,7 +134,7 @@ public class SteveJob
     deleteDirectory(new File("/tmp/job"));
   }
 
-  private void setup() throws InternalException
+  private void setup() throws Exception
   {
     cleanUp();
 
@@ -181,7 +189,7 @@ public class SteveJob
     }
   }
 
-  private void downloadInput(Data input) throws InternalException
+  private void downloadInput(Data input) throws InternalException, DownloadInputFailedException
   {
     log("Downloading input '" + input.toString() + "'");
     URI inputUri;
@@ -208,7 +216,7 @@ public class SteveJob
     }
     catch(Exception e)
     {
-      throw new InternalException("Could not download input '"+input, e);
+      throw new DownloadInputFailedException("Could not download input '"+input, e);
     }
   }
 
@@ -249,7 +257,11 @@ public class SteveJob
       {
         File logPath = new File(Utils.nixLogPath(_drv));
 
-        if(!logPath.exists())
+        if(_killed)
+        {
+          log("Job was killed, not uploading log file.");
+        }
+        else if(!logPath.exists())
         {
           log("No log file found, going on.");
         }
@@ -336,7 +348,15 @@ public class SteveJob
     if (exit != 0)
     {
       File logPath = new File(Utils.nixLogPath(file));
-      if(logPath.exists())
+      if(_timedOut)
+      {
+        throw new JobTimedOutException();
+      }
+      else if(exit == 1)
+      {
+        throw new JobKilledException();
+      }
+      else if(logPath.exists())
       {
         throw new JobFailedException("nix-store failed with exit code "+exit);
       }
@@ -347,5 +367,18 @@ public class SteveJob
     }
   }
 
+  public long getTimeout()
+  {
+    return _timeout;
+  }
 
+  public void setTimedOut()
+  {
+    _timedOut = true;
+  }
+
+  public boolean wasKilled()
+  {
+    return _killed;
+  }
 }

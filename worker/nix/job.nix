@@ -1,4 +1,4 @@
-{ platform_version ? "3.10.13"
+{ platform_version ? "3.10.15"
 }:
 let
   inherit (import <config/lib> {}) releases version buildLB pkgs;
@@ -15,7 +15,7 @@ in
     ];
 
     LB_BLOXCOMPILER_SERVER="1";
-    LB_MONITOR_RULE_TIME="5";
+    LB_MONITOR_RULE_TIME="30";
 
     GRB_LICENSE_FILE = pkgs.writeText "gurobi.lic" "TOKENSERVER=127.0.0.1";
 
@@ -32,7 +32,7 @@ in
         cmd=start
         for i in $(seq 1 5); do
           echo "starting LogicBlox services [$i]"
-          $lbservices $cmd &> /dev/null
+          timeout -k 10 60 $lbservices $cmd &> /dev/null
           if [[ "$?" == "0" ]]; then
             break
           else
@@ -57,7 +57,11 @@ in
         bash run /tmp/job/in /tmp/job/out
       else
         echo "ERROR: 'run' script not found in job!"
+        exit 1
       fi
+
+      # hack to workaround size in steve with filesize 0
+      for f in $(find /tmp/job/out -size 0); do echo "" > $f; done
 
       rm -rf $out
       mkdir -p $out

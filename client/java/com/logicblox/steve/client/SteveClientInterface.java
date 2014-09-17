@@ -36,6 +36,12 @@ public interface SteveClientInterface
   throws ServiceClientException;
 
   /**
+   * Get the log of the specified job id.
+   */
+  public ListenableFuture<String> getLog(String id)
+  throws ServiceClientException;
+
+  /**
    * Wait for completion of a job id, with a fixed delay.
    *
    * If notify is not null, then every state response during polling is reported to the notify object.

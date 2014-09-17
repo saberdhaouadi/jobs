@@ -19,6 +19,7 @@ message Request {
   optional JobCreateRequest create = 1;
   optional JobResultRequest result = 3;
   optional JobCancelRequest cancel = 4;
+  optional JobLogRequest log = 5;
 
   // job implementation request
   optional ImplAddRequest impl_add = 20;
@@ -36,6 +37,7 @@ message Response {
   optional JobCreateResponse create = 10;
   optional JobResultResponse result = 12;
   optional JobCancelResponse cancel = 13;
+  optional JobLogResponse log = 14;
 
   // job implementation
   optional ImplAddResponse impl_add = 20;
@@ -119,6 +121,19 @@ message JobCancelResponse {
   // been handled)
   required string status = 1; 
 }
+
+
+/**
+ * Request log of an executed job.
+ */
+message JobLogRequest {
+  required string job_id = 1;
+}
+
+message JobLogResponse {
+  required string log = 1;
+}
+
 
 /**
  * Add a new job implementation
