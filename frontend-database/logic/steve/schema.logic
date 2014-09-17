@@ -1,0 +1,71 @@
+block(`schema) {
+
+  export(`{
+
+    /**
+     * Jobs
+     */
+    job(j), job_id(j:s) -> string(s).
+    job_clientid[j] = id -> job(j), string(id).
+
+    // job_user[j] = u -> job(j), user(u).
+
+    job_impl[j] = impl -> job(j), jobimpl(impl).
+    job_output_prefix[j] = prefix -> job(j), string(prefix).
+
+    job_input(j, f) -> job(j), string(f).
+    job_input_hash[j, f] = h -> job(j), string(f), string(h).
+
+    job_output(j, f) -> job(j), string(f).
+    job_output_hash[j, f] = h -> job(j), string(f), string(h).
+
+    job_metadata[j, k] = v -> job(j), string(k), string(v).
+
+    job_status_event[j, ts] = v -> job(j), int(ts), string(v).
+    job_status_machine[j, ts] = v -> job(j), int(ts), string(v).
+    job_status_message[j, ts] = v -> job(j), int(ts), string(v).
+
+    /**
+     * Job implementations
+     */ 
+    jobimpl(impl), jobimpl_id(impl:s) -> string(s).
+
+    jobimpl_alias[impl] = id -> jobimpl(impl), string(id).
+
+    // jobimpl_user[impl] = u -> jobimpl(impl), user(u).
+
+    jobimpl_archive[impl] = f -> jobimpl(impl), string(f).
+    jobimpl_archive_hash[impl] = hash -> jobimpl(impl), string(hash).
+    
+    jobimpl_metadata[impl, k] = v -> jobimpl(impl), string(k), string(v).
+
+    // jobimpl_tenants(impl, tenant) -> jobimpl(impl), tenant(tenant).
+
+  }),
+
+  sealed(`{
+
+    job_from_clientid[clientid] = j -> string(clientid), job(j).
+
+  }),
+
+  clauses(`{
+
+    job_from_clientid[id] = j <-
+      job_clientid[j] = id.
+
+  })
+
+  // clauses(`{
+
+    /**
+     * Within a single tenant, there should not be multiple job
+     * implementations with the same identifier.
+     */
+    // tenant_unique_jobimpl[tenant, id] = impl -> tenant(tenant), string(id), jobimpl(impl).
+
+
+  // })
+
+} <-- .
+

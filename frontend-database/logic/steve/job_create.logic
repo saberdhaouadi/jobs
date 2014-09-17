@@ -1,0 +1,60 @@
+block(`job_create) {
+
+  alias(`steve:schema, `schema),
+  alias(`frontend_database_proto, `proto),
+
+  inactive(),
+
+  clauses(`{
+    /**
+     * First check if we already have this job.
+     */
+    response_id[req] = s -> proto:JobCreateRequest(req), string(s).
+    confirm_new_job(req) -> proto:JobCreateRequest(req).
+
+    // if not new, simply return existing id.    
+    +response_id[req] = j
+      <-
+      +proto:JobCreateRequest_clientid[req] = clientid,
+      schema:job_from_clientid@prev[clientid] = j.
+
+    // if new
+    +confirm_new_job(req)
+      <-
+      +proto:JobCreateRequest_clientid[req] = clientid,
+      !schema:job_from_clientid@prev[clientid] = _.
+    
+    /**
+     * Construct new job
+     */
+    +response_id[req] = id,
+    +schema:job(j),
+    +schema:job_id[j] = id,
+    +schema:job_impl[j] = impl,
+    +schema:job_clientid[j] = clientid,
+    +schema:job_output_prefix[j] = prefix,
+    +schema:job_metadata[j, key] = value
+      <-
+      +confirm_new_job(req),
+      +proto:JobCreateRequest_id[req] = id,
+      +proto:JobCreateRequest_clientid[req] = clientid,
+      +proto:JobCreateRequest_impl[req] = impl,
+      +proto:JobCreateRequest_output_prefix[req] = prefix,
+      +proto:JobCreateRequest_metadata(req, p), 
+      +proto:Param_key[p] = key,
+      +proto:Param_value[p] = value.
+
+    /**
+     * Construct response with job id.
+     */
+    cons[req] = resp -> proto:JobCreateRequest(req), proto:JobCreateResponse(resp).
+    lang:constructor(`cons).
+
+    +cons[req] = resp,
+    +proto:JobCreateResponse(resp),
+    +proto:JobCreateResponse_id[resp] = id
+      <-
+      +response_id[req] = id.
+  })
+
+} <-- .

@@ -1,0 +1,8 @@
+lb-steve-frontend-database, projectname
+
+pedantic.logic, severities
+
+frontend_database.proto, proto, descName=frontend_database lifetime=transaction
+
+lb_web, library
+steve, module
