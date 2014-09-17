@@ -1,12 +1,15 @@
-{ workers ? { "c3.xlarge" = { number = 1; price = "0.25"; }; "r3.xlarge" = { number = 0; price = "0.40"; }; "r3.2xlarge" = { number = 0; price = "0.75"; }; }
-, instanceTypes ? builtins.attrNames workers
-, region ? "us-east-1"
+{ 
+  region ? "us-east-1"
 , account ? "lb-jobs"
 , accountId ? "826045886586"
-, elasticIPv4 ? ""
 , name
 }:
 let
+  environments = import ./environments.nix;
+  env = environments."${name}";
+
+  instanceTypes = builtins.attrNames env.workers;
+
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
   sqsStatusName = "steve-jobs-${name}-status";
@@ -35,6 +38,13 @@ let
       deployment.ec2.region = region;
       deployment.ec2.instanceType = type;
       deployment.ec2.instanceProfile = resources.iamRoles.worker-role.name;
+
+      # Tags are needed, so provisioner sees running worker instances for this
+      # deployments, and does not start new instances if not necessary.
+      deployment.ec2.tags.S3Bucket = s3Name;
+      deployment.ec2.tags.IncomingQueue = sqsURL type;
+      deployment.ec2.tags.OutgoingQueue = sqsStatusURL;
+
       ec2.metadata = true;
     };
 
@@ -251,7 +261,7 @@ with pkgs.lib;
         ''
           #! /bin/sh
           source /etc/profile
-          exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --role ${resources.iamRoles.worker-role.name} --instance-type ${t} --spot-price ${workers."${t}".price} $@
+          exec lb-steve-provisioner --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --role ${resources.iamRoles.worker-role.name} --instance-type ${t} --spot-price ${env.workers."${t}".price} $@
         '';
       provisionScripts = map script instanceTypes;
       run-provisioner = t: "${script t}/bin/run-provisioner-${workerName t}";
@@ -273,9 +283,9 @@ with pkgs.lib;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = "c3.xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
-      deployment.ec2.elasticIPv4 = elasticIPv4;
-      deployment.keys."server.key" = builtins.readFile <global_creds/logicblox/server.key>;
-      deployment.keys."server.crt" = builtins.readFile <global_creds/logicblox/server.crt>;
+      deployment.ec2.elasticIPv4 = env.elasticIPv4;
+      deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
+      deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
       ec2.metadata = true;
 
       imports = [ <lbdevops/logicblox/production.nix> ];
@@ -287,7 +297,7 @@ with pkgs.lib;
       services.nginx.enable = true;
       services.nginx.httpConfig = ''
         server {
-          server_name steve.logicblox.com;
+          server_name ${env.hostName};
           listen [::]:443 default_server ssl spdy ipv6only=off;
 
           ssl_certificate         /run/keys/server.crt;
@@ -360,4 +370,4 @@ with pkgs.lib;
       } // (listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes));
     };
 
-} // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${name}-${workerName t}-${toString n}" (worker t)) (range 1 workers."${t}".number)) instanceTypes ) ) )
+} // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${name}-${workerName t}-${toString n}" (worker t)) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
