@@ -283,7 +283,7 @@ with pkgs.lib;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = "c3.xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
-      deployment.ec2.elasticIPv4 = env.elasticIPv4;
+      deployment.ec2.elasticIPv4 = env.elasticIPv4 or "";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
       ec2.metadata = true;
