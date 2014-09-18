@@ -134,5 +134,14 @@ rec {
         echo "file img $out/worker-${version src}.img.xz" > $out/nix-support/hydra-build-products
       '';
 
+  database =
+    builder_config.genericAppJobset {
+      build = builder_config.buildLBConfig {
+        name = "jobs-database-${version src}";
+        src = "${src}/frontend-database";
+        buildInputs = [ logicblox lb_web ];
+      };
+    };
+
 }
 
