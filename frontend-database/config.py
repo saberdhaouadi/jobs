@@ -17,3 +17,4 @@ check_lb_workspace(
     name='lb-steve-frontend-test',
     libraries=['lb_steve_frontend_database'])
 
+install_file('scripts/install.sh', '')

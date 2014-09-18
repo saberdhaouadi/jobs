@@ -13,6 +13,7 @@
 }:
 let
   version = builder_config.version;
+  bloxweb = lb_web;
 
   buildjar = {name, url, sha256} :
     stdenv.mkDerivation rec {
@@ -136,6 +137,7 @@ rec {
 
   database =
     builder_config.genericAppJobset {
+      inherit logicblox bloxweb;
       build = builder_config.buildLBConfig {
         name = "jobs-database-${version src}";
         src = "${src}/frontend-database";
