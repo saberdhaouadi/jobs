@@ -22,7 +22,6 @@ let
   pkgs = import <nixpkgs> { config.allowUnfree = true; };
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
-  jdk7_jce = pkgs.oraclejdk7.override (a: { installjce = true; }) ;
 
   worker = type:
     { config, pkgs, resources, ... }:
@@ -58,6 +57,7 @@ let
       logdir = /var/log/lb-steve-worker
       authentication_cache = $(LB_DEPLOYMENT_HOME)/authentication_cache
       tmpdir = /tmp
+      jvm_args = -Xmx4800m -Xss2048k
 
       [state]
       implementation = dynamodb
@@ -166,6 +166,42 @@ with pkgs.lib;
       '';
     };
 
+  resources.iamRoles.database-role =
+    { resources, ... }:
+    {
+      accessKeyId = account;
+      policy = ''
+        {
+          "Statement": [
+            {
+              "Action": [
+                "sqs:GetQueueAttributes"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                ${pkgs.lib.concatStrings (map (t: ''
+                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsName t}".name}",
+                '') instanceTypes)
+                }
+                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsStatusName}".name}"
+              ]
+            },
+            {
+              "Action": [
+                "ec2:Describe*",
+                "ec2:RunInstances",
+                "ec2:RequestSpotInstances",
+                "ec2:CreateTags",
+                "iam:PassRole"
+              ],
+              "Effect": "Allow",
+              "Resource": [ "*" ]
+            }
+          ]
+        }
+      '';
+    };
+
   resources.iamRoles.frontend-role =
     { resources, ... }:
     {
@@ -215,17 +251,6 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": "*"
-            },
-            {
-              "Action": [
-                "ec2:Describe*",
-                "ec2:RunInstances",
-                "ec2:RequestSpotInstances",
-                "ec2:CreateTags",
-                "iam:PassRole"
-              ],
-              "Effect": "Allow",
-              "Resource": [ "*" ]
             }
           ]
         }
@@ -266,9 +291,10 @@ with pkgs.lib;
         rules = map entry ips ++ map accountEntry accounts;
       };
 
-  "steve-${name}" =
+  "database-${name}" =
     { config, pkgs, resources, ... }:
     let
+      platform = builder-config.getPlatform <platform_release>;
       script = t: pkgs.writeScriptBin "run-provisioner-${workerName t}"
         ''
           #! /bin/sh
@@ -279,14 +305,38 @@ with pkgs.lib;
       run-provisioner = t: "${script t}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
-        path = [ jdk7_jce ];
+        path = [ pkgs.jdk ];
         serviceConfig = {
           ExecStart = "${run-provisioner t}";
         };
         startAt = "*:0/5";
       };
-
     in
+    {
+      deployment.targetEnv = "ec2";
+      deployment.ec2.accessKeyId = account;
+      deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
+      deployment.ec2.securityGroups = [ "admin" ];
+      deployment.ec2.region = region;
+      deployment.ec2.instanceType = "c3.xlarge";
+      deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
+      ec2.metadata = true;
+
+      imports = [
+        <lbdevops/logicblox/production.nix>
+        <lbdevops/nixos/logicblox/lb40-module.nix>
+      ] ;
+
+      services.logicblox.enable = true;
+      services.logicblox.logicblox = platform.logicblox;
+      services.logicblox.lbWeb = platform.bloxweb;
+
+      environment.systemPackages = [ builds.worker ] ++ provisionScripts;
+      systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes);
+    };
+
+  "steve-${name}" =
+    { config, pkgs, resources, ... }:
     {
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -304,7 +354,7 @@ with pkgs.lib;
 
       networking.firewall.allowedTCPPorts = [ 443 ];
 
-      environment.systemPackages = [ builds.frontend builds.client.build builds.worker jdk7_jce pkgs.awscli pkgs.nodejs] ++ provisionScripts;
+      environment.systemPackages = [ builds.frontend builds.client.build pkgs.jdk pkgs.awscli pkgs.nodejs];
 
       services.nginx.enable = true;
       services.nginx.httpConfig = ''
@@ -369,7 +419,7 @@ with pkgs.lib;
           description = "LB Steve Frontend";
           after = [ "network.target" ];
           wantedBy = [ "multi-user.target" ];
-          path = [ jdk7_jce pkgs.bash builds.frontend ];
+          path = [ pkgs.jdk pkgs.bash builds.frontend ];
           preStart = ''
             mkdir -p /var/log/lb-steve-worker
           '';
@@ -379,7 +429,7 @@ with pkgs.lib;
             RestartSec = "10";
           };
         };
-      } // (listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes));
+      };
     };
 
-} // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "${name}-${workerName t}-${toString n}" (worker t)) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
+} // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t)) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
