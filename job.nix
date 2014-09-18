@@ -71,7 +71,6 @@ rec {
         "--with-s3lib=${s3lib}"
         "--with-aws=${aws-java-sdk}"
         "--with-commons-cli=${commons-cli}"
-        "--with-frontend-database=${database.build}"
       ];
     };
 

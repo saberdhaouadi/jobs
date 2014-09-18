@@ -7,7 +7,6 @@ lbconfig_package(
   default_targets=['jars'])
 
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
-frontend_database_dep = ("frontend_database", {'default_path': "/opt/logicblox/lb-steve-frontend-database"})
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib"})
 aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.7.1"})
 commons_cli_dep = ( "commons_cli", {'default_path': "/opt/logicblox/deps/commons-cli-1.2"})
@@ -18,8 +17,7 @@ depends_on(
   s3lib_dep,
   aws_dep,
   commons_cli_dep,
-  protocols_dep,
-  frontend_database_dep)
+  protocols_dep)
 
 bin_program('lb-steve-frontend')
 config_file('config/lb-steve-frontend.config')
@@ -31,7 +29,6 @@ jar(
    classpath = [
       '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
       '$(s3lib)/lib/java/s3lib-0.2.jar',
-      '$(s3lib)/lib/java/commons-io-2.4.jar',
       '$(protocols)/lib/java/lb-steve-protocols.jar',
       '$(lb_web)/lib/java/lb-web-server.jar',
       '$(lb_web)/lib/java/lb-web-client.jar',
@@ -53,7 +50,6 @@ rule(
     'cp -f $(s3lib)/lib/java/jcommander* $(prefix)/lib/java',
     'cp -f $(s3lib)/lib/java/guava* $(prefix)/lib/java',
     'cp -f $(s3lib)/lib/java/commons-codec-*.jar $(prefix)/lib/java',
-    'cp -f $(s3lib)/lib/java/commons-io-*.jar $(prefix)/lib/java',
 
     'cp -f $(aws)/lib/java/jackson*.jar $(prefix)/lib/java',
     'cp -f $(aws)/lib/java/aws-java-sdk-1.7.1.jar $(prefix)/lib/java',
