@@ -1,0 +1,31 @@
+package lb.steve.database;
+
+option java_package = "com.logicblox.steve.protocol";
+import "blox/options.proto";
+
+message JobCreateRequest
+{
+  required string id = 1;
+  required string clientid = 2;
+  required string impl = 3;
+  required string output_prefix = 4;
+  repeated File input = 5 [(blox.options.set) = true];
+  repeated Param metadata = 6 [(blox.options.set) = true];
+}
+
+message JobCreateResponse
+{
+  optional string id = 1;
+}
+
+message Param
+{
+  required string key = 1;
+  required string value = 2;
+}
+
+message File
+{
+  required string url = 1;
+  optional string hash = 2;
+}
