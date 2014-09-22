@@ -14,7 +14,7 @@ block(`tdx) {
     file_definition(fd) {
       file_delimiter[] = "|",
       column_headers[] = "USER,ACCOUNT",
-      column_formats[] = "alphanum,alphanum"
+      column_formats[] = "string,string"
     }.
 
     file_binding_by_name["users"] = fb,
@@ -30,5 +30,209 @@ block(`tdx) {
     delim_service(x) {
       delim_file_binding[] = "users"
     }.
+  }),
+
+  clauses(`{
+    file_definition_by_name["jobs"] = fd,
+    file_definition(fd) {
+      file_delimiter[] = "|",
+      column_headers[] = "ID,USER,JOBIMPL,OUTPUT_PREFIX,CLIENTID",
+      column_formats[] = "string,string,string,string,string"
+    }.
+
+    file_binding_by_name["jobs"] = fb,
+    file_binding(fb) {
+      file_binding_definition_name[] = "jobs",
+      predicate_binding_by_name["steve:schema:job"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID"
+        },
+      file_binding_definition_name[] = "jobs",
+      predicate_binding_by_name["steve:schema:job_impl"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,JOBIMPL"
+        },
+      predicate_binding_by_name["steve:schema:job_output_prefix"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,OUTPUT_PREFIX"
+        },
+      predicate_binding_by_name["steve:schema:job_clientid"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,CLIENTID"
+        },
+      predicate_binding_by_name["steve:schema:job_user"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,USER"
+        }
+    }.
+
+    service_by_prefix["/tdx/jobs"] = x,
+    delim_service(x) {
+      delim_file_binding[] = "jobs"
+    }.
+  }),
+
+  clauses(`{
+    file_definition_by_name["job_metadata"] = fd,
+    file_definition(fd) {
+      file_delimiter[] = "|",
+      column_headers[] = "ID,KEY,VALUE",
+      column_formats[] = "string,string,string"
+    }.
+
+    file_binding_by_name["job_metadata"] = fb,
+    file_binding(fb) {
+      file_binding_definition_name[] = "job_metadata",
+      predicate_binding_by_name["steve:schema:job_metadata"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,KEY,VALUE"
+        }
+    }.
+
+    service_by_prefix["/tdx/job_metadata"] = x,
+    delim_service(x) {
+      delim_file_binding[] = "job_metadata"
+    }.
+  }),
+
+  clauses(`{
+    file_definition_by_name["job_inputs"] = fd,
+    file_definition(fd) {
+      file_delimiter[] = "|",
+      column_headers[] = "ID,INPUT,HASH",
+      column_formats[] = "string,string,string"
+    }.
+
+    file_binding_by_name["job_inputs"] = fb,
+    file_binding(fb) {
+      file_binding_definition_name[] = "job_inputs",
+      predicate_binding_by_name["steve:schema:job_input_hash"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,INPUT,HASH"
+        }
+    }.
+
+    service_by_prefix["/tdx/job_inputs"] = x,
+    delim_service(x) {
+      delim_file_binding[] = "job_inputs"
+    }.
+  }),
+
+  clauses(`{
+    file_definition_by_name["job_outputs"] = fd,
+    file_definition(fd) {
+      file_delimiter[] = "|",
+      column_headers[] = "ID,OUTPUT,HASH",
+      column_formats[] = "string,string,string"
+    }.
+
+    file_binding_by_name["job_outputs"] = fb,
+    file_binding(fb) {
+      file_binding_definition_name[] = "job_outputs",
+      predicate_binding_by_name["steve:schema:job_output_hash"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,OUTPUT,HASH"
+        }
+    }.
+
+    service_by_prefix["/tdx/job_outputs"] = x,
+    delim_service(x) {
+      delim_file_binding[] = "job_outputs"
+    }.
+  }),
+
+  clauses(`{
+    file_definition_by_name["job_status"] = fd,
+    file_definition(fd) {
+      file_delimiter[] = "|",
+      column_headers[] = "ID,TIMESTAMP,EVENT,MACHINE,MESSAGE",
+      column_formats[] = "string,int,string,string,string"
+    }.
+
+    file_binding_by_name["job_status"] = fb,
+    file_binding(fb) {
+      file_binding_definition_name[] = "job_status",
+      predicate_binding_by_name["steve:schema:job_status_event"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,TIMESTAMP,EVENT"
+        },
+      predicate_binding_by_name["steve:schema:job_status_machine"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,TIMESTAMP,MACHINE"
+        },
+      predicate_binding_by_name["steve:schema:job_status_message"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,TIMESTAMP,MESSAGE"
+        }
+    }.
+
+    service_by_prefix["/tdx/job_status"] = x,
+    delim_service(x) {
+      delim_file_binding[] = "job_status"
+    }.
+  }),
+
+  clauses(`{
+    file_definition_by_name["jobimpls"] = fd,
+    file_definition(fd) {
+      file_delimiter[] = "|",
+      column_headers[] = "ID,ALIAS,USER,ARCHIVE,ARCHIVE_HASH",
+      column_formats[] = "string,string,string,string,string"
+    }.
+
+    file_binding_by_name["jobimpls"] = fb,
+    file_binding(fb) {
+      file_binding_definition_name[] = "jobimpls",
+      predicate_binding_by_name["steve:schema:jobimpl"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID"
+        },
+      predicate_binding_by_name["steve:schema:jobimpl_alias"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,ALIAS"
+        },
+      predicate_binding_by_name["steve:schema:jobimpl_archive"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,ARCHIVE"
+        },
+      predicate_binding_by_name["steve:schema:jobimpl_archive_hash"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,ARCHIVE_HASH"
+        },
+      predicate_binding_by_name["steve:schema:jobimpl_user"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,USER"
+        }
+    }.
+
+    service_by_prefix["/tdx/jobimpls"] = x,
+    delim_service(x) {
+      delim_file_binding[] = "jobimpls"
+    }.
+
+  }),
+
+  clauses(`{
+    file_definition_by_name["jobimpl_metadata"] = fd,
+    file_definition(fd) {
+      file_delimiter[] = "|",
+      column_headers[] = "ID,KEY,VALUE",
+      column_formats[] = "string,string,string"
+    }.
+
+    file_binding_by_name["jobimpl_metadata"] = fb,
+    file_binding(fb) {
+      file_binding_definition_name[] = "jobimpl_metadata",
+      predicate_binding_by_name["steve:schema:jobimpl_metadata"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID,KEY,VALUE"
+        }
+    }.
+
+    service_by_prefix["/tdx/jobimpl_metadata"] = x,
+    delim_service(x) {
+      delim_file_binding[] = "jobimpl_metadata"
+    }.
   })
+
 } <-- . 
