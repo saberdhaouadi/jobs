@@ -8,7 +8,7 @@ block(`schema) {
     job(j), job_id(j:s) -> string(s).
     job_clientid[j] = id -> job(j), string(id).
 
-    // job_user[j] = u -> job(j), user(u).
+    job_user[j] = u -> job(j), user(u).
 
     job_impl[j] = impl -> job(j), jobimpl(impl).
     job_output_prefix[j] = prefix -> job(j), string(prefix).
@@ -32,7 +32,7 @@ block(`schema) {
 
     jobimpl_alias[impl] = id -> jobimpl(impl), string(id).
 
-    // jobimpl_user[impl] = u -> jobimpl(impl), user(u).
+    jobimpl_user[impl] = u -> jobimpl(impl), user(u).
 
     jobimpl_archive[impl] = f -> jobimpl(impl), string(f).
     jobimpl_archive_hash[impl] = hash -> jobimpl(impl), string(hash).
@@ -40,6 +40,17 @@ block(`schema) {
     jobimpl_metadata[impl, k] = v -> jobimpl(impl), string(k), string(v).
 
     // jobimpl_tenants(impl, tenant) -> jobimpl(impl), tenant(tenant).
+
+   /**
+    * Accounts
+    */
+    account(a), account_id(a:s) -> string(s).
+
+   /**
+    * Users
+    */
+    user(u), user_id(u:s) -> string(s).
+    user_account[u] = a -> user(u), account(a).
 
   }),
 

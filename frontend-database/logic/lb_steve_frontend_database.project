@@ -6,3 +6,5 @@ frontend_database.proto, proto, descName=frontend_database lifetime=transaction
 
 lb_web, library
 steve, module
+data/init_data.logic, execute
+
