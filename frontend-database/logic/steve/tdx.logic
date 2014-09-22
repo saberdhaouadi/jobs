@@ -1,0 +1,34 @@
+block(`tdx) {
+  alias_all(`lb:web:delim:schema),
+  alias_all(`lb:web:delim:schema_abbr),
+
+  alias_all(`lb:web:delim:binding),
+  alias_all(`lb:web:delim:binding_abbr),
+
+  alias_all(`lb:web:config:service),
+  alias_all(`lb:web:config:service_abbr),
+  alias_all(`lb:web:config:delim),
+
+  clauses(`{
+    file_definition_by_name["users"] = fd,
+    file_definition(fd) {
+      file_delimiter[] = "|",
+      column_headers[] = "USER,ACCOUNT",
+      column_formats[] = "alphanum,alphanum"
+    }.
+
+    file_binding_by_name["users"] = fb,
+    file_binding(fb) {
+      file_binding_definition_name[] = "users",
+      predicate_binding_by_name["steve:schema:user_account"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "USER,ACCOUNT"
+        }
+    }.
+
+    service_by_prefix["/tdx/users"] = x,
+    delim_service(x) {
+      delim_file_binding[] = "users"
+    }.
+  })
+} <-- . 
