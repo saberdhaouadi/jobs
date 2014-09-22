@@ -1,12 +1,14 @@
 from lbconfig.api import *
 
+protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
+
 lbconfig_package(
   'lb-steve-frontend-database',
   version='1.0',
   default_prefix='/opt/logicblox/lb-steve-frontend-database',
   default_targets=['lb-libraries'])
 
-depends_on(logicblox_dep, lb_web_dep)
+depends_on(logicblox_dep, lb_web_dep, protocols_dep)
 
 lb_library(
     name='lb_steve_frontend_database',
@@ -18,3 +20,15 @@ check_lb_workspace(
     libraries=['lb_steve_frontend_database'])
 
 install_file('scripts/install.sh', '')
+
+rule(
+    output = 'deploy',
+    input = [ 'install' ],
+    commands = [
+      'cd $(prefix) ; ./install.sh',
+      ''
+    ],
+    description = '',
+    phony = True
+)
+

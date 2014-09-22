@@ -142,6 +142,9 @@ rec {
         name = "jobs-database-${version src}";
         src = "${src}/frontend-database";
         buildInputs = [ logicblox lb_web ];
+        configureFlags = [
+          "--with-protocols=${protocols}"
+        ];
       };
     };
 
