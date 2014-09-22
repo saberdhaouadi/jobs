@@ -176,8 +176,8 @@ block(`tdx) {
     file_definition_by_name["jobimpls"] = fd,
     file_definition(fd) {
       file_delimiter[] = "|",
-      column_headers[] = "ID,ALIAS,USER,ARCHIVE,ARCHIVE_HASH",
-      column_formats[] = "string,string,string,string,string"
+      column_headers[] = "ID,USER,ARCHIVE,ARCHIVE_HASH",
+      column_formats[] = "string,string,string,string"
     }.
 
     file_binding_by_name["jobimpls"] = fb,
@@ -186,10 +186,6 @@ block(`tdx) {
       predicate_binding_by_name["steve:schema:jobimpl"] =
         predicate_binding(_) {
           predicate_binding_columns[] = "ID"
-        },
-      predicate_binding_by_name["steve:schema:jobimpl_alias"] =
-        predicate_binding(_) {
-          predicate_binding_columns[] = "ID,ALIAS"
         },
       predicate_binding_by_name["steve:schema:jobimpl_archive"] =
         predicate_binding(_) {

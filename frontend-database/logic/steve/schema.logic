@@ -30,8 +30,6 @@ block(`schema) {
      */ 
     jobimpl(impl), jobimpl_id(impl:s) -> string(s).
 
-    jobimpl_alias[impl] = id -> jobimpl(impl), string(id).
-
     jobimpl_user[impl] = u -> jobimpl(impl), user(u).
 
     jobimpl_archive[impl] = f -> jobimpl(impl), string(f).
