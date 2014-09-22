@@ -25,7 +25,7 @@ rule(
     output = 'deploy',
     input = [ 'install' ],
     commands = [
-      'cd $(prefix) ; ./install.sh',
+      'cd $(prefix) ; ./install.sh ; lb web-server load-services -w lb-steve',
       ''
     ],
     description = '',
