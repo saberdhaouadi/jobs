@@ -249,7 +249,6 @@ public class Main
     if(keyFile == null)
       keyFile = getAuthOption("key_file");
 
-    System.out.println(keyFile);
     PrivateKey key;
     try
     {
