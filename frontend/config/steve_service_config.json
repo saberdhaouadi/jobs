@@ -7,5 +7,6 @@
   "request_message": "Request",
   "response_protocol": "frontend",
   "response_message": "Response",
-  "ignore_authentication_requirement": false
+  "ignore_authentication_requirement": false,
+  "authenticator": "job-auth"
 }
