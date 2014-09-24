@@ -22,6 +22,7 @@ depends_on(
 bin_program('lb-steve-frontend')
 config_file('config/lb-steve-frontend.config')
 config_file('config/steve_service_config.json')
+config_file('$(lb_web)/config/lb-web-server.config')
 
 jar(
    name = 'lb-steve-frontend',
