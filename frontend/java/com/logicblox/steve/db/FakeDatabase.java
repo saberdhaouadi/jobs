@@ -88,6 +88,11 @@ public class FakeDatabase implements Database
     return _users.get(id);
   }
 
+  public Iterable<User> getUsers()
+  {
+    return (Iterable<User>) _users.values();
+  }
+
   public Account getAccount(String id)
   {
     return _accounts.get(id);

@@ -21,6 +21,7 @@ import com.logicblox.steve.common.Data;
 public interface Database
 {
   public User getUser(String userid);
+  public Iterable<User> getUsers();
   public Account getAccount(String userid);
 
   /**
