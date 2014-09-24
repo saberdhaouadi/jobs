@@ -64,6 +64,8 @@ import com.logicblox.bloxweb.client.ClientConfigUtils;
 import com.logicblox.bloxweb.client.ProtobufServiceClient;
 import com.logicblox.bloxweb.client.ServiceConnector;
 import com.logicblox.bloxweb.client.Transport;
+import com.logicblox.bloxweb.client.Transports;
+import com.logicblox.bloxweb.client.SignUtils;
 import com.logicblox.bloxweb.config.Config;
 import com.logicblox.bloxweb.config.ConfigLocator;
 
@@ -80,6 +82,8 @@ import com.logicblox.s3lib.S3File;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.S3Utils;
 import com.logicblox.steve.protocol.Frontend;
+
+import java.security.PrivateKey;
 
 public class Main
 {
@@ -105,6 +109,8 @@ public class Main
   private Config _config = null;
   private final Logger _logger;
   private MainCommand _mainCmd = new MainCommand();
+  private String _user = null;
+  private String _keyFile = null;
 
   public Main()
   {
@@ -144,6 +150,12 @@ public class Main
 
     @Parameter(names = { "-c", "--config" }, description = "Configuration file", help = true)
     String config = null;
+
+    @Parameter(names = { "-u", "--user" }, description = "User to use for authentication", help = true)
+    String user = null;
+
+    @Parameter(names = { "-k", "--key" }, description = "Private key to use for authentication", help = true)
+    String keyFile = null;
 
     public abstract void invoke() throws Exception;
   }
@@ -215,19 +227,42 @@ public class Main
     }
   }
 
+  private String getAuthOption(String opt) throws UsageException
+  {
+    if(!_config.hasSection("auth"))
+      throw new UsageException("Authentication configuration section not found.");
+    return _config.getSection("auth").getStringError(opt);
+  }
+
   protected ProtobufServiceClient getProtobufClient()
-  throws URISyntaxException
+  throws URISyntaxException, UsageException
   {
     String service = _config.getStringError("service");
     URI serviceUri = new URI(service);
     ServiceConnector connector = ServiceConnector.create(serviceUri.toString());
 
-    // TODO support TCP configuration (timeouts, SSL etc)
-    Transport transport = ClientConfigUtils.getTCPTransport();
-    connector.setTransport(transport);
-    connector.setEncoding(Encoding.JSON);
-    connector.setGZIP(true);
-    return connector.createProtobufClient();
+    String user = _user;
+    String keyFile = _keyFile;
+
+    if(user == null)
+      user = getAuthOption("user");
+    if(keyFile == null)
+      keyFile = getAuthOption("key_file");
+
+    System.out.println(keyFile);
+    PrivateKey key;
+    try
+    {
+      key = SignUtils.readPrivateKeyFromPEM(new FileReader(keyFile));
+      connector.setTransport(Transports.sign(Transports.tcp(), user, key));
+      connector.setEncoding(Encoding.JSON);
+      connector.setGZIP(true);
+      return connector.createProtobufClient();
+    }
+    catch(Exception e)
+    {
+      throw new UsageException("Could not load key file from "+keyFile+": "+e.getMessage());
+    }
   }
 
   protected SteveClientInterface getSteveClient()
@@ -709,6 +744,12 @@ public class Main
         if(cmd.config != null)
           _config = new Config(new File(cmd.config), _config);
 
+        if(cmd.user != null)
+          _user = cmd.user;
+
+        if(cmd.keyFile != null)
+          _keyFile = cmd.keyFile;
+
         cmd.invoke();
       }
       else
@@ -753,7 +794,7 @@ public class Main
     // Hack to avoid printing the commands, which are not formatted
     // correctly.
     JCommander tmp = new JCommander(new MainCommand());
-    tmp.setProgramName("lb-guardian");
+    tmp.setProgramName("lb-steve");
 
     // Hack to avoid printing the usage line, which is not correct in
     // this incomplete commander object.

@@ -37,6 +37,7 @@ import com.logicblox.bloxweb.config.Config;
 import com.logicblox.bloxweb.config.ConfigMap;
 import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
+import com.logicblox.bloxweb.HandlerUtils;
 import com.logicblox.concurrent.MoreFutures;
 import com.logicblox.concurrent.FutureTransform;
 
@@ -61,9 +62,11 @@ import com.logicblox.steve.db.FakeDatabase;
 import com.logicblox.steve.db.Job;
 import com.logicblox.steve.db.JobImpl;
 import com.logicblox.steve.db.Status;
+import com.logicblox.steve.db.User;
 import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
+import com.logicblox.steve.authentication.LocalSignatureAuthenticationMechanism;
 
 import com.google.common.io.Files;
 import com.google.common.base.Joiner;
@@ -100,6 +103,13 @@ public class SteveHandler extends ProtoBufHandler
 
     Section jobLogConfig = handlerConfig.getParent().getSection("job-logs");
     _jobLogPrefix = jobLogConfig.getStringError("prefix");
+
+    LocalSignatureAuthenticationMechanism mech = (LocalSignatureAuthenticationMechanism) service.getContext().getAuthenticationProvider().getRealm("job-auth").getMechanism();
+    for(User u: _db.getUsers())
+    {
+        _logger.info("Registering user "+u.getId());
+        mech.addKey(u.getId(), u.getPublicKey());
+    }
 
     try
     {
@@ -194,6 +204,14 @@ public class SteveHandler extends ProtoBufHandler
     out.append("<li>Steve jobs handler</li>");
   }
 
+  public String getUser(HttpServletRequest request)
+  {
+    Map<String, String> params = new HashMap<String, String>();
+    HandlerUtils.populateHeaderMap(request, params);
+    String[] auth = params.get("authorization").split(":", 3);
+    return auth[0];
+  }
+
   @Override
   protected ListenableFuture<ProtoBufExchange> handle(
     HttpServletRequest httpRequest,
@@ -202,9 +220,6 @@ public class SteveHandler extends ProtoBufHandler
   throws ServletException, IOException, InvalidProtocolBufferException, InvalidRequestException
   {
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
-
-    // TODO remove debugging
-    _logger.info(request.toString());
 
     ListenableFuture<Frontend.Response> resp;
     if(request.hasCreate())
@@ -252,7 +267,7 @@ public class SteveHandler extends ProtoBufHandler
     HttpServletResponse httpResponse, 
     Frontend.JobCreateRequest req)
   {
-    // TODO require authentication and use actual user
+    final String user = getUser(httpRequest);
 
     Map<String, String> tags = Conversions.createMap(req.getMetadataList());
     tags.put("date", Conversions.getCurrentISO8601());
@@ -268,7 +283,7 @@ public class SteveHandler extends ProtoBufHandler
 
     ListenableFuture<Job> job =
       _db.createJob(
-        "martin",
+        user,
         req.getClientId(),
         req.getJobImpl(),
         Conversions.convertFrontendFileToData(req.getInputList()),
@@ -472,6 +487,7 @@ public class SteveHandler extends ProtoBufHandler
   {
     final File tmpFile = File.createTempFile("jobimpl", null, _tmpDir);
     final String id = UUID.randomUUID().toString();
+    final String user = getUser(httpRequest);
 
     URI tmpUrl;
     try
@@ -555,7 +571,7 @@ public class SteveHandler extends ProtoBufHandler
         {
           // TODO use actual authenticated user
           return _db.setJobImpl(
-            "martin",
+            user,
             req.getId(),
             Conversions.convertS3FileToData(input),
             tags);
@@ -570,7 +586,7 @@ public class SteveHandler extends ProtoBufHandler
         {
           // TODO use actual authenticated user
           return _db.createJob(
-            "martin",
+            user,
             req.getClientId(),
             "steve:internal:process-jobimpl",
             Conversions.convertFrontendFileToData(
@@ -628,9 +644,9 @@ public class SteveHandler extends ProtoBufHandler
     HttpServletResponse httpResponse, 
     Frontend.ImplListRequest req)
   {
-    // TODO use actual authenticated user
+    final String user = getUser(httpRequest);
     return Futures.transform(
-      _db.getJobImpl("martin"),
+      _db.getJobImpl(user),
       new Function<Iterable<JobImpl>, Frontend.Response>()
       {
         public Frontend.Response apply(Iterable<JobImpl> impls)
