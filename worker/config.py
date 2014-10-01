@@ -33,25 +33,24 @@ bin_program('lb-steve-worker')
 bin_program('lb-steve-provisioner')
 
 classpath = [
-  "$(protocols)/lib/java/lb-steve-protocols.jar",
+  '$(protocols)/lib/java/lb-steve-protocols.jar',
 
   '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
-  "$(aws)/lib/java/joda-time-2.2.jar",
+  '$(aws)/lib/java/joda-time-2.2.jar',
 
-  "$(s3lib)/lib/java/jcommander-1.29.jar",
-  "$(s3lib)/lib/java/commons-io-2.4.jar",
-  "$(s3lib)/lib/java/guava-15.0.jar",
-  "$(s3lib)/lib/java/s3lib-0.2.jar",
+  '$(s3lib)/lib/java/jcommander-1.29.jar',
+  '$(s3lib)/lib/java/commons-io-2.4.jar',
+  '$(s3lib)/lib/java/guava-15.0.jar',
+  '$(s3lib)/lib/java/s3lib-0.2.jar',
   
-  "$(commons_exec)/lib/java/commons-exec.jar",
-  "$(commons_cli)/lib/java/commons-cli.jar",
+  '$(commons_exec)/lib/java/commons-exec.jar',
+  '$(commons_cli)/lib/java/commons-cli.jar',
   
-  "$(logicblox)/lib/java/protobuf-2.5.0.jar",
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
-  "$(lb_web)/lib/java/protobuf-java-format-1.3.jar",
-  "$(lb_web)/lib/java/gson-2.2.4.jar",  
-  "$(lb_web)/lib/java/lb-web-client.jar",
-  "$(lb_web)/lib/java/lb-web-server.jar",
+  '$(lb_web)/lib/java/protobuf-java-format-1.3.jar',
+  '$(lb_web)/lib/java/gson-2.2.4.jar',  
+  '$(lb_web)/lib/java/lb-web-client.jar',
+  '$(lb_web)/lib/java/lb-web-server.jar',
   '$(lb_web)/lib/java/httpclient-4.2.3.jar',
   '$(lb_web)/lib/java/httpcore-4.2.jar',
   '$(lb_web)/lib/java/jackson-annotations-2.1.1.jar',
