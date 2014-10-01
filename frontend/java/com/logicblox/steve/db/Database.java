@@ -15,7 +15,7 @@ import com.logicblox.steve.common.Data;
  * need to include necessary verifications. The methods are on purpose
  * coarse grained to give the implementations freedom of using single
  * vs many transactions to check requests. This is also the reason why
- * most arguments are primivite types, and not classes like Account or
+ * most arguments are primitive types, and not classes like Account or
  * User.
  */
 public interface Database
