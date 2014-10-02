@@ -58,6 +58,19 @@ let
       '';
     };
 
+  makeClosure = module: buildFromConfig module (config: config.system.build.toplevel);
+
+  scrubDrv = drv: let res = { inherit (drv) drvPath outPath type name system meta; outputName = "out"; out = res; }; in res;
+
+  buildFromConfig = module: sel: scrubDrv (sel (import "${nixpkgs}/nixos/lib/eval-config.nix" {
+    system = "x86_64-linux";
+    modules = [ module dummy ] ++ lib.singleton
+      ({ config, lib, ... }:
+      { fileSystems."/".device  = lib.mkDefault "/dev/sda1";
+        boot.loader.grub.device = lib.mkDefault "/dev/sda";
+      });
+  }).config);
+
 in
 rec {
   frontend =
@@ -147,6 +160,13 @@ rec {
         ];
       };
     };
+
+  closures.worker =
+    makeClosure (
+      {config, pkgs, ...}:
+      { imports = [ ./nix/worker.nix ];
+      }
+    );
 
 }
 
