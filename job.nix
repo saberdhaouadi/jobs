@@ -71,6 +71,24 @@ let
       });
   }).config);
 
+  dummy =
+    {
+      options = {
+        deployment.storeKeysOnMachine = lib.mkOption {
+          default = false;
+          type = lib.types.bool;
+          description = ''
+          '';
+        };
+        ec2.metadata = lib.mkOption {
+          default = false;
+          type = lib.types.bool;
+          description = ''
+          '';
+        };
+      };
+    };
+
 in
 rec {
   frontend =
