@@ -64,7 +64,7 @@ let
 
   buildFromConfig = module: sel: scrubDrv (sel (import <nixpkgs/nixos/lib/eval-config.nix> {
     system = "x86_64-linux";
-    modules = [ module dummy ] ++ lib.singleton
+    modules = [ module dummy ] ++ pkgs.lib.singleton
       ({ config, lib, ... }:
       { fileSystems."/".device  = lib.mkDefault "/dev/sda1";
         boot.loader.grub.device = lib.mkDefault "/dev/sda";
@@ -74,15 +74,15 @@ let
   dummy =
     {
       options = {
-        deployment.storeKeysOnMachine = lib.mkOption {
+        deployment.storeKeysOnMachine = pkgs.lib.mkOption {
           default = false;
-          type = lib.types.bool;
+          type = pkgs.lib.types.bool;
           description = ''
           '';
         };
-        ec2.metadata = lib.mkOption {
+        ec2.metadata = pkgs.lib.mkOption {
           default = false;
-          type = lib.types.bool;
+          type = pkgs.lib.types.bool;
           description = ''
           '';
         };
