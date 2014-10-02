@@ -2,9 +2,6 @@ package com.logicblox.steve.common;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
-import com.logicblox.bloxweb.service.ServiceException;
-import com.logicblox.bloxweb.SimpleErrorCode;
-
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;

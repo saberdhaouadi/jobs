@@ -39,20 +39,24 @@ protobuf_protocol(
   srcdir = 'proto'
 )
 
+classpath = [
+  '$(logicblox)/lib/java/protobuf-2.5.0.jar',
+  '$(logicblox)/lib/java/guava-15.0.jar',
+  '$(logicblox)/lib/java/lb-common.jar',
+  '$(s3lib)/lib/java/s3lib-0.2.jar',
+  '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
+  '$(lb_web)/lib/java/lb-web-client.jar',
+  '$(lb_web)/lib/java/gson-2.2.4.jar'
+]
+
 jar(
    name = 'lb-steve-protocols',
    srcdir = 'java',
    srcgen = [
-      java_protobuf_file('backend', 'com.logicblox.steve.protocol'),
+      java_protobuf_file('backend',  'com.logicblox.steve.protocol'),
       java_protobuf_file('frontend', 'com.logicblox.steve.protocol'),
       java_protobuf_file('database', 'com.logicblox.steve.protocol'),
    ],
-   classpath = [
-      '$(logicblox)/lib/java/protobuf-2.5.0.jar',
-      '$(logicblox)/lib/java/guava-15.0.jar',
-      '$(logicblox)/lib/java/lb-common.jar',
-      '$(s3lib)/lib/java/s3lib-0.2.jar',
-      '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
-      '$(lb_web)/lib/java/lb-web-client.jar',
-      '$(lb_web)/lib/java/lb-web-server.jar',
-   ])
+   classpath = classpath)
+
+link_libs(classpath)
