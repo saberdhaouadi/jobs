@@ -62,7 +62,7 @@ let
 
   scrubDrv = drv: let res = { inherit (drv) drvPath outPath type name system meta; outputName = "out"; out = res; }; in res;
 
-  buildFromConfig = module: sel: scrubDrv (sel (import "${nixpkgs}/nixos/lib/eval-config.nix" {
+  buildFromConfig = module: sel: scrubDrv (sel (import <nixpkgs/nixos/lib/eval-config.nix> {
     system = "x86_64-linux";
     modules = [ module dummy ] ++ lib.singleton
       ({ config, lib, ... }:
