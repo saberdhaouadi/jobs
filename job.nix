@@ -12,6 +12,7 @@
 , python
 }:
 let
+  inherit (builder_config) pkgs;
   version = builder_config.version;
   bloxweb = lb_web;
 
