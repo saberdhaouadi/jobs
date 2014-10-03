@@ -8,5 +8,5 @@
   "response_protocol": "frontend",
   "response_message": "Response",
   "ignore_authentication_requirement": false,
-  "authenticator": "default-signature"
+  "authenticator": "job-auth"
 }
