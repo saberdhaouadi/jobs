@@ -20,15 +20,15 @@ import com.logicblox.steve.common.Data;
  */
 public interface Database
 {
-  public User getUser(String userid);
-  public Account getAccount(String userid);
+  public User getUser(String userId);
+  public Account getAccount(String userId);
 
   /**
    * Initial creation of a job in the database.
    */
   public ListenableFuture<Job> createJob(
-    String userid,
-    String clientid,
+    String userId,
+    String clientId,
     String jobImpl,
     Collection<Data> inputs,
     String output,
@@ -38,20 +38,20 @@ public interface Database
    * Store a job a implementation.
    */
   public ListenableFuture<JobImpl> setJobImpl(
-    String userid,
-    String id,
+    String userId,
+    String implId,
     Data file,
     Map<String, String> metadata);
 
   /**
    * Get information on a job implementation.
    */
-  public ListenableFuture<JobImpl> getJobImpl(String userid, String id);
+  public ListenableFuture<JobImpl> getJobImpl(String userId, String id);
 
   /**
    * Get all job implementations available to a user.
    */
-  public ListenableFuture<Iterable<JobImpl>> getJobImpl(String userid);
+  public ListenableFuture<Iterable<JobImpl>> getJobImpl(String userId);
 
   /**
    * Returns Job with the state field populated, and the full status
