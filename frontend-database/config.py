@@ -32,3 +32,5 @@ rule(
     phony = True
 )
 
+link_libs([])
+
