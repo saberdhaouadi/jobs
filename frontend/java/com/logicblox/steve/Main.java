@@ -115,18 +115,18 @@ public class Main
 
   private boolean processArgs(String[] args) throws Exception
   {
-    String configFilename = "lb-steve-frontend.config";
+    //final String configFilename = "lb-steve-frontend.config";
     
     File file1 = ConfigLocator.getDefaultConfigFile("lb-web-server.config");
     File file2 = ConfigLocator.getDefaultConfigFile("lb-steve-frontend.config");
     File file3 = null;
 
     Options options = new Options();
-    options.addOption(OptionBuilder.withLongOpt("config")
-            .withDescription("Configuration file")
-            .hasArg()
-            .withArgName("FILE")
-            .create());
+    OptionBuilder.withLongOpt("config");
+    OptionBuilder.withDescription("Configuration file");
+    OptionBuilder.hasArg();
+    OptionBuilder.withArgName("FILE");
+    options.addOption(OptionBuilder.create());
             
     CommandLineParser parser = new BasicParser();
     try
