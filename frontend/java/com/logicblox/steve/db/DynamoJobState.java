@@ -30,6 +30,7 @@ public class DynamoJobState implements JobState
     item.put("Id", new AttributeValue(jobId));
     item.put("State", new AttributeValue(Status.State.INITIAL.toString()));
     PutItemRequest req = new PutItemRequest(_table, item);
-    PutItemResult result = _db.putItem(req);
+    //PutItemResult result = 
+        _db.putItem(req);
   }
 }

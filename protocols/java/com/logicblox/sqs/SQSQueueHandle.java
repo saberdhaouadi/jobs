@@ -1,6 +1,10 @@
 package com.logicblox.sqs;
 
-public class SQSQueueHandle
+
+/**
+ * Identification of an SQS queue.
+ */
+public final class SQSQueueHandle
 {
   private final String _queueName;
   private final String _queueUrl;

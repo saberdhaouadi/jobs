@@ -1,13 +1,11 @@
 package com.logicblox.steve.db;
 
-import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import com.logicblox.s3lib.S3File;
 import com.logicblox.steve.common.Data;
 
 /**

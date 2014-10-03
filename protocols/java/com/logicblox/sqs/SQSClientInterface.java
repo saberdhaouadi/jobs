@@ -1,6 +1,7 @@
 package com.logicblox.sqs;
 
 import java.util.List;
+
 import com.google.common.util.concurrent.ListenableFuture;
 
 /**
@@ -15,11 +16,19 @@ public interface SQSClientInterface
   public ListenableFuture<String> send(SQSQueueHandle handle, String msg);
 
   /**
+   * Receive messages from the queue with this handle.
+   * 
+   * @param handle
+   * @return
+   * @throws SQSException
+   */
+  public List<SQSReceivedMessage> receive(SQSQueueHandle handle) throws SQSException;
+		  
+  /**
    * Delete message.
    *
    * Returns original message on successful delete. If deletion
    * failed, then the future will throw an exception.
-
    */
   public ListenableFuture<SQSReceivedMessage> delete(final SQSReceivedMessage msg);
 
