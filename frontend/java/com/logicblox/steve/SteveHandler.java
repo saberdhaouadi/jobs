@@ -66,7 +66,6 @@ import com.logicblox.steve.db.User;
 import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
-import com.logicblox.steve.authentication.LocalSignatureAuthenticationMechanism;
 
 import com.google.common.io.Files;
 import com.google.common.base.Joiner;
@@ -103,13 +102,6 @@ public class SteveHandler extends ProtoBufHandler
 
     Section jobLogConfig = handlerConfig.getParent().getSection("job-logs");
     _jobLogPrefix = jobLogConfig.getStringError("prefix");
-
-    LocalSignatureAuthenticationMechanism mech = (LocalSignatureAuthenticationMechanism) service.getContext().getAuthenticationProvider().getRealm("job-auth").getMechanism();
-    for(User u: _db.getUsers())
-    {
-        _logger.info("Registering user "+u.getId());
-        mech.addKey(u.getId(), u.getPublicKey());
-    }
 
     try
     {

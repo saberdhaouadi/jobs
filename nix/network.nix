@@ -93,6 +93,9 @@ let
       prefix = lb.web
       hostname = 127.0.0.1
       port = 8125
+
+      [realm-config:default-signature]
+      mechanism_option_credential_service = http://database-${name}:55183/admin/credentials
     '';
 
 in
@@ -394,7 +397,7 @@ with pkgs.lib;
               break;
           }
           location / {
-              proxy_pass         http://localhost:8080/;
+              proxy_pass         http://localhost:8081/;
               proxy_redirect     off;
               proxy_set_header   Host             $host;
               proxy_set_header   X-Real-IP        $remote_addr;

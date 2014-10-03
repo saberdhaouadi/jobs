@@ -49,10 +49,6 @@ public class Main
 
         main._ctx = ServiceContext.fromConfig(main._config, main._logger);
 
-        // Create job-auth realm for authentication
-        Specification.Realm.Builder realm = Specification.Realm.newBuilder().setName("job-auth").setConfig("steve-signature");
-        main._ctx.getAuthenticationProvider().addRealm(realm.build());
-
         final BloxWebServer bloxwebServer = new BloxWebServer(
           Option.some(main._logDir),
           main._config,
