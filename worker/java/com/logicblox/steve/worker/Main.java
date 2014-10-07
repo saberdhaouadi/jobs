@@ -315,8 +315,7 @@ public class Main
         // hour, default to 0, which will cause the instance to shutdown when idling for x
         // minutes
         nextInstanceHour = 0;
-        System.err.println("Error determining start of next instance hour.");
-        e.printStackTrace();
+        System.err.println("WARNING: Could not determine start of next instance hour: " + e.getMessage() );
       }
 
       if (_shutdownOnIdle && idleTooLong && nextInstanceHour <= 3)
