@@ -134,29 +134,25 @@ public class Main
       _config = new Config(file2, _config);
   }
 
-  public class MainCommand
+  abstract class GlobalArgsCommand
   {
     @Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
     boolean help = false;
 
     @Parameter(names = { "-c", "--config" }, description = "Configuration file")
     String config = null;
-  }
 
-  abstract class Command
-  {
-    @Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
-    boolean help = false;
-
-    @Parameter(names = { "-c", "--config" }, description = "Configuration file", help = true)
-    String config = null;
-
-    @Parameter(names = { "-u", "--user" }, description = "User to use for authentication", help = true)
+    @Parameter(names = { "-u", "--user" }, description = "User to use for authentication")
     String user = null;
 
-    @Parameter(names = { "-k", "--key" }, description = "Private key to use for authentication", help = true)
+    @Parameter(names = { "-k", "--key" }, description = "Private key to use for authentication")
     String keyFile = null;
+  }
 
+  public class MainCommand extends GlobalArgsCommand {};
+
+  abstract class Command extends GlobalArgsCommand
+  {
     public abstract void invoke() throws Exception;
   }
 
@@ -743,8 +739,14 @@ public class Main
         if(cmd.config != null)
           _config = new Config(new File(cmd.config), _config);
 
+        if(_mainCmd.user != null)
+          _user = _mainCmd.user;
+
         if(cmd.user != null)
           _user = cmd.user;
+
+        if(_mainCmd.keyFile != null)
+          _keyFile = _mainCmd.keyFile;
 
         if(cmd.keyFile != null)
           _keyFile = cmd.keyFile;
