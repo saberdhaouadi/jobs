@@ -96,7 +96,7 @@ rec {
      builder_config.buildLBConfig {
       name = "jobs-frontend-${version src}";
       src = "${src}/frontend";
-      buildInputs = [ logicblox lb_web makeWrapper ];
+      buildInputs = [ logicblox lb_web makeWrapper client.build ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
