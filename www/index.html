@@ -95,12 +95,31 @@
 <b>$ cd jobs/sample-jobs</b>
 </pre>
 
-      <p>
-        Create <i>~/lb_deployment/config/lb-steve-client.config</i> with the following, which defines the default output location:
-      </p>
+<p>
+  Run the following commands to generate a public and private key:
+</p>
+
+<pre>
+$ openssl genrsa -out priv.pem 2048
+$ openssl rsa -in priv.pem -out pub.pem -pubout
+$ openssl pkcs8 -topk8 -inform PEM -outform PEM -in priv.pem -out priv-pkcs.pem -nocrypt
+</pre>
+
+<p>
+  Send the public key <i>pub.pem</i> to <a href="mailto:deployment@logicblox.com">deployment@logicblox.com</a> to request
+  access to LB Steve, you will receive a username which we will use in the next step.
+</p>
+
+<p>
+   Create <i>~/lb_deployment/config/lb-steve-client.config</i> with the following, which defines the default output location:
+</p>
 
 <pre>
 default_output_prefix = s3://&lt;bucket-name&gt;/tmp
+
+[auth]
+username = yourusername
+key = /path/to/your/priv-pkcs.pem
 </pre>
 
       <p>
