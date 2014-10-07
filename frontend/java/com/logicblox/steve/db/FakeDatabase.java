@@ -1,23 +1,19 @@
 package com.logicblox.steve.db;
 
-import java.util.List;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.base.Function;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-
-import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.bloxweb.SimpleErrorCode;
-
+import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.steve.common.Data;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 public class FakeDatabase implements Database
 {
@@ -123,13 +119,7 @@ public class FakeDatabase implements Database
 
       String id = UUID.randomUUID().toString();
       
-      job = new Job();
-      job.id = id;
-      job.impl = impl;
-      job.clientId = clientId;
-      job.metadata = metadata;
-      job.outputPrefix = output;
-      job.setInputData(inputs);
+      job = new Job(id, clientId, output, impl, metadata, inputs);
 
       _jobState.initialize(id);
       
@@ -171,7 +161,7 @@ public class FakeDatabase implements Database
     {
       public Job apply(Job j)
       {
-        j.setOutputData(output);
+        j.addOutputData(output);
         return j;
       }
     });

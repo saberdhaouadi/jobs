@@ -1,16 +1,14 @@
 package com.logicblox.steve.db;
 
-public class Account
-{
+public final class Account {
+  
   private final String _id;
 
-  public Account(String id)
-  {
+  public Account(String id) {
     _id = id;
   }
   
-  public String getId()
-  {
+  public String getId() {
     return _id;
   }
 }

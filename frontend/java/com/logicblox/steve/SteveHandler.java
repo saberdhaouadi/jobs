@@ -1,15 +1,14 @@
 package com.logicblox.steve;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.io.IOException;
-import java.lang.SecurityException;
-import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -19,40 +18,33 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
-
+import com.google.common.base.Charsets;
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.io.Files;
 import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
-
 import com.logicblox.bloxweb.HandlerValidationException;
 import com.logicblox.bloxweb.InvalidRequestException;
 import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.bloxweb.ProtoBufHandler;
-import com.logicblox.bloxweb.config.Config;
-import com.logicblox.bloxweb.config.ConfigMap;
+import com.logicblox.bloxweb.SimpleErrorCode;
+import com.logicblox.bloxweb.UsageException;
 import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.bloxweb.HandlerUtils;
+import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.concurrent.MoreFutures;
-import com.logicblox.concurrent.FutureTransform;
-
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.S3File;
-
-import com.logicblox.bloxweb.service.ServiceException;
-import com.logicblox.bloxweb.SimpleErrorCode;
-import com.logicblox.bloxweb.UsageException;
-
-import com.logicblox.sqs.SQSException;
 import com.logicblox.sqs.SQSClient;
-import com.logicblox.sqs.SQSQueueHandle;
 import com.logicblox.sqs.SQSClients;
-
+import com.logicblox.sqs.SQSException;
+import com.logicblox.sqs.SQSQueueHandle;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.Data;
 import com.logicblox.steve.common.S3Utils;
@@ -62,14 +54,10 @@ import com.logicblox.steve.db.FakeDatabase;
 import com.logicblox.steve.db.Job;
 import com.logicblox.steve.db.JobImpl;
 import com.logicblox.steve.db.Status;
-import com.logicblox.steve.db.User;
+import com.logicblox.steve.db.Status.StatusBuilder;
 import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
-
-import com.google.common.io.Files;
-import com.google.common.base.Joiner;
-import com.google.common.base.Charsets;
 
 public class SteveHandler extends ProtoBufHandler
 {
@@ -393,7 +381,8 @@ public class SteveHandler extends ProtoBufHandler
     final Frontend.JobLogRequest req)
   throws IOException
   {
-    ListenableFuture<Job> job = _db.getResult(req.getJobId());
+    //ListenableFuture<Job> job = 
+        _db.getResult(req.getJobId());
 
     final File tmpFile = File.createTempFile("joblog", null, _tmpDir);
     URI tmpUrl;
@@ -594,12 +583,12 @@ public class SteveHandler extends ProtoBufHandler
       {
         public ListenableFuture<Job> apply(Job job)
         {
-          Status status = new Status();
-          status.setEvent(Status.Event.SUCCEEDED);
-          status.setMachine("frontend");
-          status.setTimestamp(System.currentTimeMillis());
+          final StatusBuilder status = new StatusBuilder();
+          status.event = Status.Event.SUCCEEDED;
+          status.machine = "frontend";
+          status.timestamp = System.currentTimeMillis();
 
-          return _db.addStatus(job.id, status);
+          return _db.addStatus(job.id, status.build());
         }
       });
 

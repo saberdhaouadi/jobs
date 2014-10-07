@@ -1,13 +1,18 @@
 package com.logicblox.steve;
 
 import java.io.File;
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.log4j.PatternLayout;
 
 import com.logicblox.bloxweb.BloxWebServer;
@@ -23,7 +28,6 @@ import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
-import org.apache.commons.cli.*;
 
 import com.logicblox.bloxweb.internal.Specification;
 

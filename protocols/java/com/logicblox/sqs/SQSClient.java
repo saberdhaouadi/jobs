@@ -200,6 +200,7 @@ public final class SQSClient implements SQSClientInterface
       });
   }
 
+  @Override
   public List<SQSReceivedMessage> receive(SQSQueueHandle handle)
   throws SQSException
   {
