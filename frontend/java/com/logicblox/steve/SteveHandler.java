@@ -36,6 +36,7 @@ import com.logicblox.bloxweb.SimpleErrorCode;
 import com.logicblox.bloxweb.UsageException;
 import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
+import com.logicblox.bloxweb.HandlerUtils;
 import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.concurrent.MoreFutures;
 import com.logicblox.s3lib.S3Client;
@@ -183,6 +184,14 @@ public class SteveHandler extends ProtoBufHandler
     out.append("<li>Steve jobs handler</li>");
   }
 
+  public String getUser(HttpServletRequest request)
+  {
+    Map<String, String> params = new HashMap<String, String>();
+    HandlerUtils.populateHeaderMap(request, params);
+    String[] auth = params.get("authorization").split(":", 3);
+    return auth[0];
+  }
+
   @Override
   protected ListenableFuture<ProtoBufExchange> handle(
     HttpServletRequest httpRequest,
@@ -191,9 +200,6 @@ public class SteveHandler extends ProtoBufHandler
   throws ServletException, IOException, InvalidProtocolBufferException, InvalidRequestException
   {
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
-
-    // TODO remove debugging
-    _logger.info(request.toString());
 
     ListenableFuture<Frontend.Response> resp;
     if(request.hasCreate())
@@ -241,7 +247,7 @@ public class SteveHandler extends ProtoBufHandler
     HttpServletResponse httpResponse, 
     Frontend.JobCreateRequest req)
   {
-    // TODO require authentication and use actual user
+    final String user = getUser(httpRequest);
 
     Map<String, String> tags = Conversions.createMap(req.getMetadataList());
     tags.put("date", Conversions.getCurrentISO8601());
@@ -257,7 +263,7 @@ public class SteveHandler extends ProtoBufHandler
 
     ListenableFuture<Job> job =
       _db.createJob(
-        "martin",
+        user,
         req.getClientId(),
         req.getJobImpl(),
         Conversions.convertFrontendFileToData(req.getInputList()),
@@ -462,6 +468,7 @@ public class SteveHandler extends ProtoBufHandler
   {
     final File tmpFile = File.createTempFile("jobimpl", null, _tmpDir);
     final String id = UUID.randomUUID().toString();
+    final String user = getUser(httpRequest);
 
     URI tmpUrl;
     try
@@ -545,7 +552,7 @@ public class SteveHandler extends ProtoBufHandler
         {
           // TODO use actual authenticated user
           return _db.setJobImpl(
-            "martin",
+            user,
             req.getId(),
             Conversions.convertS3FileToData(input),
             tags);
@@ -560,7 +567,7 @@ public class SteveHandler extends ProtoBufHandler
         {
           // TODO use actual authenticated user
           return _db.createJob(
-            "martin",
+            user,
             req.getClientId(),
             "steve:internal:process-jobimpl",
             Conversions.convertFrontendFileToData(
@@ -618,9 +625,9 @@ public class SteveHandler extends ProtoBufHandler
     HttpServletResponse httpResponse, 
     Frontend.ImplListRequest req)
   {
-    // TODO use actual authenticated user
+    final String user = getUser(httpRequest);
     return Futures.transform(
-      _db.getJobImpl("martin"),
+      _db.getJobImpl(user),
       new Function<Iterable<JobImpl>, Frontend.Response>()
       {
         public Frontend.Response apply(Iterable<JobImpl> impls)

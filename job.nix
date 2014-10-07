@@ -12,6 +12,7 @@
 , python
 }:
 let
+  inherit (builder_config) pkgs;
   version = builder_config.version;
   bloxweb = lb_web;
 
@@ -58,13 +59,44 @@ let
       '';
     };
 
+  makeClosure = module: buildFromConfig module (config: config.system.build.toplevel);
+
+  scrubDrv = drv: let res = { inherit (drv) drvPath outPath type name system meta; outputName = "out"; out = res; }; in res;
+
+  buildFromConfig = module: sel: scrubDrv (sel (import <nixpkgs/nixos/lib/eval-config.nix> {
+    system = "x86_64-linux";
+    modules = [ module dummy ] ++ pkgs.lib.singleton
+      ({ config, lib, ... }:
+      { fileSystems."/".device  = lib.mkDefault "/dev/sda1";
+        boot.loader.grub.device = lib.mkDefault "/dev/sda";
+      });
+  }).config);
+
+  dummy =
+    {
+      options = {
+        deployment.storeKeysOnMachine = pkgs.lib.mkOption {
+          default = false;
+          type = pkgs.lib.types.bool;
+          description = ''
+          '';
+        };
+        ec2.metadata = pkgs.lib.mkOption {
+          default = false;
+          type = pkgs.lib.types.bool;
+          description = ''
+          '';
+        };
+      };
+    };
+
 in
 rec {
   frontend =
      builder_config.buildLBConfig {
       name = "jobs-frontend-${version src}";
       src = "${src}/frontend";
-      buildInputs = [ logicblox lb_web makeWrapper ];
+      buildInputs = [ logicblox lb_web makeWrapper client.build worker pkgs.jq ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
@@ -147,6 +179,13 @@ rec {
         ];
       };
     };
+
+  closures.worker =
+    makeClosure (
+      {config, pkgs, ...}:
+      { imports = [ ./nix/worker.nix ];
+      }
+    );
 
 }
 

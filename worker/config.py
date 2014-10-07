@@ -47,6 +47,7 @@ classpath = [
   '$(commons_cli)/lib/java/commons-cli.jar',
   
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
+  '$(lb_web)/lib/java/commons-logging-1.1.1.jar',
   '$(lb_web)/lib/java/protobuf-java-format-1.3.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar',  
   '$(lb_web)/lib/java/lb-web-client.jar',
@@ -56,7 +57,9 @@ classpath = [
   '$(lb_web)/lib/java/jackson-annotations-2.1.1.jar',
   '$(lb_web)/lib/java/jackson-core-2.1.1.jar',
   '$(lb_web)/lib/java/jackson-databind-2.1.1.jar',
-  '$(lb_web)/lib/java/protobuf-2.5.0.jar'
+  '$(lb_web)/lib/java/protobuf-2.5.0.jar',
+  '$(lb_web)/lib/java/lb-common.jar',
+  '$(lb_web)/lib/java/lb-common-protocol.jar',
 ]
 
 jar(

@@ -7,14 +7,12 @@ set -o pipefail
 
 scriptdir=$(readlink -f $(dirname $BASH_SOURCE))
 topdir=$scriptdir/../..
-client="lb-steve --config ./client.config"
+client="lb-steve --config ./client.config --user martin --key ../testdata/martin.pem"
 
 #####################################################
 # Start servers before running tests
 function start_servers()
 {
-    killall java || echo "failure okay"
-
     lb-steve-frontend --config ./frontend.config &> frontend.log &
     frontend_pid=$!
     # pure evil, but okay
@@ -218,11 +216,17 @@ function test_create_job_timeout()
     ! $client create-job --impl timeout --wait --timeout 30
 }
 
+function register_keys()
+{
+    python register-keys.py
+}
+
 if [[ "${1+$1}" != "--no-start" ]]; then
   start_servers
   trap stop_servers EXIT
 fi
 
+register_keys
 upload_impls
 test_upload_impl
 test_upload_impl_no_file

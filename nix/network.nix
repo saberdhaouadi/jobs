@@ -93,6 +93,9 @@ let
       prefix = lb.web
       hostname = 127.0.0.1
       port = 8125
+
+      [realm-config:default-signature]
+      mechanism_option_credential_service = http://database-${name}:55183/admin/credentials
     '';
 
 in
@@ -284,11 +287,12 @@ with pkgs.lib;
         "162071310369"
       ];
     in
+      { config, resources, ... }:
       {
         inherit region;
         accessKeyId = account;
         description = "Security group for frontend";
-        rules = map entry ips ++ map accountEntry accounts;
+        rules = map entry ips ++ map accountEntry accounts ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
       };
 
   "database-${name}" =
@@ -325,11 +329,15 @@ with pkgs.lib;
       imports = [
         <lbdevops/logicblox/production.nix>
         <lbdevops/nixos/logicblox/lb40-module.nix>
+        <lbdevops/nixos/logicblox/installer.nix>
       ] ;
 
       services.logicblox.enable = true;
       services.logicblox.logicblox = platform.logicblox;
       services.logicblox.lbWeb = platform.bloxweb;
+
+      logicblox.application.installer = builds.database.build;
+      networking.firewall.allowedTCPPorts = [ 8080 55183 ];
 
       environment.systemPackages = [ builds.worker ] ++ provisionScripts;
       systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes);
@@ -394,7 +402,7 @@ with pkgs.lib;
               break;
           }
           location / {
-              proxy_pass         http://localhost:8080/;
+              proxy_pass         http://localhost:8081/;
               proxy_redirect     off;
               proxy_set_header   Host             $host;
               proxy_set_header   X-Real-IP        $remote_addr;

@@ -17,11 +17,10 @@
       workers = { "c3.xlarge" = { number = 1; price = "0.25"; }; };
     };
 
-  thiago =
+  martin =
     { hostName = "steve-martin.logicblox.com";
       elasticIPv4 = "54.163.249.223";
       workers = { "c3.xlarge" = { number = 1; price = "0.25"; }; };
     };
-
 
 }

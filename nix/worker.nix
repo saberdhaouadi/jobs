@@ -71,7 +71,13 @@ in
 
     # The jobs and their data cannot reasonably be passed in a pure
     # way, as the input and output data can be very big.
-    nix.chrootDirs = [ "/tmp/job" "/sockets=/run/sockets" "/usr/bin/env=${pkgs.coreutils}/bin/env"];
+    nix.chrootDirs = [
+      "/tmp/job"
+      "/sockets=/run/sockets"
+      "/usr/bin/env=${pkgs.coreutils}/bin/env"
+      "/lib64/ld-linux-x86-64.so.2=${pkgs.glibc}/lib64/ld-linux-x86-64.so.2"
+      "/bin/bash=${pkgs.bash}/bin/bash"
+    ];
     nix.extraOptions = ''
       build-compress-log = false
     '';

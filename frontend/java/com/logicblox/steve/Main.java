@@ -29,6 +29,8 @@ import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
 
+import com.logicblox.bloxweb.internal.Specification;
+
 public class Main
 {
   public static void main(String[] args)
@@ -50,6 +52,9 @@ public class Main
         ConfigValidator.handleMessages(messages, logger);
 
         main._ctx = ServiceContext.fromConfig(main._config, main._logger);
+        // Create job-auth realm for authentication
+        Specification.Realm.Builder realm = Specification.Realm.newBuilder().setName("job-auth").setConfig("default-signature");
+        main._ctx.getAuthenticationProvider().addRealm(realm.build());
 
         final BloxWebServer bloxwebServer = new BloxWebServer(
           Option.some(main._logDir),
