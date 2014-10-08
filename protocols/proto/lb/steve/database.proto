@@ -3,20 +3,128 @@ package lb.steve.database;
 option java_package = "com.logicblox.steve.protocol";
 import "blox/options.proto";
 
-message JobCreateRequest
+
+/**
+ * ENVELOPES
+ */
+
+//
+// These look like unions but they are just a message that contain repeated
+// fields of the actual request. Services will look for specific request 
+// messages only (e.g. the create_job service will only inspect CreateJobRequest
+// messages).
+//
+
+message RequestEnvelope
 {
-  required string id = 1;
-  required string clientid = 2;
-  required string impl = 3;
-  required string output_prefix = 4;
-  repeated File input = 5 [(blox.options.set) = true];
-  repeated Param metadata = 6 [(blox.options.set) = true];
+  repeated CreateJobRequest create_job = 1;
+  repeated GetStateRequest  get_state  = 2;
+  repeated AddStatusRequest add_status = 3;
+  repeated SetResultRequest set_result = 4;
+  repeated GetResultRequest get_result = 5;
+
+  repeated SetJobImplRequest set_impl = 6;
+  repeated GetJobImplRequest get_impl = 7;
 }
 
-message JobCreateResponse
+//
+// Services respond with an envelope with multiple Reponses. The order of the response
+// messages is guaranteed to be the corresponding order to the request envelope.
+//
+message ResponseEnvelope
 {
-  optional string id = 1;
+  repeated Response response = 1;
 }
+
+//
+// Services may respond with either errors or messages representing success.
+//
+message Response
+{
+  // XOR
+  optional Error error = 1;
+  optional Job job = 2;
+  optional JobImpl impl = 3;
+}  
+
+//
+// RESPONSE MESSAGES
+//
+
+message Error
+{
+  required string code = 1;
+  required string message = 2;
+}
+
+message Job
+{
+  required string id = 1;
+}
+
+message JobImpl
+{
+  required string id = 1;
+}
+
+
+//
+// REQUESTS ON JOBS (response contains Job messages) 
+//
+
+message CreateJobRequest
+{
+  required string job_id = 1;
+  required string client_id = 2;
+  required string impl_id = 3;
+  required string output_prefix = 4;
+  required string user_id = 5;
+  repeated File input = 6 [(blox.options.set) = true];
+  repeated Param metadata = 7 [(blox.options.set) = true];
+}
+
+
+message GetStateRequest
+{
+}
+
+message AddStatusRequest
+{
+  required string job_id    = 1;
+  required int64  timestamp = 2;
+  required string event     = 3;
+  required string machine   = 4;
+  required string message   = 5;
+}
+
+message SetResultRequest
+{
+
+}
+
+message GetResultRequest
+{
+
+}
+
+//
+// REQUESTS ON JOB IMPLEMENTATIONS (response contains JobJobImpl messages) 
+//
+
+message SetJobImplRequest
+{
+
+}
+
+message GetJobImplRequest
+{
+
+}
+
+
+//
+// HELPER MESSAGES
+//
 
 message Param
 {

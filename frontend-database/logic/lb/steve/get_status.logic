@@ -1,0 +1,48 @@
+block(`get_status) {
+
+  alias(`lb:steve:schema, `schema),
+  alias(`frontend_database_proto, `proto),
+
+  after_fixpoint(),
+
+  clauses(`{
+
+    /**
+     * Check if job exists.
+     */
+    +service_support:ensure_job(index, jobId) <-
+      +proto:RequestEnvelope_get_status[_, index] = req,
+      +proto:GetStatusRequest_job_id[req] = jobId.
+
+    /**
+     * Get status
+     */
+    // create the job message
+    +service_support:export_job(index, jobId) <-
+      +proto:RequestEnvelope_get_status[_, index] = req,
+      +proto:GetStatusRequest_job_id[req] = jobId,
+      schema:job_id[_] = jobId.
+
+    cons[job, ts] = status -> schema:job(job), int(ts), proto:Status(status).
+    lang:constructor(`cons).
+    //lang:pulse(`cons).
+
+    // populate with status messages
+    +cons[job, ts] = status,
+    +proto:Status(status),
+    +proto:Status_timestamp[status] = ts,
+    +proto:Status_event[status] = event,
+    +proto:Status_machine[status] = machine,
+    +proto:Status_message[status] = message,
+    +proto:Job_status(jobMessage, status) <-
+      +proto:RequestEnvelope_get_status[_, index] = req,
+      +proto:GetStatusRequest_job_id[req] = jobId,
+      +service_support:job[index] = jobMessage,
+      schema:job_id[job] = jobId,
+      schema:job_status_event[job, ts] = event,
+      schema:job_status_machine[job, ts] = machine,
+      schema:job_status_message[job, ts] = message.
+
+  })
+
+} <-- .

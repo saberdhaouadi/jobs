@@ -71,7 +71,7 @@ message JobCreateRequest {
 
   // Metadata on the job.
   //
-  // Some keys are resevered:
+  // Some keys are reserved:
   // - date           Automatically set when the job is created
   // - timeout        Timeout in seconds
   // - correlation-id Identifier used to correlate executions of

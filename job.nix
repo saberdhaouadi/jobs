@@ -177,6 +177,7 @@ rec {
         configureFlags = [
           "--with-protocols=${protocols}"
         ];
+        doCheck = "true";
       };
     };
 

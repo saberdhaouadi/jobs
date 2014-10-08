@@ -184,11 +184,18 @@ public class SteveHandler extends ProtoBufHandler
     out.append("<li>Steve jobs handler</li>");
   }
 
-  public String getUser(HttpServletRequest request)
-  {
-    Map<String, String> params = new HashMap<String, String>();
+  /**
+   * Extract the username from the HTTP request.
+   * 
+   * @param request
+   * @return
+   */
+  public String getUser(HttpServletRequest request) {
+    // TODO - this is somewhat costly, maybe we should cache.
+    // this assumes the user is authenticated with a signature based realm.
+    final Map<String, String> params = new HashMap<String, String>();
     HandlerUtils.populateHeaderMap(request, params);
-    String[] auth = params.get("authorization").split(":", 3);
+    final String[] auth = params.get("authorization").split(":", 3);
     return auth[0];
   }
 

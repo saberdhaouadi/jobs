@@ -1,0 +1,32 @@
+block(`set_result) {
+
+  alias(`lb:steve:schema, `schema),
+  alias(`frontend_database_proto, `proto),
+
+  inactive(),
+
+  clauses(`{
+
+    /**
+     * Check if job exists.
+     */
+    +service_support:ensure_job(index, jobId) <-
+      +proto:RequestEnvelope_set_result[_, index] = req,
+      +proto:SetResultRequest_job_id[req] = jobId.
+
+
+    /**
+     * Set result (outputs)
+     */
+    +service_support:export_job(index, jobId),
+    +schema:job_output(job, url),
+    +schema:job_output_hash[job, url] = hash <-
+      +proto:RequestEnvelope_set_result[_, index] = req,
+      +proto:SetResultRequest_job_id[req] = jobId,
+      +proto:SetResultRequest_output(req, f), 
+      +proto:File_url[f] = url,
+      +proto:File_hash[f] = hash,
+      schema:job_id@prev[job] = jobId.
+  })
+
+} <-- .

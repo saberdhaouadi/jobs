@@ -1,0 +1,35 @@
+block(`add_status) {
+
+  alias(`lb:steve:schema, `schema),
+  alias(`frontend_database_proto, `proto),
+
+  inactive(),
+
+  clauses(`{
+
+    /**
+     * Check if job exists.
+     */
+    +service_support:ensure_job(index, jobId) <-
+      +proto:RequestEnvelope_add_status[_, index] = req,
+      +proto:AddStatusRequest_job_id[req] = jobId.
+
+    /**
+     * Add status
+     */
+    +service_support:export_job(index, jobId),
+    +schema:job_status_event[job, ts] = event,
+    +schema:job_status_machine[job, ts] = machine,
+    +schema:job_status_message[job, ts] = message <-
+      +proto:RequestEnvelope_add_status[_, index] = req,
+      +proto:AddStatusRequest_job_id[req] = jobId,
+      +proto:AddStatusRequest_status[req] = status,
+      +proto:Status_timestamp[status] = ts,
+      +proto:Status_event[status] = event,
+      +proto:Status_machine[status] = machine,
+      +proto:Status_message[status] = message,
+      schema:job_id@prev[job] = jobId.
+
+  })
+
+} <-- .

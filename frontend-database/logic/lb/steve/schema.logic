@@ -6,9 +6,9 @@ block(`schema) {
      * Jobs
      */
     job(j), job_id(j:s) -> string(s).
-    job_clientid[j] = id -> job(j), string(id).
+    job_client_id[j] = id -> job(j), string(id).
 
-    job_user[j] = u -> job(j), user(u).
+    job_user[j] = u -> job(j), system:app:User(u).
 
     job_impl[j] = impl -> job(j), jobimpl(impl).
     job_output_prefix[j] = prefix -> job(j), string(prefix).
@@ -30,7 +30,7 @@ block(`schema) {
      */ 
     jobimpl(impl), jobimpl_id(impl:s) -> string(s).
 
-    jobimpl_user[impl] = u -> jobimpl(impl), user(u).
+    jobimpl_user[impl] = u -> jobimpl(impl), system:app:User(u).
 
     jobimpl_archive[impl] = f -> jobimpl(impl), string(f).
     jobimpl_archive_hash[impl] = hash -> jobimpl(impl), string(hash).
@@ -43,25 +43,20 @@ block(`schema) {
     * Accounts
     */
     account(a), account_id(a:s) -> string(s).
-
-   /**
-    * Users
-    */
-    user(u), user_id(u:s) -> string(s).
-    user_account[u] = a -> user(u), account(a).
+    user_account[u] = a -> system:app:User(u), account(a).
 
   }),
 
   sealed(`{
 
-    job_from_clientid[clientid] = j -> string(clientid), job(j).
+    job_from_client_id[clientId] = job -> string(clientId), job(job).
 
   }),
 
   clauses(`{
 
-    job_from_clientid[id] = j <-
-      job_clientid[j] = id.
+    job_from_client_id[clientId] = job <-
+      job_client_id[job] = clientId.
 
   })
 

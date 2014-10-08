@@ -32,6 +32,19 @@ public interface Database
     String output,
     Map<String, String> metadata);
 
+
+  /**
+   * Returns Job with the state field populated, and the full status
+   * history if detail is true.
+   */
+  public ListenableFuture<Job> getState(String jobId, boolean detail);
+
+  public ListenableFuture<Job> addStatus(String jobId, Status status);
+
+  public ListenableFuture<Job> setResult(String jobId, List<Data> output);
+
+  public ListenableFuture<Job> getResult(String jobId);
+
   /**
    * Store a job a implementation.
    */
@@ -51,15 +64,4 @@ public interface Database
    */
   public ListenableFuture<Iterable<JobImpl>> getJobImpl(String userId);
 
-  /**
-   * Returns Job with the state field populated, and the full status
-   * history if detail is true.
-   */
-  public ListenableFuture<Job> getState(String jobId, boolean detail);
-
-  public ListenableFuture<Job> getResult(String jobId);
-
-  public ListenableFuture<Job> addStatus(String jobId, Status status);
-
-  public ListenableFuture<Job> setResult(String jobId, List<Data> output);
 }

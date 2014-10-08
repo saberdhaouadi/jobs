@@ -6,6 +6,6 @@ frontend_database.proto, proto, descName=frontend_database lifetime=transaction
 
 lb_web, library
 lb_web_credentials, library
-steve, module
-data/init_data.logic, execute
+lb, module
+//data/init_data.logic, execute
 

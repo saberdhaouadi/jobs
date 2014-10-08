@@ -1,0 +1,124 @@
+block(`service_support) {
+
+  alias(`frontend_database_proto, `proto),
+  
+  export(`{
+
+    /**
+     * Constructor for the response envelope.
+     */
+    envelope[req] = resp -> proto:RequestEnvelope(req), proto:ResponseEnvelope(resp).
+
+    /**
+     * Constructor for the response message in this index. This response contains
+     * one of the possible outcomes below.
+     */
+    response[index] = resp -> int(index), proto:Response(resp).
+
+    /**
+     * Constructor for a Job message in this index (encapsulated by the response in the same index).
+     */
+    job[index] = job -> int(index), proto:Job(job).
+
+    /**
+     * Constructor for a JobImpl message in this index (encapsulated by the response in the same index).
+     */
+    impl[index] = impl -> int(index), proto:JobImpl(impl).
+
+    /**
+     * Constructor for an Error message in this index (encapsulated by the response in the same index).
+     */
+    error[index] = error -> int(index), proto:Error(error).
+
+    
+    /**
+     * Export a job with this id in the response with this index.
+     */
+    export_job(index, id) -> int(index), string(id).
+
+    /**
+     * Export a jobImpl with this id in the response with this index.
+     */
+    export_impl(index, id) -> int(index), string(id).
+
+    /**
+     * Export an error with this content in the response with this index.
+     */
+    export_error(index, code, message) -> int(index), string(code), string(message).
+
+    /**
+     * If a job with this id does not exist, generate an error in this index.
+     */
+    ensure_job(index, jobId) -> int(index), string(jobId).
+
+  }),
+
+  clauses(`{
+
+    lang:constructor(`envelope).
+    lang:pulse(`envelope).
+
+    lang:constructor(`job).
+    lang:pulse(`job).
+    lang:constructor(`impl).
+    lang:pulse(`impl).
+    lang:constructor(`error).
+    lang:pulse(`error).
+
+    lang:constructor(`response).
+    lang:pulse(`response).
+
+    lang:pulse(`export_job).
+    lang:pulse(`export_impl).
+    lang:pulse(`export_error).
+
+    lang:pulse(`ensure_job).
+
+    // always construct an envelope for the response
+    +proto:ResponseEnvelope(resp),
+    +envelope[req] = resp <-
+      +proto:RequestEnvelope(req).
+
+    // create a response, an error, and wire
+    +response[i] = resp,
+    +proto:Response(resp),    
+    +error[i] = error,
+    +proto:Error(error),
+    +proto:Error_code[error] = code,
+    +proto:Error_message[error] = message,
+    +proto:ResponseEnvelope_response[env, i] = resp,
+    +proto:Response_error[resp] = error <-
+      +envelope[_] = env,
+      +export_error(i, code, message).
+
+    // create a response, a job, and wire
+    +response[i] = resp,
+    +proto:Response(resp),    
+    +job[i] = job,
+    +proto:Job(job),
+    +proto:Job_id[job] = id,
+    +proto:ResponseEnvelope_response[env, i] = resp,
+    +proto:Response_job[resp] = job <-
+      +envelope[_] = env,
+      +export_job(i, id).
+
+    // create a response, a job impl, and wire
+    +response[i] = resp,
+    +proto:Response(resp),    
+    +impl[i] = impl,
+    +proto:JobImpl(impl),
+    +proto:JobImpl_id[impl] = id,
+    +proto:ResponseEnvelope_response[env, i] = resp,
+    +proto:Response_impl[resp] = impl <-
+      +envelope[_] = env,
+      +export_impl(i, id).
+
+
+    // ensure job
+    +export_error(index, "INVALID_JOB", "Job identified by '" + jobId + "' does not exist.") <-
+      +ensure_job(index, jobId),
+      !schema:job_id@prev[_] = jobId.
+
+  })
+
+} <-- .
