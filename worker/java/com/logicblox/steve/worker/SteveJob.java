@@ -6,12 +6,14 @@ import com.amazonaws.services.sqs.model.Message;
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.S3File;
 import com.logicblox.steve.common.Data;
+import com.logicblox.concurrent.MoreFutures;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.exec.CommandLine;
@@ -20,6 +22,9 @@ import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.PumpStreamHandler;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 public class SteveJob
 {
@@ -151,12 +156,21 @@ public class SteveJob
     }
 
     downloadJobImpl();
+
     // download inputs
+    List<ListenableFuture<List<S3File>>> inputFiles = new ArrayList<ListenableFuture<List<S3File>>>();
     for(Data input: _inputs)
     {
-      downloadInput(input);
+      inputFiles.add(downloadInput(input));
     }
-    
+    try
+    {
+      MoreFutures.concat(Futures.allAsList(inputFiles)).get();
+    }
+    catch(Exception e)
+    {
+      throw new DownloadInputFailedException(e.getMessage(), e);
+    }
   }
 
   private void downloadJobImpl() throws InternalException
@@ -189,7 +203,7 @@ public class SteveJob
     }
   }
 
-  private void downloadInput(Data input) throws InternalException, DownloadInputFailedException
+  private ListenableFuture<List<S3File>> downloadInput(Data input) throws InternalException
   {
     log("Downloading input '" + input.toString() + "'");
     URI inputUri;
@@ -201,22 +215,24 @@ public class SteveJob
     {
       throw new InternalException("Invalid URI '"+input, e);
     }
+
     // Strip trailing slash
     String last = new File(inputUri.getPath()).toString();
     // Use the last part of the URL
     last = last.substring(last.lastIndexOf('/') + 1);
 
     File f = new File(_inputPath,last);
-    try
-    {
+    try {
       if (input.getLocation().endsWith("/"))
-        _client.downloadDirectory(f, inputUri, true, true).get();
-      else
-        _client.download(f, inputUri).get();
+        return _client.downloadDirectory(f, inputUri, true, true);
+      else {
+        List<ListenableFuture<S3File>> l = new ArrayList();
+        l.add(_client.download(f, inputUri));
+        return Futures.allAsList(l);
+      }
     }
-    catch(Exception e)
-    {
-      throw new DownloadInputFailedException("Could not download input '"+input, e);
+    catch(Exception e) {
+        return Futures.immediateFailedFuture(new InternalException("Error downloading input "+input.getLocation()));
     }
   }
 
