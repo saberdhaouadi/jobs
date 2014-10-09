@@ -291,46 +291,46 @@ public class Main
     long waitingSince = System.currentTimeMillis();
 
     while(true) {
-      ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(_incomingUrl);
-      receiveMessageRequest.setMaxNumberOfMessages(1);
-      List<com.amazonaws.services.sqs.model.Message> messages = sqs.receiveMessage(receiveMessageRequest).getMessages();
+      try {
+        ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(_incomingUrl);
+        receiveMessageRequest.setMaxNumberOfMessages(1);
+        List<com.amazonaws.services.sqs.model.Message> messages = sqs.receiveMessage(receiveMessageRequest).getMessages();
 
-      if (messages.size() == 1)
-        return messages.get(0);
-
-      // If idling for more than x minutes, poweroff machine
-      boolean idleTooLong = (System.currentTimeMillis() - waitingSince) / 1000 > _idle*60;
-
-      long nextInstanceHour;
-      try
-      {
-        DateTime dt = ISODateTimeFormat.dateTimeParser().parseDateTime(getMetadata().pendingTime);
-
-        long diffInMillis = DateTime.now().getMillis() - dt.getMillis();
-        nextInstanceHour = 60 - ((diffInMillis % 3600000) / 60000);
+        if (messages.size() == 1)
+          return messages.get(0);
       }
-      catch(Exception e)
-      {
-        // If anything goes wrong in determining the number of minutes till next instance
-        // hour, default to 0, which will cause the instance to shutdown when idling for x
-        // minutes
-        nextInstanceHour = 0;
-        System.err.println("WARNING: Could not determine start of next instance hour: " + e.getMessage() );
+      catch(Exception e) {
+        System.err.println("ERROR: Problem receiving SQS message: "+e.getMessage());
       }
+      finally{
+        // If idling for more than x minutes, poweroff machine
+        boolean idleTooLong = (System.currentTimeMillis() - waitingSince) / 1000 > _idle * 60;
 
-      if (_shutdownOnIdle && idleTooLong && nextInstanceHour <= 3)
-      {
-        try
-        {
-          Process p = Runtime.getRuntime().exec("shutdown-self");
-          p.waitFor();
+        long nextInstanceHour;
+        try {
+          DateTime dt = ISODateTimeFormat.dateTimeParser().parseDateTime(getMetadata().pendingTime);
+
+          long diffInMillis = DateTime.now().getMillis() - dt.getMillis();
+          nextInstanceHour = 60 - ((diffInMillis % 3600000) / 60000);
+        } catch (Exception e) {
+          // If anything goes wrong in determining the number of minutes till next instance
+          // hour, default to 0, which will cause the instance to shutdown when idling for x
+          // minutes
+          nextInstanceHour = 0;
+          System.err.println("WARNING: Could not determine start of next instance hour: " + e.getMessage());
         }
-        finally
-        {
-          System.exit(0);
+
+        if (_shutdownOnIdle && idleTooLong && nextInstanceHour <= 3) {
+          try {
+            Process p = Runtime.getRuntime().exec("shutdown-self");
+            p.waitFor();
+          } finally {
+            System.exit(0);
+          }
         }
+
+        Thread.sleep(2000);
       }
-      Thread.sleep(2000);
     }
   }
 }
