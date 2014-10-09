@@ -4,7 +4,7 @@ lbconfig_package(
   'lb-steve-protocols',
   version='1.0',
   default_prefix='/opt/logicblox/lb-steve-protocols',
-  default_targets=['jars'])
+  default_targets=['jars', 'lb-libraries'])
 
 aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.7.1"})
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
@@ -37,6 +37,11 @@ protobuf_protocol(
   package = 'lb.steve',
   java_package = 'com.logicblox.steve.protocol',
   srcdir = 'proto'
+)
+
+lb_library(
+  name='lb_steve_protocols',
+  srcdir='proto'
 )
 
 classpath = [
