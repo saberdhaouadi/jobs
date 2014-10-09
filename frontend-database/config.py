@@ -15,12 +15,6 @@ lb_library(
     srcdir='logic',
     deps={'lb_web': '$(lb_web)'})
 
-check_lb_workspace(
-    name='lb-steve-frontend-test',
-    libraries=['lb_steve_frontend_database'])
-
-check_program('tests/basic.py', ['lb-steve-frontend-test'])
-
 install_file('scripts/install.sh', '')
 
 rule(
@@ -35,4 +29,10 @@ rule(
 )
 
 link_libs([])
+
+check_lb_workspace(
+    name='lb-steve-frontend-test',
+    libraries=['lb_steve_frontend_database'])
+
+check_program('tests/basic.py', ['lb-steve-frontend-test'])
 

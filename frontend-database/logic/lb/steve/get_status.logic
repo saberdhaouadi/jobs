@@ -1,7 +1,7 @@
 block(`get_status) {
 
   alias(`lb:steve:schema, `schema),
-  alias(`frontend_database_proto, `proto),
+  alias(`lb:steve:database, `proto),
 
   after_fixpoint(),
 

@@ -3,7 +3,6 @@ package lb.steve.database;
 option java_package = "com.logicblox.steve.protocol";
 import "blox/options.proto";
 
-
 /**
  * ENVELOPES
  */
@@ -18,8 +17,8 @@ import "blox/options.proto";
 message RequestEnvelope
 {
   repeated CreateJobRequest create_job = 1;
-  repeated GetStateRequest  get_state  = 2;
-  repeated AddStatusRequest add_status = 3;
+  repeated AddStatusRequest add_status = 2;
+  repeated GetStatusRequest get_status = 3;
   repeated SetResultRequest set_result = 4;
   repeated GetResultRequest get_result = 5;
 
@@ -60,6 +59,7 @@ message Error
 message Job
 {
   required string id = 1;
+  repeated Status status = 2 [(blox.options.set) = true];
 }
 
 message JobImpl
@@ -83,29 +83,29 @@ message CreateJobRequest
   repeated Param metadata = 7 [(blox.options.set) = true];
 }
 
-
-message GetStateRequest
-{
-}
-
 message AddStatusRequest
 {
-  required string job_id    = 1;
-  required int64  timestamp = 2;
-  required string event     = 3;
-  required string machine   = 4;
-  required string message   = 5;
+  required string job_id = 1;
+  required Status status = 2;
+}
+
+message GetStatusRequest
+{
+  required string job_id = 1;
 }
 
 message SetResultRequest
 {
-
+  required string job_id = 1;
+  repeated File output = 2 [(blox.options.set) = true];
 }
 
 message GetResultRequest
 {
-
+  required string job_id = 1; 
 }
+
+
 
 //
 // REQUESTS ON JOB IMPLEMENTATIONS (response contains JobJobImpl messages) 
@@ -136,4 +136,12 @@ message File
 {
   required string url = 1;
   optional string hash = 2;
+}
+
+message Status
+{  
+  required int64  timestamp = 1;
+  required string event     = 2;
+  required string machine   = 3;
+  required string message   = 4;
 }

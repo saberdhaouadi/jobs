@@ -1,6 +1,6 @@
 block(`service_support) {
 
-  alias(`frontend_database_proto, `proto),
+  alias(`lb:steve:database, `proto),
   
   export(`{
 

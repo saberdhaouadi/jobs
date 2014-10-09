@@ -1,7 +1,7 @@
 block(`create_job) {
 
   alias(`lb:steve:schema, `schema),
-  alias(`frontend_database_proto, `proto),
+  alias(`lb:steve:database, `proto),
 
   inactive(),
 
