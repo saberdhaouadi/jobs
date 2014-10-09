@@ -67,7 +67,7 @@ block(`service_config) {
       protobuf_protocol[] = "lb:steve:database",
       protobuf_request_message[] = "RequestEnvelope",
       protobuf_response_message[] = "ResponseEnvelope",
-      inactive_after_fixpoint_block_name[] = "lb:steve:" + name,
+      //inactive_after_fixpoint_block_name[] = "lb:steve:" + name,
       service_parameter["enable_http_control"] = "false"
     } <-
       readonly_database_service(name).

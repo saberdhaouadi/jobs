@@ -220,21 +220,28 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
             1|3|the event3|the machine3|status message3
         ''')
 
-        """ TODO - not working yet. Not sure how to use the support block from after_fixpoint blocks.
         # now use get status
         client = get_client("get_status")
         envelope = client.dynamic_request()
         req = envelope.get_status.add()
+        req.job_id = "1"
+        req = envelope.get_status.add()
         req.job_id = "5"
 
         # verify response
-        print(client.dynamic_call(envelope))
         expected_response = client.dynamic_response()
         text_format.Merge('''
-            //response { job { id: "1" } }
+            response { 
+              job { 
+                id: "1"
+                status { timestamp: 3 event: "the event3" machine: "the machine3" message: "status message3" }
+                status { timestamp: 1 event: "the event"  machine: "the machine"  message: "status message" } 
+              }
+            }
+            response { error { code: "INVALID_JOB" message: "Job identified by '5' does not exist." } }
             ''', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
-        """
+        
 
 
     #
