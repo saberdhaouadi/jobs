@@ -33,6 +33,17 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         with open ("tests/users.csv", "r") as f:
           delim.post(f.read())
 
+    def compare_jobs(self, expected, actual):
+        '''
+            Compares the expected and actual Job responses. This is useful because it compares the sets of
+            attributes in an unordered fashion.
+        '''
+        expected_job = expected.response[0].job
+        actual_job = actual.response[0].job
+        self.assertEquals(expected_job.id, actual_job.id)
+        self.assertMessageUnorderedEqual(expected_job.status, actual_job.status)
+        self.assertMessageUnorderedEqual(expected_job.output, actual_job.output)
+
     #
     # CREATE JOB TESTS
     #
@@ -221,13 +232,16 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         ''')
 
         # now use get status
-        client = get_client("get_status")
+        client = get_client("get_job")
         envelope = client.dynamic_request()
-        req = envelope.get_status.add()
+        req = envelope.get_job.add()
         req.job_id = "1"
-        req = envelope.get_status.add()
+        req.get_status = True
+        req = envelope.get_job.add()
         req.job_id = "5"
+        req.get_status = True
 
+        #print(dir(client.dynamic_call(envelope)))
         # verify response
         expected_response = client.dynamic_response()
         text_format.Merge('''
@@ -240,15 +254,14 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
             }
             response { error { code: "INVALID_JOB" message: "Job identified by '5' does not exist." } }
             ''', expected_response)
-        self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
+        self.compare_jobs(expected_response, client.dynamic_call(envelope))
         
-
+    
 
     #
-    # SET RESULT TESTS
+    # SET RESULT and GET RESULT TESTS
     #
-
-    def test_set_result(self):
+    def test_set_get_result(self):
         # create a simple job first
         self.test_create_job()
 
@@ -272,6 +285,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         f.url = "the url 4"
         f.hash = "the hash 4"
 
+
+
         # verify response
         expected_response = client.dynamic_response()
         text_format.Merge('''
@@ -286,6 +301,93 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
             1|the url 1|the hash 1
             1|the url 2|the hash 2
         ''')
+
+        # now use get result
+        client = get_client("get_job")
+        envelope = client.dynamic_request()
+        req = envelope.get_job.add()
+        req.job_id = "1"
+        req.get_output = True
+        req = envelope.get_job.add()
+        req.job_id = "5"
+        req.get_output = True
+
+        # verify response
+        expected_response = client.dynamic_response()
+        text_format.Merge('''
+            response { 
+              job { 
+                id: "1"
+                output { url: "the url 1" hash: "the hash 1" }
+                output { url: "the url 2" hash: "the hash 2" }
+              }
+            }
+            response { error { code: "INVALID_JOB" message: "Job identified by '5' does not exist." } }
+            ''', expected_response)
+        self.compare_jobs(expected_response, client.dynamic_call(envelope))
+
+
+
+    def test_status_and_result(self):
+        # create a simple job first
+        self.test_create_job()
+
+        # add some status entries
+        client = get_client("add_status")
+        envelope = client.dynamic_request()
+        req = envelope.add_status.add()
+        req.job_id = "1"
+        req.status.timestamp = 1
+        req.status.event = "the event1"
+        req.status.machine = "the machine1"
+        req.status.message = "status message1"
+
+        req = envelope.add_status.add()
+        req.job_id = "1"
+        req.status.timestamp = 3
+        req.status.event = "the event3"
+        req.status.machine = "the machine3"
+        req.status.message = "status message3"
+        
+        client.dynamic_call(envelope)
+
+        # add a result
+        client = get_client("set_result")
+        envelope = client.dynamic_request()
+        req = envelope.set_result.add()
+        req.job_id = "1"
+        f = req.output.add()
+        f.url = "the url 1"
+        f.hash = "the hash 1"
+        f = req.output.add()
+        f.url = "the url 2"
+        f.hash = "the hash 2"
+
+        client.dynamic_call(envelope)
+
+        # now use get statuses and results
+        client = get_client("get_job")
+        envelope = client.dynamic_request()
+        req = envelope.get_job.add()
+        req.job_id = "1"
+        req.get_status = True
+        req.get_output = True
+
+        # verify response
+        expected_response = client.dynamic_response()
+        text_format.Merge('''
+            response { 
+              job { 
+                id: "1"
+                status { timestamp: 3 event: "the event3" machine: "the machine3" message: "status message3" }
+                status { timestamp: 1 event: "the event1" machine: "the machine1" message: "status message1" } 
+                output { url: "the url 1" hash: "the hash 1" }
+                output { url: "the url 2" hash: "the hash 2" }
+              }
+            }
+            ''', expected_response)
+        self.compare_jobs(expected_response, client.dynamic_call(envelope))
+
 
 
 def suite(args):

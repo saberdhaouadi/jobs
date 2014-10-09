@@ -12,10 +12,9 @@ block(`service_config) {
 
     // Job services.
     database_service("create_job").
-    readonly_database_service("get_status").
+    readonly_database_service("get_job").
     database_service("add_status").
     database_service("set_result").
-    readonly_database_service("get_result").
 
     // Job implementation services.
     database_service("set_impl").

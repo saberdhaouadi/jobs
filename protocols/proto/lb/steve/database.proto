@@ -17,13 +17,12 @@ import "blox/options.proto";
 message RequestEnvelope
 {
   repeated CreateJobRequest create_job = 1;
-  repeated AddStatusRequest add_status = 2;
-  repeated GetStatusRequest get_status = 3;
+  repeated GetJobRequest get_job = 2;
+  repeated AddStatusRequest add_status = 3;
   repeated SetResultRequest set_result = 4;
-  repeated GetResultRequest get_result = 5;
 
-  repeated SetJobImplRequest set_impl = 6;
-  repeated GetJobImplRequest get_impl = 7;
+  repeated SetJobImplRequest set_impl = 5;
+  repeated GetJobImplRequest get_impl = 6;
 }
 
 //
@@ -60,6 +59,7 @@ message Job
 {
   required string id = 1;
   repeated Status status = 2 [(blox.options.set) = true];
+  repeated File output = 3   [(blox.options.set) = true];
 }
 
 message JobImpl
@@ -83,15 +83,18 @@ message CreateJobRequest
   repeated Param metadata = 7 [(blox.options.set) = true];
 }
 
+
+message GetJobRequest
+{
+  required string job_id   = 1;
+  optional bool get_status = 2;
+  optional bool get_output = 3;    
+}
+
 message AddStatusRequest
 {
   required string job_id = 1;
   required Status status = 2;
-}
-
-message GetStatusRequest
-{
-  required string job_id = 1;
 }
 
 message SetResultRequest
@@ -99,12 +102,6 @@ message SetResultRequest
   required string job_id = 1;
   repeated File output = 2 [(blox.options.set) = true];
 }
-
-message GetResultRequest
-{
-  required string job_id = 1; 
-}
-
 
 
 //

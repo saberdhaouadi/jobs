@@ -1,0 +1,63 @@
+block(`get_job) {
+
+  alias(`lb:steve:schema, `schema),
+  alias(`lb:steve:database, `proto),
+
+  //after_fixpoint(),
+
+  clauses(`{
+
+    /**
+     * Check if job exists.
+     */
+    +service_support:ensure_job(index, jobId) <-
+      +proto:RequestEnvelope_get_job[_, index] = req,
+      +proto:GetJobRequest_job_id[req] = jobId.
+
+    // create the job message
+    +service_support:export_job(index, jobId) <-
+      +proto:RequestEnvelope_get_job[_, index] = req,
+      +proto:GetJobRequest_job_id[req] = jobId,
+      schema:job_id[_] = jobId.
+
+    // populate with status messages  
+    status_cons[job, ts] = status -> schema:job(job), int(ts), proto:Status(status).
+    lang:constructor(`status_cons).
+    lang:pulse(`status_cons).
+    
+    +status_cons[job, ts] = status,
+    +proto:Status(status),
+    +proto:Status_timestamp[status] = ts,
+    +proto:Status_event[status] = event,
+    +proto:Status_machine[status] = machine,
+    +proto:Status_message[status] = message,
+    +proto:Job_status(jobMessage, status) <-
+      +proto:GetJobRequest_get_status[req] = true,
+      +proto:RequestEnvelope_get_job[_, index] = req,
+      +proto:GetJobRequest_job_id[req] = jobId,
+      +service_support:job[index] = jobMessage,
+      schema:job_id[job] = jobId,
+      schema:job_status_event[job, ts] = event,
+      schema:job_status_machine[job, ts] = machine,
+      schema:job_status_message[job, ts] = message.
+
+    // populate with file messages
+    output_cons[job, url] = file -> schema:job(job), string(url), proto:File(file).
+    lang:constructor(`output_cons).
+    lang:pulse(`output_cons).
+
+    +output_cons[job, url] = file,
+    +proto:File(file),
+    +proto:File_url[file] = url,
+    +proto:File_hash[file] = hash,
+    +proto:Job_output(jobMessage, file) <-
+      +proto:GetJobRequest_get_output[req] = true,
+      +proto:RequestEnvelope_get_job[_, index] = req,
+      +proto:GetJobRequest_job_id[req] = jobId,
+      +service_support:job[index] = jobMessage,
+      schema:job_id[job] = jobId,
+      schema:job_output(job, url),
+      schema:job_output_hash[job, url] = hash.
+
+  })
+} <-- .
