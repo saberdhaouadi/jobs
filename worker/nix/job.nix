@@ -1,7 +1,7 @@
 { platform_version ? "3.10.15"
 }:
 let
-  inherit (import <config/lib> {}) releases version buildLB pkgs;
+  inherit (import <config/lib> {}) releases pkgs;
   platform = builtins.getAttr platform_version releases.platform;
 in
   pkgs.stdenv.mkDerivation rec {
