@@ -25,7 +25,6 @@ block(`get_status) {
 
     cons[job, ts] = status -> schema:job(job), int(ts), proto:Status(status).
     lang:constructor(`cons).
-    //lang:pulse(`cons).
 
     // populate with status messages
     +cons[job, ts] = status,
@@ -44,5 +43,4 @@ block(`get_status) {
       schema:job_status_message[job, ts] = message.
 
   })
-
 } <-- .

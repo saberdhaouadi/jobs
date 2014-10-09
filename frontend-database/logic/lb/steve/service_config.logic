@@ -52,7 +52,7 @@ block(`service_config) {
     // declare input services
     service_by_prefix[prefix[] + name] = x,
     default_protobuf_service(x) {
-      protobuf_protocol[] = "frontend_database",
+      protobuf_protocol[] = "lb:steve:database",
       protobuf_request_message[] = "RequestEnvelope",
       protobuf_response_message[] = "ResponseEnvelope",
       inactive_block_name[] = "lb:steve:" + name,
@@ -64,7 +64,7 @@ block(`service_config) {
     service_by_prefix[prefix[] + name] = x,
     readonly(x),
     default_protobuf_service(x) {
-      protobuf_protocol[] = "frontend_database",
+      protobuf_protocol[] = "lb:steve:database",
       protobuf_request_message[] = "RequestEnvelope",
       protobuf_response_message[] = "ResponseEnvelope",
       inactive_after_fixpoint_block_name[] = "lb:steve:" + name,
