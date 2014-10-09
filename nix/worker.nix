@@ -82,6 +82,7 @@ in
       build-compress-log = false
     '';
     nix.useChroot = true;
+    nix.package = pkgs.nixUnstable;
 
     systemd.services.gurobi-socket =
       { description = "Create Gurobi unix domain socket";
