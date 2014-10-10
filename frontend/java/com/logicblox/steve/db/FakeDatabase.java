@@ -246,11 +246,7 @@ public class FakeDatabase implements Database
     User user = getUser(userId);
     Account account = getAccount(user.getAccountId());
 
-    JobImpl impl = new JobImpl();
-    impl.account = account.getId();
-    impl.id = implId;
-    impl.archive = archive;
-    impl.metadata = metadata;
+    JobImpl impl = new JobImpl(implId, account.getId(), archive, metadata);
     
     _jobImpls.put(impl.account, impl.id, impl);
 

@@ -1,6 +1,5 @@
 package com.logicblox.steve.db;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import com.logicblox.steve.common.Data;
@@ -8,10 +7,24 @@ import com.logicblox.steve.common.Data;
 public class JobImpl
 {
   // id is only unique within an account
-  public String account;
-  public String id;
+  public final String id;
+  public final String account;
 
-  public Data archive;
+  public final Data archive;
 
-  public Map<String, String> metadata = new HashMap<String, String>();
+  public final Map<String, String> metadata;
+  
+  public JobImpl(String id) {
+    this.id = id;
+    this.account = null;
+    this.archive = null;
+    this.metadata = null;
+  }
+
+  public JobImpl(String id, String account, Data archive, Map<String, String> metadata) {
+    this.id = id;
+    this.account = account;
+    this.archive = archive;
+    this.metadata = metadata;
+  }
 }

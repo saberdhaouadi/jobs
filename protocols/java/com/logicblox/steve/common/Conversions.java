@@ -3,19 +3,24 @@ package com.logicblox.steve.common;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Date;
+import java.util.Map.Entry;
 import java.util.TimeZone;
 
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-
 import com.logicblox.common.Option;
 import com.logicblox.s3lib.S3File;
-import com.logicblox.steve.protocol.Frontend;
 import com.logicblox.steve.protocol.Backend;
+import com.logicblox.steve.protocol.Database;
+import com.logicblox.steve.protocol.Frontend;
 
 public class Conversions
 {
@@ -68,7 +73,26 @@ public class Conversions
       f.setHash(d.getHash());
     return f.build();
   }
+  
+  public static Database.File convertDataToDatabaseFile(Data d)
+  {
+    final Database.File.Builder f = Database.File.newBuilder();
+    f.setUrl(d.getLocation());
+    if(d.hasHash())
+      f.setHash(d.getHash());
+    return f.build();
+  }
 
+  public static Collection<Database.File> convertDataToDatabaseFiles(Collection<Data> input)
+  {
+    final Builder<Database.File> result = ImmutableList.builder();
+    for(Data d: input)
+      result.add(convertDataToDatabaseFile(d));
+    return result.build();
+  }
+  
+  
+  
   public static Data convertFileToData(Frontend.File file)
   {
     return new Data(file.getUrl(), Option.wrap(file.hasHash() ? file.getHash() : null));
@@ -105,8 +129,7 @@ public class Conversions
 
   public static Frontend.Param createFrontendParam(String key, String value)
   {
-    return
-      Frontend.Param.newBuilder()
+    return Frontend.Param.newBuilder()
       .setKey(key)
       .setValue(value)
       .build();
@@ -114,13 +137,29 @@ public class Conversions
 
   public static Backend.Param createBackendParam(String key, String value)
   {
-    return
-      Backend.Param.newBuilder()
+    return Backend.Param.newBuilder()
       .setKey(key)
       .setValue(value)
       .build();
   }
 
+  public static Database.Param createDatabaseParam(String key, String value)
+  {
+    return Database.Param.newBuilder()
+      .setKey(key)
+      .setValue(value)
+      .build();
+  }
+
+  public static Collection<Database.Param> convertDataToDatabaseParams(Map<String, String> input)
+  {
+    final Builder<Database.Param> result = ImmutableList.builder();
+    for(Entry<String, String> e: input.entrySet())
+      result.add(createDatabaseParam(e.getKey(), e.getValue()));
+    return result.build();
+  }
+  
+  
   public static Map<String, String> createMap(Iterable<Frontend.Param> params)
   {
     final Map<String, String> result = new HashMap<String, String>();
