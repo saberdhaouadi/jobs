@@ -1,6 +1,5 @@
 { stdenv
 , fetchurl
-, src
 , logicblox
 , lb_web
 , s3lib
@@ -95,7 +94,7 @@ rec {
   frontend =
      builder_config.buildLBConfig {
       name = "jobs-frontend-${version src}";
-      src = "${src}/frontend";
+      src = ./frontend;
       buildInputs = [ logicblox lb_web makeWrapper client.build worker pkgs.jq ];
       enableLBservices = false;
       configureFlags = [
@@ -109,7 +108,7 @@ rec {
   client.build =
     builder_config.buildLBConfig {
       name = "lb-steve-client-${version src}";
-      src = "${src}/client";
+      src = ./client;
       buildInputs = [ logicblox lb_web ];
       enableLBservices = false;
       configureFlags = [
@@ -128,7 +127,7 @@ rec {
   protocols =
     builder_config.buildLBConfig {
       name = "jobs-protocols-${version src}";
-      src = "${src}/protocols";
+      src = ./protocols;
       buildInputs = [ logicblox lb_web ];
       enableLBservices = false;
       configureFlags = [
@@ -140,7 +139,7 @@ rec {
   worker =
     builder_config.buildLBConfig {
       name = "jobs-worker-${version src}";
-      src = "${src}/worker";
+      src = ./worker;
       buildInputs = [ logicblox lb_web makeWrapper ];
       enableLBservices = false;
       configureFlags = [
@@ -172,7 +171,7 @@ rec {
       inherit logicblox bloxweb;
       build = builder_config.buildLBConfig {
         name = "jobs-database-${version src}";
-        src = "${src}/frontend-database";
+        src = ./frontend-database;
         buildInputs = [ logicblox lb_web ];
         configureFlags = [
           "--with-protocols=${protocols}"
