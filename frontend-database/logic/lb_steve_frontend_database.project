@@ -2,11 +2,9 @@ lb_steve_frontend_database, projectname
 
 pedantic.logic, severities
 
-//database.proto, proto, descName=lb:steve:database lifetime=transaction
-
 lb_web, library
 lb_web_credentials, library
 lb_steve_protocols, library
+
 lb, module
-//data/init_data.logic, execute
 

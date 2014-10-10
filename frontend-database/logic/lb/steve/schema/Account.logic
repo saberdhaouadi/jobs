@@ -1,0 +1,19 @@
+ block(`Account) {
+
+  sealed(`{
+
+    /**
+     * The implementations available in this account.
+     */
+    impls(account, impl) -> Account(account), JobImpl(impl).
+
+  }),
+
+  clauses(`{
+
+    impls(account, impl) <-
+      JobImpl:account[impl] = account.
+
+  })
+
+} <-- .

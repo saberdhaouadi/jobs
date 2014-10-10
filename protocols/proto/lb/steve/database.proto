@@ -42,7 +42,7 @@ message Response
   // XOR
   optional Error error = 1;
   optional Job job = 2;
-  optional JobImpl impl = 3;
+  repeated JobImpl impl = 3 [(blox.options.set) = true];
 }  
 
 //
@@ -65,6 +65,9 @@ message Job
 message JobImpl
 {
   required string id = 1;
+  optional string user_id = 2;
+  optional File file = 3;
+  repeated Param metadata = 4 [(blox.options.set) = true];
 }
 
 
@@ -110,12 +113,16 @@ message SetResultRequest
 
 message SetJobImplRequest
 {
-
+  required string impl_id = 1;
+  required string user_id = 2;
+  required File file = 3;
+  repeated Param metadata = 4 [(blox.options.set) = true];
 }
 
 message GetJobImplRequest
 {
-
+  required string user_id = 1;
+  optional string impl_id = 2;
 }
 
 

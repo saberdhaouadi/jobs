@@ -1,6 +1,5 @@
 block(`get_job) {
 
-  alias(`lb:steve:schema, `schema),
   alias(`lb:steve:database, `proto),
 
   //after_fixpoint(),
@@ -18,10 +17,10 @@ block(`get_job) {
     +service_support:export_job(index, jobId) <-
       +proto:RequestEnvelope_get_job[_, index] = req,
       +proto:GetJobRequest_job_id[req] = jobId,
-      schema:job_id[_] = jobId.
+      schema:Job_id[_] = jobId.
 
     // populate with status messages  
-    status_cons[job, ts] = status -> schema:job(job), int(ts), proto:Status(status).
+    status_cons[job, ts] = status -> schema:Job(job), int(ts), proto:Status(status).
     lang:constructor(`status_cons).
     lang:pulse(`status_cons).
     
@@ -36,13 +35,13 @@ block(`get_job) {
       +proto:RequestEnvelope_get_job[_, index] = req,
       +proto:GetJobRequest_job_id[req] = jobId,
       +service_support:job[index] = jobMessage,
-      schema:job_id[job] = jobId,
-      schema:job_status_event[job, ts] = event,
-      schema:job_status_machine[job, ts] = machine,
-      schema:job_status_message[job, ts] = message.
+      schema:Job_id[job] = jobId,
+      schema:Job:status_event[job, ts] = event,
+      schema:Job:status_machine[job, ts] = machine,
+      schema:Job:status_message[job, ts] = message.
 
     // populate with file messages
-    output_cons[job, url] = file -> schema:job(job), string(url), proto:File(file).
+    output_cons[job, url] = file -> schema:Job(job), string(url), proto:File(file).
     lang:constructor(`output_cons).
     lang:pulse(`output_cons).
 
@@ -55,9 +54,9 @@ block(`get_job) {
       +proto:RequestEnvelope_get_job[_, index] = req,
       +proto:GetJobRequest_job_id[req] = jobId,
       +service_support:job[index] = jobMessage,
-      schema:job_id[job] = jobId,
-      schema:job_output(job, url),
-      schema:job_output_hash[job, url] = hash.
+      schema:Job_id[job] = jobId,
+      schema:Job:output(job, url),
+      schema:Job:output_hash[job, url] = hash.
 
   })
 } <-- .

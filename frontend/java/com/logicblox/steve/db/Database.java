@@ -18,7 +18,16 @@ import com.logicblox.steve.common.Data;
  */
 public interface Database
 {
+  
+  /**
+   * Get information about the user with this id.
+   * 
+   * @param userId
+   * @return
+   */
   public User getUser(String userId);
+  
+  
   public Account getAccount(String userId);
 
   /**
@@ -56,11 +65,19 @@ public interface Database
 
   /**
    * Get information on a job implementation.
+   *
+   * @param userId the user requesting the information.
+   * @param id the id of the jobimpl being requested.
+   * @return information about the jobImpl if the id exists and the user has access to it (i.e., if
+   * the impl belongs to some user in the same account as the user requesting the information). 
+   * Otherwise, the future will be failed.
    */
   public ListenableFuture<JobImpl> getJobImpl(String userId, String id);
 
   /**
    * Get all job implementations available to a user.
+   * 
+   * @param userId the user requesting the information.
    */
   public ListenableFuture<Iterable<JobImpl>> getJobImpl(String userId);
 

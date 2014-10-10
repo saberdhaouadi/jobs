@@ -1,6 +1,5 @@
 block(`add_status) {
 
-  alias(`lb:steve:schema, `schema),
   alias(`lb:steve:database, `proto),
 
   inactive(),
@@ -18,9 +17,9 @@ block(`add_status) {
      * Add status
      */
     +service_support:export_job(index, jobId),
-    +schema:job_status_event[job, ts] = event,
-    +schema:job_status_machine[job, ts] = machine,
-    +schema:job_status_message[job, ts] = message <-
+    +schema:Job:status_event[job, ts] = event,
+    +schema:Job:status_machine[job, ts] = machine,
+    +schema:Job:status_message[job, ts] = message <-
       +proto:RequestEnvelope_add_status[_, index] = req,
       +proto:AddStatusRequest_job_id[req] = jobId,
       +proto:AddStatusRequest_status[req] = status,
@@ -28,7 +27,7 @@ block(`add_status) {
       +proto:Status_event[status] = event,
       +proto:Status_machine[status] = machine,
       +proto:Status_message[status] = message,
-      schema:job_id@prev[job] = jobId.
+      schema:Job_id@prev[job] = jobId.
 
   })
 

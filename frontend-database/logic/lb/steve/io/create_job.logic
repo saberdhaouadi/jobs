@@ -1,6 +1,5 @@
 block(`create_job) {
 
-  alias(`lb:steve:schema, `schema),
   alias(`lb:steve:database, `proto),
 
   inactive(),
@@ -10,10 +9,18 @@ block(`create_job) {
     /**
      * Validate the user.
      */
-    +service_support:export_error(index, "INVALID_USER", "User identified by '" + userId + "' does not exist.") <-
+    +service_support:ensure_user(index, userId) <-
+      +proto:RequestEnvelope_create_job[_, index] = req,
+      +proto:CreateJobRequest_user_id[req] = userId.
+
+    /**
+     * Validate the impl id.
+     */
+    +service_support:ensure_impl(index, userId, jobImplId) <-
       +proto:RequestEnvelope_create_job[_, index] = req,
       +proto:CreateJobRequest_user_id[req] = userId,
-      ! system:app:User:name(_:userId).
+      proto:CreateJobRequest_impl_id[req] = jobImplId.
+
 
     /**
      * Check if job exists.
@@ -24,48 +31,50 @@ block(`create_job) {
     +service_support:export_job(index, jobId) <-
       +proto:RequestEnvelope_create_job[_, index] = req,
       +proto:CreateJobRequest_client_id[req] = clientId,
-      schema:job_from_client_id@prev[clientId] = jobId.
+      schema:Job:by_client_id@prev[clientId] = jobId.
 
     // job needs to be created
     +create_new_job(req) <-
       +proto:CreateJobRequest_client_id[req] = clientId,
-      !schema:job_from_client_id@prev[clientId] = _.
+      !schema:Job:by_client_id@prev[clientId] = _.
     
     /**
      * Construct new job
      */
     +service_support:export_job(index, id),
-    +schema:job(j),
-    +schema:job_id[j] = id,
-    +schema:job_impl[j] = impl,
-    +schema:job_client_id[j] = clientId,
-    +schema:job_output_prefix[j] = prefix, 
-    +schema:job_user[j] = user <-
+    +schema:Job(j),
+    +schema:Job_id[j] = id,
+    +schema:Job:impl[j] = impl,
+    +schema:Job:client_id[j] = clientId,
+    +schema:Job:output_prefix[j] = prefix, 
+    +schema:Job:user[j] = user <-
       +create_new_job(req),
       +proto:RequestEnvelope_create_job[_, index] = req,
       +proto:CreateJobRequest_job_id[req] = id,
       +proto:CreateJobRequest_client_id[req] = clientId,
-      +proto:CreateJobRequest_impl_id[req] = impl,
+      +proto:CreateJobRequest_impl_id[req] = implId,
       +proto:CreateJobRequest_output_prefix[req] = prefix,
       +proto:CreateJobRequest_user_id[req] = userId,
-      system:app:User:name(user:userId).
+      system:app:User:name(user:userId),
+      schema:User_account[user] = account,
+      schema:impl[account, implId] = impl.
 
 
     // wire input
-    +schema:job_input(job, url),
-    +schema:job_input_hash[job, url] = hash <-
+    +schema:Job:input(job, url),
+    +schema:Job:input_hash[job, url] = hash <-
       +create_new_job(req),
       +proto:CreateJobRequest_job_id[req] = id,
-      +schema:job_id[job] = id,
+      +schema:Job_id[job] = id,
       +proto:CreateJobRequest_input(req, f), 
       +proto:File_url[f] = url,
       +proto:File_hash[f] = hash.
 
     // wire metadata
-    +schema:job_metadata[job, key] = value <-
+    +schema:Job:metadata[job, key] = value <-
       +create_new_job(req),
       +proto:CreateJobRequest_job_id[req] = id,
-      +schema:job_id[job] = id,
+      +schema:Job_id[job] = id,
       +proto:CreateJobRequest_metadata(req, p), 
       +proto:Param_key[p] = key,
       +proto:Param_value[p] = value.    

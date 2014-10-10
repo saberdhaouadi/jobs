@@ -54,7 +54,7 @@ block(`service_config) {
       protobuf_protocol[] = "lb:steve:database",
       protobuf_request_message[] = "RequestEnvelope",
       protobuf_response_message[] = "ResponseEnvelope",
-      inactive_block_name[] = "lb:steve:" + name,
+      inactive_block_name[] = "lb:steve:io:" + name,
       service_parameter["enable_http_control"] = "false"
     } <-
       database_service(name).

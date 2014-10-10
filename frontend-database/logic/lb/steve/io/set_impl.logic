@@ -1,0 +1,51 @@
+block(`set_impl) {
+
+  alias(`lb:steve:database, `proto),
+
+  inactive(),
+
+  clauses(`{
+   
+    /**
+     * Validate the user.
+     */
+    +service_support:ensure_user(index, userId) <-
+      +proto:RequestEnvelope_set_impl[_, index] = req,
+      +proto:SetJobImplRequest_user_id[req] = userId.
+
+
+    /**
+     * Set impl details and export it
+     */
+    +service_support:export_impl(index, impl),
+    +schema:impl[account, implId] = impl,
+    +schema:JobImpl(impl),
+    ^schema:JobImpl:user[impl] = user,
+    ^schema:JobImpl:archive[impl] = url,
+    ^schema:JobImpl:archive_hash[impl] = hash <-
+      +proto:RequestEnvelope_set_impl[_, index] = req,
+      +proto:SetJobImplRequest_user_id[req] = userId,
+      +proto:SetJobImplRequest_impl_id[req] = implId,
+      +proto:SetJobImplRequest_file[req] = fileProto,
+      +proto:File_url[fileProto] = url,
+      +proto:File_hash[fileProto] = hash,
+      system:app:User:name(user:userId),
+      schema:User_account[user] = account.
+
+    // wire metadata
+    ^schema:JobImpl:metadata[impl, key] = value <-
+      +proto:RequestEnvelope_set_impl[_, index] = req,
+      +service_support:export_impl(index, impl),
+      +proto:SetJobImplRequest_metadata(req, p),
+      +proto:Param_key[p] = key,
+      +proto:Param_value[p] = value.
+
+    // cleanup old metadata if it's not updated
+    -schema:JobImpl:metadata[impl, key] = value <-
+      +proto:RequestEnvelope_set_impl[_, index] = _,
+      +service_support:export_impl(index, impl),
+      schema:JobImpl:metadata@prev[impl, key] = value,
+      !+schema:JobImpl:metadata[impl, key] = value.
+  })
+
+} <-- .

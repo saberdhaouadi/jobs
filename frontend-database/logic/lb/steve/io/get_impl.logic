@@ -1,0 +1,91 @@
+block(`get_impl) {
+
+  alias(`lb:steve:database, `proto),
+
+  //after_fixpoint(),
+
+  clauses(`{
+
+    /**
+     * Validate the user.
+     */
+    +service_support:ensure_user(index, userId) <-
+      +proto:RequestEnvelope_get_impl[_, index] = req,
+      +proto:GetJobImplRequest_user_id[req] = userId.
+
+    /**
+     * Validate the impl id, if it is requested.
+     */
+    +service_support:ensure_impl(index, userId, jobImplId) <-
+      +proto:RequestEnvelope_get_impl[_, index] = req,
+      +proto:GetJobImplRequest_user_id[req] = userId,
+      +proto:GetJobImplRequest_impl_id[req] = jobImplId.
+
+    /**
+     * Export a single jobimpl if the id is requested.
+     */
+    +service_support:export_impl(index, impl) <-
+      +proto:RequestEnvelope_get_impl[_, index] = req,
+      +proto:GetJobImplRequest_user_id[req] = userId,
+      +proto:GetJobImplRequest_impl_id[req] = jobImplId,
+      system:app:User:name(user:userId),
+      schema:User_account[user] = account,
+      schema:impl[account, jobImplId] = impl.
+
+    /**
+     * Export all jobimpl available to a user if no id is requested.
+     */
+    +service_support:export_impl(index, impl) <-
+      +proto:RequestEnvelope_get_impl[_, index] = req,
+      +proto:GetJobImplRequest_user_id[req] = userId,
+      !+proto:GetJobImplRequest_impl_id[req] = _,
+      system:app:User:name(user:userId),
+      schema:User_account[user] = account,
+      schema:impl[account, _] = impl.
+
+
+    /**
+     * Constructor for the file message of a JobImpl message.
+     */
+    file[impl] = file -> schema:JobImpl(impl), proto:File(file).
+    lang:constructor(`file).
+    lang:pulse(`file).
+
+    /**
+     * Constructor for the metadata message of a JobImpl message.
+     */
+    metadata[impl, key] = meta -> schema:JobImpl(impl), string(key), proto:Param(meta).
+    lang:constructor(`metadata).
+    lang:pulse(`metadata).
+
+
+    // service support exports only the id, here we decorate with more data
+
+    // export file and user_id
+    +file[impl] = file,
+    +proto:File(file),
+    +proto:File_url[file] = url,
+    +proto:File_hash[file] = hash,
+    +proto:JobImpl_user_id[proto] = userId,
+    +proto:JobImpl_file[proto] = file <-      
+      +proto:RequestEnvelope_get_impl[_, i] = _,
+      +service_support:export_impl(i, impl),
+      +service_support:impl[i, impl] = proto,
+      schema:JobImpl:user[impl] = user,      
+      system:app:User:name(user:userId),
+      schema:JobImpl:archive[impl] = url,
+      schema:JobImpl:archive_hash[impl] = hash.
+        
+    // export the metadata
+    +metadata[impl, k] = meta,
+    +proto:Param(meta),
+    +proto:Param_key[meta] = k,
+    +proto:Param_value[meta] = v,
+    +proto:JobImpl_metadata(proto, meta) <-
+      +proto:RequestEnvelope_get_impl[_, i] = _,
+      +service_support:export_impl(i, impl),
+      +service_support:impl[i, impl] = proto,
+      schema:JobImpl:metadata[impl, k] = v.
+
+  })
+} <-- .

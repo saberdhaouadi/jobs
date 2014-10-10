@@ -4,6 +4,8 @@ block(`service_support) {
   
   export(`{
 
+    // constructors (used by pulse helpers)
+
     /**
      * Constructor for the response envelope.
      */
@@ -22,14 +24,16 @@ block(`service_support) {
 
     /**
      * Constructor for a JobImpl message in this index (encapsulated by the response in the same index).
+     * Note that an index contains a set of jobimpl messages, so we key by schema:JobImpl too.
      */
-    impl[index] = impl -> int(index), proto:JobImpl(impl).
+    impl[index, impl] = proto -> int(index), schema:JobImpl(impl), proto:JobImpl(proto).
 
     /**
      * Constructor for an Error message in this index (encapsulated by the response in the same index).
      */
     error[index] = error -> int(index), proto:Error(error).
 
+    // pulse helpers
     
     /**
      * Export a job with this id in the response with this index.
@@ -37,9 +41,9 @@ block(`service_support) {
     export_job(index, id) -> int(index), string(id).
 
     /**
-     * Export a jobImpl with this id in the response with this index.
+     * Export a jobImpl in the response with this index.
      */
-    export_impl(index, id) -> int(index), string(id).
+    export_impl(index, impl) -> int(index), schema:JobImpl(impl).
 
     /**
      * Export an error with this content in the response with this index.
@@ -47,9 +51,20 @@ block(`service_support) {
     export_error(index, code, message) -> int(index), string(code), string(message).
 
     /**
+     * If a user with this id does not exist, generate an error in this index.
+     */
+    ensure_user(index, userId) -> int(index), string(userId).
+
+    /**
      * If a job with this id does not exist, generate an error in this index.
      */
     ensure_job(index, jobId) -> int(index), string(jobId).
+
+    /**
+     * If a job impl with this id does not exist, or if it does not belong to this user,
+     * generate an error in this index.
+     */
+    ensure_impl(index, userId, jobImplId) -> int(index), string(userId), string(jobImplId).
 
   }),
 
@@ -72,7 +87,9 @@ block(`service_support) {
     lang:pulse(`export_impl).
     lang:pulse(`export_error).
 
+    lang:pulse(`ensure_user).
     lang:pulse(`ensure_job).
+    lang:pulse(`ensure_impl).
 
     // always construct an envelope for the response
     +proto:ResponseEnvelope(resp),
@@ -104,20 +121,33 @@ block(`service_support) {
 
     // create a response, a job impl, and wire
     +response[i] = resp,
-    +proto:Response(resp),    
-    +impl[i] = impl,
-    +proto:JobImpl(impl),
-    +proto:JobImpl_id[impl] = id,
+    +proto:Response(resp),
+    +impl[i, impl] = proto,
+    +proto:JobImpl(proto),
+    +proto:JobImpl_id[proto] = id,
     +proto:ResponseEnvelope_response[env, i] = resp,
-    +proto:Response_impl[resp] = impl <-
-      +envelope[_] = env,
-      +export_impl(i, id).
+    +proto:Response_impl(resp, proto) <-
+      +envelope[_] = env,      
+      +export_impl(i, impl),
+      schema:JobImpl:id[impl] = id.
 
 
-    // ensure job
-    +export_error(index, "INVALID_JOB", "Job identified by '" + jobId + "' does not exist.") <-
+
+    // error checking rules
+    +export_error(index, "NO_SUCH_USER", "User '" + userId + "' does not exist.") <-
+      +ensure_user(index, userId),
+      ! system:app:User:name(_:userId).
+
+    +export_error(index, "NO_SUCH_JOB", "Job '" + jobId + "' does not exist.") <-
       +ensure_job(index, jobId),
-      !schema:job_id@prev[_] = jobId.
+      !schema:Job_id@prev[_] = jobId.
+
+    +export_error(index, "NO_SUCH_JOB_IMPL", "Job implementation '" + jobImplId + "' does not exist in account '" + accountId + "'.") <-
+      +ensure_impl(index, userId, jobImplId),
+      system:app:User:name(user:userId),
+      schema:User_account[user] = account,
+      schema:Account_id(account:accountId),
+      !schema:impl[account, jobImplId] = _.
 
   })
 

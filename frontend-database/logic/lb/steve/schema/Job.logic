@@ -1,0 +1,91 @@
+ block(`Job) {
+
+  export(`{
+
+    /**
+     * The user that requested this job.
+     */
+    user[j] = u -> Job(j), system:app:User(u).
+
+    /**
+     * The "type" of this job, i.e., the Job implementation.
+     */
+    impl[j] = impl -> Job(j), JobImpl(impl).
+
+    /**
+     * An id provided by the client that created this job. This id should be unique.
+     */
+    client_id[j] = id -> Job(j), string(id).
+
+    /**
+     * A prefix that represents where outputs of the job are to be stored.
+     */
+    output_prefix[j] = prefix -> Job(j), string(prefix).
+
+    /**
+     * Inputs to the job, as URLs representing the files.
+     */
+    input(job, url) -> Job(job), string(url).
+
+    /**
+     * Hashes of each input described by the URLs above.
+     */
+    input_hash[job, url] = hash -> Job(job), string(url), string(hash).
+
+    /**
+     * Key/value pairs of metadata.
+     */
+    metadata[job, k] = v -> Job(job), string(k), string(v).
+
+    /**
+     * Outputs to the job, as URLs representing the files.
+     */
+    output(job, url) -> Job(job), string(url).
+
+    /**
+     * Hashes of each output described by the URLs above.
+     */
+    output_hash[job, url] = hash -> Job(job), string(url), string(hash).
+
+    /**
+     * Registers an event that occured at this timestamp in this job.
+     */
+    status_event[job, timestamp] = v -> Job(job), int(timestamp), string(v).
+
+    /**
+     * The event at this timestamp occured in this machine.
+     */
+    status_machine[job, timestamp] = v -> Job(job), int(timestamp), string(v).
+
+    /**
+     * A message for the event at this timestamp.
+     */
+    status_message[job, timestamp] = v -> Job(job), int(timestamp), string(v).
+    
+  }),
+
+  sealed(`{
+
+    by_client_id[clientId] = job -> string(clientId), Job(job).
+
+    /**
+     * The id of the implementation. This is useful for exports because JobImpl does 
+     * not have a refmode to be exported.
+     */
+    impl_id[job] = implId -> Job(job), string(implId).
+
+  }),
+
+  clauses(`{
+
+    by_client_id[clientId] = job <-
+      client_id[job] = clientId.
+
+    impl_id[job] = implId <-
+      impl[job] = impl,
+      JobImpl:id[impl] = implId.
+      
+  })
+
+} <-- .
+

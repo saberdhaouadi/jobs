@@ -1,0 +1,52 @@
+ block(`JobImpl) {
+
+  export(`{
+
+    /**
+     * The user that owns the JobImpl.
+     */
+    user[impl] = u -> JobImpl(impl), system:app:User(u).
+
+    /**
+     * The URL of the archive that contains the implementation represented by this JobImpl.
+     */
+    archive[impl] = url -> JobImpl(impl), string(url).
+
+    /**
+     * A Hash of the archive described above.
+     */
+    archive_hash[impl] = hash -> JobImpl(impl), string(hash).
+    
+    /**
+     * Key/value pairs of metadata.
+     */
+    metadata[impl, k] = v -> JobImpl(impl), string(k), string(v).
+
+  }),
+
+  sealed(`{
+
+    /**
+     * The id of a JobImpl (unique only within an account).
+     */
+    id[impl] = id -> JobImpl(impl), string(id).
+
+    /**
+     * The account of the user that owns the JobImpl.
+     */
+    account[impl] = account -> JobImpl(impl), Account(account). 
+
+  }),
+
+  clauses(`{
+
+    id[impl] = id <-
+      impl[_, id] = impl.
+
+    account[impl] = account <-
+      JobImpl:user[impl] = user,
+      User_account[user] = account.
+
+  })
+
+} <-- .

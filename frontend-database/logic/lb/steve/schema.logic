@@ -1,74 +1,37 @@
 block(`schema) {
 
   export(`{
+
     /**
-     * Jobs
+     * A job with a unique id.
      */
-    job(j), job_id(j:s) -> string(s).
-    job_client_id[j] = id -> job(j), string(id).
-
-    job_user[j] = u -> job(j), system:app:User(u).
-
-    job_impl[j] = impl -> job(j), jobimpl(impl).
-    job_output_prefix[j] = prefix -> job(j), string(prefix).
-
-    job_input(j, f) -> job(j), string(f).
-    job_input_hash[j, f] = h -> job(j), string(f), string(h).
-
-    job_output(j, f) -> job(j), string(f).
-    job_output_hash[j, f] = h -> job(j), string(f), string(h).
-
-    job_metadata[j, k] = v -> job(j), string(k), string(v).
-
-    job_status_event[j, ts] = v -> job(j), int(ts), string(v).
-    job_status_machine[j, ts] = v -> job(j), int(ts), string(v).
-    job_status_message[j, ts] = v -> job(j), int(ts), string(v).
+    Job(job), Job_id(job:id) -> string(id).
 
     /**
-     * Job implementations
-     */ 
-    jobimpl(impl), jobimpl_id(impl:s) -> string(s).
+     * An account is a group of users with a unique id.
+     */
+    Account(account), Account_id(account:id) -> string(id).
 
-    jobimpl_user[impl] = u -> jobimpl(impl), system:app:User(u).
+    /**
+     * A job implementation has a unique id within an account.
+     */
+    JobImpl(impl) ->.
 
-    jobimpl_archive[impl] = f -> jobimpl(impl), string(f).
-    jobimpl_archive_hash[impl] = hash -> jobimpl(impl), string(hash).
-    
-    jobimpl_metadata[impl, k] = v -> jobimpl(impl), string(k), string(v).
+    /**
+     * A constructor for job implementations.
+     */
+    impl[account, id] = impl -> Account(account), string(id), JobImpl(impl).
 
-    // jobimpl_tenants(impl, tenant) -> jobimpl(impl), tenant(tenant).
-
-   /**
-    * Accounts
-    */
-    account(a), account_id(a:s) -> string(s).
-    user_account[u] = a -> system:app:User(u), account(a).
-
-  }),
-
-  sealed(`{
-
-    job_from_client_id[clientId] = job -> string(clientId), job(job).
+    /**
+     * The account a user belongs to.
+     */
+    User_account[u] = a -> system:app:User(u), Account(a).
 
   }),
 
   clauses(`{
-
-    job_from_client_id[clientId] = job <-
-      job_client_id[job] = clientId.
-
+    lang:constructor(`impl).
   })
-
-  // clauses(`{
-
-    /**
-     * Within a single tenant, there should not be multiple job
-     * implementations with the same identifier.
-     */
-    // tenant_unique_jobimpl[tenant, id] = impl -> tenant(tenant), string(id), jobimpl(impl).
-
-
-  // })
 
 } <-- .
 
