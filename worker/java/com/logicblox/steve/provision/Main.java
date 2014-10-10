@@ -17,17 +17,19 @@ public class Main
   private AmazonSQS sqs;
   private AmazonEC2 ec2;
 
+  // TODO: make into required arguments
+  private static String queue = "c3-xlarge";
   private static String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
   private static String ami = "ami-9ee44af6";
   private static String s3Bucket = "steve-jobs";
+  private static String instanceType = "c3.xlarge";
+  private static String role = "steve-jobs-worker";
+
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
   private static double pctSpot = 0.9;
   private static double pctQueue = 1 / 3f;
   private static double spotPrice = 0.6;
-  private static String instanceType = "c3.xlarge";
-  private static String role = "steve-jobs-worker";
-  private static int permanent = 0;
   private static int totalNeeded = 0;
   private static int maxInstances = 300;
   private static boolean dryRun = true;
@@ -43,6 +45,12 @@ public class Main
 
     options.addOption(OptionBuilder.withLongOpt("bucket")
             .withDescription("S3 bucket name")
+            .hasArg()
+            .withArgName("NAME")
+            .create());
+
+    options.addOption(OptionBuilder.withLongOpt("queue")
+            .withDescription("Steve queue name")
             .hasArg()
             .withArgName("NAME")
             .create());
@@ -119,6 +127,8 @@ public class Main
     CommandLineParser parser = new BasicParser();
     try {
       CommandLine _cmdline = parser.parse( options, args );
+      if (_cmdline.hasOption("queue"))
+        queue = _cmdline.getOptionValue("queue");
       if (_cmdline.hasOption("bucket"))
         s3Bucket = _cmdline.getOptionValue("bucket");
       if (_cmdline.hasOption("incoming"))
@@ -188,8 +198,8 @@ public class Main
     int spotNeeded = (int) Math.ceil(pctSpot*totalNeeded) - spotCurrent;
     int odNeeded = totalNeeded - spotNeeded - odCurrent - spotCurrent;
 
-    System.err.println(String.format("Number of current spot instances      : %d", spotCurrent));
-    System.err.println(String.format("Number of current on-demand instances : %d", odCurrent));
+    System.err.println(String.format("%s: Number of current spot instances      : %d", queue, spotCurrent));
+    System.err.println(String.format("%s: Number of current on-demand instances : %d", queue, odCurrent));
 
 
     //System.exit(1);

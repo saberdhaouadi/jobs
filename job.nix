@@ -1,6 +1,5 @@
 { stdenv
 , fetchurl
-, src
 , logicblox
 , lb_web
 , s3lib
@@ -94,8 +93,8 @@ in
 rec {
   frontend =
      builder_config.buildLBConfig {
-      name = "jobs-frontend-${version src}";
-      src = "${src}/frontend";
+      name = "jobs-frontend";
+      src = ./frontend;
       buildInputs = [ logicblox lb_web makeWrapper client.build worker pkgs.jq ];
       enableLBservices = false;
       configureFlags = [
@@ -108,8 +107,8 @@ rec {
 
   client.build =
     builder_config.buildLBConfig {
-      name = "lb-steve-client-${version src}";
-      src = "${src}/client";
+      name = "lb-steve-client";
+      src = ./client;
       buildInputs = [ logicblox lb_web ];
       enableLBservices = false;
       configureFlags = [
@@ -127,8 +126,8 @@ rec {
 
   protocols =
     builder_config.buildLBConfig {
-      name = "jobs-protocols-${version src}";
-      src = "${src}/protocols";
+      name = "jobs-protocols";
+      src = ./protocols;
       buildInputs = [ logicblox lb_web ];
       enableLBservices = false;
       configureFlags = [
@@ -139,8 +138,8 @@ rec {
 
   worker =
     builder_config.buildLBConfig {
-      name = "jobs-worker-${version src}";
-      src = "${src}/worker";
+      name = "jobs-worker";
+      src = ./worker;
       buildInputs = [ logicblox lb_web makeWrapper ];
       enableLBservices = false;
       configureFlags = [
@@ -161,18 +160,18 @@ rec {
     let
       image = (import <nixpkgs/nixos> { system = "x86_64-linux"; configuration = ./nix/worker-ec2-image.nix; }).config.system.build.amazonImage;
     in 
-      runCommand "worker-ec2-image-${version src}" { preferLocalBuild = true; } ''
+      runCommand "worker-ec2-image" { preferLocalBuild = true; } ''
         mkdir -p $out/nix-support
-        xz -z -c ${image}/nixos.img  > $out/worker-${version src}.img.xz
-        echo "file img $out/worker-${version src}.img.xz" > $out/nix-support/hydra-build-products
+        xz -z -c ${image}/nixos.img  > $out/worker.img.xz
+        echo "file img $out/worker.img.xz" > $out/nix-support/hydra-build-products
       '';
 
   database =
     builder_config.genericAppJobset {
       inherit logicblox bloxweb;
       build = builder_config.buildLBConfig {
-        name = "jobs-database-${version src}";
-        src = "${src}/frontend-database";
+        name = "jobs-database";
+        src = ./frontend-database;
         buildInputs = [ logicblox lb_web ];
         configureFlags = [
           "--with-protocols=${protocols}"

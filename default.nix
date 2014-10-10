@@ -1,5 +1,4 @@
-{ src ? ./.
-, src_s3lib ? <src_s3lib>
+{ src_s3lib ? <src_s3lib>
 , platform_release ? <platform_release> # "4.1.1"
 }:
 let
@@ -13,7 +12,6 @@ let
 
 in
   import ./job.nix {
-    inherit src;
     logicblox = platform.logicblox;
     lb_web = platform.bloxweb;
     inherit s3lib builder_config;
