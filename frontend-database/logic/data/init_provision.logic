@@ -1,0 +1,24 @@
++lb:steve:provision:jobqueue("c3-xlarge") {
+  +lb:steve:provision:jobqueue_percentage_queue[] = 0.33,
+  +lb:steve:provision:jobqueue_percentage_spot_instances[] = 0.9,
+  +lb:steve:provision:jobqueue_spot_instance_price[] = 0.25,
+  +lb:steve:provision:jobqueue_max_instances[] = 300,
+  +lb:steve:provision:jobqueue_total_instances[] = 0
+}.
+
++lb:steve:provision:jobqueue("r3-xlarge") {
+  +lb:steve:provision:jobqueue_percentage_queue[] = 0.3,
+  +lb:steve:provision:jobqueue_percentage_spot_instances[] = 0.9,
+  +lb:steve:provision:jobqueue_spot_instance_price[] = 0.4,
+  +lb:steve:provision:jobqueue_max_instances[] = 300,
+  +lb:steve:provision:jobqueue_total_instances[] = 0
+}.
+
++lb:steve:provision:jobqueue("r3-2xlarge") {
+  +lb:steve:provision:jobqueue_percentage_queue[] = 0.3,
+  +lb:steve:provision:jobqueue_percentage_spot_instances[] = 0.9,
+  +lb:steve:provision:jobqueue_spot_instance_price[] = 0.75,
+  +lb:steve:provision:jobqueue_max_instances[] = 300,
+  +lb:steve:provision:jobqueue_total_instances[] = 0
+}.
+

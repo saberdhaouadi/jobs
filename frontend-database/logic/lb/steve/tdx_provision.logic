@@ -1,0 +1,62 @@
+block(`tdx_provision) {
+  alias_all(`lb:web:delim:schema),
+  alias_all(`lb:web:delim:schema_abbr),
+
+  alias_all(`lb:web:delim:binding),
+  alias_all(`lb:web:delim:binding_abbr),
+
+  alias_all(`lb:web:config:service),
+  alias_all(`lb:web:config:service_abbr),
+  alias_all(`lb:web:config:delim),
+
+  clauses(`{
+
+    file_definition_by_name["provision-config"] = fd,
+    file_definition(fd) {
+      file_delimiter[] = "|",
+      column_headers[] = "JOBQUEUE, PERCENTAGE_QUEUE, PERCENTAGE_SPOT, SPOT_PRICE, MAX, TOTAL",
+      column_formats[] = "string,   decimal,          decimal,         decimal,    int, int"
+    }.
+
+    file_binding_by_name["provision-config"] = fb,
+    file_binding(fb) {
+      file_binding_definition_name[] = "provision-config",
+
+      predicate_binding_by_name["lb:steve:provision:jobqueue"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "JOBQUEUE"
+        },
+         
+     predicate_binding_by_name["lb:steve:provision:jobqueue_percentage_queue"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "JOBQUEUE, PERCENTAGE_QUEUE"
+        },
+
+     predicate_binding_by_name["lb:steve:provision:jobqueue_percentage_spot_instances"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "JOBQUEUE, PERCENTAGE_SPOT"
+        },
+
+     predicate_binding_by_name["lb:steve:provision:jobqueue_spot_instance_price"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "JOBQUEUE, SPOT_PRICE"
+        },
+
+     predicate_binding_by_name["lb:steve:provision:jobqueue_max_instances"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "JOBQUEUE, MAX"
+        },
+
+     predicate_binding_by_name["lb:steve:provision:jobqueue_total_instances"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "JOBQUEUE, TOTAL"
+        }
+    }.
+
+    service_by_prefix["/tdx/provision-config"] = x,
+    delim_service(x) {
+      delim_file_binding[] = "provision-config"
+    }.
+  })
+
+} <-- . 

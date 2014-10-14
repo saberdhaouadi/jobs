@@ -1,0 +1,16 @@
+block(`provision) {
+
+  export(`{
+    /**
+     * Job Queues
+     */
+    jobqueue(j), jobqueue_id(j:s) -> string(s).
+
+    jobqueue_percentage_queue[q] = p -> jobqueue(q), decimal(p).
+    jobqueue_percentage_spot_instances[q] = p -> jobqueue(q), decimal(p).
+    jobqueue_spot_instance_price[q] = p -> jobqueue(q), decimal(p).
+    jobqueue_max_instances[q] = n -> jobqueue(q), int(n).
+    jobqueue_total_instances[q] = n -> jobqueue(q), int(n).
+  })
+
+} <-- .
