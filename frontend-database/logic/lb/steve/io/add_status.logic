@@ -16,7 +16,7 @@ block(`add_status) {
     /**
      * Add status
      */
-    +service_support:export_job(index, jobId),
+    +service_support:export_success(index),
     +schema:Job:status_event[job, ts] = event,
     +schema:Job:status_machine[job, ts] = machine,
     +schema:Job:status_message[job, ts] = message <-

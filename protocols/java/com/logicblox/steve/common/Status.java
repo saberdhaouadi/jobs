@@ -1,4 +1,4 @@
-package com.logicblox.steve.db;
+package com.logicblox.steve.common;
 
 /**
  * An immutable representation of the status of a job at some point in time. 
@@ -19,10 +19,10 @@ public final class Status {
     QUEUED, STARTED, PROGRESS, UNRESPONSIVE, CANCELLED, SUCCEEDED, FAILED, KILLED, TIMEOUT
   };
 
-  private final long _timestamp;
-  private final Event _event;
-  private final String _machine;
-  private final String _message;
+  public final long timestamp;
+  public final Event event;
+  public final String machine;
+  public final String message;
     
   /**
    * Construct an immutable status with this content. Values may be null.
@@ -33,30 +33,14 @@ public final class Status {
    * @param message
    */
   public Status(long timestamp, Event event, String machine, String message) {
-    this._timestamp = timestamp;
-    this._event = event;
-    this._machine = machine;
-    this._message = message;
+    this.timestamp = timestamp;
+    this.event = event;
+    this.machine = machine;
+    this.message = message;
   }
 
-  public long getTimestamp() {
-    return _timestamp;
-  }
-  
-  public Event getEvent() {
-    return _event;
-  }
-
-  public String getMachine() {
-    return _machine;
-  }
-
-  public String getMessage() {
-    return _message;
-  }
-  
   public boolean hasMessage() {
-    return null != _message;
+    return null != message;
   }
 
   /**

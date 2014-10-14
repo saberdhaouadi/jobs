@@ -22,14 +22,13 @@ import com.logicblox.bloxweb.config.Config;
 import com.logicblox.bloxweb.config.ConfigLocator;
 import com.logicblox.bloxweb.config.ConfigValidator;
 import com.logicblox.bloxweb.config.ValidationMessage;
+import com.logicblox.bloxweb.internal.Specification;
 import com.logicblox.bloxweb.service.ServiceContext;
 import com.logicblox.common.Option;
 import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
-
-import com.logicblox.bloxweb.internal.Specification;
 
 public class Main
 {

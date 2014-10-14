@@ -27,8 +27,8 @@ block(`create_job) {
      */
     create_new_job(req) -> proto:CreateJobRequest(req).
 
-    // job with this client id already exists, export it
-    +service_support:export_job(index, jobId) <-
+    // job with this client id already exists, export success
+    +service_support:export_job_id(index, jobId) <-
       +proto:RequestEnvelope_create_job[_, index] = req,
       +proto:CreateJobRequest_client_id[req] = clientId,
       schema:Job:by_client_id@prev[clientId] = jobId.
@@ -39,9 +39,9 @@ block(`create_job) {
       !schema:Job:by_client_id@prev[clientId] = _.
     
     /**
-     * Construct new job
+     * Construct new job and export success.
      */
-    +service_support:export_job(index, id),
+    +service_support:export_job_id(index, id),
     +schema:Job(j),
     +schema:Job_id[j] = id,
     +schema:Job:impl[j] = impl,

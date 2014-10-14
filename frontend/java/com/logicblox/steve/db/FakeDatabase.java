@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.logicblox.bloxweb.SimpleErrorCode;
 import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.steve.common.Data;
+import com.logicblox.steve.common.Status;
 
 public class FakeDatabase implements Database
 {
@@ -86,7 +87,7 @@ public class FakeDatabase implements Database
   }
 
   @Override
-  public synchronized ListenableFuture<Job> createJob(
+  public synchronized ListenableFuture<String> createJob(
     String userId,
     String clientId,
     String implId,
@@ -115,7 +116,7 @@ public class FakeDatabase implements Database
 
       String id = UUID.randomUUID().toString();
       
-      job = new Job(id, clientId, output, impl, metadata, inputs);
+      job = new Job(id, clientId, output, implId, metadata, inputs, impl.archive.getLocation());
 
       _jobState.initialize(id);
       
@@ -123,75 +124,41 @@ public class FakeDatabase implements Database
       _jobFromClientId.put(job.clientId, job);
     }
     
-    return Futures.immediateFuture(job);
+    return Futures.immediateFuture(job.id);
   }
 
   @Override
-  public synchronized ListenableFuture<Job> getState(String jobId, boolean detail)
-  {
-    // an actual implementation would need to consider the detail
-    // option. We do not.
-    ListenableFuture<Job> job = getJob(jobId);
-    return job;
-  }
-
-  @Override
-  public synchronized ListenableFuture<Job> addStatus(String jobId, final Status status)
+  public synchronized ListenableFuture<String> addStatus(String jobId, final Status status)
   {
     ListenableFuture<Job> job = getJob(jobId);
-    return Futures.transform(job, new Function<Job, Job>()
+    return Futures.transform(job, new Function<Job, String>()
     {
-      public Job apply(Job j)
+      public String apply(Job j)
       {
         j.addStatus(status);
-        return j;
+        return j.id;
       }
     });
   }
+  
 
   @Override
-  public synchronized ListenableFuture<Job> setResult(String jobId, final List<Data> output)
+  public synchronized ListenableFuture<String> setResult(String jobId, final List<Data> output)
   {
     ListenableFuture<Job> job = getJob(jobId);
-    return Futures.transform(job, new Function<Job, Job>()
+    return Futures.transform(job, new Function<Job, String>()
     {
-      public Job apply(Job j)
+      public String apply(Job j)
       {
         j.addOutputData(output);
-        return j;
+        return j.id;
       }
     });
   }
     
-  // TODO add user account and only return job when it exists in this account.
-  // TODO throw authorization exception if the user is not allowed to access the job
-  public synchronized ListenableFuture<Job> getResult(final String jobId)
-  {
-    ListenableFuture<Job> job = getJob(jobId);
-    return Futures.transform(job, new Function<Job, Job>()
-    {
-      public Job apply(Job j)
-      {
-        if(!j.isSucceeded())
-        {
-          if(j.isFailed())
-          {
-            throw new ServiceException(
-              new SimpleErrorCode("JOB_FAILED", 400, "Job '" + j.id + "' failed and has no output"));
-          }
-          else
-          {
-            throw new ServiceException(
-              new SimpleErrorCode("JOB_INCOMPLETE", 400, "Job '" + j.id + "' has not completed and has no output"));
-          }
-        }
 
-        return j;
-      }
-    });
-  }
-
-  private ListenableFuture<Job> getJob(String jobId)
+  @Override
+  public ListenableFuture<Job> getJob(String jobId)
   {
     Job job = _jobFromId.get(jobId);
     if(job == null)
@@ -237,7 +204,7 @@ public class FakeDatabase implements Database
   }
 
   @Override
-  public synchronized ListenableFuture<JobImpl> setJobImpl(
+  public synchronized ListenableFuture<String> setJobImpl(
     String userId,
     String implId,
     Data archive,
@@ -250,6 +217,6 @@ public class FakeDatabase implements Database
     
     _jobImpls.put(impl.account, impl.id, impl);
 
-    return Futures.immediateFuture(impl);
+    return Futures.immediateFuture(implId);
   }
 }

@@ -17,7 +17,7 @@ block(`set_result) {
     /**
      * Set result (outputs)
      */
-    +service_support:export_job(index, jobId),
+    +service_support:export_success(index),
     +schema:Job:output(job, url),
     +schema:Job:output_hash[job, url] = hash <-
       +proto:RequestEnvelope_set_result[_, index] = req,

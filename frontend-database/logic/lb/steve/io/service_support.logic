@@ -34,11 +34,21 @@ block(`service_support) {
     error[index] = error -> int(index), proto:Error(error).
 
     // pulse helpers
-    
+
     /**
-     * Export a job with this id in the response with this index.
+     * Export an empty Response, which indicates success.
      */
-    export_job(index, id) -> int(index), string(id).
+    export_success(index) -> int(index).
+
+    /**
+     * Export a job id in the response with this index.
+     */
+    export_job_id(index, jobId) -> int(index), string(jobId).
+
+    /**
+     * Export a job in the response with this index.
+     */
+    export_job(index, job) -> int(index), schema:Job(job).
 
     /**
      * Export a jobImpl in the response with this index.
@@ -83,9 +93,11 @@ block(`service_support) {
     lang:constructor(`response).
     lang:pulse(`response).
 
+    lang:pulse(`export_error).
+    lang:pulse(`export_success).
+    lang:pulse(`export_job_id).
     lang:pulse(`export_job).
     lang:pulse(`export_impl).
-    lang:pulse(`export_error).
 
     lang:pulse(`ensure_user).
     lang:pulse(`ensure_job).
@@ -96,7 +108,8 @@ block(`service_support) {
     +envelope[req] = resp <-
       +proto:RequestEnvelope(req).
 
-    // create a response, an error, and wire
+
+    // ERROR: create a response, an error, and wire
     +response[i] = resp,
     +proto:Response(resp),    
     +error[i] = error,
@@ -108,25 +121,45 @@ block(`service_support) {
       +envelope[_] = env,
       +export_error(i, code, message).
 
-    // create a response, a job, and wire
-    +response[i] = resp,
-    +proto:Response(resp),    
-    +job[i] = job,
-    +proto:Job(job),
-    +proto:Job_id[job] = id,
-    +proto:ResponseEnvelope_response[env, i] = resp,
-    +proto:Response_job[resp] = job <-
-      +envelope[_] = env,
-      +export_job(i, id).
 
-    // create a response, a job impl, and wire
+    // SUCCESS: create an empty response, and wire
     +response[i] = resp,
     +proto:Response(resp),
-    +impl[i, impl] = proto,
-    +proto:JobImpl(proto),
-    +proto:JobImpl_id[proto] = id,
+    +proto:ResponseEnvelope_response[env, i] = resp <-
+      +envelope[_] = env,
+      +export_success(i).
+
+
+    // JOB ID: create a response, a job id, and wire
+    +response[i] = resp,
+    +proto:Response(resp),
     +proto:ResponseEnvelope_response[env, i] = resp,
-    +proto:Response_impl(resp, proto) <-
+    +proto:Response_job_id[resp] = id <-
+      +envelope[_] = env,
+      +export_job_id(i, id).
+
+
+    // JOB: create a response, a job, and wire
+    +response[i] = resp,
+    +proto:Response(resp),    
+    +job[i] = protoJob,
+    +proto:Job(protoJob),
+    +proto:Job_id[protoJob] = id,
+    +proto:ResponseEnvelope_response[env, i] = resp,
+    +proto:Response_job[resp] = protoJob <-
+      +envelope[_] = env,
+      +export_job(i, job),
+      schema:Job_id[job] = id.
+
+
+    // JOB IMPL: create a response, a job impl, and wire
+    +response[i] = resp,
+    +proto:Response(resp),
+    +impl[i, impl] = protoJobImpl,
+    +proto:JobImpl(protoJobImpl),
+    +proto:JobImpl_id[protoJobImpl] = id,
+    +proto:ResponseEnvelope_response[env, i] = resp,
+    +proto:Response_impl(resp, protoJobImpl) <-
       +envelope[_] = env,      
       +export_impl(i, impl),
       schema:JobImpl:id[impl] = id.

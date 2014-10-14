@@ -1,15 +1,17 @@
 package com.logicblox.steve.db;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.dynamodbv2.*;
-import com.amazonaws.services.dynamodbv2.model.*;
-
-import com.logicblox.bloxweb.config.Config;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
 import com.logicblox.bloxweb.client.ClientConfigUtils;
+import com.logicblox.bloxweb.config.Config;
 import com.logicblox.common.logging.Logger;
+import com.logicblox.steve.common.Status;
 
 public class DynamoJobState implements JobState
 {

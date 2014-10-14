@@ -14,11 +14,16 @@ block(`set_impl) {
       +proto:SetJobImplRequest_user_id[req] = userId.
 
 
+    // to correlate the index to the impl object created for it
+    impl_by_index[index] = impl -> int(index), schema:JobImpl(impl).
+    lang:pulse(`impl_by_index).
+
     /**
-     * Set impl details and export it
+     * Set impl details and export success.
      */
-    +service_support:export_impl(index, impl),
+    +service_support:export_success(index),
     +schema:impl[account, implId] = impl,
+    +impl_by_index[index] = impl,
     +schema:JobImpl(impl),
     ^schema:JobImpl:user[impl] = user,
     ^schema:JobImpl:archive[impl] = url,
@@ -35,7 +40,8 @@ block(`set_impl) {
     // wire metadata
     ^schema:JobImpl:metadata[impl, key] = value <-
       +proto:RequestEnvelope_set_impl[_, index] = req,
-      +service_support:export_impl(index, impl),
+      +service_support:export_success(index),
+      +impl_by_index[index] = impl,
       +proto:SetJobImplRequest_metadata(req, p),
       +proto:Param_key[p] = key,
       +proto:Param_value[p] = value.
@@ -43,7 +49,8 @@ block(`set_impl) {
     // cleanup old metadata if it's not updated
     -schema:JobImpl:metadata[impl, key] = value <-
       +proto:RequestEnvelope_set_impl[_, index] = _,
-      +service_support:export_impl(index, impl),
+      +service_support:export_success(index),
+      +impl_by_index[index] = impl,
       schema:JobImpl:metadata@prev[impl, key] = value,
       !+schema:JobImpl:metadata[impl, key] = value.
   })

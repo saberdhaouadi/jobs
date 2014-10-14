@@ -57,7 +57,7 @@ public class JobQueueClient
 
     final Backend.RunJob.Builder request = Backend.RunJob.newBuilder()
       // TODO include ETag of implementation
-      .setJobImpl(job.impl.archive.getLocation())
+      .setJobImpl(job.jobImplArchive)
       .setJob(job.id)
       .setOutput(job.outputPrefix);
 

@@ -11,9 +11,9 @@ import com.logicblox.sqs.SQSQueueHandle;
 import com.logicblox.sqs.SQSReceivedMessage;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.Data;
+import com.logicblox.steve.common.Status;
+import com.logicblox.steve.common.Status.StatusBuilder;
 import com.logicblox.steve.db.Database;
-import com.logicblox.steve.db.Status;
-import com.logicblox.steve.db.Status.StatusBuilder;
 import com.logicblox.steve.protocol.Backend;
 
 /**

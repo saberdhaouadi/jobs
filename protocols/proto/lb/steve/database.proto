@@ -40,9 +40,18 @@ message ResponseEnvelope
 message Response
 {
   // XOR
+
+  // if an error ocurred in the execution (most operations return an empty response on success)
   optional Error error = 1;
-  optional Job job = 2;
-  repeated JobImpl impl = 3 [(blox.options.set) = true];
+
+  // only used for CreateJobRequest; the id of the newly created job, or a reused one
+  optional string job_id = 2;
+
+  // for GetJobRequest
+  optional Job job = 3;
+
+  // for GetJobImplRequest
+  repeated JobImpl impl = 4 [(blox.options.set) = true];
 }  
 
 //
@@ -58,23 +67,33 @@ message Error
 message Job
 {
   required string id = 1;
-  repeated Status status = 2 [(blox.options.set) = true];
-  repeated File output = 3   [(blox.options.set) = true];
+  required string client_id = 2;
+  required string impl_id = 3;
+  required string output_prefix = 4;
+  required string user_id = 5;
+  repeated File input = 6 [(blox.options.set) = true];
+  repeated Param metadata = 7 [(blox.options.set) = true];
+
+  required string impl_archive = 8;
+  repeated Status status = 9 [(blox.options.set) = true];
+  repeated File output = 10   [(blox.options.set) = true];
 }
 
 message JobImpl
 {
   required string id = 1;
-  optional string user_id = 2;
-  optional File file = 3;
-  repeated Param metadata = 4 [(blox.options.set) = true];
+  required string user_id = 2;
+  required string account_id = 3;
+  required File file = 4;
+  repeated Param metadata = 5 [(blox.options.set) = true];
 }
 
 
 //
-// REQUESTS ON JOBS (response contains Job messages) 
+// REQUESTS ON JOBS
 //
 
+// response is empty
 message CreateJobRequest
 {
   required string job_id = 1;
@@ -86,20 +105,24 @@ message CreateJobRequest
   repeated Param metadata = 7 [(blox.options.set) = true];
 }
 
-
+// response contains Job
 message GetJobRequest
 {
   required string job_id   = 1;
-  optional bool get_status = 2;
-  optional bool get_output = 3;    
+  optional bool get_metadata = 2;
+  optional bool get_status = 3;
+  optional bool get_input = 4;
+  optional bool get_output = 5;
 }
 
+// response is empty
 message AddStatusRequest
 {
   required string job_id = 1;
   required Status status = 2;
 }
 
+// response is empty
 message SetResultRequest
 {
   required string job_id = 1;
@@ -111,6 +134,7 @@ message SetResultRequest
 // REQUESTS ON JOB IMPLEMENTATIONS (response contains JobJobImpl messages) 
 //
 
+// response is empty
 message SetJobImplRequest
 {
   required string impl_id = 1;
@@ -119,6 +143,7 @@ message SetJobImplRequest
   repeated Param metadata = 4 [(blox.options.set) = true];
 }
 
+// response is JobImpl
 message GetJobImplRequest
 {
   required string user_id = 1;

@@ -11,28 +11,68 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TimeZone;
 
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.logicblox.common.Option;
 import com.logicblox.s3lib.S3File;
+import com.logicblox.steve.common.Status.Event;
 import com.logicblox.steve.protocol.Backend;
 import com.logicblox.steve.protocol.Database;
 import com.logicblox.steve.protocol.Frontend;
 
+/**
+ * Utilities to convert data across the different protobuf protocols and Java representations.
+ */
 public class Conversions
 {
 
-  public static final SimpleDateFormat iso8601Format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS+00:00");
-  static
-  {
+  //
+  // SOME GENERIC HELPERS
+  //
+  
+  public static final SimpleDateFormat iso8601Format = 
+      new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS+00:00");
+  static {
     iso8601Format.setTimeZone(TimeZone.getTimeZone("UTC"));
   }
 
-  public static List<Data> convertFrontendFileToData(List<Frontend.File> files)
-  {
+  public static Data convertS3FileToData(S3File file) {
+    return new Data(getURI(file).toString(), Option.some("etag:" + file.getETag()));
+  }
+
+  public static String getCurrentISO8601() {
+    return getISO8601(new Date());
+  }
+
+  public static String getISO8601(long stamp) {
+    return getISO8601(new Date(stamp));
+  }
+
+  public static String getISO8601(Date date) {
+    return iso8601Format.format(date);
+  }
+
+  public static URI getURI(S3File file) {
+    return URI.create("s3://" + file.getBucketName() + "/" + file.getKey());
+  }
+  
+  
+  //
+  // FRONTEND
+  //  
+
+  public static Frontend.File convertDataToFrontendFile(Data d) {
+    final Frontend.File.Builder f = Frontend.File.newBuilder();
+    f.setUrl(d.getLocation());
+    if(d.hasHash())
+      f.setHash(d.getHash());
+    return f.build();
+  }
+  
+  public static List<Data> convertFrontendFileToData(List<Frontend.File> files) {
     final List<Data> result = new ArrayList<Data>();
 
     for(Frontend.File f : files)
@@ -41,135 +81,33 @@ public class Conversions
     return result;
   }
 
-  public static List<Data> convertFileToData(List<Backend.File> files)
-  {
-    final List<Data> result = new ArrayList<Data>();
-
-    for(Backend.File f : files)
-      result.add(convertFileToData(f));
-
-    return result;
-  }
-
-  public static Data convertFileToData(Backend.File file)
-  {
-    return new Data(file.getUrl(), Option.wrap(file.hasHash() ? file.getHash() : null));
-  }
-
-  public static Backend.File convertDataToBackendFile(Data d)
-  {
-    final Backend.File.Builder f = Backend.File.newBuilder();
-    f.setUrl(d.getLocation());
-    if(d.hasHash())
-      f.setHash(d.getHash());
-    return f.build();
-  }
-
-  public static Frontend.File convertDataToFrontendFile(Data d)
-  {
-    final Frontend.File.Builder f = Frontend.File.newBuilder();
-    f.setUrl(d.getLocation());
-    if(d.hasHash())
-      f.setHash(d.getHash());
-    return f.build();
-  }
   
-  public static Database.File convertDataToDatabaseFile(Data d)
-  {
-    final Database.File.Builder f = Database.File.newBuilder();
-    f.setUrl(d.getLocation());
-    if(d.hasHash())
-      f.setHash(d.getHash());
-    return f.build();
-  }
-
-  public static Collection<Database.File> convertDataToDatabaseFiles(Collection<Data> input)
-  {
-    final Builder<Database.File> result = ImmutableList.builder();
-    for(Data d: input)
-      result.add(convertDataToDatabaseFile(d));
-    return result.build();
-  }
-  
-  
-  
-  public static Data convertFileToData(Frontend.File file)
-  {
-    return new Data(file.getUrl(), Option.wrap(file.hasHash() ? file.getHash() : null));
-  }
-
-  public static Frontend.File convertToFrontendFile(S3File file)
-  {
-    return 
-      Frontend.File.newBuilder()
-      .setUrl(getURI(file).toString())
-      .setHash("etag:" + file.getETag())
-      .build();
-  }
-
-  public static Data convertS3FileToData(S3File file)
-  {
-    return new Data(getURI(file).toString(), Option.some("etag:" + file.getETag()));
-  }
-
-  public static String getCurrentISO8601()
-  {
-    return getISO8601(new Date());
-  }
-
-  public static String getISO8601(long stamp)
-  {
-    return getISO8601(new Date(stamp));
-  }
-
-  public static String getISO8601(Date date)
-  {
-    return iso8601Format.format(date);
-  }
-
-  public static Frontend.Param createFrontendParam(String key, String value)
-  {
+  public static Frontend.Param createFrontendParam(String key, String value) {
     return Frontend.Param.newBuilder()
       .setKey(key)
       .setValue(value)
       .build();
+  }  
+
+  public static Data convertFileToData(Frontend.File file) {
+    return new Data(file.getUrl(), Option.wrap(file.hasHash() ? file.getHash() : null));
   }
 
-  public static Backend.Param createBackendParam(String key, String value)
-  {
-    return Backend.Param.newBuilder()
-      .setKey(key)
-      .setValue(value)
+  public static Frontend.File convertToFrontendFile(S3File file) {
+    return Frontend.File.newBuilder()
+      .setUrl(getURI(file).toString())
+      .setHash("etag:" + file.getETag())
       .build();
   }
-
-  public static Database.Param createDatabaseParam(String key, String value)
-  {
-    return Database.Param.newBuilder()
-      .setKey(key)
-      .setValue(value)
-      .build();
-  }
-
-  public static Collection<Database.Param> convertDataToDatabaseParams(Map<String, String> input)
-  {
-    final Builder<Database.Param> result = ImmutableList.builder();
-    for(Entry<String, String> e: input.entrySet())
-      result.add(createDatabaseParam(e.getKey(), e.getValue()));
-    return result.build();
-  }
   
-  
-  public static Map<String, String> createMap(Iterable<Frontend.Param> params)
-  {
+  public static Map<String, String> createMap(Iterable<Frontend.Param> params) {
     final Map<String, String> result = new HashMap<String, String>();
     for(Frontend.Param param : params)
       result.put(param.getKey(), param.getValue());
     return result;
   }
 
-  public static String toJSON(Frontend.File file)
-  {
+  public static String toJSON(Frontend.File file) {
     final JsonObject o = new JsonObject();
     o.addProperty("url", file.getUrl());
     if(file.hasHash())
@@ -177,8 +115,7 @@ public class Conversions
     return new Gson().toJson(o);
   }
 
-  public static String toJSON(Frontend.JobImplInfo info)
-  {
+  public static String toJSON(Frontend.JobImplInfo info) {
     final JsonObject o = new JsonObject();
 
     o.addProperty("id", info.getId());
@@ -189,20 +126,130 @@ public class Conversions
     return new Gson().toJson(o);
   }
 
-  public static boolean isComplete(Frontend.State state)
-  {
+  public static boolean isComplete(Frontend.State state) {
     // TODO refine based on actual state diagram
     return "SUCCEEDED".equals(state.getState()) || "FAILED".equals(state.getState());
   }
 
-  public static String getBasename(Frontend.File file)
-  {
+  public static String getBasename(Frontend.File file) {
     final String url = file.getUrl();
     return url.substring(url.lastIndexOf("/") + 1);
   }
 
-  public static URI getURI(S3File file)
-  {
-    return URI.create("s3://" + file.getBucketName() + "/" + file.getKey());
+  //
+  // BACKEND
+  //
+
+  public static Backend.Param createBackendParam(String key, String value) {
+    return Backend.Param.newBuilder()
+      .setKey(key)
+      .setValue(value)
+      .build();
   }
+  
+
+  public static List<Data> convertFileToData(List<Backend.File> files) {
+    final List<Data> result = new ArrayList<Data>();
+
+    for(Backend.File f : files)
+      result.add(convertFileToData(f));
+
+    return result;
+  }
+
+  public static Data convertFileToData(Backend.File file) {
+    return new Data(file.getUrl(), Option.wrap(file.hasHash() ? file.getHash() : null));
+  }
+
+  public static Backend.File convertDataToBackendFile(Data d) {
+    final Backend.File.Builder f = Backend.File.newBuilder();
+    f.setUrl(d.getLocation());
+    if(d.hasHash())
+      f.setHash(d.getHash());
+    return f.build();
+  }
+  
+  
+  //
+  // DATABASE
+  //
+    
+
+  // single
+  
+  public static Database.File convertToDatabaseFile(Data d) {
+    final Database.File.Builder f = Database.File.newBuilder();
+    f.setUrl(d.getLocation());
+    if(d.hasHash())
+      f.setHash(d.getHash());
+    return f.build();
+  }
+  
+  public static Data convertFromDatabaseFile(Database.File d) {
+    return new Data(d.getUrl(), d.hasHash() ? Option.wrap(d.getHash()) : Option.<String>none());
+  }
+  
+  public static Collection<Database.Param> convertToDatabaseParams(Map<String, String> input) {
+    final Builder<Database.Param> result = ImmutableList.builder();
+    for(Entry<String, String> e: input.entrySet())
+      result.add(createDatabaseParam(e.getKey(), e.getValue()));
+    return result.build();
+  }
+  
+  public static Map<String, String> convertFromDatabaseParams(Collection<Database.Param> params) {
+    final ImmutableMap.Builder<String, String> result = ImmutableMap.builder();
+    for(Database.Param param: params)
+      result.put(param.getKey(), param.getValue());
+    return result.build();
+  }
+  
+  public static Database.Status convertToDatabaseStatus(Status status) {
+    return Database.Status.newBuilder()
+      .setTimestamp(status.timestamp)
+      .setEvent(status.event.toString())
+      .setMachine(status.machine)
+      .setMessage(status.hasMessage() ? status.message : "")
+      .build();
+  }
+  
+  public static Status convertFromDatabaseStatus(Database.Status status) {
+    return new Status(
+      status.getTimestamp(),
+      Event.valueOf(status.getEvent()),
+      status.getMachine(),
+      status.getMessage());
+  }
+  
+  // multiple
+  
+  public static Collection<Database.File> convertToDatabaseFiles(Collection<Data> input) {
+    final Builder<Database.File> result = ImmutableList.builder();
+    for(Data d: input)
+      result.add(convertToDatabaseFile(d));
+    return result.build();
+  }
+  
+  public static Collection<Data> convertFromDatabaseFiles(Collection<Database.File> input) {
+    final Builder<Data> result = ImmutableList.builder();
+    for(Database.File d: input)
+      result.add(convertFromDatabaseFile(d));
+    return result.build();
+  }
+  
+  public static List<Status> convertFromDatabaseStatus(List<Database.Status> input) {
+    final Builder<Status> result = ImmutableList.builder();
+    for(Database.Status d: input)
+      result.add(convertFromDatabaseStatus(d));
+    return result.build();
+  }
+  
+  public static Database.Param createDatabaseParam(String key, String value) {
+    return Database.Param.newBuilder()
+      .setKey(key)
+      .setValue(value)
+      .build();
+  }
+
+
+
 }

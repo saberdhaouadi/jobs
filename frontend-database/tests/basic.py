@@ -42,6 +42,14 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         expected_job = expected.response[0].job
         actual_job = actual.response[0].job
         self.assertEquals(expected_job.id, actual_job.id)
+        self.assertEquals(expected_job.client_id, actual_job.client_id)
+        self.assertEquals(expected_job.impl_id, actual_job.impl_id)
+        self.assertEquals(expected_job.output_prefix, actual_job.output_prefix)
+        self.assertEquals(expected_job.user_id, actual_job.user_id)
+        self.assertEquals(expected_job.impl_archive, actual_job.impl_archive)
+
+        self.assertMessageUnorderedEqual(expected_job.input, actual_job.input)
+        self.assertMessageUnorderedEqual(expected_job.metadata, actual_job.metadata)
         self.assertMessageUnorderedEqual(expected_job.status, actual_job.status)
         self.assertMessageUnorderedEqual(expected_job.output, actual_job.output)
 
@@ -57,6 +65,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         for expected_impl, actual_impl in zip(sorted(expected_impls, key=lambda i:i.id), sorted(actual_impls, key=lambda i:i.id)):
             self.assertEquals(expected_impl.id, actual_impl.id)
             self.assertEquals(expected_impl.user_id, actual_impl.user_id)
+            self.assertEquals(expected_impl.account_id, actual_impl.account_id)
             self.assertEquals(expected_impl.file.url, actual_impl.file.url)
             self.assertEquals(expected_impl.file.hash, actual_impl.file.hash)
             self.assertMessageUnorderedEqual(expected_impl.metadata, actual_impl.metadata)
@@ -82,7 +91,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify response
         expected_response = client.dynamic_response()
-        text_format.Merge('response { impl { id: "total" } }', expected_response)
+        text_format.Merge('response { }', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
 
         # verify data was imported
@@ -110,7 +119,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         expected_response = client.dynamic_response()
         text_format.Merge('''
             response { 
-              impl { id: "total" user_id: "martin" file { url: "the url" hash: "the hash" }
+              impl { id: "total" user_id: "martin" account_id: "logicblox.com" file { url: "the url" hash: "the hash" }
                 metadata { key: "the key1" value: "the value1" }
                 metadata { key: "the key2" value: "the value2" }
               }
@@ -153,11 +162,11 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         expected_response = client.dynamic_response()
         text_format.Merge('''
             response { 
-              impl { id: "total" user_id: "martin" file { url: "the url" hash: "the hash" }
+              impl { id: "total" user_id: "martin" account_id: "logicblox.com" file { url: "the url" hash: "the hash" }
                 metadata { key: "the key1" value: "the value1" }
                 metadata { key: "the key2" value: "the value2" }
               }
-              impl { id: "total2" user_id: "martin" file { url: "the url2" hash: "the hash2" } }
+              impl { id: "total2" user_id: "martin" account_id: "logicblox.com" file { url: "the url2" hash: "the hash2" } }
             }
             ''', expected_response)
         self.compare_job_impls(expected_response, client.dynamic_call(envelope))
@@ -187,7 +196,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify response
         expected_response = client.dynamic_response()
-        text_format.Merge('response { impl { id: "total" } }', expected_response)
+        text_format.Merge('response { }', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
 
         # check the status of the database
@@ -201,7 +210,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         expected_response = client.dynamic_response()
         text_format.Merge('''
             response { 
-              impl { id: "total" user_id: "martin" file { url: "the url new" hash: "the hash" }
+              impl { id: "total" user_id: "martin" account_id: "logicblox.com" file { url: "the url new" hash: "the hash" }
                 metadata { key: "the key1" value: "the value1 new" }
                 metadata { key: "the key3" value: "the value3" }
               }
@@ -229,7 +238,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify response
         expected_response = client.dynamic_response()
-        text_format.Merge('response { job { id: "1" } }', expected_response)
+        text_format.Merge('response { job_id: "1" }', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
 
         # verify data was imported
@@ -264,7 +273,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify response
         expected_response = client.dynamic_response()
-        text_format.Merge('response { job { id: "1" } }', expected_response)
+        text_format.Merge('response { job_id: "1" }', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
 
         # verify data was imported
@@ -307,7 +316,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify response
         expected_response = client.dynamic_response()
-        text_format.Merge('response { job { id: "2" } } response { job { id: "1" } }', expected_response)
+        text_format.Merge('response { job_id: "2" } response { job_id: "1" }', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
 
         # verify data was imported
@@ -356,9 +365,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify response
         expected_response = client.dynamic_response()
         text_format.Merge('''
-            response { job { id: "2" } } 
+            response { job_id: "2" } 
             response { error { code: "NO_SUCH_USER" message: "User 'non_existent_user' does not exist." } } 
-            response { job { id: "1" } }
+            response { job_id: "1" }
             response { error { code: "NO_SUCH_JOB_IMPL" message: "Job implementation 'total4' does not exist in account 'logicblox.com'." } }
             ''', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
@@ -405,9 +414,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify response
         expected_response = client.dynamic_response()
         text_format.Merge('''
-            response { job { id: "1" } }
+            response { }
             response { error { code: "NO_SUCH_JOB" message: "Job \'wrong id\' does not exist." } }
-            response { job { id: "1" } }
+            response { }
             ''', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
 
@@ -428,15 +437,19 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req.job_id = "5"
         req.get_status = True
 
-        #print(dir(client.dynamic_call(envelope)))
         # verify response
         expected_response = client.dynamic_response()
         text_format.Merge('''
             response { 
               job { 
                 id: "1"
+                client_id: "a"
+                impl_id: "total"
+                output_prefix: "s3://something/something"
+                user_id: "martin"
+                impl_archive: "the url"
                 status { timestamp: 3 event: "the event3" machine: "the machine3" message: "status message3" }
-                status { timestamp: 1 event: "the event"  machine: "the machine"  message: "status message" } 
+                status { timestamp: 1 event: "the event" machine: "the machine" message: "status message" } 
               }
             }
             response { error { code: "NO_SUCH_JOB" message: "Job '5' does not exist." } }
@@ -477,7 +490,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify response
         expected_response = client.dynamic_response()
         text_format.Merge('''
-            response { job { id: "1" } }
+            response { }
             response { error { code: "NO_SUCH_JOB" message: "Job \'wrong id\' does not exist." } }
             ''', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
@@ -504,7 +517,12 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         text_format.Merge('''
             response { 
               job { 
-                id: "1"
+                id: "1"    
+                client_id: "a"
+                impl_id: "total"
+                output_prefix: "s3://something/something"
+                user_id: "martin"
+                impl_archive: "the url"
                 output { url: "the url 1" hash: "the hash 1" }
                 output { url: "the url 2" hash: "the hash 2" }
               }
@@ -517,7 +535,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
     def test_status_and_result(self):
         # create a simple job first
-        self.test_create_job()
+        self.test_create_job_with_data()
 
         # add some status entries
         client = get_client("add_status")
@@ -557,7 +575,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         envelope = client.dynamic_request()
         req = envelope.get_job.add()
         req.job_id = "1"
+        req.get_metadata = True
         req.get_status = True
+        req.get_input = True
         req.get_output = True
 
         # verify response
@@ -566,8 +586,16 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
             response { 
               job { 
                 id: "1"
+                client_id: "a"
+                impl_id: "total"
+                output_prefix: "s3://something/something"
+                user_id: "martin"
+                metadata { key: "the key2" value: "the value2" }
+                metadata { key: "the key1" value: "the value1" }
+                impl_archive: "the url"
                 status { timestamp: 3 event: "the event3" machine: "the machine3" message: "status message3" }
                 status { timestamp: 1 event: "the event1" machine: "the machine1" message: "status message1" } 
+                output { url: "the url"   hash: "the hash" }
                 output { url: "the url 1" hash: "the hash 1" }
                 output { url: "the url 2" hash: "the hash 2" }
               }

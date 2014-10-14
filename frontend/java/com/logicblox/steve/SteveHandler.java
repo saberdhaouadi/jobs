@@ -28,6 +28,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.logicblox.bloxweb.HandlerUtils;
 import com.logicblox.bloxweb.HandlerValidationException;
 import com.logicblox.bloxweb.InvalidRequestException;
 import com.logicblox.bloxweb.ProtoBufExchange;
@@ -36,7 +37,6 @@ import com.logicblox.bloxweb.SimpleErrorCode;
 import com.logicblox.bloxweb.UsageException;
 import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
-import com.logicblox.bloxweb.HandlerUtils;
 import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.concurrent.MoreFutures;
 import com.logicblox.s3lib.S3Client;
@@ -48,13 +48,13 @@ import com.logicblox.sqs.SQSQueueHandle;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.Data;
 import com.logicblox.steve.common.S3Utils;
+import com.logicblox.steve.common.Status;
+import com.logicblox.steve.common.Status.StatusBuilder;
 import com.logicblox.steve.db.Database;
 import com.logicblox.steve.db.DynamoJobState;
 import com.logicblox.steve.db.FakeDatabase;
 import com.logicblox.steve.db.Job;
 import com.logicblox.steve.db.JobImpl;
-import com.logicblox.steve.db.Status;
-import com.logicblox.steve.db.Status.StatusBuilder;
 import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
@@ -268,7 +268,7 @@ public class SteveHandler extends ProtoBufHandler
             "NO_SUCH_JOB_QUEUE", HttpStatus.BAD_REQUEST_400, "Job queue '" + jobQueueId + "' does not exist")));
     }
 
-    ListenableFuture<Job> job =
+    ListenableFuture<String> jobId =
       _db.createJob(
         user,
         req.getClientId(),
@@ -278,6 +278,14 @@ public class SteveHandler extends ProtoBufHandler
         tags);
 
     // Once we have the job stored in the database, submit it to the queue
+    ListenableFuture<Job> job = Futures.transform(jobId, new AsyncFunction<String, Job>() {
+
+          @Override
+          public ListenableFuture<Job> apply(String id) {
+            return _db.getJob(id);
+          }          
+        });
+        
     job = Futures.transform(job, new AsyncFunction<Job, Job>()
     {
       public ListenableFuture<Job> apply(Job j)
@@ -286,8 +294,7 @@ public class SteveHandler extends ProtoBufHandler
       }
     });
 
-    // Once the job is submitted, construct a response to return the
-    // client
+    // Once the job is submitted, construct a response to return the client
     return Futures.transform(
       job,
       new Function<Job, Frontend.Response>()
@@ -309,7 +316,7 @@ public class SteveHandler extends ProtoBufHandler
     HttpServletResponse httpResponse, 
     final Frontend.StateRequest req)
   {
-    ListenableFuture<Job> job = _db.getState(req.getId(), req.hasDetail() && req.getDetail());
+    ListenableFuture<Job> job = _db.getJob(req.getId());
 
     return Futures.transform(
       job,
@@ -333,12 +340,12 @@ public class SteveHandler extends ProtoBufHandler
             {
               Frontend.Status.Builder protoStatus =
                 Frontend.Status.newBuilder()
-                .setTimestamp(status.getTimestamp())
-                .setMachine(status.getMachine())
-                .setStatusCode(status.getEvent().toString());
+                .setTimestamp(status.timestamp)
+                .setMachine(status.machine)
+                .setStatusCode(status.event.toString());
 
               if(status.hasMessage())
-                protoStatus.setMessage(status.getMessage());
+                protoStatus.setMessage(status.message);
               
               b.addStatus(protoStatus);
             }
@@ -354,13 +361,37 @@ public class SteveHandler extends ProtoBufHandler
         }
       });
   }
+  
+  /**
+   * Validate that this job is completed and that it succeeded.
+   * 
+   * @param job
+   */
+  private void validateJobDone(final Job job)
+  {
+    // TODO add user account and only return job when it exists in this account.
+    // TODO throw authorization exception if the user is not allowed to access the job
+    if(!job.isSucceeded())
+    {
+      if(job.isFailed())
+      {
+        throw new ServiceException(
+          new SimpleErrorCode("JOB_FAILED", 400, "Job '" + job.id + "' failed and has no output"));
+      }
+      else
+      {
+        throw new ServiceException(
+          new SimpleErrorCode("JOB_INCOMPLETE", 400, "Job '" + job.id + "' has not completed and has no output"));
+      }
+    }    
+  }
 
   private ListenableFuture<Frontend.Response> handleResult(
     HttpServletRequest httpRequest,
     HttpServletResponse httpResponse, 
     final Frontend.JobResultRequest req)
   {
-    ListenableFuture<Job> job = _db.getResult(req.getJobId());
+    ListenableFuture<Job> job = _db.getJob(req.getJobId());   
     
     return Futures.transform(
       job,
@@ -368,6 +399,9 @@ public class SteveHandler extends ProtoBufHandler
       {
         public ListenableFuture<Frontend.Response> apply(Job job)
         {
+         
+          validateJobDone(job);
+          
           Frontend.JobResultResponse.Builder b = Frontend.JobResultResponse.newBuilder();
 
           for(Data d : job.getOutputData())
@@ -388,9 +422,11 @@ public class SteveHandler extends ProtoBufHandler
     final Frontend.JobLogRequest req)
   throws IOException
   {
-    //ListenableFuture<Job> job = 
-        _db.getResult(req.getJobId());
-
+    // TODO - if we decide to allow this operation only on jobs that have succeeded (which is
+    // what this call to getResult seemed to do), then we need a call to _db.getJob followed by
+    // a validateJobDone.
+    //ListenableFuture<Job> job = _db.getResult(req.getJobId());
+        
     final File tmpFile = File.createTempFile("joblog", null, _tmpDir);
     URI tmpUrl;
     try
@@ -551,11 +587,11 @@ public class SteveHandler extends ProtoBufHandler
     final Map<String, String> tags = Conversions.createMap(req.getMetadataList());
     tags.put("date", Conversions.getCurrentISO8601());
 
-    ListenableFuture<JobImpl> jobImpl = Futures.transform(
+    ListenableFuture<String> jobImplId = Futures.transform(
       newFile,
-      new AsyncFunction<S3File, JobImpl>()
+      new AsyncFunction<S3File, String>()
       {
-        public ListenableFuture<JobImpl> apply(S3File input) throws IOException
+        public ListenableFuture<String> apply(S3File input) throws IOException
         {
           // TODO use actual authenticated user
           return _db.setJobImpl(
@@ -566,11 +602,11 @@ public class SteveHandler extends ProtoBufHandler
         }
       });
 
-    ListenableFuture<Job> fakeJob = Futures.transform(
-      jobImpl,
-      new AsyncFunction<JobImpl, Job>()
+    ListenableFuture<String> jobId = Futures.transform(
+      jobImplId,
+      new AsyncFunction<String, String>()
       {
-        public ListenableFuture<Job> apply(JobImpl impl)
+        public ListenableFuture<String> apply(String impl)
         {
           // TODO use actual authenticated user
           return _db.createJob(
@@ -584,32 +620,32 @@ public class SteveHandler extends ProtoBufHandler
         }
       });
 
-    fakeJob = Futures.transform(
-      fakeJob,
-      new AsyncFunction<Job, Job>()
+    jobId = Futures.transform(
+      jobId,
+      new AsyncFunction<String, String>()
       {
-        public ListenableFuture<Job> apply(Job job)
+        public ListenableFuture<String> apply(String id)
         {
           final StatusBuilder status = new StatusBuilder();
           status.event = Status.Event.SUCCEEDED;
           status.machine = "frontend";
           status.timestamp = System.currentTimeMillis();
 
-          return _db.addStatus(job.id, status.build());
+          return _db.addStatus(id, status.build());
         }
       });
 
     ListenableFuture<Frontend.Response> futureRes = Futures.transform(
-      fakeJob,
-      new Function<Job, Frontend.Response>()
+      jobId,
+      new Function<String, Frontend.Response>()
       {
-        public Frontend.Response apply(Job job)
+        public Frontend.Response apply(String jobId)
         {
           return
             Frontend.Response.newBuilder()
             .setImplAdd(
               Frontend.ImplAddResponse.newBuilder()
-              .setId(job.id))
+              .setId(jobId))
             .build();
         }
       });
