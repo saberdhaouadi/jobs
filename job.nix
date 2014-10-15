@@ -99,6 +99,7 @@ rec {
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
+        "--with-frontend-database=${database}"
         "--with-s3lib=${s3lib}"
         "--with-aws=${aws-java-sdk}"
         "--with-commons-cli=${commons-cli}"
