@@ -85,8 +85,7 @@ public class LBDatabase implements Database {
   
   //
   // JOBs
-  //
-  
+  //  
   
   @Override
   public ListenableFuture<String> createJob(
@@ -101,6 +100,7 @@ public class LBDatabase implements Database {
     final RequestEnvelope request = RequestEnvelope.newBuilder()
         .addCreateJob(CreateJobRequest.newBuilder()
             .setJobId(UUID.randomUUID().toString())
+            .setUserId(userId)
             .setClientId(clientId)
             .setImplId(jobImplId)
             .setOutputPrefix(output)
@@ -183,6 +183,10 @@ public class LBDatabase implements Database {
     final RequestEnvelope request = RequestEnvelope.newBuilder()
         .addGetJob(GetJobRequest.newBuilder()
             .setJobId(jobId)
+            .setGetInput(true)
+            .setGetMetadata(true)
+            .setGetOutput(true)
+            .setGetStatus(true)
          ).build();
     
     try {

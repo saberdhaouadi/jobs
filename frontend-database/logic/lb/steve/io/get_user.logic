@@ -1,0 +1,39 @@
+block(`get_user) {
+
+  alias(`lb:steve:database, `proto),
+
+  //after_fixpoint(),
+
+  clauses(`{
+
+    /**
+     * Validate the user.
+     */
+    +service_support:ensure_user(index, userId) <-
+      +proto:RequestEnvelope_get_user[_, index] = req,
+      +proto:GetUserRequest_user_id[req] = userId.
+
+
+    user_cons[user] = proto -> system:app:User(user), proto:User(proto).
+    lang:constructor(`user_cons).
+    lang:pulse(`user_cons).
+
+    
+    +service_support:response[i] = resp,
+    +proto:Response(resp),
+    +user_cons[user] = proto,
+    +proto:User(proto),
+    +proto:User_id[proto] = userId,
+    +proto:User_account_id[proto] = account,
+    +proto:User_public_key[proto] = key,
+    +proto:ResponseEnvelope_response[env, i] = resp,
+    +proto:Response_user[resp] = proto <-
+      +service_support:envelope[_] = env,
+      +proto:RequestEnvelope_get_user[_, i] = req,
+      +proto:GetUserRequest_user_id[req] = userId,      
+      system:app:User:name(user:userId),
+      schema:User_account[user] = account,
+      lb:web:credentials:database:public_key[user] = key.
+
+  })
+} <-- .

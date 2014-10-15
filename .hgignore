@@ -16,5 +16,11 @@ frontend/build/*
 worker/lib/*
 worker/build/*
 frontend/build/*
+frontend/lib/*
+frontend-database/build/*
+frontend-database/lib/*
 protocols/build/*
+protocols/lib/*
 client/build/*
+client/lib/*
+.*/Makefile

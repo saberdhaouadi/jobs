@@ -1,0 +1,6 @@
+lb_steve_frontend_test, projectname
+
+lb_web, library
+lb_web_credentials, library
+lb_steve_protocols, library
+lb_steve_frontend_database, library

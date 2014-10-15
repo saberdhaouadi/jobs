@@ -1,12 +1,15 @@
 package com.logicblox.steve.db;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
+import com.google.common.collect.ImmutableList;
 import com.logicblox.steve.common.Data;
 import com.logicblox.steve.common.Status;
 
@@ -64,7 +67,14 @@ public final class Job {
   /**
    * Ordered collection of status objects, which represent events that occurred in this job.
    */
-  private final List<Status> _status = new ArrayList<Status>();
+  private final SortedSet<Status> _status = new TreeSet<Status>(new Comparator<Status>() {
+
+    @Override
+    public int compare(Status o1, Status o2) {
+      return o1.timestamp.compareTo(o2.timestamp);
+    }
+    
+  });
 
   /**
    * Constructor with the immutable state.
@@ -135,7 +145,7 @@ public final class Job {
   
   public synchronized List<Status> getStatus() {
     // status is immutable, but we need to protect the status list from changes
-    return Collections.unmodifiableList(_status);
+    return ImmutableList.copyOf(_status);
   }
   
   public synchronized Collection<Data> getOutputData() {

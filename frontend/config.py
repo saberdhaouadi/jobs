@@ -124,6 +124,7 @@ check_jar(
   deps=['lb-steve-frontend'],
   classpath=test_classpath,
   workspaces=['lb-steve-frontend-test'],
-  resources={'tests/users.csv':'com/logicblox/steve/db/users.csv'}
+  resources={'tests/java/com/logicblox/steve/db/users.csv': 'com/logicblox/steve/db/users.csv'}
+  #resources={'tests/users.csv':'com/logicblox/steve/db/users.csv'}
 )
 

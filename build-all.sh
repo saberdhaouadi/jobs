@@ -7,9 +7,10 @@ build()
 {
   echo "Building $1..."
   pushd $1
-  rm -rf build
+  #rm -rf build
   lb config
   make
+  make link_libs
   make install
   popd
   echo
