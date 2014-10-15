@@ -26,16 +26,22 @@ block(`set_impl) {
     +impl_by_index[index] = impl,
     +schema:JobImpl(impl),
     ^schema:JobImpl:user[impl] = user,
-    ^schema:JobImpl:archive[impl] = url,
-    ^schema:JobImpl:archive_hash[impl] = hash <-
+    ^schema:JobImpl:archive[impl] = url <-
       +proto:RequestEnvelope_set_impl[_, index] = req,
       +proto:SetJobImplRequest_user_id[req] = userId,
       +proto:SetJobImplRequest_impl_id[req] = implId,
       +proto:SetJobImplRequest_file[req] = fileProto,
       +proto:File_url[fileProto] = url,
-      +proto:File_hash[fileProto] = hash,
       system:app:User:name(user:userId),
       schema:User_account[user] = account.
+
+    // Hash is optional, so it needs a separate rule.
+    ^schema:JobImpl:archive_hash[impl] = hash <-
+      +proto:RequestEnvelope_set_impl[_, index] = req,
+      +service_support:export_success(index),
+      +impl_by_index[index] = impl,
+      +proto:SetJobImplRequest_file[req] = fileProto,
+      +proto:File_hash[fileProto] = hash.
 
     // wire metadata
     ^schema:JobImpl:metadata[impl, key] = value <-

@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -13,8 +14,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.bloxweb.SimpleErrorCode;
-import com.logicblox.bloxweb.authentication.Credentials.CredentialResponse;
-import com.logicblox.bloxweb.authentication.CredentialsServiceClient;
 import com.logicblox.bloxweb.client.ServiceClientException;
 import com.logicblox.bloxweb.client.ServiceConnector;
 import com.logicblox.bloxweb.service.ServiceException;
@@ -27,6 +26,7 @@ import com.logicblox.steve.protocol.Database.AddStatusRequest;
 import com.logicblox.steve.protocol.Database.CreateJobRequest;
 import com.logicblox.steve.protocol.Database.GetJobImplRequest;
 import com.logicblox.steve.protocol.Database.GetJobRequest;
+import com.logicblox.steve.protocol.Database.GetUserRequest;
 import com.logicblox.steve.protocol.Database.RequestEnvelope;
 import com.logicblox.steve.protocol.Database.Response;
 import com.logicblox.steve.protocol.Database.ResponseEnvelope;
@@ -40,29 +40,39 @@ import com.logicblox.steve.protocol.Database.SetResultRequest;
 public class LBDatabase implements Database {
 
   final Logger _logger = SystemDLogger.getLogger("LBDatabase");
-  final CredentialsServiceClient _credentialsClient;
-  final ServiceConnector _connector;
   final String _dbServicesPrefix;
   
   public LBDatabase() {
-    this("http://localhost:8080/db/", "http://localhost:8080/admin/credentials");
+    this("http://localhost:8080/db/");
   }
   
-  public LBDatabase(String dbServicesPrefix, String credentialsServiceURL) {
-    _credentialsClient = new CredentialsServiceClient("http://localhost:8080/admin/credentials", _logger);
-    _connector = ServiceConnector.create();
+  public LBDatabase(String dbServicesPrefix) {
     _dbServicesPrefix = dbServicesPrefix;
   }
   
   // TODO - make getUser async.
   @Override
   public User getUser(String userId) {
+    // create database request
+    final RequestEnvelope request = RequestEnvelope.newBuilder()
+        .addGetUser(GetUserRequest.newBuilder()
+            .setUserId(userId)
+         ).build();
+    
     try {
-      final CredentialResponse response = _credentialsClient.getCredentials(userId).get();
-      return new User(userId, "logicblox.com", response.getGet(0).getPublicKey());
-    } catch (Exception e) {
-      e.printStackTrace();
-      return null;
+      // submit and process the response
+      return Futures.transform(submit(request, "get_user"),
+          new Function<ProtoBufExchange, User>() {
+            public User apply(ProtoBufExchange exchange) {
+              
+              final Response response = checkError(envelope(exchange).getResponse(0));
+              final com.logicblox.steve.protocol.Database.User user = response.getUser();
+              return new User(user.getId(), user.getAccountId(), user.getPublicKey());
+            }
+          }).get();
+      
+    } catch (ServiceClientException | InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
     }
   }
 

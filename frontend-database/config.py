@@ -33,9 +33,9 @@ rule(
 link_libs([])
 
 check_lb_workspace(
-    name='lb-steve-frontend-test',
+    name='lb-steve-frontend-database-test',
     libraries=['lb_steve_frontend_database']
 )
 
-check_program('tests/basic.py', ['lb-steve-frontend-test'])
+check_program('tests/basic.py', ['lb-steve-frontend-database-test'])
 

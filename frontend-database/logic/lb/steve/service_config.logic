@@ -20,6 +20,8 @@ block(`service_config) {
     database_service("set_impl").
     readonly_database_service("get_impl").
 
+    // User services
+    readonly_database_service("get_user").
   }),
 
   /**

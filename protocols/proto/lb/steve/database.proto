@@ -23,6 +23,8 @@ message RequestEnvelope
 
   repeated SetJobImplRequest set_impl = 5;
   repeated GetJobImplRequest get_impl = 6;
+
+  repeated GetUserRequest get_user = 7;
 }
 
 //
@@ -52,6 +54,9 @@ message Response
 
   // for GetJobImplRequest
   repeated JobImpl impl = 4 [(blox.options.set) = true];
+
+  // for GetUserRequest
+  optional User user = 5;
 }  
 
 //
@@ -86,6 +91,13 @@ message JobImpl
   required string account_id = 3;
   required File file = 4;
   repeated Param metadata = 5 [(blox.options.set) = true];
+}
+
+message User
+{
+  required string id = 1;
+  required string account_id = 2;
+  required string public_key = 3;
 }
 
 
@@ -148,6 +160,16 @@ message GetJobImplRequest
 {
   required string user_id = 1;
   optional string impl_id = 2;
+}
+
+
+//
+// REQUESTS ON USERS
+//
+// response is JobImpl
+message GetUserRequest
+{
+  required string user_id = 1;
 }
 
 

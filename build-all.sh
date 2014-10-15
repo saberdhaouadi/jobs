@@ -17,6 +17,6 @@ build()
 
 build protocols
 build worker
-build frontend
 build frontend-database
+build frontend
 build client

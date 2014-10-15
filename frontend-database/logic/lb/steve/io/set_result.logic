@@ -17,6 +17,7 @@ block(`set_result) {
     /**
      * Set result (outputs)
      */
+     // note that we assume hash is required for outputs
     +service_support:export_success(index),
     +schema:Job:output(job, url),
     +schema:Job:output_hash[job, url] = hash <-

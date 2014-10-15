@@ -59,14 +59,19 @@ block(`create_job) {
       schema:User_account[user] = account,
       schema:impl[account, implId] = impl.
 
-
     // wire input
-    +schema:Job:input(job, url),
-    +schema:Job:input_hash[job, url] = hash <-
+    +schema:Job:input(job, url) <-
       +create_new_job(req),
       +proto:CreateJobRequest_job_id[req] = id,
       +schema:Job_id[job] = id,
       +proto:CreateJobRequest_input(req, f), 
+      +proto:File_url[f] = url.
+
+    +schema:Job:input_hash[job, url] = hash <-
+      +create_new_job(req),
+      +proto:CreateJobRequest_job_id[req] = id,
+      +schema:Job_id[job] = id,
+      +proto:CreateJobRequest_input(req, f),
       +proto:File_url[f] = url,
       +proto:File_hash[f] = hash.
 

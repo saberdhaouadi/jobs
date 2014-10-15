@@ -65,7 +65,6 @@ block(`get_impl) {
     +file[impl] = file,
     +proto:File(file),
     +proto:File_url[file] = url,
-    +proto:File_hash[file] = hash,
     +proto:JobImpl_user_id[proto] = userId,
     +proto:JobImpl_account_id[proto] = account,
     +proto:JobImpl_file[proto] = file <-      
@@ -75,9 +74,15 @@ block(`get_impl) {
       schema:JobImpl:user[impl] = user,      
       system:app:User:name(user:userId),
       schema:User_account[user] = account,
-      schema:JobImpl:archive[impl] = url,
-      schema:JobImpl:archive_hash[impl] = hash.
+      schema:JobImpl:archive[impl] = url.
         
+    // hash is optional, so it needs a separate rule
+    +proto:File_hash[file] = hash <-
+      +proto:RequestEnvelope_get_impl[_, i] = _,
+      +service_support:export_impl(i, impl),
+      +file[impl] = file,
+      schema:JobImpl:archive_hash[impl] = hash.
+
     // export the metadata
     +metadata[impl, k] = meta,
     +proto:Param(meta),

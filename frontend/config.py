@@ -7,6 +7,8 @@ lbconfig_package(
   default_targets=['jars'])
 
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
+frontend_database_dep = ("frontend_database", {'default_path': "/opt/logicblox/lb-steve-frontend-database"})
+
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib"})
 aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.7.1"})
 commons_cli_dep = ( "commons_cli", {'default_path': "/opt/logicblox/deps/commons-cli-1.2"})
@@ -17,7 +19,8 @@ depends_on(
   s3lib_dep,
   aws_dep,
   commons_cli_dep,
-  protocols_dep)
+  protocols_dep,
+  frontend_database_dep)
 
 bin_program('lb-steve-frontend')
 config_file('config/lb-steve-frontend.config')
@@ -84,11 +87,43 @@ classpath = [
   '$(commons_cli)/lib/java/commons-cli.jar'
 ]
 
-jar(
-   name = 'lb-steve-frontend',
-   srcdir = 'java',
-   classpath = classpath)
+test_classpath = classpath + [
+  '$(logicblox)/lib/java/lb-connectblox.jar',
+  '$(logicblox)/lib/java/junit-4.8.2.jar'
+]
 
-link_libs(classpath)
+jar(
+  name = 'lb-steve-frontend',
+  srcdir = 'java',
+  classpath = classpath)
+
+link_libs(test_classpath)
 
 install_files(classpath, 'lib/java')
+
+#
+# Tests
+#
+
+# dummy library that contains the frontend-database
+check_lb_library(
+  name = 'lb_steve_frontend_test',
+  srcdir = 'tests'
+)
+
+# empty workspace that contains the frontend-database to use in tests
+check_lb_workspace(
+  name='lb-steve-frontend-test',
+  libraries=['lb_steve_frontend_test']
+)
+
+check_jar(
+  name='lb-steve-frontend-suite',
+  main='com.logicblox.steve.tests.Main',
+  srcdirs=['tests/java'],
+  deps=['lb-steve-frontend'],
+  classpath=test_classpath,
+  workspaces=['lb-steve-frontend-test'],
+  resources={'tests/users.csv':'com/logicblox/steve/db/users.csv'}
+)
+

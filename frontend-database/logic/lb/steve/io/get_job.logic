@@ -48,16 +48,18 @@ block(`get_job) {
     +input_cons[job, url] = file,
     +proto:File(file),
     +proto:File_url[file] = url,
-    +proto:File_hash[file] = hash,
     +proto:Job_output(jobMessage, file) <-
       +proto:RequestEnvelope_get_job[_, index] = req,
       +proto:GetJobRequest_get_input[req] = true,
       +proto:GetJobRequest_job_id[req] = jobId,
       +service_support:job[index] = jobMessage,
       schema:Job_id[job] = jobId,
-      schema:Job:input(job, url),
-      schema:Job:input_hash[job, url] = hash.
+      schema:Job:input(job, url).
 
+
+    +proto:File_hash[file] = hash <-
+      +input_cons[job, url] = file,
+      schema:Job:input_hash[job, url] = hash.
 
     // populate metadata with Param messages
     metadata[job, k] = param -> schema:Job(job), string(k), proto:Param(param).

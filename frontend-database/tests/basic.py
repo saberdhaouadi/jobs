@@ -24,7 +24,7 @@ def get_tdx_client(path):
 
 class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
-    prototype = 'lb-steve-frontend-test'
+    prototype = 'lb-steve-frontend-database-test'
 
     def setUp(self):
         super(TestFrontendDatabase, self).setUp()
@@ -98,6 +98,37 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         self.assertDelimEqual(get_tdx_client("jobimpls").get(), '''
             ID|ACCOUNT|USER|ARCHIVE|ARCHIVE_HASH
             total|logicblox.com|martin|the url|the hash
+        ''')
+        self.assertDelimEqual(get_tdx_client("jobimpl_metadata").get(), '''
+            ID|ACCOUNT|KEY|VALUE
+            total|logicblox.com|the key1|the value1
+            total|logicblox.com|the key2|the value2
+        ''')
+
+    def test_set_job_impl_no_hash(self):
+        client = get_client("set_impl")
+        envelope = client.dynamic_request()
+        req = envelope.set_impl.add()
+        req.impl_id = "total"
+        req.user_id = "martin"
+        req.file.url = "the url"
+        m = req.metadata.add()
+        m.key = "the key1"
+        m.value = "the value1"
+        m = req.metadata.add()
+        m.key = "the key2"
+        m.value = "the value2"
+
+        # verify response
+        expected_response = client.dynamic_response()
+        text_format.Merge('response { }', expected_response)
+        self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
+
+
+        # verify data was imported
+        self.assertDelimEqual(get_tdx_client("jobimpls").get(), '''
+            ID|ACCOUNT|USER|ARCHIVE|ARCHIVE_HASH
+            total|logicblox.com|martin|the url|
         ''')
         self.assertDelimEqual(get_tdx_client("jobimpl_metadata").get(), '''
             ID|ACCOUNT|KEY|VALUE
@@ -264,6 +295,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         f = req.input.add()
         f.url = "the url"
         f.hash = "the hash"
+        f = req.input.add()
+        f.url = "the url without hash"
         m = req.metadata.add()
         m.key = "the key1"
         m.value = "the value1"
@@ -285,6 +318,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         self.assertDelimEqual(get_tdx_client("job_inputs").get(), '''
             ID|INPUT|HASH
             1|the url|the hash
+            1|the url without hash|
         ''')
 
         self.assertDelimEqual(get_tdx_client("job_metadata").get(), '''
@@ -596,6 +630,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
                 status { timestamp: 3 event: "the event3" machine: "the machine3" message: "status message3" }
                 status { timestamp: 1 event: "the event1" machine: "the machine1" message: "status message1" } 
                 output { url: "the url"   hash: "the hash" }
+                output { url: "the url without hash" }
                 output { url: "the url 1" hash: "the hash 1" }
                 output { url: "the url 2" hash: "the hash 2" }
               }

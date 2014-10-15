@@ -108,12 +108,17 @@ block(`tdx) {
     file_definition(fd) {
       file_delimiter[] = "|",
       column_headers[] = "ID,     INPUT,  HASH",
-      column_formats[] = "string, string, string"
+      column_formats[] = "string, string, string",
+      file_columns_can_be_absent[] = "HASH"
     }.
 
     file_binding_by_name["job_inputs"] = fb,
     file_binding(fb) {
       file_binding_definition_name[] = "job_inputs",
+      predicate_binding_by_name["lb:steve:schema:Job:input"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID, INPUT"
+        },
       predicate_binding_by_name["lb:steve:schema:Job:input_hash"] =
         predicate_binding(_) {
           predicate_binding_columns[] = "ID, INPUT, HASH"
@@ -190,7 +195,8 @@ block(`tdx) {
     file_definition(fd) {
       file_delimiter[] = "|",
       column_headers[] = "ID,     ACCOUNT, USER,   ARCHIVE, ARCHIVE_HASH",
-      column_formats[] = "string, string,  string, string,  string"
+      column_formats[] = "string, string,  string, string,  string",
+      file_columns_can_be_absent[] = "ARCHIVE_HASH"
     }.
 
     file_binding_by_name["jobimpls"] = fb,

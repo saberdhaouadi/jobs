@@ -26,4 +26,9 @@ public final class User {
   public String getPublicKey() {
     return _publicKey;
   }
+  
+  @Override
+  public String toString() {
+    return _id + "(" + _accountId + ")";
+  }
 }
