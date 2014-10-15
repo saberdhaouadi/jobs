@@ -327,6 +327,55 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
             1|the key2|the value2
         ''')
 
+
+    def test_get_job_with_data(self):
+        # make sure there's data
+        self.test_create_job_with_data()
+
+        client = get_client("get_job")
+
+
+        envelope = client.dynamic_request()
+        req = envelope.get_job.add()
+        req.job_id = "1"
+        req.get_metadata = True
+        req.get_status = True
+        req.get_input = True
+        req.get_output = True
+
+        # verify response
+        expected_response = client.dynamic_response()
+        text_format.Merge('''
+            response {
+              job {
+                id: "1"
+                client_id: "a"
+                impl_id: "total"
+                output_prefix: "s3://something/something"
+                user_id: "martin"
+                input {
+                  url: "the url without hash"
+                }
+                input {
+                  url: "the url"
+                  hash: "the hash"
+                }
+                metadata {
+                  key: "the key2"
+                  value: "the value2"
+                }
+                metadata {
+                  key: "the key1"
+                  value: "the value1"
+                }
+                impl_archive: "the url"
+              }
+            }
+            ''', expected_response)
+        self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
+
+
+
     def test_create_job_multiple(self):
         # make sure there's a jobimpl
         self.test_set_job_impl()
@@ -629,8 +678,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
                 impl_archive: "the url"
                 status { timestamp: 3 event: "the event3" machine: "the machine3" message: "status message3" }
                 status { timestamp: 1 event: "the event1" machine: "the machine1" message: "status message1" } 
-                output { url: "the url"   hash: "the hash" }
-                output { url: "the url without hash" }
+                input { url: "the url"   hash: "the hash" }
+                input { url: "the url without hash" }
                 output { url: "the url 1" hash: "the hash 1" }
                 output { url: "the url 2" hash: "the hash 2" }
               }
