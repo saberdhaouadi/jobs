@@ -38,6 +38,10 @@ protobuf_protocol(
   java_package = 'com.logicblox.steve.protocol',
   srcdir = 'proto'
 )
+# These 2 lines are a HACK to make this config file work with the older runtime version used by integration-modeler
+# TODO - REMOVE THESE when integration-modeler is not needed anymore
+depfile = java_protobuf_file('database', 'com.logicblox.steve.protocol')
+rule(output='java_protobufs', input=depfile, phony=True)
 
 lb_library(
   name='lb_steve_protocols',
