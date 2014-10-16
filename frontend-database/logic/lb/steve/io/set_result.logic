@@ -19,11 +19,18 @@ block(`set_result) {
      */
      // note that we assume hash is required for outputs
     +service_support:export_success(index),
-    +schema:Job:output(job, url),
-    +schema:Job:output_hash[job, url] = hash <-
+    +schema:Job:output(job, url) <-
       +proto:RequestEnvelope_set_result[_, index] = req,
       +proto:SetResultRequest_job_id[req] = jobId,
-      +proto:SetResultRequest_output(req, f), 
+      +proto:SetResultRequest_output(req, f),
+      +proto:File_url[f] = url,
+      schema:Job_id@prev[job] = jobId.
+
+    // Hash is optional, so it needs a separate rule.
+    +schema:Job:output_hash[job, url] = hash <-
+      +proto:RequestEnvelope_set_result[_, _] = req,
+      +proto:SetResultRequest_job_id[req] = jobId,
+      +proto:SetResultRequest_output(req, f),
       +proto:File_url[f] = url,
       +proto:File_hash[f] = hash,
       schema:Job_id@prev[job] = jobId.

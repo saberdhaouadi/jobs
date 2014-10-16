@@ -372,7 +372,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
               }
             }
             ''', expected_response)
-        self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
+        self.compare_jobs(expected_response, client.dynamic_call(envelope))
 
 
 

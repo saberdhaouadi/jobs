@@ -215,10 +215,8 @@ public class LBDatabaseTest extends PrototypeTest {
     // now set the result
     final List<Data> output = ImmutableList.of(
         new Data("/result1", "hash1"), 
-        new Data("/result2", "hash2"));
+        new Data("/result2"));
     
-    // TODO _ should we enforce that all outputs have hashes? Note that getJob will not return
-    // outputs without hashes.
     db.setResult(jobId, output).get();
         
     final Job job = db.getJob(jobId).get();
