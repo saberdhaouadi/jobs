@@ -39,3 +39,4 @@ check_lb_workspace(
 
 check_program('tests/basic.py', ['lb-steve-frontend-database-test'])
 
+install_dir('$(protocols)/share/lb_steve_protocols', 'share/lb_steve_protocols')
