@@ -59,6 +59,9 @@ let
       tmpdir = /tmp
       jvm_args = -Xmx4800m -Xss2048k
 
+      [handler:steve]
+      database_prefix = http://database-${name}:8080/db/
+
       [state]
       implementation = dynamodb
       iam_role = default

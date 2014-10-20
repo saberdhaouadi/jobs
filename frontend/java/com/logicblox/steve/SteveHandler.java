@@ -52,7 +52,7 @@ import com.logicblox.steve.common.Status;
 import com.logicblox.steve.common.Status.StatusBuilder;
 import com.logicblox.steve.db.Database;
 import com.logicblox.steve.db.DynamoJobState;
-import com.logicblox.steve.db.FakeDatabase;
+import com.logicblox.steve.db.LBDatabase;
 import com.logicblox.steve.db.Job;
 import com.logicblox.steve.db.JobImpl;
 import com.logicblox.steve.frontend.JobQueueClient;
@@ -80,7 +80,8 @@ public class SteveHandler extends ProtoBufHandler
   public void init(Section handlerConfig, ServiceConfig service)
   {
     super.init(handlerConfig, service);
-    _db = new FakeDatabase(new DynamoJobState(handlerConfig.getParent(), _logger));
+    String dbPrefix = handlerConfig.getStringError("database_prefix");
+    _db = new LBDatabase(dbPrefix);
 
     _s3client = S3Utils.createS3Client(handlerConfig);
     _tmpDir = handlerConfig.getFileError("tmpdir");
@@ -593,7 +594,6 @@ public class SteveHandler extends ProtoBufHandler
       {
         public ListenableFuture<String> apply(S3File input) throws IOException
         {
-          // TODO use actual authenticated user
           return _db.setJobImpl(
             user,
             req.getId(),
@@ -608,14 +608,13 @@ public class SteveHandler extends ProtoBufHandler
       {
         public ListenableFuture<String> apply(String impl)
         {
-          // TODO use actual authenticated user
           return _db.createJob(
             user,
             req.getClientId(),
             "steve:internal:process-jobimpl",
             Conversions.convertFrontendFileToData(
               Collections.singletonList(req.getImplementation())),
-            null,
+            "",
             tags);
         }
       });
