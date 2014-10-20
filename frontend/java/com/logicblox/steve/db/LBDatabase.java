@@ -300,9 +300,13 @@ public class LBDatabase implements Database {
           new Function<ProtoBufExchange, Iterable<JobImpl>>() {
             public Iterable<JobImpl> apply(ProtoBufExchange exchange) {
 
-                final Response response = checkError(envelope(exchange).getResponse(0));
-
+                final ResponseEnvelope env = envelope(exchange);
                 final Builder<JobImpl> builder = ImmutableList.builder();
+
+                if (env.getResponseCount()==0)
+                  return builder.build();
+
+                final Response response = checkError(env.getResponse(0));
                 for (final com.logicblox.steve.protocol.Database.JobImpl impl: response.getImplList())
                   builder.add(new JobImpl(
                     impl.getId(),
