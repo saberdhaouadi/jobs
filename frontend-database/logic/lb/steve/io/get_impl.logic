@@ -41,7 +41,8 @@ block(`get_impl) {
       !+proto:GetJobImplRequest_impl_id[req] = _,
       system:app:User:name(user:userId),
       schema:User_account[user] = account,
-      schema:impl[account, _] = impl.
+      schema:impl[account,jobImplId] = impl,
+      jobImplId != "steve:internal:process-jobimpl".
 
 
     /**
