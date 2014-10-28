@@ -27,6 +27,8 @@ import java.util.List;
 import org.joda.time.format.ISODateTimeFormat;
 import com.google.gson.Gson;
 import org.joda.time.DateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main
 {
@@ -229,6 +231,12 @@ public class Main
         continue;
       }
 
+
+      Map<String, String> metadata = new HashMap<String, String>();
+      for(Backend.Param p: msg.getMetadataList()) {
+        metadata.put(p.getKey(), p.getValue());
+      }
+
       SteveJob steve = new SteveJob(
               this.client,
               _s3Bucket,
@@ -237,7 +245,8 @@ public class Main
               msg.getJobImpl(),
               Conversions.convertFileToData(msg.getInputList()),
               msg.getOutput(),
-              msg.getTimeout()
+              msg.getTimeout(),
+              metadata
       );
 
       Thread resetTimeout = new Thread(new ResetMessageVisibilityTimeout(job.getReceiptHandle()));

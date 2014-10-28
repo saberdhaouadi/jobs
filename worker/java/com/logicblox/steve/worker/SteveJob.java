@@ -10,6 +10,7 @@ import com.logicblox.concurrent.MoreFutures;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.Exception;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -25,6 +26,8 @@ import org.apache.commons.io.FilenameUtils;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.gson.Gson;
+import java.util.Map;
 
 public class SteveJob
 {
@@ -35,6 +38,7 @@ public class SteveJob
   private URI _output;
   private String _drv;
   private long _timeout;
+  private Map<String, String> _metadata;
 
   private String _s3Bucket;
   private URI _outputLog;
@@ -44,11 +48,12 @@ public class SteveJob
   private File _inputPath = new File("/tmp/job/in");
   private File _outputPath = new File("/tmp/job/out");
   private File _jobPath = new File("/tmp/job/job.tar.gz");
+  private File _metadataPath = new File("/tmp/job/in/metadata.json");
 
   private boolean _timedOut = false;
   private boolean _killed = false;
 
-  public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout)
+  public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout, Map<String, String> metadata)
   throws InternalException
   {
     _id = id;
@@ -58,6 +63,7 @@ public class SteveJob
     _outgoing = new OutgoingQueueHelper(outgoingUrl, _id);
     _timeout = timeout;
     _s3Bucket = s3Bucket;
+    _metadata = metadata;
 
     try
     {
@@ -170,6 +176,14 @@ public class SteveJob
     catch(Exception e)
     {
       throw new DownloadInputFailedException(e.getMessage(), e);
+    }
+
+    try {
+      String data = new Gson().toJson(_metadata);
+      FileUtils.writeStringToFile(_metadataPath, data);
+    }
+    catch (IOException e) {
+      throw new InternalException("Could not write metadata.", e);
     }
   }
 
