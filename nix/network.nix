@@ -325,8 +325,10 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "c3.xlarge";
+      deployment.ec2.instanceType = "r3.2xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
+      deployment.ec2.ebsInitialRootDiskSize = 100;
+      deployment.ec2.ebsOptimized = true;
       ec2.metadata = true;
 
       imports = [
@@ -344,6 +346,22 @@ with pkgs.lib;
 
       environment.systemPackages = [ builds.worker ] ++ provisionScripts;
       systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes);
+
+      deployment.ec2.blockDeviceMapping."/dev/xvdg".size = 100;
+      deployment.ec2.blockDeviceMapping."/dev/xvdh".size = 100;
+      deployment.ec2.blockDeviceMapping."/dev/xvdg".deleteOnTermination = true;
+      deployment.ec2.blockDeviceMapping."/dev/xvdh".deleteOnTermination = true;
+      deployment.ec2.blockDeviceMapping."/dev/xvdg".volumeType = "gp2";
+      deployment.ec2.blockDeviceMapping."/dev/xvdh".volumeType = "gp2";
+
+      deployment.autoRaid0.raid.devices = [ "/dev/xvdg" "/dev/xvdh" ];
+
+      fileSystems."/data" =
+        { autoFormat = true;
+          fsType = "xfs";
+          device = "/dev/raid/raid";
+          options = "noatime";
+        };
     };
 
   "steve-${name}" =
@@ -359,6 +377,7 @@ with pkgs.lib;
       deployment.ec2.elasticIPv4 = env.elasticIPv4 or "";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
+      deployment.ec2.ebsInitialRootDiskSize = 100;
       ec2.metadata = true;
 
       imports = [ <lbdevops/logicblox/production.nix> ];
@@ -387,6 +406,9 @@ with pkgs.lib;
 
           ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK;
 
+
+          log_format timed_combined '$remote_addr - $remote_user [$time_local]  "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
+          access_log /var/spool/nginx/logs/access.log timed_combined;
 
           location = / {
               try_files $uri /index.html;
