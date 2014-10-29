@@ -28,16 +28,14 @@ import com.logicblox.steve.protocol.Frontend;
 /**
  * Client-side API for making calls to steve. This is used by the
  * lb-steve-client, but is also intended to be used in applications.
- */ 
-public class SteveClient implements SteveClientInterface
-{
+ */
+public class SteveClient implements SteveClientInterface {
   private ProtobufServiceClient _client;
   private ListeningScheduledExecutorService _scheduler;
 
-  public SteveClient(ProtobufServiceClient client, ScheduledExecutorService scheduler)
-  {
+  public SteveClient(ProtobufServiceClient client, ScheduledExecutorService scheduler) {
     _client = client;
-    if(scheduler != null)
+    if (scheduler != null)
       _scheduler = MoreExecutors.listeningDecorator(scheduler);
   }
 
@@ -45,251 +43,221 @@ public class SteveClient implements SteveClientInterface
    * Create a new job, returns an asynchronous job id.
    */
   public ListenableFuture<String> createJob(
-    String jobImpl,
-    Iterable<Frontend.File> inputs,
-    URI outputPrefix,
-    Iterable<Frontend.Param> metadata)
-  throws ServiceClientException
-  {
+          String jobImpl,
+          Iterable<Frontend.File> inputs,
+          URI outputPrefix,
+          Iterable<Frontend.Param> metadata)
+          throws ServiceClientException {
     // TODO retry on connection issues with the same clientId
     String clientId = UUID.randomUUID().toString();
-      
-    Frontend.JobCreateRequest.Builder createReq = 
-      Frontend.JobCreateRequest.newBuilder()
-      .setClientId(clientId)
-      .setJobImpl(jobImpl)
-      .setOutput(outputPrefix.toString());
-    
-    for(Frontend.File input : inputs)
+
+    Frontend.JobCreateRequest.Builder createReq =
+            Frontend.JobCreateRequest.newBuilder()
+                    .setClientId(clientId)
+                    .setJobImpl(jobImpl)
+                    .setOutput(outputPrefix.toString());
+
+    for (Frontend.File input : inputs)
       createReq.addInput(input);
 
-    for(Frontend.Param param : metadata)
+    for (Frontend.Param param : metadata)
       createReq.addMetadata(param);
 
     Frontend.Request.Builder req =
-      Frontend.Request.newBuilder()
-      .setCreate(createReq);
-    
+            Frontend.Request.newBuilder()
+                    .setCreate(createReq);
+
     return Futures.transform(
-      post(req.build()),
-      new Function<Frontend.Response, String>()
-      {        
-        @Override
-        public String apply(Frontend.Response response)
-        {
-          return response.getCreate().getJobId();
-        }
-      });
+            post(req.build()),
+            new Function<Frontend.Response, String>() {
+              @Override
+              public String apply(Frontend.Response response) {
+                return response.getCreate().getJobId();
+              }
+            });
   }
 
   /**
    * Get the status of the specified job id.
    */
   public ListenableFuture<Frontend.State> getState(String id)
-  throws ServiceClientException
-  {
+          throws ServiceClientException {
     Frontend.Request.Builder req =
-      Frontend.Request.newBuilder()
-      .setState(
-        Frontend.StateRequest.newBuilder()
-        .setId(id)
-        .setDetail(true));
+            Frontend.Request.newBuilder()
+                    .setState(
+                            Frontend.StateRequest.newBuilder()
+                                    .setId(id)
+                                    .setDetail(true));
 
     return Futures.transform(
-      post(req.build()),
-      new Function<Frontend.Response, Frontend.State>()
-      {        
-        @Override
-        public Frontend.State apply(Frontend.Response response)
-        {
-          return response.getState().getState();
-        }
-      });
+            post(req.build()),
+            new Function<Frontend.Response, Frontend.State>() {
+              @Override
+              public Frontend.State apply(Frontend.Response response) {
+                return response.getState().getState();
+              }
+            });
   }
 
   /**
    * Get the log of the specified job id.
    */
   public ListenableFuture<String> getLog(String id)
-  throws ServiceClientException
-  {
+          throws ServiceClientException {
     Frontend.Request.Builder req =
-      Frontend.Request.newBuilder()
-      .setLog(
-        Frontend.JobLogRequest.newBuilder()
-        .setJobId(id));
+            Frontend.Request.newBuilder()
+                    .setLog(
+                            Frontend.JobLogRequest.newBuilder()
+                                    .setJobId(id));
 
     return Futures.transform(
-      post(req.build()),
-      new Function<Frontend.Response, String>()
-      {
-        @Override
-        public String apply(Frontend.Response response)
-        {
-          return response.getLog().getLog();
-        }
-      });
+            post(req.build()),
+            new Function<Frontend.Response, String>() {
+              @Override
+              public String apply(Frontend.Response response) {
+                return response.getLog().getLog();
+              }
+            });
   }
 
   /**
    * Get the result of the specified job id.
    */
   public ListenableFuture<List<Frontend.File>> getResult(String id)
-  throws ServiceClientException
-  {
+          throws ServiceClientException {
     Frontend.Request.Builder req =
-      Frontend.Request.newBuilder()
-      .setResult(
-        Frontend.JobResultRequest.newBuilder()
-        .setJobId(id));
+            Frontend.Request.newBuilder()
+                    .setResult(
+                            Frontend.JobResultRequest.newBuilder()
+                                    .setJobId(id));
 
     return Futures.transform(
-      post(req.build()),
-      new Function<Frontend.Response, List<Frontend.File>>()
-      {        
-        @Override
-        public List<Frontend.File> apply(Frontend.Response response)
-        {
-          return response.getResult().getOutputList();
-        }
-      });
+            post(req.build()),
+            new Function<Frontend.Response, List<Frontend.File>>() {
+              @Override
+              public List<Frontend.File> apply(Frontend.Response response) {
+                return response.getResult().getOutputList();
+              }
+            });
   }
 
   /**
    * Wait for completion of a job id, with a fixed delay (see interface for more docs)
    */
-  public ListenableFuture<Frontend.State> wait(final String id, final long pollDelaySeconds, final StateNotify notify)
-  {
+  public ListenableFuture<Frontend.State> wait(final String id, final long pollDelaySeconds, final StateNotify notify) {
     return waitInternal(0, id, pollDelaySeconds, notify);
   }
 
   private ListenableFuture<Frontend.State> waitInternal(
-    final int count, final String id, final long pollDelaySeconds, final StateNotify notify)
-  {
+          final int count, final String id, final long pollDelaySeconds, final StateNotify notify) {
     // TODO extend to accept temporary connectivity issues while waiting
     return Futures.dereference(
-      _scheduler.schedule(
-        new Callable<ListenableFuture<Frontend.State>>()
-        {
-          public ListenableFuture<Frontend.State> call() throws ServiceClientException
-          {
-            return Futures.transform(
-              getState(id),
-              new AsyncFunction<Frontend.State, Frontend.State>()
-              {
-                public ListenableFuture<Frontend.State> apply(Frontend.State state)
-                {
-                  if(notify != null)
-                  {
-                    try
-                    {
-                      notify.notify(state);
-                    }
-                    catch(Exception exc) {}
-                  }
-                  
-                  if(Conversions.isComplete(state))
-                    return Futures.immediateFuture(state);
-                  else
-                    return waitInternal(count + 1, id, pollDelaySeconds, notify);
-                }
-              });
-          }
-        },
-        // do not delay initial execution
-        (count == 0 ? 0 : pollDelaySeconds),
-        TimeUnit.SECONDS));
+            _scheduler.schedule(
+                    new Callable<ListenableFuture<Frontend.State>>() {
+                      public ListenableFuture<Frontend.State> call() throws ServiceClientException {
+                        return Futures.transform(
+                                getState(id),
+                                new AsyncFunction<Frontend.State, Frontend.State>() {
+                                  public ListenableFuture<Frontend.State> apply(Frontend.State state) {
+                                    if (notify != null) {
+                                      try {
+                                        notify.notify(state);
+                                      } catch (Exception exc) {
+                                      }
+                                    }
+
+                                    if (Conversions.isComplete(state))
+                                      return Futures.immediateFuture(state);
+                                    else
+                                      return waitInternal(count + 1, id, pollDelaySeconds, notify);
+                                  }
+                                });
+                      }
+                    },
+                    // do not delay initial execution
+                    (count == 0 ? 0 : pollDelaySeconds),
+                    TimeUnit.SECONDS));
   }
 
   public ListenableFuture<List<Frontend.File>> waitForJob(
-    final String id,
-    final long pollDelaySeconds,
-    final StateNotify notify)
-  {
+          final String id,
+          final long pollDelaySeconds,
+          final StateNotify notify) {
     return Futures.transform(
-      wait(id, pollDelaySeconds, notify),
-      new AsyncFunction<Frontend.State, List<Frontend.File>>()
-      {
-        @Override
-        public ListenableFuture<List<Frontend.File>> apply(Frontend.State state) throws Exception
-        {
-          if("SUCCEEDED".equals(state.getState()))
-            return getResult(id);
-          else
-            return Futures.immediateFailedFuture(
-              new SteveClientException(
-                _client.getURI(),
-                "Job '" + id + "' failed and has no output",
-                "JOB_FAILED"));
-        }
-      });
+            wait(id, pollDelaySeconds, notify),
+            new AsyncFunction<Frontend.State, List<Frontend.File>>() {
+              @Override
+              public ListenableFuture<List<Frontend.File>> apply(Frontend.State state) throws Exception {
+                if ("SUCCEEDED".equals(state.getState()))
+                  return getResult(id);
+                else
+                  return Futures.immediateFailedFuture(
+                          new SteveClientException(
+                                  _client.getURI(),
+                                  "Job '" + id + "' failed and has no output",
+                                  "JOB_FAILED"));
+              }
+            });
   }
 
   /**
    * Asynchronously upload a new job implementation.
    */
   public ListenableFuture<String> addJobImpl(
-    String jobImpl,
-    Frontend.File archive,
-    Iterable<Frontend.Param> metadata)
-  throws ServiceClientException
-  {
+          String jobImpl,
+          Frontend.File archive,
+          Iterable<Frontend.Param> metadata)
+          throws ServiceClientException {
     // TODO retry on connection issues with the same clientId
     String clientId = UUID.randomUUID().toString();
 
     Frontend.ImplAddRequest.Builder addReq =
-      Frontend.ImplAddRequest.newBuilder()
-      .setClientId(clientId)
-      .setId(jobImpl)
-      .setImplementation(archive);
-    
-    for(Frontend.Param param : metadata)
+            Frontend.ImplAddRequest.newBuilder()
+                    .setClientId(clientId)
+                    .setId(jobImpl)
+                    .setImplementation(archive);
+
+    for (Frontend.Param param : metadata)
       addReq.addMetadata(param);
-    
+
     Frontend.Request.Builder req =
-      Frontend.Request.newBuilder()
-      .setImplAdd(addReq);
+            Frontend.Request.newBuilder()
+                    .setImplAdd(addReq);
 
     return Futures.transform(
-      post(req.build()),
-      new Function<Frontend.Response, String>()
-      {        
-        @Override
-        public String apply(Frontend.Response response)
-        {
-          return response.getImplAdd().getId();
-        }
-      });
+            post(req.build()),
+            new Function<Frontend.Response, String>() {
+              @Override
+              public String apply(Frontend.Response response) {
+                return response.getImplAdd().getId();
+              }
+            });
   }
 
   /**
    * List job implementations
    */
   public ListenableFuture<List<Frontend.JobImplInfo>> getJobImplList()
-  throws ServiceClientException
-  {
+          throws ServiceClientException {
     Frontend.Request.Builder req =
-      Frontend.Request.newBuilder()
-      .setImplList(Frontend.ImplListRequest.newBuilder());
+            Frontend.Request.newBuilder()
+                    .setImplList(Frontend.ImplListRequest.newBuilder());
 
     return Futures.transform(
-      post(req.build()),
-      new Function<Frontend.Response, List<Frontend.JobImplInfo>>()
-      {        
-        @Override
-        public List<Frontend.JobImplInfo> apply(Frontend.Response response)
-        {
-          return response.getImplList().getJobImplList();
-        }
-      });
+            post(req.build()),
+            new Function<Frontend.Response, List<Frontend.JobImplInfo>>() {
+              @Override
+              public List<Frontend.JobImplInfo> apply(Frontend.Response response) {
+                return response.getImplList().getJobImplList();
+              }
+            });
   }
 
   /**
    * Utility for the end-to-end posting of a request.
    */
   private ListenableFuture<Frontend.Response> post(Frontend.Request req)
-  throws ServiceClientException
-  {
+          throws ServiceClientException {
     Frontend.Request.Builder reqB = Frontend.Request.newBuilder();
     Frontend.Response.Builder respB = Frontend.Response.newBuilder();
 
@@ -303,54 +271,43 @@ public class SteveClient implements SteveClientInterface
    * Transforms future into a future that will throw ServiceException.
    */
   private static ListenableFuture<Frontend.Response> instrumentForErrorHandling(
-    final ProtoBufExchange e1,
-    ListenableFuture<ProtoBufExchange> future)
-  {
+          final ProtoBufExchange e1,
+          ListenableFuture<ProtoBufExchange> future) {
     return MoreFutures.transform(
-      future,
-      new FutureTransform<ProtoBufExchange, Frontend.Response>()
-      {
-        @Override
-        public ListenableFuture<Frontend.Response> transform(ProtoBufExchange e2)
-        {
-          try
-          {
-            Frontend.Response response = (Frontend.Response) e2.getResponseMessage();
-            return Futures.immediateFuture(response);
-          }
-          catch(Exception exc)
-          {
-            return Futures.immediateFailedFuture(exc);
-          }
-        }
+            future,
+            new FutureTransform<ProtoBufExchange, Frontend.Response>() {
+              @Override
+              public ListenableFuture<Frontend.Response> transform(ProtoBufExchange e2) {
+                try {
+                  Frontend.Response response = (Frontend.Response) e2.getResponseMessage();
+                  return Futures.immediateFuture(response);
+                } catch (Exception exc) {
+                  return Futures.immediateFailedFuture(exc);
+                }
+              }
 
-        @Override
-        public ListenableFuture<Frontend.Response> create(Throwable t)
-        {
-          if(t instanceof ServiceClientException)
-          {
-            ServiceClientException exc = (ServiceClientException) t;
+              @Override
+              public ListenableFuture<Frontend.Response> create(Throwable t) {
+                if (t instanceof ServiceClientException) {
+                  ServiceClientException exc = (ServiceClientException) t;
 
-            // If we manage to get a response from the exchange, then
-            // throw that as a nice exception.
-            Frontend.Response response = null;
-            try
-            {
-              response = (Frontend.Response) e1.getResponseMessage();
-            }
-            catch(Exception e)
-            {
-              // on purpose ignore all exceptions. We'll just rethrow
-              // the original exception.
-            }
+                  // If we manage to get a response from the exchange, then
+                  // throw that as a nice exception.
+                  Frontend.Response response = null;
+                  try {
+                    response = (Frontend.Response) e1.getResponseMessage();
+                  } catch (Exception e) {
+                    // on purpose ignore all exceptions. We'll just rethrow
+                    // the original exception.
+                  }
 
-            if(response != null)
-              return Futures.immediateFailedFuture(
-                new SteveClientException(exc.getMessage(), exc.getStatus(), response));
-          }
+                  if (response != null)
+                    return Futures.immediateFailedFuture(
+                            new SteveClientException(exc.getMessage(), exc.getStatus(), response));
+                }
 
-          return Futures.immediateFailedFuture(t);
-        }
-      });
+                return Futures.immediateFailedFuture(t);
+              }
+            });
   }
 }

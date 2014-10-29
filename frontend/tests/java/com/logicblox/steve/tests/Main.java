@@ -10,22 +10,17 @@ import com.logicblox.steve.db.LBDatabaseTest;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-  LBDatabaseTest.class
+        LBDatabaseTest.class
 })
-public class Main
-{
-  public static void main(String[] ps)
-  {
+public class Main {
+  public static void main(String[] ps) {
     JUnitCore core = new JUnitCore();
     core.addListener(new TextListener(System.out));
     Result result = core.run(Main.class);
-    
-    if(result.wasSuccessful())
-    {
+
+    if (result.wasSuccessful()) {
       System.exit(0);
-    }
-    else
-    {
+    } else {
       System.exit(1);
     }
   }

@@ -27,44 +27,36 @@ import java.util.List;
 import org.joda.time.format.ISODateTimeFormat;
 import com.google.gson.Gson;
 import org.joda.time.DateTime;
+
 import java.util.HashMap;
 import java.util.Map;
 
-public class Main
-{
+public class Main {
   class EC2DynamicMetadata {
     String pendingTime;
   }
 
-  private class ResetMessageVisibilityTimeout implements Runnable
-  {
+  private class ResetMessageVisibilityTimeout implements Runnable {
     private String _handle;
-    public ResetMessageVisibilityTimeout(String handle)
-    {
+
+    public ResetMessageVisibilityTimeout(String handle) {
       _handle = handle;
     }
 
     @Override
     public void run() {
-      while(!Thread.currentThread().isInterrupted())
-      {
-        try
-        {
+      while (!Thread.currentThread().isInterrupted()) {
+        try {
           sqs.changeMessageVisibility(_incomingUrl, _handle, 300);
-        }
-        catch(Exception e)
-        {
+        } catch (Exception e) {
           // We don't care much about exceptions updating the message
           // visibility timeout, we'll just log it.
           System.err.println("WARNING: Failed to update visibility timeout for message: " + e.getMessage());
         }
 
-        try
-        {
+        try {
           Thread.sleep(60000);
-        }
-        catch(InterruptedException e)
-        {
+        } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
       }
@@ -84,8 +76,7 @@ public class Main
   private static boolean _returnJob = false;
   private static boolean _shutdownOnIdle = false;
 
-  public static void parseArgs(String args[])
-  {
+  public static void parseArgs(String args[]) {
     Options options = new Options();
 
     options.addOption(OptionBuilder.withLongOpt("idle")
@@ -116,8 +107,8 @@ public class Main
 
     options.addOption(
             OptionBuilder.withLongOpt("return-job")
-            .withDescription("Return current message to the incoming SQS queue.")
-            .create());
+                    .withDescription("Return current message to the incoming SQS queue.")
+                    .create());
 
     options.addOption(
             OptionBuilder.withLongOpt("shutdown-on-idle")
@@ -126,23 +117,22 @@ public class Main
 
     CommandLineParser parser = new BasicParser();
     try {
-      CommandLine _cmdline = parser.parse( options, args );
+      CommandLine _cmdline = parser.parse(options, args);
       if (_cmdline.hasOption("idle"))
-        _idle = ((Number)_cmdline.getParsedOptionValue("idle")).intValue();
+        _idle = ((Number) _cmdline.getParsedOptionValue("idle")).intValue();
       if (_cmdline.hasOption("incoming"))
         _incomingUrl = _cmdline.getOptionValue("incoming");
       if (_cmdline.hasOption("outgoing"))
         _outgoingUrl = _cmdline.getOptionValue("outgoing");
       if (_cmdline.hasOption("bucket"))
         _s3Bucket = _cmdline.getOptionValue("bucket");
-      _returnJob =  _cmdline.hasOption("return-job");
-      _shutdownOnIdle =  _cmdline.hasOption("shutdown-on-idle");
+      _returnJob = _cmdline.hasOption("return-job");
+      _shutdownOnIdle = _cmdline.hasOption("shutdown-on-idle");
 
-    }
-    catch( ParseException exp ) {
-      System.err.println( "Error: " + exp.getMessage() );
+    } catch (ParseException exp) {
+      System.err.println("Error: " + exp.getMessage());
       HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp( "lb-steve-worker", options );
+      formatter.printHelp("lb-steve-worker", options);
       System.exit(1);
     }
 
@@ -150,8 +140,7 @@ public class Main
     handleDir.mkdirs();
   }
 
-  public Main()
-  {
+  public Main() {
     // TODO pass in a configuration for S3
     this.client = S3Utils.createS3Client(null);
 
@@ -162,78 +151,60 @@ public class Main
     parseArgs(args);
     Main m = new Main();
 
-    if(_returnJob) {
+    if (_returnJob) {
       m.returnJob();
-    }
-    else
-    {
+    } else {
       m.processMessages();
     }
   }
 
   private void returnJob() throws Exception {
     File h = new File(_handle_file);
-    if(h.exists())
-    {
+    if (h.exists()) {
       String handle = "";
-      try
-      {
+      try {
         handle = FileUtils.readFileToString(h);
-      }
-      catch(IOException e)
-      {
+      } catch (IOException e) {
         throw new InternalException(String.format("ERROR: Could not read message at %s.", _handle_file), e);
       }
 
-      try
-      {
+      try {
         System.err.println(String.format("Returning message with handle '%s' to %s.", handle, _incomingUrl));
         sqs.changeMessageVisibility(_incomingUrl, handle, 0);
-      }
-      catch(AmazonClientException e)
-      {
+      } catch (AmazonClientException e) {
         throw new InternalException(String.format("ERROR: Could return message to the %s.", _incomingUrl), e);
       }
-    }
-    else
-    {
+    } else {
       System.err.println(String.format("WARNING: No message found at %s", _handle_file));
     }
   }
 
   private void processMessages() throws InterruptedException, IOException, InternalException {
-    while (true)
-    {
+    while (true) {
       Backend.RunJob.Builder msgBuilder = Backend.RunJob.newBuilder();
       Backend.RunJob msg;
       com.amazonaws.services.sqs.model.Message job = fetchJob();
 
-      try
-      {
+      try {
         FileUtils.writeStringToFile(new File(_handle_file), job.getReceiptHandle());
-      }
-      catch (IOException e)
-      {
-        System.err.println(String.format("WARNING: Could not write file with current message handler to %s",_handle_file));
+      } catch (IOException e) {
+        System.err.println(String.format("WARNING: Could not write file with current message handler to %s", _handle_file));
       }
 
       System.err.println("received job request: " + job.getBody());
 
-      try
-      {
+      try {
         new JsonFormat().merge(IOUtils.toInputStream(job.getBody()), msgBuilder);
         msg = msgBuilder.build();
-      }
-      catch(Exception e)
-      {
-        System.err.println("ERROR: Invalid input message:\n"+job.getBody());
+      } catch (Exception e) {
+        System.err.println("ERROR: Invalid input message:\n" + job.getBody());
         removeIncoming(job);
         continue;
       }
 
 
       Map<String, String> metadata = new HashMap<String, String>();
-      for(Backend.Param p: msg.getMetadataList()) {
+      for (Backend.Param p : msg.getMetadataList()) {
         metadata.put(p.getKey(), p.getValue());
       }
 
@@ -251,46 +222,35 @@ public class Main
 
       Thread resetTimeout = new Thread(new ResetMessageVisibilityTimeout(job.getReceiptHandle()));
       resetTimeout.start();
-      try
-      {
+      try {
         steve.run();
-      }
-      catch(Exception e)
-      {
-        System.err.println("ERROR: Unhandled exception: "+e.getMessage());
+      } catch (Exception e) {
+        System.err.println("ERROR: Unhandled exception: " + e.getMessage());
         e.printStackTrace();
-      }
-      finally
-      {
+      } finally {
         resetTimeout.interrupt();
-        if(!steve.wasKilled()) removeIncoming(job);
+        if (!steve.wasKilled()) removeIncoming(job);
       }
     }
   }
 
   private void removeIncoming(Message job) {
-    try
-    {
+    try {
       sqs.deleteMessage(new DeleteMessageRequest(_incomingUrl, job.getReceiptHandle()));
-      if( ! FileUtils.deleteQuietly(new File(_handle_file)) )
-      {
+      if (!FileUtils.deleteQuietly(new File(_handle_file))) {
         System.err.println("WARNING: Couldn't delete file with current message handler.");
       }
-    }
-    catch(Exception e)
-    {
-      System.err.println("ERROR: Deleting message from incoming queue failed! "+e.getMessage());
+    } catch (Exception e) {
+      System.err.println("ERROR: Deleting message from incoming queue failed! " + e.getMessage());
     }
   }
 
-  private void setupSQS()
-  {
+  private void setupSQS() {
     sqs = new AmazonSQSClient();
     sqs.setRegion(Region.getRegion(Regions.US_EAST_1));
   }
 
-  private EC2DynamicMetadata getMetadata()
-  {
+  private EC2DynamicMetadata getMetadata() {
     String js = EC2MetadataUtils.getData("/latest/dynamic/instance-identity/document");
     EC2DynamicMetadata md = new Gson().fromJson(js, EC2DynamicMetadata.class);
     return md;
@@ -299,7 +259,7 @@ public class Main
   private com.amazonaws.services.sqs.model.Message fetchJob() throws InterruptedException, IOException {
     long waitingSince = System.currentTimeMillis();
 
-    while(true) {
+    while (true) {
       try {
         ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(_incomingUrl);
         receiveMessageRequest.setMaxNumberOfMessages(1);
@@ -307,11 +267,9 @@ public class Main
 
         if (messages.size() == 1)
           return messages.get(0);
-      }
-      catch(Exception e) {
-        System.err.println("ERROR: Problem receiving SQS message: "+e.getMessage());
-      }
-      finally{
+      } catch (Exception e) {
+        System.err.println("ERROR: Problem receiving SQS message: " + e.getMessage());
+      } finally {
         // If idling for more than x minutes, poweroff machine
         boolean idleTooLong = (System.currentTimeMillis() - waitingSince) / 1000 > _idle * 60;
 

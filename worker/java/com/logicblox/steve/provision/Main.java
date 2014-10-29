@@ -12,8 +12,7 @@ import org.apache.commons.codec.binary.Base64;
 
 import java.util.*;
 
-public class Main
-{
+public class Main {
   private AmazonSQS sqs;
   private AmazonEC2 ec2;
 
@@ -35,13 +34,11 @@ public class Main
   private static int maxInstances = 300;
   private static boolean dryRun = true;
 
-  public Main()
-  {
+  public Main() {
     setupAmazon();
   }
 
-  public static void parseArgs(String args[])
-  {
+  public static void parseArgs(String args[]) {
     Options options = new Options();
 
     options.addOption(OptionBuilder.withLongOpt("bucket")
@@ -133,7 +130,7 @@ public class Main
 
     CommandLineParser parser = new BasicParser();
     try {
-      CommandLine _cmdline = parser.parse( options, args );
+      CommandLine _cmdline = parser.parse(options, args);
       if (_cmdline.hasOption("queue"))
         queue = _cmdline.getOptionValue("queue");
       if (_cmdline.hasOption("bucket"))
@@ -152,35 +149,31 @@ public class Main
         instanceType = _cmdline.getOptionValue("instance-type");
 
       if (_cmdline.hasOption("total"))
-        totalNeeded = ((Number)_cmdline.getParsedOptionValue("total")).intValue();
+        totalNeeded = ((Number) _cmdline.getParsedOptionValue("total")).intValue();
       if (_cmdline.hasOption("max"))
-        maxInstances = ((Number)_cmdline.getParsedOptionValue("max")).intValue();
+        maxInstances = ((Number) _cmdline.getParsedOptionValue("max")).intValue();
       if (_cmdline.hasOption("spot-price"))
-        spotPrice = ((Number)_cmdline.getParsedOptionValue("spot-price")).doubleValue();
+        spotPrice = ((Number) _cmdline.getParsedOptionValue("spot-price")).doubleValue();
       if (_cmdline.hasOption("percentage-spot"))
-        pctSpot = ((Number)_cmdline.getParsedOptionValue("percentage-spot")).doubleValue();
+        pctSpot = ((Number) _cmdline.getParsedOptionValue("percentage-spot")).doubleValue();
       if (_cmdline.hasOption("percentage-queue"))
-        pctQueue = ((Number)_cmdline.getParsedOptionValue("percentage-queue")).doubleValue();
+        pctQueue = ((Number) _cmdline.getParsedOptionValue("percentage-queue")).doubleValue();
 
-      if(maxInstances < totalNeeded)
-      {
+      if (maxInstances < totalNeeded) {
         maxInstances = totalNeeded;
       }
 
       dryRun = _cmdline.hasOption("dry-run");
-    }
-    catch( ParseException exp ) {
-      System.err.println( "Error: " + exp.getMessage() );
+    } catch (ParseException exp) {
+      System.err.println("Error: " + exp.getMessage());
       HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp( "lb-steve-provisioner", options );
+      formatter.printHelp("lb-steve-provisioner", options);
       System.exit(1);
     }
   }
 
 
-
-  private void setupAmazon()
-  {
+  private void setupAmazon() {
     sqs = new AmazonSQSClient();
     sqs.setRegion(Region.getRegion(Regions.US_EAST_1));
 
@@ -188,9 +181,8 @@ public class Main
     ec2.setRegion(Region.getRegion(Regions.US_EAST_1));
   }
 
-  public void go()
-  {
-    Map<String,String> result = sqs.getQueueAttributes(incoming_url, attrs).getAttributes();
+  public void go() {
+    Map<String, String> result = sqs.getQueueAttributes(incoming_url, attrs).getAttributes();
 
     int waitingMsgs = Integer.parseInt(result.get("ApproximateNumberOfMessages"));
     int busyMsgs = Integer.parseInt(result.get("ApproximateNumberOfMessagesNotVisible"));
@@ -198,13 +190,12 @@ public class Main
     int spotCurrent = getNumberOfCurrentSpotInstances();
     int odCurrent = getNumberOfCurrentOnDemandInstances();
 
-    if(totalNeeded == 0)
-    {
+    if (totalNeeded == 0) {
       totalNeeded = (int) Math.ceil((busyMsgs + waitingMsgs) * pctQueue);
     }
     totalNeeded = Math.min(totalNeeded, maxInstances);
 
-    int spotNeeded = (int) Math.ceil(pctSpot*totalNeeded) - spotCurrent;
+    int spotNeeded = (int) Math.ceil(pctSpot * totalNeeded) - spotCurrent;
     int odNeeded = totalNeeded - spotNeeded - odCurrent - spotCurrent;
 
     System.err.println(String.format("%s: Number of current spot instances      : %d", queue, spotCurrent));
@@ -212,26 +203,24 @@ public class Main
 
 
     //System.exit(1);
-    if(spotNeeded > 0)
+    if (spotNeeded > 0)
       createSpotInstances(spotNeeded);
-    if(odNeeded > 0)
+    if (odNeeded > 0)
       createOnDemandInstances(odNeeded);
   }
 
-  private String getUserData()
-  {
+  private String getUserData() {
     return Base64.encodeBase64String(
             String.format("WORKERARGS=\"--bucket %s --incoming %s --outgoing %s\"",
-              s3Bucket,
-              incoming_url,
-              outgoing_url
-             ).getBytes()
-          );
+                    s3Bucket,
+                    incoming_url,
+                    outgoing_url
+            ).getBytes()
+    );
   }
 
   // get number of spot instances that are not yet terminated
-  private int getNumberOfCurrentSpotInstances()
-  {
+  private int getNumberOfCurrentSpotInstances() {
     int result = 0;
 
     DescribeSpotInstanceRequestsRequest spreq = new DescribeSpotInstanceRequestsRequest()
@@ -241,10 +230,8 @@ public class Main
                     new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url)
             );
     DescribeSpotInstanceRequestsResult spres = ec2.describeSpotInstanceRequests(spreq);
-    for(SpotInstanceRequest r: spres.getSpotInstanceRequests())
-    {
-      if( r.getStatus().getCode().startsWith("pending") || r.getStatus().getCode().equals("fulfilled"))
-      {
+    for (SpotInstanceRequest r : spres.getSpotInstanceRequests()) {
+      if (r.getStatus().getCode().startsWith("pending") || r.getStatus().getCode().equals("fulfilled")) {
         result++;
       }
     }
@@ -253,8 +240,7 @@ public class Main
   }
 
   // get number of on-demand instances that are not yet terminated
-  private int getNumberOfCurrentOnDemandInstances()
-  {
+  private int getNumberOfCurrentOnDemandInstances() {
     int result = 0;
     DescribeInstancesRequest req = new DescribeInstancesRequest()
             .withFilters(
@@ -264,12 +250,9 @@ public class Main
             );
 
     DescribeInstancesResult res = ec2.describeInstances(req);
-    for(Reservation r : res.getReservations())
-    {
-      for(Instance i: r.getInstances())
-      {
-        if (!i.getState().getName().equals("terminated") && i.getInstanceLifecycle() == null)
-        {
+    for (Reservation r : res.getReservations()) {
+      for (Instance i : r.getInstances()) {
+        if (!i.getState().getName().equals("terminated") && i.getInstanceLifecycle() == null) {
           result++;
         }
       }
@@ -278,11 +261,10 @@ public class Main
     return result;
   }
 
-  public void createOnDemandInstances(int nr)
-  {
+  public void createOnDemandInstances(int nr) {
     System.err.println(String.format("Creating %d on-demand instances", nr));
 
-    if(dryRun)
+    if (dryRun)
       return;
 
     RunInstancesRequest req = new RunInstancesRequest();
@@ -301,36 +283,32 @@ public class Main
     RunInstancesResult res = ec2.runInstances(req);
 
     try {
-        Thread.sleep(60000);
-    }
-    catch(Exception e) {
+      Thread.sleep(60000);
+    } catch (Exception e) {
     }
 
-    for (Instance instance : res.getReservation().getInstances())
-    {
+    for (Instance instance : res.getReservation().getInstances()) {
       createTags(instance.getInstanceId());
     }
 
   }
 
-  private void createTags(String id)
-  {
+  private void createTags(String id) {
     CreateTagsRequest createTagsRequest = new CreateTagsRequest();
     createTagsRequest.withResources(id)
-      .withTags(new Tag("Name", String.format("Worker [%s]", s3Bucket)))
-      .withTags(new Tag("S3Bucket", s3Bucket))
-      .withTags(new Tag("IncomingQueue", incoming_url))
-      .withTags(new Tag("OutgoingQueue", outgoing_url))
-      ;
+            .withTags(new Tag("Name", String.format("Worker [%s]", s3Bucket)))
+            .withTags(new Tag("S3Bucket", s3Bucket))
+            .withTags(new Tag("IncomingQueue", incoming_url))
+            .withTags(new Tag("OutgoingQueue", outgoing_url))
+    ;
 
     ec2.createTags(createTagsRequest);
   }
 
-  public void createSpotInstances(int nr)
-  {
+  public void createSpotInstances(int nr) {
     System.err.println(String.format("Creating %d spot instances", nr));
 
-    if(dryRun)
+    if (dryRun)
       return;
 
     RequestSpotInstancesRequest req = new RequestSpotInstancesRequest();
@@ -350,18 +328,15 @@ public class Main
 
     RequestSpotInstancesResult res = ec2.requestSpotInstances(req);
     try {
-        Thread.sleep(60000);
+      Thread.sleep(60000);
+    } catch (Exception e) {
     }
-    catch(Exception e) {
-    }
-    for(SpotInstanceRequest sir: res.getSpotInstanceRequests())
-    {
+    for (SpotInstanceRequest sir : res.getSpotInstanceRequests()) {
       createTags(sir.getSpotInstanceRequestId());
     }
   }
 
-  public static void main(String args[])
-  {
+  public static void main(String args[]) {
     parseArgs(args);
     Main m = new Main();
     m.go();

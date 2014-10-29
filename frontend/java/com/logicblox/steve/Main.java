@@ -30,12 +30,9 @@ import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
 
-public class Main
-{
-  public static void main(String[] args)
-  {
-    try
-    {
+public class Main {
+  public static void main(String[] args) {
+    try {
       org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
       SystemDAppender appender = new SystemDAppender(new PatternLayout("%d{ISO8601} %5p %-18c{1} - %m%n"));
       rootLogger.addAppender(appender);
@@ -45,8 +42,7 @@ public class Main
 
       final Main main = new Main(logger);
 
-      if(main.processArgs(args))
-      {
+      if (main.processArgs(args)) {
         Collection<ValidationMessage> messages = ConfigValidator.validate(main._config);
         ConfigValidator.handleMessages(messages, logger);
 
@@ -56,36 +52,29 @@ public class Main
         main._ctx.getAuthenticationProvider().addRealm(realm.build());
 
         final BloxWebServer bloxwebServer = new BloxWebServer(
-          Option.some(main._logDir),
-          main._config,
-          main._ctx,
-          main._logger);
+                Option.some(main._logDir),
+                main._config,
+                main._ctx,
+                main._logger);
 
         // start web server
         // TODO: exceptions in this thread gets caught how?
         ExecutorService webServerExecutor = Executors.newSingleThreadExecutor();
         webServerExecutor.submit(new Runnable() {
           @Override
-          public void run()
-          {
+          public void run() {
             bloxwebServer.run();
           }
         });
 
         main.loadServiceContext();
-      }
-      else
-      {
+      } else {
         System.exit(1);
       }
-    }
-    catch(UsageException exc)
-    {
+    } catch (UsageException exc) {
       System.err.println("error: " + exc.getMessage());
       System.exit(1);
-    }
-    catch(Exception exc)
-    {
+    } catch (Exception exc) {
       exc.printStackTrace();
       System.exit(1);
     }
@@ -96,35 +85,25 @@ public class Main
   private Logger _logger;
   private ServiceContext _ctx;
 
-  protected Main(Logger logger)
-  {
+  protected Main(Logger logger) {
     _logger = logger;
   }
 
-  private void loadServiceContext() throws Exception
-  {
-    try
-    {
+  private void loadServiceContext() throws Exception {
+    try {
       _ctx.getServiceMapScanner().rescan(_ctx, Collections.singletonList("steve"), true);
-    }
-    catch(Error e)
-    {
+    } catch (Error e) {
       throw e;
-    }
-    catch(Exception e)
-    {
+    } catch (Exception e) {
       throw e;
-    }
-    catch(Throwable e)
-    {
+    } catch (Throwable e) {
       throw new RuntimeException(e);
     }
   }
 
-  private boolean processArgs(String[] args) throws Exception
-  {
+  private boolean processArgs(String[] args) throws Exception {
     //final String configFilename = "lb-steve-frontend.config";
-    
+
     File file1 = ConfigLocator.getDefaultConfigFile("lb-web-server.config");
     File file2 = ConfigLocator.getDefaultConfigFile("lb-steve-frontend.config");
     File file3 = null;
@@ -135,43 +114,39 @@ public class Main
     OptionBuilder.hasArg();
     OptionBuilder.withArgName("FILE");
     options.addOption(OptionBuilder.create());
-            
+
     CommandLineParser parser = new BasicParser();
-    try
-    {
-      CommandLine _cmdline = parser.parse( options, args );
+    try {
+      CommandLine _cmdline = parser.parse(options, args);
       if (_cmdline.hasOption("config"))
         file3 = new File(_cmdline.getOptionValue("config"));
-    }
-    catch( ParseException exp )
-    {
-      System.err.println( "Error: " + exp.getMessage() );
+    } catch (ParseException exp) {
+      System.err.println("Error: " + exp.getMessage());
       HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp( "lb-steve-frontend", options );
+      formatter.printHelp("lb-steve-frontend", options);
       System.exit(1);
     }
 
-    if(file1 != null)
+    if (file1 != null)
       _config = new Config(file1, _config);
-    if(file2 != null)
+    if (file2 != null)
       _config = new Config(file2, _config);
-    if(file3 != null)
+    if (file3 != null)
       _config = new Config(file3, _config);
 
     _logDir = new File(_config.getStringError("logdir_access"));
-    if(!_logDir.exists())
+    if (!_logDir.exists())
       throw new UsageException("directory '" + _logDir.getPath() + "' does not exist");
 
-    if(_config.getBoolError("debug"))
-    {
-      System.setProperty("org.eclipse.jetty.util.log.DEBUG", "true"); 
+    if (_config.getBoolError("debug")) {
+      System.setProperty("org.eclipse.jetty.util.log.DEBUG", "true");
     }
 
-    if(_config.contains("max_log_message_length"))
-       GlobalConfig.setMaxLogMessageLength(
-          _config.getIntError("max_log_message_length"));
+    if (_config.contains("max_log_message_length"))
+      GlobalConfig.setMaxLogMessageLength(
+              _config.getIntError("max_log_message_length"));
     else
-       GlobalConfig.setMaxLogMessageLength(-1);
+      GlobalConfig.setMaxLogMessageLength(-1);
 
     GlobalConfig.setLogMessages(_config.getBoolError("log_messages"));
     GlobalConfig.setLogHttp(_config.getBoolError("log_http"));

@@ -16,23 +16,22 @@ import com.logicblox.steve.common.Status;
  * most arguments are primitive types, and not classes like Account or
  * User.
  */
-public interface Database
-{
-  
+public interface Database {
+
   /**
    * Get information about the user with this id.
-   * 
+   *
    * @param userId
    * @return
    */
   public User getUser(String userId);
-  
-  
+
+
   public Account getAccount(String userId);
 
   /**
    * Initial creation of a job in the database.
-   * 
+   * <p/>
    * <p>This method will generate a unique job id for the new job and will attempt to store the job
    * in the database. If there exists already a job with the client id, the job will be reused, so
    * the previously existing job id will be reused and returned. Otherwise, the newly generated job
@@ -48,23 +47,22 @@ public interface Database
    * @param inputs
    * @param output
    * @param metadata
-   * @see Job
-   * 
    * @return the generated id for this job (which could be reused from a previous job with this
    * clientId).
+   * @see Job
    */
   public ListenableFuture<String> createJob(
-    String userId,
-    String clientId,
-    String jobImplId,
-    Collection<Data> inputs,
-    String output,
-    Map<String, String> metadata);
+          String userId,
+          String clientId,
+          String jobImplId,
+          Collection<Data> inputs,
+          String output,
+          Map<String, String> metadata);
 
 
   /**
    * Add this status event to the job with this id.
-   *  
+   *
    * @param jobId
    * @param status
    * @return the jobId passed as parameter, if the operation succeeded.
@@ -73,13 +71,13 @@ public interface Database
 
   /**
    * Add results to the job with this id.
-   * 
+   *
    * @param jobId
    * @param output
    * @return the jobId passed as parameter, if the operation succeeded.
    */
   public ListenableFuture<String> setResult(String jobId, List<Data> output);
-  
+
   /**
    * Return Job with this id.
    *
@@ -90,12 +88,12 @@ public interface Database
 
   /**
    * Store a job implementation in the database.
-   * 
+   * <p/>
    * <p>Note that job implementations are stored by id within an account. Therefore, it may be that
    * the account to which this user belongs already has a job implementation with this id. In this
    * case, the job implementation is updated with these new values.
    * </p>
-   * 
+   *
    * @param userId
    * @param implId
    * @param file
@@ -103,25 +101,25 @@ public interface Database
    * @return the implId passed as parameter, if the operation succeeded.
    */
   public ListenableFuture<String> setJobImpl(
-    String userId,
-    String implId,
-    Data file,
-    Map<String, String> metadata);
+          String userId,
+          String implId,
+          Data file,
+          Map<String, String> metadata);
 
   /**
    * Get information on a job implementation.
    *
    * @param userId the user requesting the information.
-   * @param id the id of the jobimpl being requested.
+   * @param id     the id of the jobimpl being requested.
    * @return information about the jobImpl if the id exists and the user has access to it (i.e., if
-   * the impl belongs to some user in the same account as the user requesting the information). 
+   * the impl belongs to some user in the same account as the user requesting the information).
    * Otherwise, the future will be failed.
    */
   public ListenableFuture<JobImpl> getJobImpl(String userId, String id);
 
   /**
    * Get all job implementations available to a user.
-   * 
+   *
    * @param userId the user requesting the information.
    */
   public ListenableFuture<Iterable<JobImpl>> getJobImpl(String userId);

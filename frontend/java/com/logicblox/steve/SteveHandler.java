@@ -59,8 +59,7 @@ import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
 
-public class SteveHandler extends ProtoBufHandler
-{
+public class SteveHandler extends ProtoBufHandler {
   private static final long MAX_IMPL_SIZE = 50;
   private static final long MAX_LOG_SIZE = 50;
 
@@ -71,14 +70,12 @@ public class SteveHandler extends ProtoBufHandler
   private String _jobImplPrefix;
   private String _jobLogPrefix;
 
-  public SteveHandler()
-  {
+  public SteveHandler() {
     super("Steve");
   }
 
   @Override
-  public void init(Section handlerConfig, ServiceConfig service)
-  {
+  public void init(Section handlerConfig, ServiceConfig service) {
     super.init(handlerConfig, service);
     String dbPrefix = handlerConfig.getStringError("database_prefix");
     _db = new LBDatabase(dbPrefix);
@@ -92,102 +89,86 @@ public class SteveHandler extends ProtoBufHandler
     Section jobLogConfig = handlerConfig.getParent().getSection("job-logs");
     _jobLogPrefix = jobLogConfig.getStringError("prefix");
 
-    try
-    {
+    try {
       SQSClients sqsClients = new SQSClients();
-      
-      for(String sectionName : handlerConfig.getParent().getSectionNames())
-      {
-        if(sectionName.startsWith("job-queue:"))
-        {
+
+      for (String sectionName : handlerConfig.getParent().getSectionNames()) {
+        if (sectionName.startsWith("job-queue:")) {
           Section jobQueueConfig = handlerConfig.getParent().getSection(sectionName);
           SQSClient jobClient = sqsClients.getSQSClient(jobQueueConfig);
           SQSQueueHandle jobQueue = getQueueFromConfig(jobClient, jobQueueConfig);
           JobQueueClient client = new JobQueueClient(jobClient, jobQueue);
           String key = sectionName.substring(sectionName.indexOf(':') + 1);
-          
+
           _jobQueues.put(key, client);
-          if(jobQueueConfig.getBool("default", false))
+          if (jobQueueConfig.getBool("default", false))
             _jobQueues.put(null, client);
         }
       }
-      
+
       // If there is only a single job-queue section, and it was not
       // marked as the default, then automatically make it the default.
-      if(_jobQueues.size() == 1)
-      {
+      if (_jobQueues.size() == 1) {
         JobQueueClient single = null;
-        for(Map.Entry<String, JobQueueClient> entry : _jobQueues.entrySet())
+        for (Map.Entry<String, JobQueueClient> entry : _jobQueues.entrySet())
           single = entry.getValue();
         _jobQueues.put(null, single);
       }
 
-      if(!_jobQueues.containsKey(null))
+      if (!_jobQueues.containsKey(null))
         throw new UsageException("No default job queue is configured");
-      
+
       Section statusQueueConfig = handlerConfig.getParent().getSection("status-queue");
       SQSClient statusClient = sqsClients.getSQSClient(statusQueueConfig);
-      
+
       SQSQueueHandle statusQueue = getQueueFromConfig(statusClient, statusQueueConfig);
       StatusQueueClient status = new StatusQueueClient(statusClient, statusQueue, _db);
       status.start();
-    }
-    catch(SQSException exc)
-    {
+    } catch (SQSException exc) {
       throw new HandlerValidationException(exc);
     }
   }
 
-  private SQSQueueHandle getQueueFromConfig(SQSClient sqs, Section config) throws SQSException
-  {
+  private SQSQueueHandle getQueueFromConfig(SQSClient sqs, Section config) throws SQSException {
     boolean create = config.getBool("create", false);
-    if(config.contains("sqs_queue_url"))
-    {
+    if (config.contains("sqs_queue_url")) {
       return sqs.getQueue(URI.create(config.getStringError("sqs_queue_url")), create);
-    }
-    else if(config.contains("sqs_queue_name"))
-    {
+    } else if (config.contains("sqs_queue_name")) {
       return sqs.getQueue(config.getStringError("sqs_queue_name"), create);
-    }
-    else
+    } else
       throw new HandlerValidationException(
-        "sqs_queue_url or sqs_queue_url is needed for section '" + config.getSectionName() + "'", null);
+              "sqs_queue_url or sqs_queue_url is needed for section '" + config.getSectionName() + "'", null);
   }
 
   @Override
-  protected Frontend.Request.Builder getRequestBuilder()
-  {
+  protected Frontend.Request.Builder getRequestBuilder() {
     return Frontend.Request.newBuilder();
   }
 
   @Override
-  protected Frontend.Response.Builder getResponseBuilder()
-  {
+  protected Frontend.Response.Builder getResponseBuilder() {
     return Frontend.Response.newBuilder();
   }
 
   @Override
-  public FileDescriptorSet getRequestProtocolDescriptor()
-  {
+  public FileDescriptorSet getRequestProtocolDescriptor() {
     return createFileDescriptorSet(Frontend.getDescriptor());
   }
-  
+
   @Override
-  public FileDescriptorSet getResponseProtocolDescriptor()
-  {
+  public FileDescriptorSet getResponseProtocolDescriptor() {
     // same protocol as request
     return getRequestProtocolDescriptor();
   }
 
   @Override
-  public void description(StringBuilder out)
-  {
+  public void description(StringBuilder out) {
     out.append("<li>Steve jobs handler</li>");
   }
 
   /**
    * Extract the username from the HTTP request.
-   * 
+   *
    * @param request
    * @return
    */
@@ -202,242 +183,202 @@ public class SteveHandler extends ProtoBufHandler
 
   @Override
   protected ListenableFuture<ProtoBufExchange> handle(
-    HttpServletRequest httpRequest,
-    HttpServletResponse httpResponse, 
-    ProtoBufExchange exchange)
-  throws ServletException, IOException, InvalidProtocolBufferException, InvalidRequestException
-  {
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          ProtoBufExchange exchange)
+          throws ServletException, IOException, InvalidProtocolBufferException, InvalidRequestException {
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
 
     ListenableFuture<Frontend.Response> resp;
-    if(request.hasCreate())
-    {
+    if (request.hasCreate()) {
       resp = handleCreate(httpRequest, httpResponse, request.getCreate());
-    }
-    else if(request.hasState())
-    {
+    } else if (request.hasState()) {
       resp = handleState(httpRequest, httpResponse, request.getState());
-    }
-    else if(request.hasResult())
-    {
+    } else if (request.hasResult()) {
       resp = handleResult(httpRequest, httpResponse, request.getResult());
-    }
-    else if(request.hasCancel())
-    {
+    } else if (request.hasCancel()) {
       resp = Futures.immediateFailedFuture(
-        new HttpException(HttpStatus.BAD_REQUEST_400, "Not yet implemented"));
-    }
-    else if(request.hasLog())
-    {
+              new HttpException(HttpStatus.BAD_REQUEST_400, "Not yet implemented"));
+    } else if (request.hasLog()) {
       resp = handleLog(httpRequest, httpResponse, request.getLog());
-    }
-    else if(request.hasImplAdd())
-    {
+    } else if (request.hasImplAdd()) {
       resp = handleImplAdd(httpRequest, httpResponse, request.getImplAdd());
-    }
-    else if(request.hasImplList())
-    {
+    } else if (request.hasImplList()) {
       resp = handleImplList(httpRequest, httpResponse, request.getImplList());
-    }
-    else
-    {
+    } else {
       resp = Futures.immediateFailedFuture(
-        new ServiceException(
-          new SimpleErrorCode(
-            "REQUEST_INVALID", HttpStatus.BAD_REQUEST_400, "Request union requires one request")));
+              new ServiceException(
+                      new SimpleErrorCode(
+                              "REQUEST_INVALID", HttpStatus.BAD_REQUEST_400, "Request union requires one request")));
     }
-    
+
     return MoreFutures.transferResponse(resp, exchange);
   }
 
   private ListenableFuture<Frontend.Response> handleCreate(
-    HttpServletRequest httpRequest,
-    HttpServletResponse httpResponse, 
-    Frontend.JobCreateRequest req)
-  {
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          Frontend.JobCreateRequest req) {
     final String user = getUser(httpRequest);
 
     Map<String, String> tags = Conversions.createMap(req.getMetadataList());
     tags.put("date", Conversions.getCurrentISO8601());
 
     final String jobQueueId = tags.get("job-queue");
-    if(jobQueueId != null && !_jobQueues.containsKey(jobQueueId))
-    {
+    if (jobQueueId != null && !_jobQueues.containsKey(jobQueueId)) {
       return Futures.immediateFailedFuture(
-        new ServiceException(
-          new SimpleErrorCode(
-            "NO_SUCH_JOB_QUEUE", HttpStatus.BAD_REQUEST_400, "Job queue '" + jobQueueId + "' does not exist")));
+              new ServiceException(
+                      new SimpleErrorCode(
+                              "NO_SUCH_JOB_QUEUE", HttpStatus.BAD_REQUEST_400, "Job queue '" + jobQueueId + "' does not exist")));
     }
 
     ListenableFuture<String> jobId =
-      _db.createJob(
-        user,
-        req.getClientId(),
-        req.getJobImpl(),
-        Conversions.convertFrontendFileToData(req.getInputList()),
-        req.getOutput(),
-        tags);
+            _db.createJob(
+                    user,
+                    req.getClientId(),
+                    req.getJobImpl(),
+                    Conversions.convertFrontendFileToData(req.getInputList()),
+                    req.getOutput(),
+                    tags);
 
     // Once we have the job stored in the database, submit it to the queue
     ListenableFuture<Job> job = Futures.transform(jobId, new AsyncFunction<String, Job>() {
 
-          @Override
-          public ListenableFuture<Job> apply(String id) {
-            return _db.getJob(id);
-          }          
-        });
-        
-    job = Futures.transform(job, new AsyncFunction<Job, Job>()
-    {
-      public ListenableFuture<Job> apply(Job j)
-      {
+      @Override
+      public ListenableFuture<Job> apply(String id) {
+        return _db.getJob(id);
+      }
+    });
+
+    job = Futures.transform(job, new AsyncFunction<Job, Job>() {
+      public ListenableFuture<Job> apply(Job j) {
         return _jobQueues.get(jobQueueId).submit(j);
       }
     });
 
     // Once the job is submitted, construct a response to return the client
     return Futures.transform(
-      job,
-      new Function<Job, Frontend.Response>()
-      {
-        public Frontend.Response apply(Job job)
-        {
-          Frontend.Response.Builder response = Frontend.Response.newBuilder();
-          response.setCreate(
-            Frontend.JobCreateResponse.newBuilder()
-            .setJobId(job.id));
-          
-          return response.build();
-        }
-      });
+            job,
+            new Function<Job, Frontend.Response>() {
+              public Frontend.Response apply(Job job) {
+                Frontend.Response.Builder response = Frontend.Response.newBuilder();
+                response.setCreate(
+                        Frontend.JobCreateResponse.newBuilder()
+                                .setJobId(job.id));
+
+                return response.build();
+              }
+            });
   }
 
   private ListenableFuture<Frontend.Response> handleState(
-    HttpServletRequest httpRequest,
-    HttpServletResponse httpResponse, 
-    final Frontend.StateRequest req)
-  {
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          final Frontend.StateRequest req) {
     ListenableFuture<Job> job = _db.getJob(req.getId());
 
     return Futures.transform(
-      job,
-      new Function<Job, Frontend.Response>()
-      {
-        public Frontend.Response apply(Job job)
-        {
-          Frontend.State.Builder b = Frontend.State.newBuilder();
+            job,
+            new Function<Job, Frontend.Response>() {
+              public Frontend.Response apply(Job job) {
+                Frontend.State.Builder b = Frontend.State.newBuilder();
 
-          if(job.isSucceeded())
-            b.setState("SUCCEEDED");
-          else if(job.isFailed())
-            b.setState("FAILED");
-          else
-            // TODO wait until we have proper state handling
-            b.setState("UNKNOWN");
+                if (job.isSucceeded())
+                  b.setState("SUCCEEDED");
+                else if (job.isFailed())
+                  b.setState("FAILED");
+                else
+                  // TODO wait until we have proper state handling
+                  b.setState("UNKNOWN");
 
-          if(req.hasDetail() && req.getDetail())
-          {
-            for(Status status : job.getStatus())
-            {
-              Frontend.Status.Builder protoStatus =
-                Frontend.Status.newBuilder()
-                .setTimestamp(status.timestamp)
-                .setMachine(status.machine)
-                .setStatusCode(status.event.toString());
+                if (req.hasDetail() && req.getDetail()) {
+                  for (Status status : job.getStatus()) {
+                    Frontend.Status.Builder protoStatus =
+                            Frontend.Status.newBuilder()
+                                    .setTimestamp(status.timestamp)
+                                    .setMachine(status.machine)
+                                    .setStatusCode(status.event.toString());
 
-              if(status.hasMessage())
-                protoStatus.setMessage(status.message);
-              
-              b.addStatus(protoStatus);
-            }
-          }
+                    if (status.hasMessage())
+                      protoStatus.setMessage(status.message);
 
-          Frontend.Response.Builder response =
-            Frontend.Response.newBuilder()
-            .setState(
-              Frontend.StateResponse.newBuilder()
-              .setState(b));
+                    b.addStatus(protoStatus);
+                  }
+                }
 
-          return response.build();
-        }
-      });
+                Frontend.Response.Builder response =
+                        Frontend.Response.newBuilder()
+                                .setState(
+                                        Frontend.StateResponse.newBuilder()
+                                                .setState(b));
+
+                return response.build();
+              }
+            });
   }
-  
+
   /**
    * Validate that this job is completed and that it succeeded.
-   * 
+   *
    * @param job
    */
-  private void validateJobDone(final Job job)
-  {
+  private void validateJobDone(final Job job) {
     // TODO add user account and only return job when it exists in this account.
     // TODO throw authorization exception if the user is not allowed to access the job
-    if(!job.isSucceeded())
-    {
-      if(job.isFailed())
-      {
+    if (!job.isSucceeded()) {
+      if (job.isFailed()) {
         throw new ServiceException(
-          new SimpleErrorCode("JOB_FAILED", 400, "Job '" + job.id + "' failed and has no output"));
-      }
-      else
-      {
+                new SimpleErrorCode("JOB_FAILED", 400, "Job '" + job.id + "' failed and has no output"));
+      } else {
         throw new ServiceException(
-          new SimpleErrorCode("JOB_INCOMPLETE", 400, "Job '" + job.id + "' has not completed and has no output"));
+                new SimpleErrorCode("JOB_INCOMPLETE", 400, "Job '" + job.id + "' has not completed and has no output"));
       }
-    }    
+    }
   }
 
   private ListenableFuture<Frontend.Response> handleResult(
-    HttpServletRequest httpRequest,
-    HttpServletResponse httpResponse, 
-    final Frontend.JobResultRequest req)
-  {
-    ListenableFuture<Job> job = _db.getJob(req.getJobId());   
-    
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          final Frontend.JobResultRequest req) {
+    ListenableFuture<Job> job = _db.getJob(req.getJobId());
+
     return Futures.transform(
-      job,
-      new AsyncFunction<Job, Frontend.Response>()
-      {
-        public ListenableFuture<Frontend.Response> apply(Job job)
-        {
-         
-          validateJobDone(job);
-          
-          Frontend.JobResultResponse.Builder b = Frontend.JobResultResponse.newBuilder();
+            job,
+            new AsyncFunction<Job, Frontend.Response>() {
+              public ListenableFuture<Frontend.Response> apply(Job job) {
 
-          for(Data d : job.getOutputData())
-          {
-            b.addOutput(Conversions.convertDataToFrontendFile(d));
-          }
+                validateJobDone(job);
 
-          Frontend.Response.Builder response = Frontend.Response.newBuilder();
-          response.setResult(b);
-          return Futures.immediateFuture(response.build());
-        }
-      });
+                Frontend.JobResultResponse.Builder b = Frontend.JobResultResponse.newBuilder();
+
+                for (Data d : job.getOutputData()) {
+                  b.addOutput(Conversions.convertDataToFrontendFile(d));
+                }
+
+                Frontend.Response.Builder response = Frontend.Response.newBuilder();
+                response.setResult(b);
+                return Futures.immediateFuture(response.build());
+              }
+            });
   }
 
   private ListenableFuture<Frontend.Response> handleLog(
-    HttpServletRequest httpRequest,
-    HttpServletResponse httpResponse,
-    final Frontend.JobLogRequest req)
-  throws IOException
-  {
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          final Frontend.JobLogRequest req)
+          throws IOException {
     // TODO - if we decide to allow this operation only on jobs that have succeeded (which is
     // what this call to getResult seemed to do), then we need a call to _db.getJob followed by
     // a validateJobDone.
     //ListenableFuture<Job> job = _db.getResult(req.getJobId());
-        
+
     final File tmpFile = File.createTempFile("joblog", null, _tmpDir);
     URI tmpUrl;
-    try
-    {
-      tmpUrl = new URI(_jobLogPrefix+"/"+req.getJobId()+"/log");
-    }
-    catch(URISyntaxException exc)
-    {
+    try {
+      tmpUrl = new URI(_jobLogPrefix + "/" + req.getJobId() + "/log");
+    } catch (URISyntaxException exc) {
       throw new ServiceException(
-        new SimpleErrorCode("INVALID_URL_SYNTAX", 500, "Invalid URL syntax"));
+              new SimpleErrorCode("INVALID_URL_SYNTAX", 500, "Invalid URL syntax"));
     }
     final URI inputUrl = tmpUrl;
 
@@ -446,83 +387,71 @@ public class SteveHandler extends ProtoBufHandler
     // Check the S3 metadata, and if we're okay, then download the
     // log from S3 to a temporary file
     ListenableFuture<S3File> inputFile = Futures.transform(
-      metadata,
-      new AsyncFunction<ObjectMetadata, S3File>()
-      {
-        public ListenableFuture<S3File> apply(ObjectMetadata m) throws IOException
-        {
-          if(m == null)
-            throw new ServiceException(
-              new SimpleErrorCode("FILE_NOT_FOUND", 400, "Log does not exist"));
+            metadata,
+            new AsyncFunction<ObjectMetadata, S3File>() {
+              public ListenableFuture<S3File> apply(ObjectMetadata m) throws IOException {
+                if (m == null)
+                  throw new ServiceException(
+                          new SimpleErrorCode("FILE_NOT_FOUND", 400, "Log does not exist"));
 
-          if(m.getContentLength() > MAX_LOG_SIZE * 1048576L)
-            throw new ServiceException(
-              new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Log is too big"));
+                if (m.getContentLength() > MAX_LOG_SIZE * 1048576L)
+                  throw new ServiceException(
+                          new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Log is too big"));
 
-          return _s3client.download(tmpFile, inputUrl);
-        }
-      });
+                return _s3client.download(tmpFile, inputUrl);
+              }
+            });
 
     ListenableFuture<String> log = Futures.transform(
-      inputFile,
-      new AsyncFunction<S3File, String>()
-      {
-        public ListenableFuture<String> apply(S3File logfile) throws IOException
-        {
-          List<String> lines = Files.readLines(logfile.getLocalFile(), Charsets.UTF_8);
-          Joiner joiner = Joiner.on("\n");
-          String log = joiner.join(lines);
-          return Futures.immediateFuture(log);
-        }
-      });
+            inputFile,
+            new AsyncFunction<S3File, String>() {
+              public ListenableFuture<String> apply(S3File logfile) throws IOException {
+                List<String> lines = Files.readLines(logfile.getLocalFile(), Charsets.UTF_8);
+                Joiner joiner = Joiner.on("\n");
+                String log = joiner.join(lines);
+                return Futures.immediateFuture(log);
+              }
+            });
 
     ListenableFuture<Frontend.Response> futureRes = Futures.transform(
-      log,
-      new AsyncFunction<String, Frontend.Response>()
-      {
-        public ListenableFuture<Frontend.Response> apply(String log)
-        {
-          Frontend.JobLogResponse.Builder b = Frontend.JobLogResponse.newBuilder();
-          b.setLog(log);
+            log,
+            new AsyncFunction<String, Frontend.Response>() {
+              public ListenableFuture<Frontend.Response> apply(String log) {
+                Frontend.JobLogResponse.Builder b = Frontend.JobLogResponse.newBuilder();
+                b.setLog(log);
 
-          Frontend.Response.Builder response = Frontend.Response.newBuilder();
-          response.setLog(b);
-          return Futures.immediateFuture(response.build());
-        }
-      });
+                Frontend.Response.Builder response = Frontend.Response.newBuilder();
+                response.setLog(b);
+                return Futures.immediateFuture(response.build());
+              }
+            });
 
-    return MoreFutures.compose(futureRes, new Runnable()
-      {
-        @Override
-        public void run() throws SecurityException
-        {
-          tmpFile.delete();
-        }
-      });
+    return MoreFutures.compose(futureRes, new Runnable() {
+      @Override
+      public void run() throws SecurityException {
+        tmpFile.delete();
+      }
+    });
   }
 
   /**
    * Handle a request to add a new job implementation.
    */
   private ListenableFuture<Frontend.Response> handleImplAdd(
-    HttpServletRequest httpRequest,
-    HttpServletResponse httpResponse, 
-    final Frontend.ImplAddRequest req)
-  throws IOException
-  {
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          final Frontend.ImplAddRequest req)
+          throws IOException {
     final File tmpFile = File.createTempFile("jobimpl", null, _tmpDir);
     final String id = UUID.randomUUID().toString();
     final String user = getUser(httpRequest);
 
     URI tmpUrl;
-    try
-    {
+    try {
       tmpUrl = new URI(req.getImplementation().getUrl());
-    }
-    catch(URISyntaxException exc)
-    {
+    } catch (URISyntaxException exc) {
       throw new ServiceException(
-        new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax"));
+              new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax"));
     }
 
     final URI inputUrl = tmpUrl;
@@ -530,171 +459,146 @@ public class SteveHandler extends ProtoBufHandler
     ListenableFuture<ObjectMetadata> metadata = _s3client.exists(inputUrl);
 
     ListenableFuture<S3File> inputFile =
-      Futures.transform(metadata, new AsyncFunction<ObjectMetadata, S3File>()
-        {
-          @Override
-          public ListenableFuture<S3File> apply(ObjectMetadata m) throws Exception
-          {
-            if(m == null)
-              throw new ServiceException(
-                new SimpleErrorCode("FILE_NOT_FOUND", 400, "S3 file does not exist"));
+            Futures.transform(metadata, new AsyncFunction<ObjectMetadata, S3File>() {
+              @Override
+              public ListenableFuture<S3File> apply(ObjectMetadata m) throws Exception {
+                if (m == null)
+                  throw new ServiceException(
+                          new SimpleErrorCode("FILE_NOT_FOUND", 400, "S3 file does not exist"));
 
-            if(req.getImplementation().hasHash())
-              if(!S3Utils.verifyHash(m, req.getImplementation().getHash()))
-                throw new ServiceException(
-                  new SimpleErrorCode("INVALID_HASH", 400,
-                    "Specified hash does not correspond to actual hash"));
+                if (req.getImplementation().hasHash())
+                  if (!S3Utils.verifyHash(m, req.getImplementation().getHash()))
+                    throw new ServiceException(
+                            new SimpleErrorCode("INVALID_HASH", 400,
+                                    "Specified hash does not correspond to actual hash"));
 
-            if(m.getContentLength() > MAX_IMPL_SIZE * 1048576L)
-              throw new ServiceException(
-                new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Implementation is too big"));
+                if (m.getContentLength() > MAX_IMPL_SIZE * 1048576L)
+                  throw new ServiceException(
+                          new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Implementation is too big"));
 
-            // TODO check the account of the encryption key used.
-            return _s3client.download(tmpFile, inputUrl);
-          }
-        });
+                // TODO check the account of the encryption key used.
+                return _s3client.download(tmpFile, inputUrl);
+              }
+            });
 
-    inputFile = Futures.withFallback(inputFile, new FutureFallback<S3File>()
-      {
-        @Override
-        public ListenableFuture<S3File> create(Throwable t)
-        {
-          if(t instanceof ServiceException)
-          {
-            return Futures.immediateFailedFuture(t);
-          }
-          else
-          {
-            return Futures.immediateFailedFuture(new ServiceException(
-              new SimpleErrorCode("ERROR_FETCHING", 500, "Could not fetch job implementation")));
-          }
+    inputFile = Futures.withFallback(inputFile, new FutureFallback<S3File>() {
+      @Override
+      public ListenableFuture<S3File> create(Throwable t) {
+        if (t instanceof ServiceException) {
+          return Futures.immediateFailedFuture(t);
+        } else {
+          return Futures.immediateFailedFuture(new ServiceException(
+                  new SimpleErrorCode("ERROR_FETCHING", 500, "Could not fetch job implementation")));
         }
-      });
+      }
+    });
 
     // Upload file to S3
     ListenableFuture<S3File> newFile = Futures.transform(
-      inputFile,
-      new AsyncFunction<S3File, S3File>()
-      {
-        public ListenableFuture<S3File> apply(S3File input) throws IOException
-        {
-          URI jobUri = URI.create(_jobImplPrefix + "/" + id + ".tar.gz");
+            inputFile,
+            new AsyncFunction<S3File, S3File>() {
+              public ListenableFuture<S3File> apply(S3File input) throws IOException {
+                URI jobUri = URI.create(_jobImplPrefix + "/" + id + ".tar.gz");
 
-          // TODO verify etag again
-          return _s3client.upload(input.getLocalFile(), jobUri);
-        }
-      });
+                // TODO verify etag again
+                return _s3client.upload(input.getLocalFile(), jobUri);
+              }
+            });
 
     final Map<String, String> tags = Conversions.createMap(req.getMetadataList());
     tags.put("date", Conversions.getCurrentISO8601());
 
     ListenableFuture<String> jobImplId = Futures.transform(
-      newFile,
-      new AsyncFunction<S3File, String>()
-      {
-        public ListenableFuture<String> apply(S3File input) throws IOException
-        {
-          return _db.setJobImpl(
-            user,
-            req.getId(),
-            Conversions.convertS3FileToData(input),
-            tags);
-        }
-      });
+            newFile,
+            new AsyncFunction<S3File, String>() {
+              public ListenableFuture<String> apply(S3File input) throws IOException {
+                return _db.setJobImpl(
+                        user,
+                        req.getId(),
+                        Conversions.convertS3FileToData(input),
+                        tags);
+              }
+            });
 
     ListenableFuture<String> jobId = Futures.transform(
-      jobImplId,
-      new AsyncFunction<String, String>()
-      {
-        public ListenableFuture<String> apply(String impl)
-        {
-          return _db.createJob(
-            user,
-            req.getClientId(),
-            "steve:internal:process-jobimpl",
-            Conversions.convertFrontendFileToData(
-              Collections.singletonList(req.getImplementation())),
-            "",
-            tags);
-        }
-      });
+            jobImplId,
+            new AsyncFunction<String, String>() {
+              public ListenableFuture<String> apply(String impl) {
+                return _db.createJob(
+                        user,
+                        req.getClientId(),
+                        "steve:internal:process-jobimpl",
+                        Conversions.convertFrontendFileToData(
+                                Collections.singletonList(req.getImplementation())),
+                        "",
+                        tags);
+              }
+            });
 
     jobId = Futures.transform(
-      jobId,
-      new AsyncFunction<String, String>()
-      {
-        public ListenableFuture<String> apply(String id)
-        {
-          final StatusBuilder status = new StatusBuilder();
-          status.event = Status.Event.SUCCEEDED;
-          status.machine = "frontend";
-          status.timestamp = System.currentTimeMillis();
+            jobId,
+            new AsyncFunction<String, String>() {
+              public ListenableFuture<String> apply(String id) {
+                final StatusBuilder status = new StatusBuilder();
+                status.event = Status.Event.SUCCEEDED;
+                status.machine = "frontend";
+                status.timestamp = System.currentTimeMillis();
 
-          return _db.addStatus(id, status.build());
-        }
-      });
+                return _db.addStatus(id, status.build());
+              }
+            });
 
     ListenableFuture<Frontend.Response> futureRes = Futures.transform(
-      jobId,
-      new Function<String, Frontend.Response>()
-      {
-        public Frontend.Response apply(String jobId)
-        {
-          return
-            Frontend.Response.newBuilder()
-            .setImplAdd(
-              Frontend.ImplAddResponse.newBuilder()
-              .setId(jobId))
-            .build();
-        }
-      });
+            jobId,
+            new Function<String, Frontend.Response>() {
+              public Frontend.Response apply(String jobId) {
+                return
+                        Frontend.Response.newBuilder()
+                                .setImplAdd(
+                                        Frontend.ImplAddResponse.newBuilder()
+                                                .setId(jobId))
+                                .build();
+              }
+            });
 
-    return MoreFutures.compose(futureRes, new Runnable()
-      {
-        @Override
-        public void run() throws SecurityException
-        {
-          tmpFile.delete();
-        }
-      });
+    return MoreFutures.compose(futureRes, new Runnable() {
+      @Override
+      public void run() throws SecurityException {
+        tmpFile.delete();
+      }
+    });
   }
 
   /**
    * Handle a request to list job implementations.
    */
   private ListenableFuture<Frontend.Response> handleImplList(
-    HttpServletRequest httpRequest,
-    HttpServletResponse httpResponse, 
-    Frontend.ImplListRequest req)
-  {
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          Frontend.ImplListRequest req) {
     final String user = getUser(httpRequest);
     return Futures.transform(
-      _db.getJobImpl(user),
-      new Function<Iterable<JobImpl>, Frontend.Response>()
-      {
-        public Frontend.Response apply(Iterable<JobImpl> impls)
-        {
-          Frontend.ImplListResponse.Builder resp = Frontend.ImplListResponse.newBuilder();
-          for(JobImpl impl : impls)
-          {
-            if(!impl.id.startsWith("steve:internal:"))
-              resp.addJobImpl(createImplInfo(impl));
-          }
+            _db.getJobImpl(user),
+            new Function<Iterable<JobImpl>, Frontend.Response>() {
+              public Frontend.Response apply(Iterable<JobImpl> impls) {
+                Frontend.ImplListResponse.Builder resp = Frontend.ImplListResponse.newBuilder();
+                for (JobImpl impl : impls) {
+                  if (!impl.id.startsWith("steve:internal:"))
+                    resp.addJobImpl(createImplInfo(impl));
+                }
 
-          return
-            Frontend.Response.newBuilder()
-            .setImplList(resp)
-            .build();
-        }
-      });
+                return
+                        Frontend.Response.newBuilder()
+                                .setImplList(resp)
+                                .build();
+              }
+            });
   }
 
-  private static Frontend.JobImplInfo createImplInfo(JobImpl impl)
-  {
+  private static Frontend.JobImplInfo createImplInfo(JobImpl impl) {
     Frontend.JobImplInfo.Builder info = Frontend.JobImplInfo.newBuilder();
     info.setId(impl.id);
-    for(Map.Entry<String, String> entry : impl.metadata.entrySet())
-    {
+    for (Map.Entry<String, String> entry : impl.metadata.entrySet()) {
       info.addMetadata(Conversions.createFrontendParam(entry.getKey(), entry.getValue()));
     }
     return info.build();

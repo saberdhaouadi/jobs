@@ -1,10 +1,10 @@
 package com.logicblox.steve.common;
 
 /**
- * An immutable representation of the status of a job at some point in time. 
+ * An immutable representation of the status of a job at some point in time.
  */
 public final class Status {
-  
+
   /**
    * Possible states of the job.
    */
@@ -17,16 +17,18 @@ public final class Status {
    */
   public enum Event {
     QUEUED, STARTED, PROGRESS, UNRESPONSIVE, CANCELLED, SUCCEEDED, FAILED, KILLED, TIMEOUT
-  };
+  }
+
+  ;
 
   public final Long timestamp;
   public final Event event;
   public final String machine;
   public final String message;
-    
+
   /**
    * Construct an immutable status with this content. Values may be null.
-   * 
+   *
    * @param timestamp
    * @param event
    * @param machine
@@ -47,12 +49,12 @@ public final class Status {
    * Collector of contents to build an immutable status object.
    */
   public static class StatusBuilder {
-  
+
     public long timestamp = -1;
     public Event event = null;
     public String machine = null;
     public String message = null;
-    
+
     public Status build() {
       return new Status(timestamp, event, machine, message);
     }
@@ -102,6 +104,6 @@ public final class Status {
       return false;
     return true;
   }
-  
-      
+
+
 }

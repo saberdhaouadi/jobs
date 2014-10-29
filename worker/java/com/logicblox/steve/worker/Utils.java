@@ -13,10 +13,9 @@ public class Utils {
   private final static String NIX_STORE_PATH = "/nix/store";
   private final static String NIX_LOG_PATH = "/nix/var/log/nix/drvs";
 
-  public static String nixLogPath(String drv)
-  {
+  public static String nixLogPath(String drv) {
     String basename = FilenameUtils.getBaseName(drv);
-    return String.format("%s/%s/%s.drv",NIX_LOG_PATH, basename.substring(0,2), basename.substring(2));
+    return String.format("%s/%s/%s.drv", NIX_LOG_PATH, basename.substring(0, 2), basename.substring(2));
   }
 
   public static String streamToString(InputStream stream) throws IOException {

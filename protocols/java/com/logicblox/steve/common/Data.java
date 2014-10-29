@@ -9,7 +9,7 @@ import java.net.URL;
  * Combination of a location and optionally a hash for the data.
  */
 public final class Data {
-  
+
   private final String _loc;
   private final Option<String> _hash;
 
@@ -17,7 +17,7 @@ public final class Data {
     _loc = location;
     _hash = hash;
   }
-  
+
   public Data(String location, String hash) {
     _loc = location;
     _hash = Option.wrap(hash);
@@ -81,6 +81,6 @@ public final class Data {
       return false;
     return true;
   }
-  
-  
+
+
 }

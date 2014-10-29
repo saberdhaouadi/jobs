@@ -16,24 +16,20 @@ import com.logicblox.bloxweb.config.ConfigMap;
 import java.io.File;
 import java.util.concurrent.Executors;
 
-public class S3Utils
-{
-  private static ListeningExecutorService getHttpExecutor(ConfigMap c)
-  {
+public class S3Utils {
+  private static ListeningExecutorService getHttpExecutor(ConfigMap c) {
     // TODO make concurrent connections configurable
     int maxConcurrentConnections = 10;
     return MoreExecutors.listeningDecorator(
-      Executors.newFixedThreadPool(maxConcurrentConnections));
+            Executors.newFixedThreadPool(maxConcurrentConnections));
   }
 
-  private static ListeningScheduledExecutorService getInternalExecutor(ConfigMap c)
-  {
+  private static ListeningScheduledExecutorService getInternalExecutor(ConfigMap c) {
     return MoreExecutors.listeningDecorator(
-      Executors.newScheduledThreadPool(50));
+            Executors.newScheduledThreadPool(50));
   }
 
-  protected static KeyProvider getKeyProvider(ConfigMap config)
-  {
+  protected static KeyProvider getKeyProvider(ConfigMap config) {
     // TODO make key directory configurable
     File dir = new File(Utils.getDefaultKeyDirectory());
     return new DirectoryKeyProvider(dir);
@@ -42,14 +38,13 @@ public class S3Utils
   /**
    * Create an S3Client from a configuration
    */
-  public static S3Client createS3Client(ConfigMap config)
-  {
+  public static S3Client createS3Client(ConfigMap config) {
     long chunkSize = Utils.getDefaultChunkSize();
 
     // TODO make retry count configurable
     int retryCount = 10;
 
-    S3Client result =  new S3Client(
+    S3Client result = new S3Client(
             null,
             getHttpExecutor(config),
             getInternalExecutor(config),
@@ -64,19 +59,16 @@ public class S3Utils
    * The hash needs to have the syntax "hash-type:hash-value", where
    * the supported hash-type is currently only 'etag'.
    */
-  public static boolean verifyHash(ObjectMetadata metadata, String hash)
-  {
-    if(metadata == null)
+  public static boolean verifyHash(ObjectMetadata metadata, String hash) {
+    if (metadata == null)
       throw new IllegalArgumentException("metadata must not be null");
-    if(hash == null)
+    if (hash == null)
       throw new IllegalArgumentException("hash must not be null");
 
     String etag;
-    if(hash.startsWith("etag:"))
-    {
+    if (hash.startsWith("etag:")) {
       etag = hash.substring("etag:".length());
-    }
-    else
+    } else
       throw new IllegalArgumentException("Unsupported hash '" + hash + "'");
 
     return metadata.getETag().equals(etag);

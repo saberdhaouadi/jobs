@@ -8,12 +8,12 @@ import com.logicblox.steve.common.Data;
  * Immutable representation of a job implementation.
  */
 public class JobImpl {
-  
+
   /**
    * The id of this job implementation. Unique only within an account.
    */
   public final String id;
-  
+
   /**
    * The account that contains this job implementation.
    */
@@ -28,10 +28,10 @@ public class JobImpl {
    * Key/value pairs of metadata.
    */
   public final Map<String, String> metadata;
-  
+
   /**
    * Constructor with all immutable state.
-   * 
+   *
    * @param id
    * @param account
    * @param archive

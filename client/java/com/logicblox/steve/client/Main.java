@@ -85,20 +85,15 @@ import com.logicblox.steve.protocol.Frontend;
 
 import java.security.PrivateKey;
 
-public class Main
-{
-  public static void main(String[] args)
-  {
+public class Main {
+  public static void main(String[] args) {
     org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
     rootLogger.setLevel(Level.WARN);
 
-    try
-    {
+    try {
       Main main = new Main();
       main.execute(args);
-    }
-    catch(Exception exc)
-    {
+    } catch (Exception exc) {
       exc.printStackTrace();
       System.exit(1);
     }
@@ -112,8 +107,7 @@ public class Main
   private String _user = null;
   private String _keyFile = null;
 
-  public Main()
-  {
+  public Main() {
     _logger = SystemDLogger.getLogger("SteveClient");
     _commander = new JCommander(_mainCmd);
     _commander.setProgramName("lb-steve-client");
@@ -128,42 +122,41 @@ public class Main
     File file1 = ConfigLocator.getDefaultConfigFile("lb-steve-client.config");
     File file2 = ConfigLocator.getDeploymentConfigFile("lb-steve-client.config", _logger);
 
-    if(file1 != null)
+    if (file1 != null)
       _config = new Config(file1, _config);
-    if(file2 != null)
+    if (file2 != null)
       _config = new Config(file2, _config);
   }
 
-  abstract class GlobalArgsCommand
-  {
-    @Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
+  abstract class GlobalArgsCommand {
+    @Parameter(names = {"-h", "--help"}, description = "Print usage information", help = true)
     boolean help = false;
 
-    @Parameter(names = { "-c", "--config" }, description = "Configuration file")
+    @Parameter(names = {"-c", "--config"}, description = "Configuration file")
     String config = null;
 
-    @Parameter(names = { "-u", "--user" }, description = "User to use for authentication")
+    @Parameter(names = {"-u", "--user"}, description = "User to use for authentication")
     String user = null;
 
-    @Parameter(names = { "-k", "--key" }, description = "Private key to use for authentication")
+    @Parameter(names = {"-k", "--key"}, description = "Private key to use for authentication")
     String keyFile = null;
   }
 
-  public class MainCommand extends GlobalArgsCommand {};
+  public class MainCommand extends GlobalArgsCommand {
+  }
 
-  abstract class Command extends GlobalArgsCommand
-  {
+  ;
+
+  abstract class Command extends GlobalArgsCommand {
     public abstract void invoke() throws Exception;
   }
 
-  protected URI createUniqueInputURI() throws URISyntaxException
-  {
+  protected URI createUniqueInputURI() throws URISyntaxException {
     String id = UUID.randomUUID().toString();
     return URI.create(_config.getStringError("default_input_prefix") + "/" + id);
   }
 
-  protected URI createUniqueOutputPrefixURI() throws URISyntaxException
-  {
+  protected URI createUniqueOutputPrefixURI() throws URISyntaxException {
     String id = UUID.randomUUID().toString();
     return URI.create(_config.getStringError("default_output_prefix") + "/" + id);
   }
@@ -171,68 +164,55 @@ public class Main
   /**
    * Transparantly uploads input to S3 if it is a local file.
    */
-  protected ListenableFuture<List<Frontend.File>> createInput(String input) throws Exception
-  {
+  protected ListenableFuture<List<Frontend.File>> createInput(String input) throws Exception {
     // TODO support hashes as parameters or lookup in S3
     // TODO should we delete the input or rely on an automatic retention policy on the bucket?
-    if(input.startsWith("s3://"))
-    {
-      Frontend.File.Builder fileBuilder = 
-        Frontend.File.newBuilder()
-        .setUrl(input);
-      
+    if (input.startsWith("s3://")) {
+      Frontend.File.Builder fileBuilder =
+              Frontend.File.newBuilder()
+                      .setUrl(input);
+
       return Futures.immediateFuture(
-        Collections.singletonList(
-          fileBuilder.build()));
-    }
-    else
-    {
+              Collections.singletonList(
+                      fileBuilder.build()));
+    } else {
       S3Client s3client = S3Utils.createS3Client(_config);
 
       File inputFile = new File(input);
-      if(!inputFile.exists())
+      if (!inputFile.exists())
         throw new UsageException("Input file does not exist");
 
-      if(inputFile.isDirectory())
-      {
+      if (inputFile.isDirectory()) {
         return Futures.transform(
-          s3client.uploadDirectory(inputFile, createUniqueInputURI(), null),
-          new Function<List<S3File>, List<Frontend.File>>()
-          {
-            public List<Frontend.File> apply(List<S3File> files)
-            {
-              List<Frontend.File> result = new ArrayList<Frontend.File>();
-              for(S3File f : files)
-                result.add(Conversions.convertToFrontendFile(f));
-              return result;
-            }
-          });
-      }
-      else
-      {
+                s3client.uploadDirectory(inputFile, createUniqueInputURI(), null),
+                new Function<List<S3File>, List<Frontend.File>>() {
+                  public List<Frontend.File> apply(List<S3File> files) {
+                    List<Frontend.File> result = new ArrayList<Frontend.File>();
+                    for (S3File f : files)
+                      result.add(Conversions.convertToFrontendFile(f));
+                    return result;
+                  }
+                });
+      } else {
         return Futures.transform(
-          s3client.upload(inputFile, createUniqueInputURI()),
-          new Function<S3File, List<Frontend.File>>()
-          {
-            public List<Frontend.File> apply(S3File file)
-            {
-              return Collections.singletonList(Conversions.convertToFrontendFile(file));
-            }
-          });
+                s3client.upload(inputFile, createUniqueInputURI()),
+                new Function<S3File, List<Frontend.File>>() {
+                  public List<Frontend.File> apply(S3File file) {
+                    return Collections.singletonList(Conversions.convertToFrontendFile(file));
+                  }
+                });
       }
     }
   }
 
-  private String getAuthOption(String opt) throws UsageException
-  {
-    if(!_config.hasSection("auth"))
+  private String getAuthOption(String opt) throws UsageException {
+    if (!_config.hasSection("auth"))
       throw new UsageException("Authentication configuration section not found.");
     return _config.getSection("auth").getStringError(opt);
   }
 
   protected ProtobufServiceClient getProtobufClient()
-  throws URISyntaxException, UsageException
-  {
+          throws URISyntaxException, UsageException {
     String service = _config.getStringError("service");
     URI serviceUri = new URI(service);
     ServiceConnector connector = ServiceConnector.create(serviceUri.toString());
@@ -240,43 +220,35 @@ public class Main
     String user = _user;
     String keyFile = _keyFile;
 
-    if(user == null)
+    if (user == null)
       user = getAuthOption("user");
-    if(keyFile == null)
+    if (keyFile == null)
       keyFile = getAuthOption("key_file");
 
     PrivateKey key;
-    try
-    {
+    try {
       key = SignUtils.readPrivateKeyFromPEM(new FileReader(keyFile));
       connector.setTransport(Transports.sign(Transports.tcp(), user, key));
       connector.setEncoding(Encoding.JSON);
       connector.setGZIP(true);
       return connector.createProtobufClient();
-    }
-    catch(Exception e)
-    {
-      throw new UsageException("Could not load key file from "+keyFile+": "+e.getMessage());
+    } catch (Exception e) {
+      throw new UsageException("Could not load key file from " + keyFile + ": " + e.getMessage());
     }
   }
 
   protected SteveClientInterface getSteveClient()
-  throws URISyntaxException
-  {
+          throws URISyntaxException {
     return new SteveClient(getProtobufClient(), Executors.newScheduledThreadPool(25));
   }
 
-  private static String formatJSON(String json)
-  {
-    try
-    {
+  private static String formatJSON(String json) {
+    try {
       Gson gson = new GsonBuilder().setPrettyPrinting().create();
       JsonParser jp = new JsonParser();
       JsonElement je = jp.parse(json);
       return gson.toJson(je);
-    }
-    catch(Exception exc)
-    {
+    } catch (Exception exc) {
       return json;
     }
   }
@@ -285,8 +257,7 @@ public class Main
    * Create job
    */
   @Parameters(commandDescription = "Create a new job")
-  class CreateJobCommand extends Command
-  {
+  class CreateJobCommand extends Command {
     @Parameter(names = {"--impl"}, description = "Job implementation identifier", required = true)
     String _impl;
 
@@ -300,43 +271,40 @@ public class Main
     long _timeout = 0;
 
     @Parameter(
-      names = {"-m", "--metadata"},
-      description = "Metadata of the form key=value ",
-      variableArity = true)
+            names = {"-m", "--metadata"},
+            description = "Metadata of the form key=value ",
+            variableArity = true)
     List<String> _metadata = new ArrayList<String>();
 
     @Parameter(
-      names = {"-i", "--input"},
-      description = "Local or S3 input file (S3 files use s3://bucket/key URLs)")
+            names = {"-i", "--input"},
+            description = "Local or S3 input file (S3 files use s3://bucket/key URLs)")
     List<String> _inputs;
 
     @Parameter(
-      names = {"-o", "--output"},
-      description = "Output of job, to be stored in either a local directory, single output file, " + 
-         "or S3 output prefix (S3 files use s3://bucket/key URLs). If local output is requested, " + 
-         "then the S3 default_output_prefix will be used to store the outputs")
+            names = {"-o", "--output"},
+            description = "Output of job, to be stored in either a local directory, single output file, " +
+                    "or S3 output prefix (S3 files use s3://bucket/key URLs). If local output is requested, " +
+                    "then the S3 default_output_prefix will be used to store the outputs")
     String _output;
 
     @Parameter(
-      names = {"--wait"},
-      description = "Wait for completion of the job by polling for the result")    
+            names = {"--wait"},
+            description = "Wait for completion of the job by polling for the result")
     boolean _wait = false;
 
     @Parameter(
-      names = {"--poll-delay"},
-      description = "Delay in seconds for polling for the result")
+            names = {"--poll-delay"},
+            description = "Delay in seconds for polling for the result")
     long _pollDelay = 5;
 
     @Override
-    public void invoke() throws Exception
-    {
+    public void invoke() throws Exception {
       // Collect inputs, uploading local files to S3 if needed.
       List<ListenableFuture<List<Frontend.File>>> inputFutures =
-        new ArrayList<ListenableFuture<List<Frontend.File>>>();
-      if(_inputs != null)
-      {
-        for(String input : _inputs)
-        {
+              new ArrayList<ListenableFuture<List<Frontend.File>>>();
+      if (_inputs != null) {
+        for (String input : _inputs) {
           inputFutures.add(createInput(input));
         }
       }
@@ -344,56 +312,50 @@ public class Main
 
       // Output is optional. If no output is specified, then we create
       // a unique location in the default output prefix.
-      if(_output == null)
+      if (_output == null)
         _output = createUniqueOutputPrefixURI().toString();
 
       URI outputPrefix;
       final boolean autoDownload = !_output.startsWith("s3://");
-      if(autoDownload)
-      {
+      if (autoDownload) {
         outputPrefix = createUniqueOutputPrefixURI();
 
         // If the output is to be stored locally, then we
         // automatically wait for completion (can't do anything else)
         _wait = true;
-      }
-      else
+      } else
         outputPrefix = URI.create(_output);
 
       // Handle metadata that is also offered as explicit options
-      if(_timeout != 0)
+      if (_timeout != 0)
         _metadata.add("timeout=" + _timeout);
 
-      if(_correlation != null)
+      if (_correlation != null)
         _metadata.add("correlation-id=" + _correlation);
 
-      if(_queue != null)
+      if (_queue != null)
         _metadata.add("job-queue=" + _queue);
 
       final SteveClientInterface client = getSteveClient();
       Futures.transform(
-        client.createJob(_impl, inputs, outputPrefix, convertCommandLineMetadata(_metadata)),
-        new AsyncFunction<String, Object>()
-        {        
-          @Override
-          public ListenableFuture<Object> apply(String id) throws Exception
-          {
-            System.out.println(getJobIdAsJSON(id));
+              client.createJob(_impl, inputs, outputPrefix, convertCommandLineMetadata(_metadata)),
+              new AsyncFunction<String, Object>() {
+                @Override
+                public ListenableFuture<Object> apply(String id) throws Exception {
+                  System.out.println(getJobIdAsJSON(id));
 
-            if(_wait)
-            {
-              ListenableFuture<List<Frontend.File>> files = printResult(
-                client.waitForJob(id, _pollDelay, new IncrementalStateNotify()));
+                  if (_wait) {
+                    ListenableFuture<List<Frontend.File>> files = printResult(
+                            client.waitForJob(id, _pollDelay, new IncrementalStateNotify()));
 
-              if(autoDownload)
-                files = downloadResult(_output, files);
+                    if (autoDownload)
+                      files = downloadResult(_output, files);
 
-              return (ListenableFuture) files;
-            }
-            else
-              return Futures.immediateFuture((Object) id);
-          }
-        }).get();
+                    return (ListenableFuture) files;
+                  } else
+                    return Futures.immediateFuture((Object) id);
+                }
+              }).get();
     }
   }
 
@@ -401,33 +363,28 @@ public class Main
    * Status
    */
   @Parameters(commandDescription = "Check status of jobs")
-  class StatusCommand extends Command
-  {
+  class StatusCommand extends Command {
     @Parameter(description = "Job identifiers", required = true)
     List<String> _ids;
 
     @Override
-    public void invoke() throws Exception
-    {
+    public void invoke() throws Exception {
       SteveClientInterface client = getSteveClient();
-      for(String id : _ids)
-      {
+      for (String id : _ids) {
         Futures.transform(
-          client.getState(id),
-          new Function<Frontend.State, Object>()
-          {        
-            @Override
-            public Object apply(Frontend.State state)
-            {
-              System.out.println("State: " + state.getState());
+                client.getState(id),
+                new Function<Frontend.State, Object>() {
+                  @Override
+                  public Object apply(Frontend.State state) {
+                    System.out.println("State: " + state.getState());
 
-              List<Frontend.Status> list = state.getStatusList();
-              for(Frontend.Status status : list)
-                Printers.print(status);
-              
-              return Futures.immediateFuture((Object) list);
-            }
-          }).get();
+                    List<Frontend.Status> list = state.getStatusList();
+                    for (Frontend.Status status : list)
+                      Printers.print(status);
+
+                    return Futures.immediateFuture((Object) list);
+                  }
+                }).get();
       }
     }
   }
@@ -436,30 +393,26 @@ public class Main
    * Log
    */
   @Parameters(commandDescription = "Get log of a job")
-  class LogCommand extends Command
-  {
+  class LogCommand extends Command {
     @Parameter(description = "Job identifier", required = true)
     List<String> _ids;
 
     @Override
-    public void invoke() throws Exception
-    {
+    public void invoke() throws Exception {
       SteveClientInterface client = getSteveClient();
-      if(_ids.size() != 1)
+      if (_ids.size() != 1)
         throw new UsageException("Must specify exactly one job identifier.");
 
       Futures.transform(
-        client.getLog(_ids.get(0)),
-        new Function<String, Object>()
-        {
-          @Override
-          public Object apply(String log)
-          {
-            System.out.println(log);
+              client.getLog(_ids.get(0)),
+              new Function<String, Object>() {
+                @Override
+                public Object apply(String log) {
+                  System.out.println(log);
 
-            return Futures.immediateFuture(null);
-          }
-        }).get();
+                  return Futures.immediateFuture(null);
+                }
+              }).get();
     }
   }
 
@@ -467,42 +420,39 @@ public class Main
    * Result
    */
   @Parameters(commandDescription = "Get output of a job")
-  class OutputCommand extends Command
-  {
+  class OutputCommand extends Command {
     @Parameter(description = "Job identifiers", required = true)
     List<String> _ids;
 
     @Parameter(
-      names = {"--wait"},
-      description = "Wait for completion of the job by polling for the result")    
+            names = {"--wait"},
+            description = "Wait for completion of the job by polling for the result")
     boolean _wait = false;
 
     @Parameter(
-      names = {"--poll-delay"},
-      description = "Delay in seconds for polling for the result")
+            names = {"--poll-delay"},
+            description = "Delay in seconds for polling for the result")
     long _pollDelay = 5;
 
     @Parameter(
-      names = {"-o", "--output"},
-      description = "Download the job output to the specified file or directory")
+            names = {"-o", "--output"},
+            description = "Download the job output to the specified file or directory")
     String _output;
 
     @Override
-    public void invoke() throws Exception
-    {
+    public void invoke() throws Exception {
       SteveClientInterface client = getSteveClient();
 
-      for(String id : _ids)
-      {
+      for (String id : _ids) {
         ListenableFuture<List<Frontend.File>> files;
-        if(_wait)
+        if (_wait)
           files = client.waitForJob(id, _pollDelay, new IncrementalStateNotify());
         else
           files = client.getResult(id);
 
         files = printResult(files);
 
-        if(_output != null)
+        if (_output != null)
           files = downloadResult(_output, files);
 
         files.get();
@@ -510,64 +460,53 @@ public class Main
     }
   }
 
-  private ListenableFuture<List<Frontend.File>> printResult(ListenableFuture<List<Frontend.File>> files)
-  {
+  private ListenableFuture<List<Frontend.File>> printResult(ListenableFuture<List<Frontend.File>> files) {
     return
-      Futures.transform(
-        files,
-        new Function<List<Frontend.File>, List<Frontend.File>>()
-        {        
-          public List<Frontend.File> apply(List<Frontend.File> list)
-          {
-            for(Frontend.File f : list)
-              System.out.println(Conversions.toJSON(f));
-            return list;
-          }
-        }); 
+            Futures.transform(
+                    files,
+                    new Function<List<Frontend.File>, List<Frontend.File>>() {
+                      public List<Frontend.File> apply(List<Frontend.File> list) {
+                        for (Frontend.File f : list)
+                          System.out.println(Conversions.toJSON(f));
+                        return list;
+                      }
+                    });
   }
 
-  private ListenableFuture<List<Frontend.File>> downloadResult(final String output, ListenableFuture<List<Frontend.File>> future)
-  {
+  private ListenableFuture<List<Frontend.File>> downloadResult(final String output, ListenableFuture<List<Frontend.File>> future) {
     return
-      Futures.transform(
-        future,
-        new AsyncFunction<List<Frontend.File>, List<Frontend.File>>()
-        {
-          public ListenableFuture<List<Frontend.File>> apply(List<Frontend.File> list)
-          throws Exception
-          {
-            return downloadResult(output, list);
-          }
-        });
+            Futures.transform(
+                    future,
+                    new AsyncFunction<List<Frontend.File>, List<Frontend.File>>() {
+                      public ListenableFuture<List<Frontend.File>> apply(List<Frontend.File> list)
+                              throws Exception {
+                        return downloadResult(output, list);
+                      }
+                    });
   }
 
   private ListenableFuture<List<Frontend.File>> downloadResult(final String output, List<Frontend.File> files)
-  throws IOException
-  {
+          throws IOException {
     S3Client s3client = S3Utils.createS3Client(_config);
 
     Path p = Paths.get(output);
-    if(Files.isDirectory(p) || output.endsWith("/") || files.size() > 1)
-    {
+    if (Files.isDirectory(p) || output.endsWith("/") || files.size() > 1) {
       // Assume that we want to download the list of files to a directory.
       List<ListenableFuture<S3File>> downloads = new ArrayList<ListenableFuture<S3File>>();
 
-      for(Frontend.File file : files)
-      {
+      for (Frontend.File file : files) {
         Path targetFile = p.resolve(Conversions.getBasename(file));
         downloads.add(s3client.download(targetFile.toFile(), URI.create(file.getUrl())));
       }
 
       return Futures.transform(Futures.allAsList(downloads), Functions.constant(files));
-    }
-    else
-    {
+    } else {
       // Assume that we want to download to a single file
       // TOOD check the ETag from the download
       return
-        Futures.transform(
-          s3client.download(p.toFile(), URI.create(files.get(0).getUrl())),
-          Functions.constant(files));
+              Futures.transform(
+                      s3client.download(p.toFile(), URI.create(files.get(0).getUrl())),
+                      Functions.constant(files));
     }
   }
 
@@ -575,83 +514,75 @@ public class Main
    * Upload job implementation
    */
   @Parameters(commandDescription = "Upload new job implementation")
-  class UploadJobImplCommand extends Command
-  {
+  class UploadJobImplCommand extends Command {
     @Parameter(
-      names = {"--impl"},
-      description = "Job implementation identifier",
-      required = true)
+            names = {"--impl"},
+            description = "Job implementation identifier",
+            required = true)
     String _impl;
 
     @Parameter(
-      names = {"-i", "--input"},
-      description = "Job implementation tarball (S3 URL or local file)",
-      required = true)
+            names = {"-i", "--input"},
+            description = "Job implementation tarball (S3 URL or local file)",
+            required = true)
     String _input;
 
     @Parameter(
-      names = {"-m", "--metadata"},
-      description = "Metadata of the form key=value ",
-      variableArity = true)
+            names = {"-m", "--metadata"},
+            description = "Metadata of the form key=value ",
+            variableArity = true)
     List<String> _metadata;
 
     @Parameter(
-      names = {"--wait"},
-      description = "Wait for completion by polling for the result")
+            names = {"--wait"},
+            description = "Wait for completion by polling for the result")
     boolean _wait = false;
 
     @Parameter(
-      names = {"--poll-delay"},
-      description = "Delay in seconds for polling for the result")
+            names = {"--poll-delay"},
+            description = "Delay in seconds for polling for the result")
     long _pollDelay = 5;
 
     @Override
-    public void invoke() throws Exception
-    {
+    public void invoke() throws Exception {
       final SteveClientInterface client = getSteveClient();
 
-      if(new File(_input).isDirectory())
-      {
-        File temp = File.createTempFile("impl",".tar.gz");
+      if (new File(_input).isDirectory()) {
+        File temp = File.createTempFile("impl", ".tar.gz");
         temp.deleteOnExit();
 
         File abs = new File(_input).getAbsoluteFile();
-        _logger.info("Packaging directory "+_input);
-        Process p = Runtime.getRuntime().exec("tar -C "+abs.getParent()+" -cvzf " + temp + " " + abs.toString().substring(abs.toString().lastIndexOf('/') + 1));
+        _logger.info("Packaging directory " + _input);
+        Process p = Runtime.getRuntime().exec("tar -C " + abs.getParent() + " -cvzf " + temp + " " + abs.toString().substring(abs.toString().lastIndexOf('/') + 1));
         p.waitFor();
 
-        if(p.exitValue() != 0) {
-          throw new Exception("Error packaging up input directory "+_input);
+        if (p.exitValue() != 0) {
+          throw new Exception("Error packaging up input directory " + _input);
         }
         _input = temp.toString();
       }
 
       Futures.transform(
-        client.addJobImpl(_impl, createInput(_input).get().get(0), convertCommandLineMetadata(_metadata)),
-        new AsyncFunction<String, Object>()
-        {        
-          @Override
-          public ListenableFuture<Object> apply(String id) throws Exception
-          {
-            System.out.println(getJobIdAsJSON(id));
+              client.addJobImpl(_impl, createInput(_input).get().get(0), convertCommandLineMetadata(_metadata)),
+              new AsyncFunction<String, Object>() {
+                @Override
+                public ListenableFuture<Object> apply(String id) throws Exception {
+                  System.out.println(getJobIdAsJSON(id));
 
-            if(_wait)
-              return (ListenableFuture) client.wait(id, _pollDelay, new IncrementalStateNotify());
-            else
-              return Futures.immediateFuture((Object) id);
-        }
-        }).get();
+                  if (_wait)
+                    return (ListenableFuture) client.wait(id, _pollDelay, new IncrementalStateNotify());
+                  else
+                    return Futures.immediateFuture((Object) id);
+                }
+              }).get();
     }
   }
 
-  private static Iterable<Frontend.Param> convertCommandLineMetadata(List<String> pairs)
-  {
+  private static Iterable<Frontend.Param> convertCommandLineMetadata(List<String> pairs) {
     List<Frontend.Param> result = new ArrayList<Frontend.Param>();
 
-    if(pairs != null)
-    {
-      for(String pair : pairs)
-      {
+    if (pairs != null) {
+      for (String pair : pairs) {
         String key = pair.substring(0, pair.indexOf('='));
         String value = pair.substring(pair.indexOf('=') + 1);
         result.add(Conversions.createFrontendParam(key, value));
@@ -661,36 +592,31 @@ public class Main
     return result;
   }
 
-  private static String getJobIdAsJSON(String id)
-  {
+  private static String getJobIdAsJSON(String id) {
     JsonObject o = new JsonObject();
     o.addProperty("job_id", id);
-    return new Gson().toJson(o);    
+    return new Gson().toJson(o);
   }
 
   /**
    * List job implementation
    */
   @Parameters(commandDescription = "List job implementations")
-  class ListJobImplCommand extends Command
-  {
+  class ListJobImplCommand extends Command {
     @Override
-    public void invoke() throws Exception
-    {
+    public void invoke() throws Exception {
       SteveClientInterface client = getSteveClient();
       Futures.transform(
-        client.getJobImplList(),
-        new Function<List<Frontend.JobImplInfo>, Object>()
-        {        
-          @Override
-          public Object apply(List<Frontend.JobImplInfo> infos)
-          {
-            for(Frontend.JobImplInfo info : infos)
-              System.out.println(Conversions.toJSON(info));
-           
-            return infos;
-          }
-        }).get();
+              client.getJobImplList(),
+              new Function<List<Frontend.JobImplInfo>, Object>() {
+                @Override
+                public Object apply(List<Frontend.JobImplInfo> infos) {
+                  for (Frontend.JobImplInfo info : infos)
+                    System.out.println(Conversions.toJSON(info));
+
+                  return infos;
+                }
+              }).get();
     }
   }
 
@@ -698,91 +624,71 @@ public class Main
    * Help
    */
   @Parameters(commandDescription = "Print usage")
-  class HelpCommand extends Command
-  {
+  class HelpCommand extends Command {
     @Parameter(description = "Commands")
     List<String> _commands;
 
     @Override
-    public void invoke()
-    {
-      if(_commands == null)
+    public void invoke() {
+      if (_commands == null)
         printUsage();
-      else
-      {
-        for(String cmd : _commands)
-        {
+      else {
+        for (String cmd : _commands) {
           printCommandUsage(cmd);
         }
       }
     }
   }
 
-  public void execute(String[] args)
-  {
-    try
-    {
+  public void execute(String[] args) {
+    try {
       _commander.parse(args);
       String command = _commander.getParsedCommand();
-      if(command != null)
-      {
+      if (command != null) {
         Command cmd = (Command) _commander.getCommands().get(command).getObjects().get(0);
-        if(cmd.help)
-        {
+        if (cmd.help) {
           printCommandUsage(command);
           System.exit(1);
         }
 
-        if(_mainCmd.config != null)
+        if (_mainCmd.config != null)
           _config = new Config(new File(_mainCmd.config), _config);
 
-        if(cmd.config != null)
+        if (cmd.config != null)
           _config = new Config(new File(cmd.config), _config);
 
-        if(_mainCmd.user != null)
+        if (_mainCmd.user != null)
           _user = _mainCmd.user;
 
-        if(cmd.user != null)
+        if (cmd.user != null)
           _user = cmd.user;
 
-        if(_mainCmd.keyFile != null)
+        if (_mainCmd.keyFile != null)
           _keyFile = _mainCmd.keyFile;
 
-        if(cmd.keyFile != null)
+        if (cmd.keyFile != null)
           _keyFile = cmd.keyFile;
 
         cmd.invoke();
-      }
-      else
-      {
+      } else {
         printUsage();
       }
-    }
-    catch(ParameterException exc)
-    {
+    } catch (ParameterException exc) {
       System.err.println("error: " + exc.getMessage());
       System.err.println("");
       printUsage();
       System.exit(1);
-    }
-    catch(UsageException exc)
-    {
+    } catch (UsageException exc) {
       System.err.println("error: " + exc.getMessage());
       System.exit(1);
-    }
-    catch(ExecutionException exc)
-    {
-      if(exc.getCause() instanceof SteveClientException)
-      {
+    } catch (ExecutionException exc) {
+      if (exc.getCause() instanceof SteveClientException) {
         SteveClientException e = (SteveClientException) exc.getCause();
         System.err.println(e.toJSON());
-      }
-      else
+      } else
         exc.getCause().printStackTrace();
       System.exit(1);
-    }
-    catch(Exception exc)
-    {
+    } catch (Exception exc) {
       System.err.println("error: " + exc.getMessage());
       System.err.println("");
       exc.printStackTrace();
@@ -790,8 +696,7 @@ public class Main
     }
   }
 
-  private void printOptions()
-  {
+  private void printOptions() {
     // Hack to avoid printing the commands, which are not formatted
     // correctly.
     JCommander tmp = new JCommander(new MainCommand());
@@ -806,29 +711,25 @@ public class Main
     System.err.println(options);
   }
 
-  private void printUsage()
-  {
+  private void printUsage() {
     System.err.println("Usage: lb-steve-client [options] command [command options]");
     printOptions();
-    
+
     System.err.println("   Commands: ");
-    for(String cmd : _commander.getCommands().keySet())
-    {
+    for (String cmd : _commander.getCommands().keySet()) {
       System.out.println("     " + padRight(23, ' ', cmd) + _commander.getCommandDescription(cmd));
     }
   }
 
-  private static String padRight(int width, char c, String s)
-  {
+  private static String padRight(int width, char c, String s) {
     StringBuffer buf = new StringBuffer(width);
     buf.append(s);
-    for(int i = 0; i < width - s.length(); i++)
+    for (int i = 0; i < width - s.length(); i++)
       buf.append(c);
     return buf.toString();
   }
 
-  private void printCommandUsage(String command)
-  {
+  private void printCommandUsage(String command) {
     StringBuilder builder = new StringBuilder();
     _commander.usage(command, builder);
     System.err.println(builder.toString());

@@ -21,23 +21,20 @@ import com.logicblox.bloxweb.config.ConfigMap;
  * credentials and endpoint, so we need to cache them per credential
  * configuration and endpoint.
  */
-public class SQSClients
-{
+public class SQSClients {
   private final Map<String, SQSClient> _clients = new HashMap<String, SQSClient>();
 
   /**
    * Returns a shared AmazonSQSClient for a given AWS endpoint and
    * credential configuration.
    */
-  public synchronized SQSClient getSQSClient(String endpoint, ConfigMap config)
-  {
+  public synchronized SQSClient getSQSClient(String endpoint, ConfigMap config) {
     CredentialsConfig creds = new CredentialsConfig(config);
     String key = endpoint + "@" + String.valueOf(creds);
 
     boolean shared = config.getBool("shared", true);
 
-    if(shared && _clients.containsKey(key))
-    {
+    if (shared && _clients.containsKey(key)) {
       return _clients.get(key);
     }
 
@@ -47,15 +44,14 @@ public class SQSClients
 
     // TODO make configurable?
     ListeningExecutorService executor =
-      MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(
-          com.amazonaws.ClientConfiguration.DEFAULT_MAX_CONNECTIONS));
+            MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(
+                    com.amazonaws.ClientConfiguration.DEFAULT_MAX_CONNECTIONS));
 
     SQSClient client = new SQSClient(endpoint, sqs, executor);
-    if(shared)
-    {
+    if (shared) {
       _clients.put(key, client);
     }
-    
+
     return client;
   }
 
@@ -63,19 +59,15 @@ public class SQSClients
    * Uses standard config option 'sqs_queue_url' and 'sqs_endpoint' to
    * determine endpoint.
    */
-  public SQSClient getSQSClient(ConfigMap config)
-  {
+  public SQSClient getSQSClient(ConfigMap config) {
     String endpoint;
-    if(config.contains("sqs_queue_url"))
-    {
+    if (config.contains("sqs_queue_url")) {
       URI uri = URI.create(config.getStringError("sqs_queue_url"));
       endpoint = SQSClient.getEndpoint(uri);
-    }
-    else
-    {
+    } else {
       endpoint = config.getStringError("sqs_endpoint");
     }
-    
+
     return getSQSClient(endpoint, config);
   }
 }

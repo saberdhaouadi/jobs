@@ -27,10 +27,10 @@ import org.apache.commons.io.FilenameUtils;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
+
 import java.util.Map;
 
-public class SteveJob
-{
+public class SteveJob {
   public final OutgoingQueueHelper _outgoing;
   private String _id;
   private String _impl;
@@ -54,8 +54,7 @@ public class SteveJob
   private boolean _killed = false;
 
   public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout, Map<String, String> metadata)
-  throws InternalException
-  {
+          throws InternalException {
     _id = id;
     _impl = impl;
     _inputs = inputs;
@@ -65,34 +64,25 @@ public class SteveJob
     _s3Bucket = s3Bucket;
     _metadata = metadata;
 
-    try
-    {
+    try {
       _output = new URI(output);
+    } catch (URISyntaxException e) {
+      throw new InternalException("Invalid output : " + output, e);
     }
-    catch (URISyntaxException e)
-    {
-      throw new InternalException("Invalid output : "+ output, e);
-    }
-    try
-    {
+    try {
       _outputLog = new URI(String.format("s3://%s/jobs/%s/log", _s3Bucket, _id));
-    }
-    catch(URISyntaxException e)
-    {
+    } catch (URISyntaxException e) {
       throw new InternalException("Invalid output log URI", e);
     }
   }
 
-  public void log(String msg)
-  {
+  public void log(String msg) {
     System.err.println(String.format("%s: %s", _id, msg));
   }
 
-  public void run() throws Exception
-  {
+  public void run() throws Exception {
     log("Starting..." + _id);
-    try
-    {
+    try {
       _outgoing.notifyStart();
       setup();
       runJob();
@@ -100,134 +90,99 @@ public class SteveJob
       List<S3File> output = uploadOutput();
       _outgoing.notifySuccess(output);
       log("Successfully uploaded output files for job " + _id);
-    }
-    catch (JobKilledException k)
-    {
+    } catch (JobKilledException k) {
       _outgoing.notifyStatus("Job was killed. It will be restarted on another worker.");
       _killed = true;
-    }
-    catch (Exception e)
-    {
+    } catch (Exception e) {
       log("Failure executing " + _id);
       _outgoing.notifyFailure(e);
       e.printStackTrace();
-    }
-    finally
-    {
-      try
-      {
+    } finally {
+      try {
         teardown();
-      }
-      catch(InternalException e)
-      {
+      } catch (InternalException e) {
         _outgoing.notifyFailure(e);
       }
     }
   }
 
-  private void deleteDirectory(File path) throws InternalException
-  {
-    if (path.exists())
-    {
-      try
-      {
+  private void deleteDirectory(File path) throws InternalException {
+    if (path.exists()) {
+      try {
         FileUtils.deleteDirectory(path);
-      }
-      catch(IOException e)
-      {
-        throw new InternalException("Could not remove directory "+path, e);
+      } catch (IOException e) {
+        throw new InternalException("Could not remove directory " + path, e);
       }
     }
   }
 
-  private void cleanUp() throws InternalException
-  {
+  private void cleanUp() throws InternalException {
     deleteDirectory(new File("/tmp/job"));
   }
 
-  private void setup() throws Exception
-  {
+  private void setup() throws Exception {
     cleanUp();
 
     _inputPath.mkdirs();
     _outputPath.mkdirs();
 
-    try
-    {
+    try {
       ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _outputPath.toString());
       pb.start().waitFor();
-    }
-    catch(Exception e)
-    {
+    } catch (Exception e) {
     }
 
     downloadJobImpl();
 
     // download inputs
     List<ListenableFuture<List<S3File>>> inputFiles = new ArrayList<ListenableFuture<List<S3File>>>();
-    for(Data input: _inputs)
-    {
+    for (Data input : _inputs) {
       inputFiles.add(downloadInput(input));
     }
-    try
-    {
+    try {
       MoreFutures.concat(Futures.allAsList(inputFiles)).get();
-    }
-    catch(Exception e)
-    {
+    } catch (Exception e) {
       throw new DownloadInputFailedException(e.getMessage(), e);
     }
 
     try {
       String data = new Gson().toJson(_metadata);
       FileUtils.writeStringToFile(_metadataPath, data);
-    }
-    catch (IOException e) {
+    } catch (IOException e) {
       throw new InternalException("Could not write metadata.", e);
     }
   }
 
-  private void downloadJobImpl() throws InternalException
-  {
+  private void downloadJobImpl() throws InternalException {
     String uri;
-    if(_impl.startsWith("s3://"))
+    if (_impl.startsWith("s3://"))
       uri = _impl;
     else
       uri = String.format("s3://%s/jobs-impl/%s.tar.gz", _s3Bucket, _impl);
 
     log(uri);
     URI jobImplUri;
-    try
-    {
+    try {
       jobImplUri = com.logicblox.s3lib.Utils.getURI(uri);
-    }
-    catch (URISyntaxException e)
-    {
-      throw new InternalException("Invalid URI '"+uri, e);
+    } catch (URISyntaxException e) {
+      throw new InternalException("Invalid URI '" + uri, e);
     }
 
-    try
-    {
+    try {
       _client.download(new File("/tmp/job/job.tar.gz"), jobImplUri).get();
-    }
-    catch(Exception e)
-    {
+    } catch (Exception e) {
       e.printStackTrace();
       throw new InternalException("Could not download job implementation '" + _impl + "' from '" + uri + "'", e);
     }
   }
 
-  private ListenableFuture<List<S3File>> downloadInput(Data input) throws InternalException
-  {
+  private ListenableFuture<List<S3File>> downloadInput(Data input) throws InternalException {
     log("Downloading input '" + input.toString() + "'");
     URI inputUri;
-    try
-    {
+    try {
       inputUri = com.logicblox.s3lib.Utils.getURI(input.getLocation());
-    }
-    catch (URISyntaxException e)
-    {
-      throw new InternalException("Invalid URI '"+input, e);
+    } catch (URISyntaxException e) {
+      throw new InternalException("Invalid URI '" + input, e);
     }
 
     // Strip trailing slash
@@ -235,7 +190,7 @@ public class SteveJob
     // Use the last part of the URL
     last = last.substring(last.lastIndexOf('/') + 1);
 
-    File f = new File(_inputPath,last);
+    File f = new File(_inputPath, last);
     try {
       if (input.getLocation().endsWith("/"))
         return _client.downloadDirectory(f, inputUri, true, true);
@@ -244,74 +199,53 @@ public class SteveJob
         l.add(_client.download(f, inputUri));
         return Futures.allAsList(l);
       }
-    }
-    catch(Exception e) {
-        return Futures.immediateFailedFuture(new InternalException("Error downloading input "+input.getLocation()));
+    } catch (Exception e) {
+      return Futures.immediateFailedFuture(new InternalException("Error downloading input " + input.getLocation()));
     }
   }
 
-  private List<S3File> uploadOutput() throws InternalException
-  {
-    try
-    {
+  private List<S3File> uploadOutput() throws InternalException {
+    try {
       log("Uploading output...");
       return _client.uploadDirectory(_outputPath, _output, null).get();
-    }
-    catch (Exception e)
-    {
+    } catch (Exception e) {
       throw new InternalException("Error uploading output files to " + _output, e);
     }
   }
 
-  private void teardown() throws InternalException
-  {
+  private void teardown() throws InternalException {
     log("Tearing down...");
 
     ObjectMetadata log = null;
-    try
-    {
+    try {
       // TODO make sure that jobs can be retried/re-executed
       log = _client.exists(_s3Bucket, String.format("jobs/%s/log", _id)).get();
-    }
-    catch(Exception e)
-    {
+    } catch (Exception e) {
       throw new InternalException("Could not determine if log file already exists in S3.", e);
     }
 
     // TODO rework to make sure we don't overwrite uploaded results
     // from different jobs (moved this out to avoid reporting success
     // before upload)
-    if (log == null)
-    {
-      if (_drv != null)
-      {
+    if (log == null) {
+      if (_drv != null) {
         File logPath = new File(Utils.nixLogPath(_drv));
 
-        if(_killed)
-        {
+        if (_killed) {
           log("Job was killed, not uploading log file.");
-        }
-        else if(!logPath.exists())
-        {
+        } else if (!logPath.exists()) {
           log("No log file found, going on.");
-        }
-        else
-        {
+        } else {
           // upload logs
-          try
-          {
+          try {
             log("Uploading log...[%s/%s]".format(logPath.toString(), _outputLog));
             _client.upload(logPath, _outputLog).get();
-          }
-          catch (Exception e)
-          {
+          } catch (Exception e) {
             throw new InternalException("Error uploading log to " + _outputLog, e);
           }
         }
       }
-    }
-    else
-    {
+    } else {
       log("ERROR: Found log file, probably means the job was executed elsewhere. Skipping upload of logs and results.");
     }
 
@@ -320,8 +254,7 @@ public class SteveJob
     cleanUp();
   }
 
-  private void runJob() throws Exception
-  {
+  private void runJob() throws Exception {
     log("Running the actual job...");
 
     String nix = "<worker/nix/job.nix>";
@@ -334,22 +267,19 @@ public class SteveJob
   }
 
 
-  public String nixInstantiate(String file) throws Exception
-  {
+  public String nixInstantiate(String file) throws Exception {
     ProcessBuilder pb = new ProcessBuilder("nix-instantiate", file);
 
     Process p = pb.start();
     int exit = p.waitFor();
-    if (exit != 0)
-    {
+    if (exit != 0) {
       throw new Exception("nix-instantiate failed with exit code " + exit + "\n\n" + Utils.streamToString(p.getErrorStream()));
     }
 
     return Utils.streamToString(p.getInputStream());
   }
 
-  public void nixStoreRealise(String file, String job) throws Exception
-  {
+  public void nixStoreRealise(String file, String job) throws Exception {
     // build up the command line to using a 'java.io.File'
     CommandLine commandLine = new CommandLine("nix-store");
     commandLine.addArgument("-r");
@@ -366,49 +296,35 @@ public class SteveJob
     executor.setStreamHandler(streamHandler);
 
     int exit;
-    try
-    {
+    try {
       exit = executor.execute(commandLine);
-    }
-    catch (Exception ex)
-    {
-      throw new InternalException("Execute exception: "+ ex.getMessage(), ex);
+    } catch (Exception ex) {
+      throw new InternalException("Execute exception: " + ex.getMessage(), ex);
     }
 
-    if (exit != 0)
-    {
+    if (exit != 0) {
       File logPath = new File(Utils.nixLogPath(file));
-      if(_timedOut)
-      {
+      if (_timedOut) {
         throw new JobTimedOutException();
-      }
-      else if(exit == 1)
-      {
+      } else if (exit == 1) {
         throw new JobKilledException();
-      }
-      else if(logPath.exists())
-      {
-        throw new JobFailedException("nix-store failed with exit code "+exit);
-      }
-      else
-      {
+      } else if (logPath.exists()) {
+        throw new JobFailedException("nix-store failed with exit code " + exit);
+      } else {
         throw new InternalException("One of the dependencies of the job likely failed, as no log was found.");
       }
     }
   }
 
-  public long getTimeout()
-  {
+  public long getTimeout() {
     return _timeout;
   }
 
-  public void setTimedOut()
-  {
+  public void setTimedOut() {
     _timedOut = true;
   }
 
-  public boolean wasKilled()
-  {
+  public boolean wasKilled() {
     return _killed;
   }
 }

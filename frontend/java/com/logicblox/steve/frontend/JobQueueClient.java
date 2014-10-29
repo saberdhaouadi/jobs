@@ -19,13 +19,12 @@ import com.googlecode.protobuf.format.JsonFormat;
 /**
  * A client that submits job requests to a queue for workers to consume.
  */
-public class JobQueueClient
-{
+public class JobQueueClient {
   /**
    * Client used to communicate with the queue.
    */
   private final SQSClient _sqs;
-  
+
   /**
    * Identification of the queue to target.
    */
@@ -33,14 +32,14 @@ public class JobQueueClient
 
   /**
    * Construct a job client that will use this client to talk to this queue.
-   * 
+   *
    * @param sqs
    * @param queue
    */
   public JobQueueClient(SQSClient sqs, SQSQueueHandle queue) {
-    if(sqs == null)
+    if (sqs == null)
       throw new IllegalArgumentException("queue client must be non-null");
-    if(queue == null)
+    if (queue == null)
       throw new IllegalArgumentException("queue handle must be non-null");
 
     _sqs = sqs;
@@ -52,24 +51,24 @@ public class JobQueueClient
    * submission the queue.
    */
   public ListenableFuture<Job> submit(Job job) {
-    if(job == null)
+    if (job == null)
       throw new IllegalArgumentException("job must be non-null");
 
     final Backend.RunJob.Builder request = Backend.RunJob.newBuilder()
-      // TODO include ETag of implementation
-      .setJobImpl(job.jobImplArchive)
-      .setJob(job.id)
-      .setOutput(job.outputPrefix);
+            // TODO include ETag of implementation
+            .setJobImpl(job.jobImplArchive)
+            .setJob(job.id)
+            .setOutput(job.outputPrefix);
 
-    if(job.metadata.containsKey("timeout"))
+    if (job.metadata.containsKey("timeout"))
       request.setTimeout(Integer.parseInt(job.metadata.get("timeout")));
 
-    for(Data d : job.inputData)
+    for (Data d : job.inputData)
       request.addInput(Conversions.convertDataToBackendFile(d));
 
-    for(Map.Entry<String, String>  pair : job.metadata.entrySet())
+    for (Map.Entry<String, String> pair : job.metadata.entrySet())
       request.addMetadata(Conversions.createBackendParam(pair.getKey(), pair.getValue()));
-    
+
     final String msg = new JsonFormat().printToString(request.build());
 
     System.err.println("submitting to " + _queue.getQueueUrl() + ":");
