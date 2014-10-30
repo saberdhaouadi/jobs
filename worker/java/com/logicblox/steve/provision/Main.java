@@ -231,7 +231,8 @@ public class Main {
             .withFilters(
                     new Filter().withName("tag:S3Bucket").withValues(s3Bucket),
                     new Filter().withName("tag:IncomingQueue").withValues(incoming_url),
-                    new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url)
+                    new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url),
+                    new Filter().withName("state").withValues("open", "active")
             );
     DescribeSpotInstanceRequestsResult spres = ec2.describeSpotInstanceRequests(spreq);
     for (SpotInstanceRequest r : spres.getSpotInstanceRequests()) {
