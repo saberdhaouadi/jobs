@@ -187,13 +187,17 @@ public class Main {
     int waitingMsgs = Integer.parseInt(result.get("ApproximateNumberOfMessages"));
     int busyMsgs = Integer.parseInt(result.get("ApproximateNumberOfMessagesNotVisible"));
 
-    int spotCurrent = getNumberOfCurrentSpotInstances();
-    int odCurrent = getNumberOfCurrentOnDemandInstances();
-
     if (totalNeeded == 0) {
       totalNeeded = (int) Math.ceil((busyMsgs + waitingMsgs) * pctQueue);
     }
     totalNeeded = Math.min(totalNeeded, maxInstances);
+
+    if (totalNeeded == 0) {
+      return;
+    }
+
+    int spotCurrent = getNumberOfCurrentSpotInstances();
+    int odCurrent = getNumberOfCurrentOnDemandInstances();
 
     int spotNeeded = (int) Math.ceil(pctSpot * totalNeeded) - spotCurrent;
     int odNeeded = totalNeeded - spotNeeded - odCurrent - spotCurrent;
