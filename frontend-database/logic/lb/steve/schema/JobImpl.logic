@@ -50,7 +50,9 @@
     +JobImpl(impl),
     +archive[impl] = "",
     +impl[account, "steve:internal:process-jobimpl"] = impl <-
-      +Account(account).
+      +Account@initial(account),
+      jobId="steve:internal:process-jobimpl",
+      impl = account + "-" + jobId.
 
   })
 

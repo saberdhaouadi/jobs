@@ -15,7 +15,7 @@ block(`schema) {
     /**
      * A job implementation has a unique id within an account.
      */
-    JobImpl(impl) ->.
+    JobImpl(impl), JobImp_id(impl:id) -> string(id).
 
     /**
      * A constructor for job implementations.
@@ -27,10 +27,6 @@ block(`schema) {
      */
     User_account[u] = a -> system:app:User(u), Account(a).
 
-  }),
-
-  clauses(`{
-    lang:constructor(`impl).
   })
 
 } <-- .
