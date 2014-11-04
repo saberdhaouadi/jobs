@@ -57,7 +57,6 @@ let
       logdir = /var/log/lb-steve-worker
       authentication_cache = $(LB_DEPLOYMENT_HOME)/authentication_cache
       tmpdir = /tmp
-      jvm_args = -Xmx4800m -Xss2048k
 
       [handler:steve]
       database_prefix = http://database-${name}:8080/db/
@@ -434,7 +433,7 @@ with pkgs.lib;
               proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
               proxy_set_header   X-Forwarded-Proto https;
 
-              proxy_connect_timeout      90;
+              proxy_connect_timeout      180;
               proxy_send_timeout         600;
               proxy_read_timeout         600;
 
@@ -456,6 +455,7 @@ with pkgs.lib;
           preStart = ''
             mkdir -p /var/log/lb-steve-worker
           '';
+          environment.JAVA_ARGS = "-Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false";
           serviceConfig = {
             ExecStart = "${builds.frontend}/bin/lb-steve-frontend --config ${frontendConfig}";
             Restart = "always";
@@ -463,6 +463,31 @@ with pkgs.lib;
           };
         };
       };
+
+      environment.etc =
+        let
+          jmx-config =
+            pkgs.writeText "jmx.yaml" ''
+          instances:
+            - host: 127.0.0.1
+              name: jmx_instance
+              port: 7199
+ 
+          init_config:
+            conf:
+              - include:
+                  domain: java.lang
+                  type: Threading
+              - include:
+                  domain: java.lang
+                  type: GarbageCollector
+            '';
+        in [
+          { source = jmx-config;
+            target = "dd-agent/conf.d/jmx.yaml";
+          }
+        ];
+
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t)) (range 1 env.workers."${t}".number)) instanceTypes ) ) )

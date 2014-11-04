@@ -9,4 +9,4 @@ export LB_WEBSERVER_HOME=$prefix
 export LB_DEPLOYMENT_HOME=${LB_DEPLOYMENT_HOME:=$HOME}
 mkdir -p $LB_DEPLOYMENT_HOME/logs/current
 
-exec java -cp "$cp" com.logicblox.steve.Main $@
+exec java $JAVA_ARGS -cp "$cp" com.logicblox.steve.Main $@
