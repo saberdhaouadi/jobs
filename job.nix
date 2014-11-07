@@ -96,7 +96,7 @@ rec {
       name = "jobs-frontend";
       src = ./frontend;
       buildInputs = [ logicblox lb_web makeWrapper client.build worker pkgs.jq pkgs.scala_2_10 ];
-      enableLBservices = false;
+      enableLBservices = true;
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-frontend-database=${database.build}"
@@ -104,6 +104,7 @@ rec {
         "--with-aws=${aws-java-sdk}"
         "--with-commons-cli=${commons-cli}"
       ];
+      doCheck = "true";
     };
 
   client.build =
