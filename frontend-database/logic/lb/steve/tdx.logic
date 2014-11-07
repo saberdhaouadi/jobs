@@ -203,9 +203,13 @@ block(`tdx) {
     file_binding(fb) {
       file_binding_definition_name[] = "jobimpls",
 
-      predicate_binding_by_name["lb:steve:schema:impl"] =
+      predicate_binding_by_name["lb:steve:schema:JobImpl:id"] =
         predicate_binding(_) {
-          predicate_binding_columns[] = "ACCOUNT, ID, IMPLID"
+          predicate_binding_columns[] = "IMPLID, ID"
+        },
+      predicate_binding_by_name["lb:steve:schema:JobImpl:account"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "IMPLID, ACCOUNT"
         },
       predicate_binding_by_name["lb:steve:schema:JobImpl:archive"] =
         predicate_binding(_) {
@@ -238,11 +242,14 @@ block(`tdx) {
 
     file_binding_by_name["jobimpl_metadata"] = fb,
     file_binding(fb) {
-      predicate_binding_by_name["lb:steve:schema:impl"] =
+      predicate_binding_by_name["lb:steve:schema:JobImpl:id"] =
         predicate_binding(_) {
-          predicate_binding_columns[] = "ACCOUNT, ID, IMPLID"
+          predicate_binding_columns[] = "IMPLID, ID"
         },
-
+      predicate_binding_by_name["lb:steve:schema:JobImpl:account"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "IMPLID, ACCOUNT"
+        },
       file_binding_definition_name[] = "jobimpl_metadata",
       predicate_binding_by_name["lb:steve:schema:JobImpl:metadata"] =
         predicate_binding(_) {

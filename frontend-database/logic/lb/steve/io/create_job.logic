@@ -2,34 +2,36 @@ block(`create_job) {
 
   alias(`lb:steve:database, `proto),
 
-  inactive(),
-
   clauses(`{
 
     /**
      * Validate the user.
      */
     +service_support:ensure_user(index, userId) <-
-      +proto:RequestEnvelope_create_job[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_user_id[req] = userId.
 
     /**
      * Validate the impl id.
      */
     +service_support:ensure_impl(index, userId, jobImplId) <-
-      +proto:RequestEnvelope_create_job[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_user_id[req] = userId,
-      proto:CreateJobRequest_impl_id[req] = jobImplId.
+      +proto:CreateJobRequest_impl_id[req] = jobImplId.
 
 
     /**
      * Check if job exists.
      */
     create_new_job(req) -> proto:CreateJobRequest(req).
+    lang:pulse(`create_new_job).
 
     // job with this client id already exists, export success
     +service_support:export_job_id(index, jobId) <-
-      +proto:RequestEnvelope_create_job[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_client_id[req] = clientId,
       schema:Job:by_client_id@prev[clientId] = jobId.
 
@@ -49,7 +51,8 @@ block(`create_job) {
     +schema:Job:output_prefix[j] = prefix, 
     +schema:Job:user[j] = user <-
       +create_new_job(req),
-      +proto:RequestEnvelope_create_job[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_job_id[req] = id,
       +proto:CreateJobRequest_client_id[req] = clientId,
       +proto:CreateJobRequest_impl_id[req] = implId,
@@ -57,7 +60,8 @@ block(`create_job) {
       +proto:CreateJobRequest_user_id[req] = userId,
       system:app:User:name(user:userId),
       schema:User_account[user] = account,
-      schema:impl[account, implId] = impl.
+      schema:JobImpl:id[impl] = implId,
+      schema:JobImpl:account[impl] = account.
 
     // wire input
     +schema:Job:input(job, url) <-

@@ -2,15 +2,14 @@ block(`get_user) {
 
   alias(`lb:steve:database, `proto),
 
-  //after_fixpoint(),
-
   clauses(`{
 
     /**
      * Validate the user.
      */
     +service_support:ensure_user(index, userId) <-
-      +proto:RequestEnvelope_get_user[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_user[union] = req,
       +proto:GetUserRequest_user_id[req] = userId.
 
 
@@ -19,17 +18,18 @@ block(`get_user) {
     lang:pulse(`user_cons).
 
     
-    +service_support:response[i] = resp,
+    +service_support:response[index] = resp,
     +proto:Response(resp),
     +user_cons[user] = proto,
     +proto:User(proto),
     +proto:User_id[proto] = userId,
     +proto:User_account_id[proto] = account,
     +proto:User_public_key[proto] = key,
-    +proto:ResponseEnvelope_response[env, i] = resp,
+    +proto:ResponseEnvelope_response[env, index] = resp,
     +proto:Response_user[resp] = proto <-
       +service_support:envelope[_] = env,
-      +proto:RequestEnvelope_get_user[_, i] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_user[union] = req,
       +proto:GetUserRequest_user_id[req] = userId,      
       system:app:User:name(user:userId),
       schema:User_account[user] = account,

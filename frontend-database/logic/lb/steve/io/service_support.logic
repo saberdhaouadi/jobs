@@ -24,9 +24,9 @@ block(`service_support) {
 
     /**
      * Constructor for a JobImpl message in this index (encapsulated by the response in the same index).
-     * Note that an index contains a set of jobimpl messages, so we key by schema:JobImpl too.
+     * Note that an index contains a set of jobimpl messages, so we key by schema:JobImpl_code too.
      */
-    impl[index, impl] = proto -> int(index), schema:JobImpl(impl), proto:JobImpl(proto).
+    impl[index, implCode] = proto -> int(index), string(implCode), proto:JobImpl(proto).
 
     /**
      * Constructor for an Error message in this index (encapsulated by the response in the same index).
@@ -48,12 +48,12 @@ block(`service_support) {
     /**
      * Export a job in the response with this index.
      */
-    export_job(index, job) -> int(index), schema:Job(job).
+    export_job(index, jobIb) -> int(index), string(jobIb).
 
     /**
      * Export a jobImpl in the response with this index.
      */
-    export_impl(index, impl) -> int(index), schema:JobImpl(impl).
+    export_impl(index, implCode) -> int(index), string(implCode).
 
     /**
      * Export an error with this content in the response with this index.
@@ -144,25 +144,26 @@ block(`service_support) {
     +proto:Response(resp),    
     +job[i] = protoJob,
     +proto:Job(protoJob),
-    +proto:Job_id[protoJob] = id,
+    +proto:Job_id[protoJob] = jobIb,
     +proto:ResponseEnvelope_response[env, i] = resp,
     +proto:Response_job[resp] = protoJob <-
       +envelope[_] = env,
-      +export_job(i, job),
-      schema:Job_id[job] = id.
+      +export_job(i, jobIb),
+      schema:Job_id@prev[_] = jobIb.
 
 
     // JOB IMPL: create a response, a job impl, and wire
     +response[i] = resp,
     +proto:Response(resp),
-    +impl[i, impl] = protoJobImpl,
+    +impl[i, implCode] = protoJobImpl,
     +proto:JobImpl(protoJobImpl),
-    +proto:JobImpl_id[protoJobImpl] = id,
+    +proto:JobImpl_id[protoJobImpl] = implId,
     +proto:ResponseEnvelope_response[env, i] = resp,
     +proto:Response_impl(resp, protoJobImpl) <-
       +envelope[_] = env,      
-      +export_impl(i, impl),
-      schema:JobImpl:id[impl] = id.
+      +export_impl(i, implCode),
+      schema:JobImpl_code@prev[impl] = implCode,
+      schema:JobImpl:id@prev[impl] = implId.
 
 
 
@@ -180,7 +181,8 @@ block(`service_support) {
       system:app:User:name(user:userId),
       schema:User_account[user] = account,
       schema:Account_id(account:accountId),
-      !schema:impl[account, jobImplId] = _.
+      code = account + "-" + jobImplId,
+      !schema:JobImpl_code[_] = code.
 
   })
 

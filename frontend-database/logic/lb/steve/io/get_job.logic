@@ -2,20 +2,20 @@ block(`get_job) {
 
   alias(`lb:steve:database, `proto),
 
-  //after_fixpoint(),
-
   clauses(`{
 
     /**
      * Check if job exists.
      */
     +service_support:ensure_job(index, jobId) <-
-      +proto:RequestEnvelope_get_job[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_job[union] = req,
       +proto:GetJobRequest_job_id[req] = jobId.
 
     // create the job message
     +service_support:export_job(index, jobId) <-
-      +proto:RequestEnvelope_get_job[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_job[union] = req,
       +proto:GetJobRequest_job_id[req] = jobId,
       schema:Job_id@prev[_] = jobId.
 
@@ -26,7 +26,8 @@ block(`get_job) {
     +proto:Job_output_prefix[protoJob] = output_prefix,
     +proto:Job_user_id[protoJob] = user_id,
     +proto:Job_impl_archive[protoJob] = impl_archive <-
-      +proto:RequestEnvelope_get_job[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_job[union] = req,
       +proto:GetJobRequest_job_id[req] = jobId,
       +service_support:job[index] = protoJob,
       schema:Job_id[job] = jobId,
@@ -36,89 +37,95 @@ block(`get_job) {
       schema:Job:user[job] = user,
       system:app:User:name(user:user_id),
       schema:User_account[user] = account,
-      schema:impl[account, impl_id] = impl,
+      schema:JobImpl:account[impl] = account,
       schema:JobImpl:archive[impl] = impl_archive.
 
 
     // populate input with file messages
-    input_cons[job, url] = file -> schema:Job(job), string(url), proto:File(file).
+    input_cons[jobId, url] = file -> string(jobId), string(url), proto:File(file).
     lang:constructor(`input_cons).
     lang:pulse(`input_cons).
 
-    +input_cons[job, url] = file,
+    +input_cons[jobId, url] = file,
     +proto:File(file),
     +proto:File_url[file] = url,
     +proto:Job_input(jobMessage, file) <-
-      +proto:RequestEnvelope_get_job[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_job[union] = req,
       +proto:GetJobRequest_get_input[req] = true,
       +proto:GetJobRequest_job_id[req] = jobId,
       +service_support:job[index] = jobMessage,
-      schema:Job_id[job] = jobId,
-      schema:Job:input(job, url).
+      schema:Job_id@prev[job] = jobId,
+      schema:Job:input@prev(job, url).
 
     +proto:File_hash[file] = hash <-
-      +input_cons[job, url] = file,
-      schema:Job:input_hash[job, url] = hash.
+      +input_cons[jobId, url] = file,
+      schema:Job_id[job] = jobId,
+      schema:Job:input_hash@prev[job, url] = hash.
 
     // populate metadata with Param messages
-    metadata[job, k] = param -> schema:Job(job), string(k), proto:Param(param).
+    metadata[jobId, k] = param -> string(jobId), string(k), proto:Param(param).
     lang:constructor(`metadata).
     lang:pulse(`metadata).
 
-    +metadata[job, k] = meta,
+    +metadata[jobId, k] = meta,
     +proto:Param(meta),
     +proto:Param_key[meta] = k,
     +proto:Param_value[meta] = v,
     +proto:Job_metadata(jobMessage, meta) <-
-      +proto:RequestEnvelope_get_job[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_job[union] = req,
       +proto:GetJobRequest_get_metadata[req] = true,
       +proto:GetJobRequest_job_id[req] = jobId,
       +service_support:job[index] = jobMessage,
-      schema:Job_id[job] = jobId,
-      schema:Job:metadata[job, k] = v.
+      schema:Job_id@prev[job] = jobId,
+      schema:Job:metadata@prev[job, k] = v.
 
 
     // populate status messages  
-    status_cons[job, ts] = status -> schema:Job(job), int(ts), proto:Status(status).
+    status_cons[jobId, ts] = status -> string(jobId), int(ts), proto:Status(status).
     lang:constructor(`status_cons).
     lang:pulse(`status_cons).
     
-    +status_cons[job, ts] = status,
+    +status_cons[jobId, ts] = status,
     +proto:Status(status),
     +proto:Status_timestamp[status] = ts,
     +proto:Status_event[status] = event,
     +proto:Status_machine[status] = machine,
     +proto:Status_message[status] = message,
     +proto:Job_status(jobMessage, status) <-
-      +proto:RequestEnvelope_get_job[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_job[union] = req,
       +proto:GetJobRequest_get_status[req] = true,
       +proto:GetJobRequest_job_id[req] = jobId,
       +service_support:job[index] = jobMessage,
       schema:Job_id[job] = jobId,
-      schema:Job:status_event[job, ts] = event,
-      schema:Job:status_machine[job, ts] = machine,
-      schema:Job:status_message[job, ts] = message.
+      schema:Job:status_event@prev[job, ts] = event,
+      schema:Job:status_machine@prev[job, ts] = machine,
+      schema:Job:status_message@prev[job, ts] = message.
 
 
     // populate output with file messages
-    output_cons[job, url] = file -> schema:Job(job), string(url), proto:File(file).
+    output_cons[jobId, url] = file -> string(jobId), string(url), proto:File(file).
     lang:constructor(`output_cons).
     lang:pulse(`output_cons).
 
-    +output_cons[job, url] = file,
+    +output_cons[jobId, url] = file,
     +proto:File(file),
     +proto:File_url[file] = url,
     +proto:Job_output(jobMessage, file) <-
-      +proto:RequestEnvelope_get_job[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_job[union] = req,
       +proto:GetJobRequest_get_output[req] = true,
       +proto:GetJobRequest_job_id[req] = jobId,
       +service_support:job[index] = jobMessage,
-      schema:Job_id[job] = jobId,
-      schema:Job:output(job, url).
+      schema:Job_id@prev[job] = jobId,
+      schema:Job:output@prev(job, url).
 
     +proto:File_hash[file] = hash <-
-      +output_cons[job, url] = file,
-      schema:Job:output_hash[job, url] = hash.
+      +output_cons[jobId, url] = file,
+      schema:Job_id[job] = jobId,
+      schema:Job:output_hash@prev[job, url] = hash.
 
   })
 } <-- .

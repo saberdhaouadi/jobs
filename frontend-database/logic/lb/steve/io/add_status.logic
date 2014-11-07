@@ -2,15 +2,14 @@ block(`add_status) {
 
   alias(`lb:steve:database, `proto),
 
-  inactive(),
-
   clauses(`{
 
     /**
      * Check if job exists.
      */
     +service_support:ensure_job(index, jobId) <-
-      +proto:RequestEnvelope_add_status[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_add_status[union] = req,
       +proto:AddStatusRequest_job_id[req] = jobId.
 
     /**
@@ -20,14 +19,15 @@ block(`add_status) {
     +schema:Job:status_event[job, ts] = event,
     +schema:Job:status_machine[job, ts] = machine,
     +schema:Job:status_message[job, ts] = message <-
-      +proto:RequestEnvelope_add_status[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_add_status[union] = req,
       +proto:AddStatusRequest_job_id[req] = jobId,
       +proto:AddStatusRequest_status[req] = status,
       +proto:Status_timestamp[status] = ts,
       +proto:Status_event[status] = event,
       +proto:Status_machine[status] = machine,
       +proto:Status_message[status] = message,
-      schema:Job_id@prev[job] = jobId.
+      schema:Job_id[job] = jobId.
 
   })
 

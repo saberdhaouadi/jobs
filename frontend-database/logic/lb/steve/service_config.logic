@@ -5,73 +5,23 @@ block(`service_config) {
   alias_all(`lb:web:config:protobuf),
   alias_all(`lb:web:config:protobuf_abbr),
 
-  /**
-   * Service definitions.
-   */
-  clauses(`{
-
-    // Job services.
-    database_service("create_job").
-    readonly_database_service("get_job").
-    database_service("add_status").
-    database_service("set_result").
-
-    // Job implementation services.
-    database_service("set_impl").
-    readonly_database_service("get_impl").
-
-    // User services
-    readonly_database_service("get_user").
-  }),
-
-  /**
-   * Local API for defining the services.
-   */
-  clauses(`{
-
-    /**
-     * Defines a database service with this name.
-     */
-    database_service(name) -> string(name).
-
-    /**
-     * A database service that is read-only.
-     */
-    readonly_database_service(name) -> string(name).
-
-  }),
-
-  /**
-   * Local API implementation.
-   */
   clauses(`{
 
     // constant to prefix the services
     prefix[] = s -> string(s).
-    prefix[] = "/db/".
+    prefix[] = "/db".
 
-    // declare input services
-    service_by_prefix[prefix[] + name] = x,
+    // TODO - allow for prefix to be configures?
+
+    // declare service
+    service_by_prefix[prefix[]] = x,
     default_protobuf_service(x) {
       protobuf_protocol[] = "lb:steve:database",
       protobuf_request_message[] = "RequestEnvelope",
       protobuf_response_message[] = "ResponseEnvelope",
-      inactive_block_name[] = "lb:steve:io:" + name,
       service_parameter["enable_http_control"] = "false"
-    } <-
-      database_service(name).
+    }.
 
-    // declare output services
-    service_by_prefix[prefix[] + name] = x,
-    readonly(x),
-    default_protobuf_service(x) {
-      protobuf_protocol[] = "lb:steve:database",
-      protobuf_request_message[] = "RequestEnvelope",
-      protobuf_response_message[] = "ResponseEnvelope",
-      //inactive_after_fixpoint_block_name[] = "lb:steve:" + name,
-      service_parameter["enable_http_control"] = "false"
-    } <-
-      readonly_database_service(name).
   })  
 
 } <-- .

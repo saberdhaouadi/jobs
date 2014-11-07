@@ -13,14 +13,10 @@ block(`schema) {
     Account(account), Account_id(account:id) -> string(id).
 
     /**
-     * A job implementation has a unique id within an account.
+     * A job implementation has a unique id within an account. The code
+     * is a concatenation of the account + "-" = id.
      */
-    JobImpl(impl), JobImp_id(impl:id) -> string(id).
-
-    /**
-     * A constructor for job implementations.
-     */
-    impl[account, id] = impl -> Account(account), string(id), JobImpl(impl).
+    JobImpl(impl), JobImpl_code(impl:id) -> string(id).
 
     /**
      * The account a user belongs to.

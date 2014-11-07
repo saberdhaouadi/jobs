@@ -2,15 +2,14 @@ block(`set_impl) {
 
   alias(`lb:steve:database, `proto),
 
-  inactive(),
-
   clauses(`{
    
     /**
      * Validate the user.
      */
     +service_support:ensure_user(index, userId) <-
-      +proto:RequestEnvelope_set_impl[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_set_impl[union] = req,
       +proto:SetJobImplRequest_user_id[req] = userId.
 
 
@@ -22,24 +21,27 @@ block(`set_impl) {
      * Set impl details and export success.
      */
     +service_support:export_success(index),
-    +schema:impl[account, implId] = impl,
+    +schema:JobImpl(impl),
+    +schema:JobImpl_code[impl] = accountId + "-" + implId,
+    +schema:JobImpl:id[impl] = implId,
     +impl_by_index[index] = impl,
     +schema:JobImpl(impl),
     ^schema:JobImpl:user[impl] = user,
     ^schema:JobImpl:archive[impl] = url <-
-      +proto:RequestEnvelope_set_impl[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_set_impl[union] = req,
       +proto:SetJobImplRequest_user_id[req] = userId,
       +proto:SetJobImplRequest_impl_id[req] = implId,
       +proto:SetJobImplRequest_file[req] = fileProto,
       +proto:File_url[fileProto] = url,
       system:app:User:name(user:userId),
       schema:User_account[user] = account,
-      schema:Account_id(account:accountId),
-      impl = accountId+"-"+implId.
+      schema:Account_id(account:accountId).
 
     // Hash is optional, so it needs a separate rule.
     ^schema:JobImpl:archive_hash[impl] = hash <-
-      +proto:RequestEnvelope_set_impl[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_set_impl[union] = req,
       +service_support:export_success(index),
       +impl_by_index[index] = impl,
       +proto:SetJobImplRequest_file[req] = fileProto,
@@ -47,7 +49,8 @@ block(`set_impl) {
 
     // wire metadata
     ^schema:JobImpl:metadata[impl, key] = value <-
-      +proto:RequestEnvelope_set_impl[_, index] = req,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_set_impl[union] = req,
       +service_support:export_success(index),
       +impl_by_index[index] = impl,
       +proto:SetJobImplRequest_metadata(req, p),
@@ -56,7 +59,8 @@ block(`set_impl) {
 
     // cleanup old metadata if it's not updated
     -schema:JobImpl:metadata[impl, key] = value <-
-      +proto:RequestEnvelope_set_impl[_, index] = _,
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_set_impl[union] = _,
       +service_support:export_success(index),
       +impl_by_index[index] = impl,
       schema:JobImpl:metadata@prev[impl, key] = value,

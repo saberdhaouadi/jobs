@@ -22,14 +22,14 @@
      */
     metadata[impl, k] = v -> JobImpl(impl), string(k), string(v).
 
-  }),
-
-  sealed(`{
-
     /**
      * The id of a JobImpl (unique only within an account).
      */
     id[impl] = id -> JobImpl(impl), string(id).
+
+  }),
+
+  sealed(`{
 
     /**
      * The account of the user that owns the JobImpl.
@@ -40,19 +40,17 @@
 
   clauses(`{
 
-    id[impl] = id <-
-      impl[_, id] = impl.
-
     account[impl] = account <-
       JobImpl:user[impl] = user,
       User_account[user] = account.
 
     +JobImpl(impl),
-    +archive[impl] = "",
-    +impl[account, "steve:internal:process-jobimpl"] = impl <-
+    +JobImpl_code[impl] = code,
+    +id[impl] = implId,
+    +archive[impl] = "" <-
       +Account@initial(account),
-      jobId="steve:internal:process-jobimpl",
-      impl = account + "-" + jobId.
+      implId="steve:internal:process-jobimpl",
+      code = account + "-" + implId.
 
   })
 

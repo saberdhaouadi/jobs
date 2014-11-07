@@ -16,8 +16,6 @@ import lb.web.testcase
 import lb.web.service
 import lb.web.admin
 
-def get_client(path):
-    return lb.web.service.Client("localhost", 8080, "/db/" + path)
 
 def get_tdx_client(path):
     return lb.web.service.DelimClient("localhost", 8080, "/tdx/" + path)
@@ -25,6 +23,7 @@ def get_tdx_client(path):
 class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
     prototype = 'lb-steve-frontend-database-test'
+    client = lb.web.service.Client("localhost", 8080, "/db")
 
     def setUp(self):
         super(TestFrontendDatabase, self).setUp()
@@ -74,10 +73,10 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
     # JOB IMPL TESTS
     #
 
-    def test_set_job_impl(self):
-        client = get_client("set_impl")
+    def test_set_job_impl(self):        
+        client = self.client
         envelope = client.dynamic_request()
-        req = envelope.set_impl.add()
+        req = envelope.request.add().set_impl
         req.impl_id = "total"
         req.user_id = "martin"
         req.file.url = "the url"
@@ -105,10 +104,10 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
             logicblox.com-total|total|logicblox.com|the key2|the value2
         ''')
 
-    def test_set_job_impl_no_hash(self):
-        client = get_client("set_impl")
-        envelope = client.dynamic_request()
-        req = envelope.set_impl.add()
+    def test_set_job_impl_no_hash(self):                
+        client = self.client
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().set_impl
         req.impl_id = "total"
         req.user_id = "martin"
         req.file.url = "the url"
@@ -140,9 +139,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # make sure there's a jobimpl
         self.test_set_job_impl()
 
-        client = get_client("get_impl")
-        envelope = client.dynamic_request()
-        req = envelope.get_impl.add()
+        client = self.client
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().get_impl
         req.impl_id = "total"
         req.user_id = "martin"
 
@@ -165,9 +164,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         self.test_set_job_impl()
 
         # add another in the same account
-        client = get_client("set_impl")
-        envelope = client.dynamic_request()
-        req = envelope.set_impl.add()
+        client = self.client
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().set_impl
         req.impl_id = "total2"
         req.user_id = "martin"
         req.file.url = "the url2"
@@ -175,8 +174,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         client.dynamic_call(envelope)
 
         # add one in a different account
-        envelope = client.dynamic_request()
-        req = envelope.set_impl.add()
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().set_impl
         req.impl_id = "total3"
         req.user_id = "jack"
         req.file.url = "the url3"
@@ -184,9 +183,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         client.dynamic_call(envelope)
 
         # now get all implementations available to rob (same account as martin)
-        client = get_client("get_impl")
-        envelope = client.dynamic_request()
-        req = envelope.get_impl.add()
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().get_impl
         req.user_id = "rob"
 
         # verify response (should have martin's impls, but not jack's)
@@ -209,9 +207,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         self.test_get_job_impl()
 
         # change some values using set_impl
-        client = get_client("set_impl")
-        envelope = client.dynamic_request()
-        req = envelope.set_impl.add()
+        client = self.client
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().set_impl
         req.impl_id = "total"
         req.user_id = "martin"
         req.file.url = "the url new"
@@ -231,9 +229,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
 
         # check the status of the database
-        client = get_client("get_impl")
-        envelope = client.dynamic_request()
-        req = envelope.get_impl.add()
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().get_impl
         req.impl_id = "total"
         req.user_id = "martin"
 
@@ -258,9 +255,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # make sure there's a jobimpl
         self.test_set_job_impl()
 
-        client = get_client("create_job")
-        envelope = client.dynamic_request()
-        req = envelope.create_job.add()
+        client = self.client
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().create_job
         req.job_id = "1"
         req.client_id = "a"
         req.impl_id = "total"
@@ -284,9 +281,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # make sure there's a jobimpl
         self.test_set_job_impl()
 
-        client = get_client("create_job")
-        envelope = client.dynamic_request()
-        req = envelope.create_job.add()
+        client = self.client
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().create_job
         req.job_id = "1"
         req.client_id = "a"
         req.impl_id = "total"
@@ -332,11 +329,10 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # make sure there's data
         self.test_create_job_with_data()
 
-        client = get_client("get_job")
+        client = self.client
 
-
-        envelope = client.dynamic_request()
-        req = envelope.get_job.add()
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().get_job
         req.job_id = "1"
         req.get_metadata = True
         req.get_status = True
@@ -380,17 +376,17 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # make sure there's a jobimpl
         self.test_set_job_impl()
 
-        client = get_client("create_job")
-        envelope = client.dynamic_request()
+        client = self.client
+        envelope = self.client.dynamic_request()
 
         # note that we send job_id 2 and then 1
-        req = envelope.create_job.add()
+        req = envelope.request.add().create_job
         req.job_id = "2"
         req.client_id = "a2"
         req.impl_id = "total"
         req.output_prefix = "s3://something/something2"
         req.user_id = "martin"
-        req = envelope.create_job.add()
+        req = envelope.request.add().create_job
         req.job_id = "1"
         req.client_id = "a1"
         req.impl_id = "total"
@@ -413,32 +409,32 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # make sure there's a jobimpl
         self.test_set_job_impl()
 
-        client = get_client("create_job")
-        envelope = client.dynamic_request()
+        client = self.client
+        envelope = self.client.dynamic_request()
 
         # note that we send job_id 2 and then 1
-        req = envelope.create_job.add()
+        req = envelope.request.add().create_job
         req.job_id = "2"
         req.client_id = "a2"
         req.impl_id = "total"
         req.output_prefix = "s3://something/something2"
         req.user_id = "martin"
         
-        req = envelope.create_job.add()
+        req = envelope.request.add().create_job
         req.job_id = "3"
         req.client_id = "a3"
         req.impl_id = "total"
         req.output_prefix = "s3://something/something3"
         req.user_id = "non_existent_user"
 
-        req = envelope.create_job.add()
+        req = envelope.request.add().create_job
         req.job_id = "1"
         req.client_id = "a1"
         req.impl_id = "total"
         req.output_prefix = "s3://something/something1"
         req.user_id = "martin"
 
-        req = envelope.create_job.add()
+        req = envelope.request.add().create_job
         req.job_id = "4"
         req.client_id = "a4"
         req.impl_id = "total4"
@@ -471,23 +467,23 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # create a simple job first
         self.test_create_job()
 
-        client = get_client("add_status")
-        envelope = client.dynamic_request()
-        req = envelope.add_status.add()
+        client = self.client
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().add_status
         req.job_id = "1"
         req.status.timestamp = 1
         req.status.event = "the event"
         req.status.machine = "the machine"
         req.status.message = "status message"
 
-        req = envelope.add_status.add()
+        req = envelope.request.add().add_status
         req.job_id = "wrong id"
         req.status.timestamp = 2
         req.status.event = "the event2"
         req.status.machine = "the machine2"
         req.status.message = "status message2"
 
-        req = envelope.add_status.add()
+        req = envelope.request.add().add_status
         req.job_id = "1"
         req.status.timestamp = 3
         req.status.event = "the event3"
@@ -511,12 +507,11 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         ''')
 
         # now use get status
-        client = get_client("get_job")
-        envelope = client.dynamic_request()
-        req = envelope.get_job.add()
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().get_job
         req.job_id = "1"
         req.get_status = True
-        req = envelope.get_job.add()
+        req = envelope.request.add().get_job
         req.job_id = "5"
         req.get_status = True
 
@@ -548,9 +543,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # create a simple job first
         self.test_create_job()
 
-        client = get_client("set_result")
-        envelope = client.dynamic_request()
-        req = envelope.set_result.add()
+        client = self.client
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().set_result
         req.job_id = "1"
         f = req.output.add()
         f.url = "the url 1"
@@ -559,7 +554,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         f.url = "the url 2"
         f.hash = "the hash 2"
 
-        req = envelope.set_result.add()
+        req = envelope.request.add().set_result
         req.job_id = "wrong id"
         f = req.output.add()
         f.url = "the url 3"
@@ -586,12 +581,11 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         ''')
 
         # now use get result
-        client = get_client("get_job")
-        envelope = client.dynamic_request()
-        req = envelope.get_job.add()
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().get_job
         req.job_id = "1"
         req.get_output = True
-        req = envelope.get_job.add()
+        req = envelope.request.add().get_job
         req.job_id = "5"
         req.get_output = True
 
@@ -621,16 +615,16 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         self.test_create_job_with_data()
 
         # add some status entries
-        client = get_client("add_status")
-        envelope = client.dynamic_request()
-        req = envelope.add_status.add()
+        client = self.client
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().add_status
         req.job_id = "1"
         req.status.timestamp = 1
         req.status.event = "the event1"
         req.status.machine = "the machine1"
         req.status.message = "status message1"
 
-        req = envelope.add_status.add()
+        req = envelope.request.add().add_status
         req.job_id = "1"
         req.status.timestamp = 3
         req.status.event = "the event3"
@@ -640,9 +634,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         client.dynamic_call(envelope)
 
         # add a result
-        client = get_client("set_result")
-        envelope = client.dynamic_request()
-        req = envelope.set_result.add()
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().set_result
         req.job_id = "1"
         f = req.output.add()
         f.url = "the url 1"
@@ -654,9 +647,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         client.dynamic_call(envelope)
 
         # now use get statuses and results
-        client = get_client("get_job")
-        envelope = client.dynamic_request()
-        req = envelope.get_job.add()
+        envelope = self.client.dynamic_request()
+        req = envelope.request.add().get_job
         req.job_id = "1"
         req.get_metadata = True
         req.get_status = True

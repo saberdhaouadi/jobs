@@ -124,4 +124,8 @@ public interface Database {
    */
   public ListenableFuture<Iterable<JobImpl>> getJobImpl(String userId);
 
+  /**
+   * Allow the database implementation to cleanup resources.
+   */
+  public void shutdown();
 }

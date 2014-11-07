@@ -63,7 +63,13 @@ public class FakeDatabase implements Database {
     // TODO bit of a hack
     setJobImpl("martin", "steve:internal:process-jobimpl", null, null);
   }
-
+  
+  /**
+   * Allow the database implementation to cleanup resources.
+   */
+  public void shutdown() {
+  }
+  
   private void addUser(User user) {
     _users.put(user.getId(), user);
   }

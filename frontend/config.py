@@ -75,7 +75,7 @@ classpath = [
   #'$(lb_web)/lib/java/rabbitmq-client.jar',
   #'$(lb_web)/lib/java/relaxngDatatype.jar',
   #'$(lb_web)/lib/java/s3lib-0.2.jar',
-  #'$(lb_web)/lib/java/scala-library.jar',
+  '$(lb_web)/lib/java/scala-library.jar',
   '$(lb_web)/lib/java/servlet-api-2.5.jar',
   '$(lb_web)/lib/java/webservices-api.jar',
   '$(lb_web)/lib/java/webservices-rt.jar',
@@ -95,7 +95,8 @@ test_classpath = classpath + [
 jar(
   name = 'lb-steve-frontend',
   srcdir = 'java',
-  classpath = classpath)
+  classpath = classpath,
+  scala = True)
 
 link_libs(test_classpath)
 

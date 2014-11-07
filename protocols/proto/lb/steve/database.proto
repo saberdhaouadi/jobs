@@ -3,37 +3,37 @@ package lb.steve.database;
 option java_package = "com.logicblox.steve.protocol";
 import "blox/options.proto";
 
-/**
- * ENVELOPES
- */
-
 //
-// These look like unions but they are just a message that contain repeated
-// fields of the actual request. Services will look for specific request 
-// messages only (e.g. the create_job service will only inspect CreateJobRequest
-// messages).
+// ENVELOPES
 //
 
-message RequestEnvelope
+message RequestEnvelope 
 {
-  repeated CreateJobRequest create_job = 1;
-  repeated GetJobRequest get_job = 2;
-  repeated AddStatusRequest add_status = 3;
-  repeated SetResultRequest set_result = 4;
-
-  repeated SetJobImplRequest set_impl = 5;
-  repeated GetJobImplRequest get_impl = 6;
-
-  repeated GetUserRequest get_user = 7;
+  repeated Request request = 1;
 }
 
-//
-// Services respond with an envelope with multiple Reponses. The order of the response
-// messages is guaranteed to be the corresponding order to the request envelope.
-//
 message ResponseEnvelope
 {
   repeated Response response = 1;
+}
+
+//
+// UNIONS
+//
+
+message Request 
+{  
+  // XOR
+
+  optional CreateJobRequest create_job = 1;
+  optional GetJobRequest get_job = 2;
+  optional AddStatusRequest add_status = 3;
+  optional SetResultRequest set_result = 4;
+
+  optional SetJobImplRequest set_impl = 5;
+  optional GetJobImplRequest get_impl = 6;
+
+  optional GetUserRequest get_user = 7;
 }
 
 //
