@@ -20,7 +20,6 @@ block(`set_impl) {
     /**
      * Set impl details and export success.
      */
-    +service_support:export_success(index),
     +schema:JobImpl(impl),
     +schema:JobImpl_code[impl] = accountId + "-" + implId,
     +schema:JobImpl:id[impl] = implId,
@@ -42,7 +41,6 @@ block(`set_impl) {
     ^schema:JobImpl:archive_hash[impl] = hash <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_set_impl[union] = req,
-      +service_support:export_success(index),
       +impl_by_index[index] = impl,
       +proto:SetJobImplRequest_file[req] = fileProto,
       +proto:File_hash[fileProto] = hash.
@@ -51,7 +49,6 @@ block(`set_impl) {
     ^schema:JobImpl:metadata[impl, key] = value <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_set_impl[union] = req,
-      +service_support:export_success(index),
       +impl_by_index[index] = impl,
       +proto:SetJobImplRequest_metadata(req, p),
       +proto:Param_key[p] = key,
@@ -61,7 +58,6 @@ block(`set_impl) {
     -schema:JobImpl:metadata[impl, key] = value <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_set_impl[union] = _,
-      +service_support:export_success(index),
       +impl_by_index[index] = impl,
       schema:JobImpl:metadata@prev[impl, key] = value,
       !+schema:JobImpl:metadata[impl, key] = value.

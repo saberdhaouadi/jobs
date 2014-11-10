@@ -17,9 +17,8 @@ block(`set_result) {
      * Set result (outputs)
      */
      // note that we assume hash is required for outputs
-    +service_support:export_success(index),
     +schema:Job:output(job, url) <-
-      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:RequestEnvelope_request[_, _] = union,
       +proto:Request_set_result[union] = req,
       +proto:SetResultRequest_job_id[req] = jobId,
       +proto:SetResultRequest_output(req, f),
