@@ -179,7 +179,7 @@ block(`service_support) {
     +export_error(index, "NO_SUCH_JOB_IMPL", "Job implementation '" + jobImplId + "' does not exist in account '" + accountId + "'.") <-
       +ensure_impl(index, userId, jobImplId),
       system:app:User:name(user:userId),
-      schema:User_account[user] = account,
+      schema:User_account@prev[user] = account,
       schema:Account_id(account:accountId),
       code = account + "-" + jobImplId,
       !schema:JobImpl_code[_] = code.

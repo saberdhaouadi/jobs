@@ -58,10 +58,10 @@ block(`create_job) {
       +proto:CreateJobRequest_impl_id[req] = implId,
       +proto:CreateJobRequest_output_prefix[req] = prefix,
       +proto:CreateJobRequest_user_id[req] = userId,
-      system:app:User:name(user:userId),
-      schema:User_account[user] = account,
-      schema:JobImpl:id[impl] = implId,
-      schema:JobImpl:account[impl] = account.
+      system:app:User:name@prev(user:userId),
+      schema:User_account@prev[user] = account,
+      schema:JobImpl:id@prev[impl] = implId,
+      schema:JobImpl:account@prev[impl] = account.
 
     // wire input
     +schema:Job:input(job, url) <-

@@ -32,7 +32,7 @@ block(`get_user) {
       +proto:Request_get_user[union] = req,
       +proto:GetUserRequest_user_id[req] = userId,      
       system:app:User:name(user:userId),
-      schema:User_account[user] = account,
+      schema:User_account@prev[user] = account,
       lb:web:credentials:database:public_key[user] = key.
 
   })

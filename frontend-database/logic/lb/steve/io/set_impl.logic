@@ -35,7 +35,7 @@ block(`set_impl) {
       +proto:SetJobImplRequest_file[req] = fileProto,
       +proto:File_url[fileProto] = url,
       system:app:User:name(user:userId),
-      schema:User_account[user] = account,
+      schema:User_account@prev[user] = account,
       schema:Account_id(account:accountId).
 
     // Hash is optional, so it needs a separate rule.

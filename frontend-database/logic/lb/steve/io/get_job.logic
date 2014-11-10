@@ -37,7 +37,7 @@ block(`get_job) {
       schema:Job:user[job] = user,
       schema:JobImpl:id[impl] = impl_id,
       system:app:User:name(user:user_id),
-      schema:User_account[user] = account,
+      schema:User_account@prev[user] = account,
       schema:JobImpl:account[impl] = account,
       schema:JobImpl:archive[impl] = impl_archive.
 
