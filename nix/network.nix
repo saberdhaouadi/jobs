@@ -59,7 +59,7 @@ let
       tmpdir = /tmp
 
       [handler:steve]
-      database_prefix = http://database-${name}:8080/db/
+      database_prefix = http://database-${name}:8080/db
 
       [state]
       implementation = dynamodb
@@ -386,7 +386,20 @@ with pkgs.lib;
       environment.systemPackages = [ builds.frontend builds.client.build pkgs.jdk pkgs.awscli pkgs.nodejs];
 
       services.nginx.enable = true;
+      services.nginx.appendConfig = ''
+        worker_processes 4;
+      '';
       services.nginx.httpConfig = ''
+        server {
+            listen               80;
+            server_name   localhost;
+            location /nginx_status {
+                stub_status         on;
+                access_log         off;
+                allow        127.0.0.1;
+                deny               all;
+            }
+        }
         server {
           server_name ${env.hostName};
           listen [::]:443 default_server ssl spdy ipv6only=off;
@@ -446,6 +459,10 @@ with pkgs.lib;
 
       '';
 
+      nixpkgs.config.packageOverrides = pkgs: {
+        nginx = pkgs.lib.overrideDerivation pkgs.nginx (a: { configureFlags = a.configureFlags ++ ["--with-http_stub_status_module"]; } );
+      };
+
       systemd.services = {
         lb-steve-frontend = {
           description = "LB Steve Frontend";
@@ -482,9 +499,18 @@ with pkgs.lib;
                   domain: java.lang
                   type: GarbageCollector
             '';
+          nginx-config =
+            pkgs.writeText "nginx.yaml" ''
+              init_config:
+              instances:
+                -   nginx_status_url: http://127.0.0.1/nginx_status/
+          '';
         in [
           { source = jmx-config;
             target = "dd-agent/conf.d/jmx.yaml";
+          }
+          { source = nginx-config;
+            target = "dd-agent/conf.d/nginx.yaml";
           }
         ];
 
