@@ -95,13 +95,13 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobimpls").get(), '''
-            IMPLID|ID|ACCOUNT|USER|ARCHIVE|ARCHIVE_HASH
-            logicblox.com-total|total|logicblox.com|martin|the url|the hash
+            IMPLID|ID|USER|ARCHIVE|ARCHIVE_HASH
+            logicblox.com-total|total|martin|the url|the hash
         ''')
         self.assertDelimEqual(get_tdx_client("jobimpl_metadata").get(), '''
-            IMPLID|ID|ACCOUNT|KEY|VALUE
-            logicblox.com-total|total|logicblox.com|the key1|the value1
-            logicblox.com-total|total|logicblox.com|the key2|the value2
+            IMPLID|ID|KEY|VALUE
+            logicblox.com-total|total|the key1|the value1
+            logicblox.com-total|total|the key2|the value2
         ''')
 
     def test_set_job_impl_no_hash(self):                
@@ -126,13 +126,13 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobimpls").get(), '''
-            IMPLID|ID|ACCOUNT|USER|ARCHIVE|ARCHIVE_HASH
-            logicblox.com-total|total|logicblox.com|martin|the url|
+            IMPLID|ID|USER|ARCHIVE|ARCHIVE_HASH
+            logicblox.com-total|total|martin|the url|
         ''')
         self.assertDelimEqual(get_tdx_client("jobimpl_metadata").get(), '''
-            IMPLID|ID|ACCOUNT|KEY|VALUE
-            logicblox.com-total|total|logicblox.com|the key1|the value1
-            logicblox.com-total|total|logicblox.com|the key2|the value2
+            IMPLID|ID|KEY|VALUE
+            logicblox.com-total|total|the key1|the value1
+            logicblox.com-total|total|the key2|the value2
         ''')
 
     def test_get_job_impl(self):

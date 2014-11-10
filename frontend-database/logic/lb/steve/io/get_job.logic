@@ -35,6 +35,7 @@ block(`get_job) {
       schema:Job:impl_id[job] = impl_id,
       schema:Job:output_prefix[job] = output_prefix,
       schema:Job:user[job] = user,
+      schema:JobImpl:id[impl] = impl_id,
       system:app:User:name(user:user_id),
       schema:User_account[user] = account,
       schema:JobImpl:account[impl] = account,

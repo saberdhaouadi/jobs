@@ -194,8 +194,8 @@ block(`tdx) {
     file_definition_by_name["jobimpls"] = fd,
     file_definition(fd) {
       file_delimiter[] = "|",
-      column_headers[] = "IMPLID, ID,     ACCOUNT, USER,   ARCHIVE, ARCHIVE_HASH",
-      column_formats[] = "string, string, string,  string, string,  string",
+      column_headers[] = "IMPLID, ID,     USER,   ARCHIVE, ARCHIVE_HASH",
+      column_formats[] = "string, string, string, string,  string",
       file_columns_can_be_absent[] = "ARCHIVE_HASH"
     }.
 
@@ -206,10 +206,6 @@ block(`tdx) {
       predicate_binding_by_name["lb:steve:schema:JobImpl:id"] =
         predicate_binding(_) {
           predicate_binding_columns[] = "IMPLID, ID"
-        },
-      predicate_binding_by_name["lb:steve:schema:JobImpl:account"] =
-        predicate_binding(_) {
-          predicate_binding_columns[] = "IMPLID, ACCOUNT"
         },
       predicate_binding_by_name["lb:steve:schema:JobImpl:archive"] =
         predicate_binding(_) {
@@ -236,8 +232,8 @@ block(`tdx) {
     file_definition_by_name["jobimpl_metadata"] = fd,
     file_definition(fd) {
       file_delimiter[] = "|",
-      column_headers[] = "IMPLID, ID,     ACCOUNT, KEY,    VALUE",
-      column_formats[] = "string, string, string,  string, string"
+      column_headers[] = "IMPLID, ID,     KEY,    VALUE",
+      column_formats[] = "string, string, string, string"
     }.
 
     file_binding_by_name["jobimpl_metadata"] = fb,
@@ -245,10 +241,6 @@ block(`tdx) {
       predicate_binding_by_name["lb:steve:schema:JobImpl:id"] =
         predicate_binding(_) {
           predicate_binding_columns[] = "IMPLID, ID"
-        },
-      predicate_binding_by_name["lb:steve:schema:JobImpl:account"] =
-        predicate_binding(_) {
-          predicate_binding_columns[] = "IMPLID, ACCOUNT"
         },
       file_binding_definition_name[] = "jobimpl_metadata",
       predicate_binding_by_name["lb:steve:schema:JobImpl:metadata"] =
