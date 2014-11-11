@@ -196,7 +196,7 @@ block(`tdx) {
     file_definition(fd) {
       file_delimiter[] = "|",
       column_headers[] = "IMPLID, ID,     USER,   ARCHIVE, ARCHIVE_HASH",
-      column_formats[] = "string, string, string, string,  string",
+      column_formats[] = "string, string, string, string*,  string",
       file_columns_can_be_absent[] = "ARCHIVE_HASH"
     }.
 
