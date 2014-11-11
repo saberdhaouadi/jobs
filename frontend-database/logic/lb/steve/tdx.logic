@@ -163,8 +163,7 @@ block(`tdx) {
     file_definition(fd) {
       file_delimiter[] = "|",
       column_headers[] = "ID,     TIMESTAMP, EVENT,  MACHINE, MESSAGE",
-      column_formats[] = "string, int,       string, string,  string*",
-      file_columns_optional[] = "MESSAGE"
+      column_formats[] = "string, int,       string, string,  string*"
     }.
 
     file_binding_by_name["job_status"] = fb,
