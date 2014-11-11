@@ -55,7 +55,11 @@ block(`tdx) {
 
     file_binding_by_name["jobs"] = fb,
     file_binding(fb) {
-      file_binding_definition_name[] = "jobs",      
+      file_binding_definition_name[] = "jobs",
+      predicate_binding_by_name["lb:steve:schema:Job"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID"
+        },
       predicate_binding_by_name["lb:steve:schema:Job:impl"] =
         predicate_binding(_) {
           predicate_binding_columns[] = "ID, JOBIMPL"
@@ -159,7 +163,8 @@ block(`tdx) {
     file_definition(fd) {
       file_delimiter[] = "|",
       column_headers[] = "ID,     TIMESTAMP, EVENT,  MACHINE, MESSAGE",
-      column_formats[] = "string, int,       string, string,  string"
+      column_formats[] = "string, int,       string, string,  string*",
+      file_columns_optional[] = "MESSAGE"
     }.
 
     file_binding_by_name["job_status"] = fb,
@@ -186,10 +191,6 @@ block(`tdx) {
   }),
 
 
-  //
-  // JOB IMPL services only work for exports because JobImpl are created with a constructor.
-  //
-
   clauses(`{
     file_definition_by_name["jobimpls"] = fd,
     file_definition(fd) {
@@ -203,6 +204,10 @@ block(`tdx) {
     file_binding(fb) {
       file_binding_definition_name[] = "jobimpls",
 
+      predicate_binding_by_name["lb:steve:schema:JobImpl"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "IMPLID"
+        },
       predicate_binding_by_name["lb:steve:schema:JobImpl:id"] =
         predicate_binding(_) {
           predicate_binding_columns[] = "IMPLID, ID"
