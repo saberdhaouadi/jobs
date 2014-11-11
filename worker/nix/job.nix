@@ -12,6 +12,7 @@ in
       platform.bloxweb
       releases.pdxscience."4.0.0".pdxscience
       pkgs.socat
+      pkgs.jq
     ];
 
     LB_BLOXCOMPILER_SERVER="1";
