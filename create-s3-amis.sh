@@ -1,5 +1,11 @@
 #! /bin/sh -e
 
+if [[ -z "$1" ]]; then
+  p="curl -L https://bob.logicblox.com/job/jobs/default/worker_image.ec2/latest/download-by-type/file/img"
+else
+  p="cat $1"
+fi
+
 export NIXOS_CONFIG=$(dirname $(readlink -f $0))/nix/worker-ec2-image.nix
 export TIMESTAMP=$(date +%Y%m%d%H%M)
 
@@ -8,7 +14,7 @@ export TIMESTAMP=$(date +%Y%m%d%H%M)
 
     echo "downloading $system image..."
     rm -f /tmp/nixos.img.*
-    curl -L https://bob.logicblox.com/job/jobs/default/worker_image.ec2/latest/download-by-type/file/img | xz -d > /tmp/nixos.img
+    $p | xz -d > /tmp/nixos.img
 
     ec2-bundle-image -i /tmp/nixos.img --user "$AWS_ACCOUNT" --arch "$arch" \
         -c "$EC2_CERT" -k "$EC2_PRIVATE_KEY"
