@@ -96,6 +96,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobimpls").get(), '''
             IMPLID|ID|USER|ARCHIVE|ARCHIVE_HASH
+            logicblox.com-steve:internal:process-jobimpl|steve:internal:process-jobimpl|logicblox.com||
+            otherdomain.com-steve:internal:process-jobimpl|steve:internal:process-jobimpl|otherdomain.com||
             logicblox.com-total|total|martin|the url|the hash
         ''')
         self.assertDelimEqual(get_tdx_client("jobimpl_metadata").get(), '''
@@ -127,6 +129,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobimpls").get(), '''
             IMPLID|ID|USER|ARCHIVE|ARCHIVE_HASH
+            logicblox.com-steve:internal:process-jobimpl|steve:internal:process-jobimpl|logicblox.com||
+            otherdomain.com-steve:internal:process-jobimpl|steve:internal:process-jobimpl|otherdomain.com||
             logicblox.com-total|total|martin|the url|
         ''')
         self.assertDelimEqual(get_tdx_client("jobimpl_metadata").get(), '''
