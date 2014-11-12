@@ -19,7 +19,7 @@ if [[ -d "$(lb filepath lb-steve)" ]]; then
   echo "Export data to $backup_dir"
   for t in $tdx; do
     echo " - $t"
-    lb web-client export -n -o file://$backup_dir/$t.csv http://localhost:8080/tdx/$t
+    lb export -n -o file://$backup_dir/$t.csv http://localhost:8080/tdx/$t
   done
 
   lb export lb-steve $backup_dir/workspace
