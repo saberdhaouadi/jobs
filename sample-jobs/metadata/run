@@ -1,0 +1,11 @@
+#! /bin/sh
+set -e
+
+cat $1/metadata.json
+echo
+
+value=$(jq .key $1/metadata.json)
+
+echo PROGRESS: $value
+
+[ "$value" == "\"value\"" ]
