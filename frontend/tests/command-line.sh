@@ -33,14 +33,10 @@ function start_servers()
 function upload_impls()
 {
     # Job implementations used by various tests
-    tar czvf fail.tar.gz -C $topdir/sample-jobs fail
-    $client upload-impl --impl fail -i fail.tar.gz --wait
-
-    tar czvf identity.tar.gz -C $topdir/sample-jobs identity
-    $client upload-impl --impl identity -i identity.tar.gz --wait
-
-    tar czvf total.tar.gz -C $topdir/sample-jobs total
-    $client upload-impl --impl total -i total.tar.gz --wait
+    $client upload-impl --impl fail -i $topdir/sample-jobs/fail --wait
+    $client upload-impl --impl identity -i $topdir/sample-jobs/identity --wait
+    $client upload-impl --impl total -i $topdir/sample-jobs/total --wait
+    $client upload-impl --impl metadata -i $topdir/sample-jobs/metadata --wait
 }
 
 #####################################################
@@ -61,6 +57,7 @@ function test_upload_impl()
         = '["total"]'
 
     # Check basics of uploading job implementations
+    tar czvf total.tar.gz -C $topdir/sample-jobs total
     $client upload-impl --impl total-v1 -i total.tar.gz --metadata revision=1 another=bar
     $client upload-impl --impl total-v2 -i total.tar.gz --metadata revision=2 another=foo
 
@@ -216,6 +213,11 @@ function test_create_job_timeout()
     ! $client create-job --impl timeout --wait --timeout 30
 }
 
+function test_create_job_metadata()
+{
+    $client upload-impl --impl metadata --wait --metadata key=value
+}
+
 function register_keys()
 {
     python register-keys.py
@@ -237,5 +239,6 @@ test_create_job_wait
 test_create_job
 test_create_job_fail
 test_create_job_timeout
+test_create_job_metadata
 
 echo "****************** SUCCESS *******************"
