@@ -385,9 +385,16 @@ with pkgs.lib;
 
       environment.systemPackages = [ builds.frontend builds.client.build pkgs.jdk pkgs.awscli pkgs.nodejs];
 
+      security.pam.loginLimits =
+        [ { domain = "*"; item = "nofile"; type = "-"; value = "32768"; }
+        ];
+
       services.nginx.enable = true;
-      services.nginx.appendConfig = ''
+      services.nginx.config = ''
         worker_processes 4;
+        events {
+            worker_connections 9000;
+        }
       '';
       services.nginx.httpConfig = ''
         server {
@@ -464,6 +471,8 @@ with pkgs.lib;
       };
 
       systemd.services = {
+        nginx.serviceConfig.LimitNOFILE = 32768;
+
         lb-steve-frontend = {
           description = "LB Steve Frontend";
           after = [ "network.target" ];
