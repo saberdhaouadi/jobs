@@ -1,9 +1,12 @@
 #! /usr/bin/env bash
 set -e
+db_created=
 
 function trap_handler() {
-  echo "Removing failed lb-steve workspace"
-  lb delete lb-steve || true
+  if [[ -n "$db_created" ]]; then
+    echo "Removing failed lb-steve workspace"
+    lb delete lb-steve || true
+  fi
 }
 
 top=$(cd $(dirname $0); pwd)
@@ -19,15 +22,17 @@ if [[ -d "$(lb filepath lb-steve)" ]]; then
   echo "Export data to $backup_dir"
   for t in $tdx; do
     echo " - $t"
-    lb export -n -o file://$backup_dir/$t.csv http://localhost:8080/tdx/$t
+    lb web-client export -n -o file://$backup_dir/$t.csv http://localhost:8080/tdx/$t
   done
 
-  lb export lb-steve $backup_dir/workspace
+  lb export-workspace lb-steve $backup_dir/workspace
   rm -f $latest_link
   ln -s $backup_dir $latest_link
 fi
 
+db_created=1
 lb create --overwrite lb-steve
+
 lb addproject lb-steve $top/share/lb_steve_frontend_database --libpath $LB_WEBSERVER_HOME:$top/share
 lb web-server load-services
 
