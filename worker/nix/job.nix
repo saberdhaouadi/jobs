@@ -23,7 +23,7 @@ in
     buildCommand = ''
       function start_lb() 
       {
-        if which lb-services &> /dev/null ; then
+        if type -P lb-services &> /dev/null ; then
           lbservices="lb-services"
         else
           lbservices="lb services"
@@ -35,11 +35,13 @@ in
           echo "starting LogicBlox services [$i]"
           timeout -k 10 60 $lbservices $cmd &> /dev/null
           if [[ "$?" == "0" ]]; then
-            break
+            return
           else
             cmd=restart
           fi
         done
+        echo "INTERNAL_ERROR: Could not start LB services."
+        exit 1
         set -e
       }
 
@@ -49,7 +51,10 @@ in
         socat tcp4-listen:41954,fork unix-connect:/sockets/gurobi &> /dev/null &
       fi
 
-      start_lb
+      if type -P lb &> /dev/null; then
+        start_lb
+      fi
+
       tar --strip-components=1 -xf /tmp/job/job.tar.gz
 
       echo ""
