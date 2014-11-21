@@ -87,6 +87,22 @@ block(`create_job) {
       +proto:CreateJobRequest_metadata(req, p), 
       +proto:Param_key[p] = key,
       +proto:Param_value[p] = value.    
+
+
+    // Check if platform version is available.
+    platform_version(p) -> string(p).
+    platform_version(p) <-
+      p = "3.10.15"
+    ; p = "4.1.4".
+
+    +service_support:export_error(index, "INVALID_PLATFORM", "Platform '" + platformId + "' not supported.") <-
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_create_job[union] = req,
+      +proto:CreateJobRequest_metadata(req, p),
+      +proto:Param_key[p] = "platform",
+      +proto:Param_value[p] = platformId,
+      !platform_version(platformId).
+
   })
 
 } <-- .
