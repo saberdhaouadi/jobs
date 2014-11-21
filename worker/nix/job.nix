@@ -1,4 +1,4 @@
-{ platform_version ? "3.10.15"
+{ platform_version
 }:
 let
   inherit (import <config/lib> {}) releases pkgs;
