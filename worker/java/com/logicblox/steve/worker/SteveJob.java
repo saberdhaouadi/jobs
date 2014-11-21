@@ -52,6 +52,7 @@ public class SteveJob {
 
   private boolean _timedOut = false;
   private boolean _killed = false;
+  private String _internalError = null;
 
   public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout, Map<String, String> metadata)
           throws InternalException {
@@ -257,23 +258,20 @@ public class SteveJob {
   private void runJob() throws Exception {
     log("Running the actual job...");
 
-    String nix = "<worker/nix/job.nix>";
-
     // determine .drv
-    _drv = nixInstantiate(nix);
+    _drv = readFromStdout("nix-instantiate", "<worker/nix/job.nix>", "--argstr", "platform_version", _metadata.containsKey("platform") ? _metadata.get("platform") : "3.10.15" );
 
     // build .drv
     nixStoreRealise(_drv, _id);
   }
 
-
-  public String nixInstantiate(String file) throws Exception {
-    ProcessBuilder pb = new ProcessBuilder("nix-instantiate", file);
+  public String readFromStdout(String... args) throws Exception {
+    ProcessBuilder pb = new ProcessBuilder(args);
 
     Process p = pb.start();
     int exit = p.waitFor();
     if (exit != 0) {
-      throw new Exception("nix-instantiate failed with exit code " + exit + "\n\n" + Utils.streamToString(p.getErrorStream()));
+      throw new Exception("Failed with exit code " + exit + "\n\n" + Utils.streamToString(p.getErrorStream()));
     }
 
     return Utils.streamToString(p.getInputStream());
@@ -306,6 +304,8 @@ public class SteveJob {
       File logPath = new File(Utils.nixLogPath(file));
       if (_timedOut) {
         throw new JobTimedOutException();
+      } else if (_internalError != null) {
+        throw new InternalException(_internalError);
       } else if (exit == 1) {
         throw new JobKilledException();
       } else if (logPath.exists()) {
@@ -322,6 +322,10 @@ public class SteveJob {
 
   public void setTimedOut() {
     _timedOut = true;
+  }
+
+  public void setInternalError(String msg) {
+    _internalError = msg;
   }
 
   public boolean wasKilled() {

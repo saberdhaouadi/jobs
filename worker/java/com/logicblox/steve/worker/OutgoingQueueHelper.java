@@ -65,8 +65,7 @@ public class OutgoingQueueHelper {
     } else {
       msgBuilder.setFailedDetails(
               Backend.FailedDetails.newBuilder()
-                      .setErrorCode("INTERNAL_ERROR")
-                      .setErrorMessage(e.getMessage()));
+                      .setErrorCode("INTERNAL_ERROR"));
     }
 
     sendResult(msgBuilder.build());

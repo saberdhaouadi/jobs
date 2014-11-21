@@ -5,6 +5,7 @@ import org.apache.commons.exec.LogOutputStream;
 public class SteveJobLogHandler extends LogOutputStream {
   private SteveJob _job;
   private String PREFIX = "PROGRESS:";
+  private String INTERNAL_ERROR_PREFIX = "INTERNAL_ERROR:";
 
   public SteveJobLogHandler(SteveJob job) {
     _job = job;
@@ -19,6 +20,8 @@ public class SteveJobLogHandler extends LogOutputStream {
       _job._outgoing.notifyStatus(line);
     } else if (line.startsWith(PREFIX)) {
       _job._outgoing.notifyStatus(line.substring(PREFIX.length()).trim());
+    } else if (line.startsWith(INTERNAL_ERROR_PREFIX)) {
+      _job.setInternalError(line.substring(INTERNAL_ERROR_PREFIX.length()).trim());
     }
 
     if (line.endsWith("timed out after " + _job.getTimeout() + " seconds")) {
