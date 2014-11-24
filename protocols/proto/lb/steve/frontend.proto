@@ -74,6 +74,7 @@ message JobCreateRequest {
   // Some keys are reserved:
   // - date           Automatically set when the job is created
   // - timeout        Timeout in seconds
+  // - platform       LogicBlox platform version to use.
   // - correlation-id Identifier used to correlate executions of
   //                  jobs. The assumption is that jobs executed with
   //                  the same correlation id have similar properties
