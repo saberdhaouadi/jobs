@@ -129,7 +129,9 @@ public class SteveJob {
 
     try {
       ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _outputPath.toString());
-      pb.start().waitFor();
+      Process p = pb.start();
+      p.waitFor();
+      p.destroy();
     } catch (Exception e) {
     }
 
@@ -274,7 +276,10 @@ public class SteveJob {
       throw new Exception("Failed with exit code " + exit + "\n\n" + Utils.streamToString(p.getErrorStream()));
     }
 
-    return Utils.streamToString(p.getInputStream());
+    String res = Utils.streamToString(p.getInputStream());
+    p.destroy();
+
+    return res;
   }
 
   public void nixStoreRealise(String file, String job) throws Exception {

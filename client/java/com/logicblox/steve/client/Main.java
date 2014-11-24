@@ -559,6 +559,7 @@ public class Main {
         if (p.exitValue() != 0) {
           throw new Exception("Error packaging up input directory " + _input);
         }
+        p.destroy();
         _input = temp.toString();
       }
 
