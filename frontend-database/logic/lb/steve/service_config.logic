@@ -22,6 +22,13 @@ block(`service_config) {
       service_parameter["enable_http_control"] = "false"
     }.
 
+  service_by_group["/metrics", "lb:web:internal"] = x,
+    default_protobuf_service(x) {
+      protobuf_protocol[] = "lb:steve:database",
+      protobuf_request_message[] = "GetMetricsRequest",
+      protobuf_response_message[] = "GetMetricsResponse"
+    }.
+
   })  
 
 } <-- .

@@ -196,3 +196,17 @@ message Status
   required string machine   = 3;
   required string message   = 4;
 }
+
+
+// INTERNAL METRICS
+message GetMetricsRequest
+{
+}
+
+message GetMetricsResponse
+{
+  required int64 running = 1;
+  required int64 queued = 2;
+  required int64 total = 3;
+}
+

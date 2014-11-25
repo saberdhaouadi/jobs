@@ -1,0 +1,45 @@
+block(`metrics) {
+
+  alias(`lb:steve:database, `proto),
+
+  clauses(`{
+    lang:constructor(`cons).
+    lang:pulse(`cons).
+    cons[req] = resp -> proto:GetMetricsRequest(req), proto:GetMetricsResponse(resp).
+
+    +cons[req] = resp,
+    +proto:GetMetricsResponse(resp)
+      <-
+      +proto:GetMetricsRequest(req).
+
+    // TOTAL
+    +proto:GetMetricsResponse_total[resp] = 0
+      <- !schema:Job(_), +cons[_] = resp.
+
+    +proto:GetMetricsResponse_total[resp] = t
+      <-
+      agg<<t = count()>> schema:Job(_),
+      +cons[_] = resp.
+
+    // RUNNING
+    +proto:GetMetricsResponse_running[resp] = 0
+      <- !schema:Job:running(_), +cons[_] = resp.
+
+    +proto:GetMetricsResponse_running[resp] = r
+      <-
+      agg<<r = count()>> schema:Job(j), schema:Job:running(j),
+      +cons[_] = resp.
+
+    // QUEUED
+
+    +proto:GetMetricsResponse_queued[resp] = 0
+      <- !schema:Job:queued(_), +cons[_] = resp.
+
+     +proto:GetMetricsResponse_queued[resp] = q
+      <-
+      agg<<q = count()>> schema:Job(j), schema:Job:queued(j),
+      +cons[_] = resp.
+
+ })
+
+} <-- .

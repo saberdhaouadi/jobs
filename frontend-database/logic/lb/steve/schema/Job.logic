@@ -61,7 +61,27 @@
      * A message for the event at this timestamp.
      */
     status_message[job, timestamp] = v -> Job(job), int(timestamp), string(v).
-    
+
+    /**
+    * If job is finished.
+    */
+    finished(job) -> Job(job).
+
+   /**
+    * If job has started.
+    */
+    started(job) -> Job(job).
+
+   /**
+    * If job is queued.
+    */
+    queued(job) -> Job(job).
+
+   /**
+    * If job is running.
+    */
+    running(job) -> Job(job).
+
   }),
 
   sealed(`{
@@ -84,7 +104,26 @@
     impl_id[job] = implId <-
       impl[job] = impl,
       JobImpl:id[impl] = implId.
-      
+
+   /**
+    * If job is finished.
+    */
+    finished(job) <- Job(job), ( status_event[job, _] = "SUCCEEDED" ; status_event[job, _] = "FAILED" ).
+
+   /**
+    * If job has started.
+    */
+    started(job) <- Job(job), status_event[job, _] = "STARTED".
+
+   /**
+    * If job is queued.
+    */
+    queued(job) <- Job(job), ! started(job).
+
+   /**
+    * If job is running.
+    */
+    running(job) <- Job(job), !finished(job), started(job).
   })
 
 } <-- .
