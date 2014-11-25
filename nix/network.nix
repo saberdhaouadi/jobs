@@ -334,6 +334,7 @@ with pkgs.lib;
         <lbdevops/logicblox/production.nix>
         <lbdevops/nixos/logicblox/lb40-module.nix>
         <lbdevops/nixos/logicblox/installer.nix>
+        ./datadog/database.nix
       ] ;
 
       services.logicblox.enable = true;
