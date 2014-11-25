@@ -7,7 +7,8 @@ let
   };
 
   builder-config = import <config> {};
-  platform = builder-config.releases.platform."3.10.15";
+  platform3 = builder-config.releases.platform."3.10.15";
+  platform4 = builder-config.releases.platform."4.1.4";
   builds = import ../. {};
   
   cfg = config.lb-steve-worker;
@@ -59,11 +60,15 @@ in
   config = {
     # Adding packages that are used by the jobs to the system
     # closure, to make them immediately available.
-    environment.systemPackages = with platform; [
-      builds.worker
-      logicblox
-      bloxweb
+    environment.systemPackages = [
+      platform3.logicblox
+      platform3.bloxweb
+      platform4.logicblox
+      platform4.bloxweb
       builder-config.releases.pdxscience."4.0.0".pdxscience
+
+      # actual packages
+      builds.worker
       pkgs.stdenv
       pkgs.awscli
       shutdown-self
