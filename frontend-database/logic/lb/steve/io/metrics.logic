@@ -7,38 +7,53 @@ block(`metrics) {
     lang:pulse(`cons).
     cons[req] = resp -> proto:GetMetricsRequest(req), proto:GetMetricsResponse(resp).
 
+    lang:constructor(`cons_metric).
+    lang:pulse(`cons_metric).
+    cons_metric[k] = m -> string(k), proto:Metric(m).
+
+    lang:pulse(`ensure_int_metric).
+    ensure_int_metric[k] = v -> string(k), int(v).
+
+    // Create response
     +cons[req] = resp,
     +proto:GetMetricsResponse(resp)
       <-
       +proto:GetMetricsRequest(req).
 
-    // TOTAL
-    +proto:GetMetricsResponse_total[resp] = 0
-      <- !schema:Job(_), +cons[_] = resp.
+    +proto:GetMetricsResponse_metrics(resp, m),
+    +cons_metric[k] = m,
+    +proto:Metric(m) {
+      +proto:Metric_key[] = k,
+      +proto:Metric_int_value[] = v
+    }
+      <- +ensure_int_metric[k] = v, +cons[_] = resp.
 
-    +proto:GetMetricsResponse_total[resp] = t
+    // TOTAL
+    +ensure_int_metric["lb.steve.total"] = 0
+      <- !schema:Job(_), +cons[_] = _.
+
+    +ensure_int_metric["lb.steve.total"] = t
       <-
       agg<<t = count()>> schema:Job(_),
-      +cons[_] = resp.
+      +cons[_] = _.
 
     // RUNNING
-    +proto:GetMetricsResponse_running[resp] = 0
-      <- !schema:Job:running(_), +cons[_] = resp.
+    +ensure_int_metric["lb.steve.running"] = 0
+      <- !schema:Job:running(_), +cons[_] = _.
 
-    +proto:GetMetricsResponse_running[resp] = r
+    +ensure_int_metric["lb.steve.running"] = r
       <-
       agg<<r = count()>> schema:Job(j), schema:Job:running(j),
-      +cons[_] = resp.
+      +cons[_] = _.
 
     // QUEUED
+    +ensure_int_metric["lb.steve.queued"] = 0
+      <- !schema:Job:queued(_), +cons[_] = _.
 
-    +proto:GetMetricsResponse_queued[resp] = 0
-      <- !schema:Job:queued(_), +cons[_] = resp.
-
-     +proto:GetMetricsResponse_queued[resp] = q
+    +ensure_int_metric["lb.steve.queued"] = q
       <-
       agg<<q = count()>> schema:Job(j), schema:Job:queued(j),
-      +cons[_] = resp.
+      +cons[_] = _.
 
  })
 
