@@ -55,6 +55,20 @@ block(`metrics) {
       agg<<q = count()>> schema:Job(j), schema:Job:queued(j),
       +cons[_] = _.
 
- })
+     // TOTAL IMPL
+    +ensure_int_metric["lb.steve.impl.total"] = 0
+      <- !schema:Job(_), +cons[_] = _.
+
+    +ensure_int_metric["lb.steve.impl.total"] = t
+      <-
+      agg<<t = count()>> schema:JobImpl(_),
+      +cons[_] = _.
+
+    // TOTAL DURATION
+    +ensure_int_metric["lb.steve.duration.total"] = n
+      <-
+      agg<<n = total(d)>> schema:Job:duration[_]=d,
+      +cons[_] = _.
+})
 
 } <-- .

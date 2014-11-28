@@ -82,6 +82,14 @@
     */
     running(job) -> Job(job).
 
+   /**
+    * Duration of a job.
+    */
+    duration[job] = t -> Job(job), int(t).
+
+    finished_status(s) -> string(s).
+    finish_time[job] = t -> Job(job), int(t).
+    start_time[job] = t -> Job(job), int(t).
   }),
 
   sealed(`{
@@ -105,10 +113,12 @@
       impl[job] = impl,
       JobImpl:id[impl] = implId.
 
+   finished_status(s) <- s = "SUCCEEDED"; s = "FAILED".
+
    /**
     * If job is finished.
     */
-    finished(job) <- Job(job), ( status_event[job, _] = "SUCCEEDED" ; status_event[job, _] = "FAILED" ).
+    finished(job) <- Job(job), status_event[job, _] = s, finished_status(s).
 
    /**
     * If job has started.
@@ -124,6 +134,12 @@
     * If job is running.
     */
     running(job) <- Job(job), !finished(job), started(job).
+
+    duration[job] = d <- started(job), finished(job), d = (finish_time[job] - start_time[job]) / 1000.
+
+    start_time[job] = t <- agg<<t = min(ts)>> status_event[job, ts] = "STARTED".
+    finish_time[job] = t <- agg<<t = max(ts)>> status_event[job, ts] = s, finished_status(s).
+
   })
 
 } <-- .
