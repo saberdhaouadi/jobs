@@ -8,6 +8,7 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
+
 import com.googlecode.protobuf.format.JsonFormat;
 import com.amazonaws.util.EC2MetadataUtils;
 
@@ -23,6 +24,8 @@ import org.apache.commons.io.IOUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.lang.NumberFormatException;
+import java.lang.Integer;
 
 import org.joda.time.format.ISODateTimeFormat;
 import com.google.gson.Gson;
@@ -192,7 +195,13 @@ public class Main {
         System.err.println(String.format("WARNING: Could not write file with current message handler to %s", _handle_file));
       }
 
-      System.err.println("received job request: " + job.getBody());
+      int receiveCount;
+      try {
+        receiveCount = Integer.parseInt(job.getAttributes().get("ApproximateReceiveCount"));
+      } catch (NumberFormatException e) {
+        receiveCount = 1;
+      }
+      System.err.println("received job request ("+ receiveCount +"): " + job.getBody());
 
       try {
         new JsonFormat().merge(IOUtils.toInputStream(job.getBody()), msgBuilder);
@@ -202,7 +211,6 @@ public class Main {
         removeIncoming(job);
         continue;
       }
-
 
       Map<String, String> metadata = new HashMap<String, String>();
       for (Backend.Param p : msg.getMetadataList()) {
@@ -218,7 +226,8 @@ public class Main {
               Conversions.convertFileToData(msg.getInputList()),
               msg.getOutput(),
               msg.getTimeout(),
-              metadata
+              metadata,
+              receiveCount
       );
 
       Thread resetTimeout = new Thread(new ResetMessageVisibilityTimeout(job.getReceiptHandle()));

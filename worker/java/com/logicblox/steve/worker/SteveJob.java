@@ -39,6 +39,7 @@ public class SteveJob {
   private String _drv;
   private long _timeout;
   private Map<String, String> _metadata;
+  private int _receiveCount;
 
   private String _s3Bucket;
   private URI _outputLog;
@@ -55,7 +56,7 @@ public class SteveJob {
   private boolean _completed = false;
   private String _internalError = null;
 
-  public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout, Map<String, String> metadata)
+  public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout, Map<String, String> metadata, int receiveCount)
           throws InternalException {
     _id = id;
     _impl = impl;
@@ -65,6 +66,7 @@ public class SteveJob {
     _timeout = timeout;
     _s3Bucket = s3Bucket;
     _metadata = metadata;
+    _receiveCount = receiveCount;
 
     try {
       _output = new URI(output);
@@ -84,6 +86,7 @@ public class SteveJob {
 
   public void run() throws Exception {
     log("Starting..." + _id);
+
     try {
       _outgoing.notifyStart();
       setup();
@@ -92,18 +95,21 @@ public class SteveJob {
       List<S3File> output = uploadOutput();
       _outgoing.notifySuccess(output);
       log("Successfully uploaded output files for job " + _id);
+      teardown();
     } catch (JobKilledException k) {
       _outgoing.notifyStatus("Job was killed. It will be restarted on another worker.");
       _killed = true;
     } catch (InternalException e) {
-      _outgoing.notifyStatus("There was an internal error while executing the job. It will be restarted on another worker.");
-      throw e;
+      if(_receiveCount >= 2) {
+        _outgoing.notifyFailure(new InternalException("Retried job multiple time, but keep hitting internal error."));
+      } else {
+        _outgoing.notifyStatus("There was an internal error while executing the job. It will be restarted on another worker.");
+        throw e;
+      }
     } catch (Exception e) {
       log("Failure executing " + _id);
       _outgoing.notifyFailure(e);
-    } finally {
       teardown();
-      _completed = true;
     }
   }
 
@@ -255,6 +261,7 @@ public class SteveJob {
     // cleaning up directories
     log("Removing local in-/output...");
     cleanUp();
+    _completed = true;
   }
 
   private void runJob() throws Exception {
