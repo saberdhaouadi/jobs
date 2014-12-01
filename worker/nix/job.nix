@@ -35,14 +35,15 @@ in
           echo "starting LogicBlox services [$i]"
           timeout -k 10 60 $lbservices $cmd &> /dev/null
           if [[ "$?" == "0" ]]; then
+            set -e
             return
           else
             cmd=restart
           fi
         done
         echo "INTERNAL_ERROR: Could not start LB services."
-        exit 1
         set -e
+        exit 1
       }
 
       # a connection to the gurobi token server is exposed via an
