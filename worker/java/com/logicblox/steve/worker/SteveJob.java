@@ -52,6 +52,7 @@ public class SteveJob {
 
   private boolean _timedOut = false;
   private boolean _killed = false;
+  private boolean _completed = false;
   private String _internalError = null;
 
   public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout, Map<String, String> metadata)
@@ -94,16 +95,15 @@ public class SteveJob {
     } catch (JobKilledException k) {
       _outgoing.notifyStatus("Job was killed. It will be restarted on another worker.");
       _killed = true;
+    } catch (InternalException e) {
+      _outgoing.notifyStatus("There was an internal error while executing the job. It will be restarted on another worker.");
+      throw e;
     } catch (Exception e) {
       log("Failure executing " + _id);
       _outgoing.notifyFailure(e);
-      e.printStackTrace();
     } finally {
-      try {
-        teardown();
-      } catch (InternalException e) {
-        _outgoing.notifyFailure(e);
-      }
+      teardown();
+      _completed = true;
     }
   }
 
@@ -335,5 +335,9 @@ public class SteveJob {
 
   public boolean wasKilled() {
     return _killed;
+  }
+
+  public boolean hasCompleted() {
+    return _completed;
   }
 }

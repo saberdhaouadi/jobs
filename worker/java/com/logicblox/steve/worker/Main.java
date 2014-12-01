@@ -47,7 +47,7 @@ public class Main {
     public void run() {
       while (!Thread.currentThread().isInterrupted()) {
         try {
-          sqs.changeMessageVisibility(_incomingUrl, _handle, 300);
+          sqs.changeMessageVisibility(_incomingUrl, _handle, 180);
         } catch (Exception e) {
           // We don't care much about exceptions updating the message
           // visibility timeout, we'll just log it.
@@ -180,6 +180,7 @@ public class Main {
   }
 
   private void processMessages() throws InterruptedException, IOException, InternalException {
+    int internalErrorStreak = 0;
     while (true) {
       Backend.RunJob.Builder msgBuilder = Backend.RunJob.newBuilder();
       Backend.RunJob msg;
@@ -224,12 +225,19 @@ public class Main {
       resetTimeout.start();
       try {
         steve.run();
+        internalErrorStreak = 0;
+      } catch (InternalException e) {
+        internalErrorStreak++;
+        if(internalErrorStreak > 1) {
+          System.err.println("ERROR: more than 1 internal errors occured following eachother, assuming worker is broken, shutting down: " + e.getMessage());
+          shutdownSelf();
+        }
       } catch (Exception e) {
         System.err.println("ERROR: Unhandled exception: " + e.getMessage());
         e.printStackTrace();
       } finally {
         resetTimeout.interrupt();
-        if (!steve.wasKilled()) removeIncoming(job);
+        if (steve.hasCompleted()) removeIncoming(job);
       }
     }
   }
@@ -288,16 +296,20 @@ public class Main {
         }
 
         if (_shutdownOnIdle && idleTooLong && nextInstanceHour <= 3) {
-          try {
-            Process p = Runtime.getRuntime().exec("shutdown-self");
-            p.waitFor();
-          } finally {
-            System.exit(0);
-          }
+          shutdownSelf();
         }
 
         Thread.sleep(2000);
       }
+    }
+  }
+
+  private void shutdownSelf() throws InterruptedException, IOException {
+    try {
+      Process p = Runtime.getRuntime().exec("shutdown-self");
+      p.waitFor();
+    } finally {
+      System.exit(0);
     }
   }
 }
