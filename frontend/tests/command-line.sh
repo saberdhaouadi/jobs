@@ -53,7 +53,7 @@ function stop_servers()
 # verify the metadata.
 function test_upload_impl()
 {
-    test "$($client list-impl | grep total | jq -c '[.id]')" \
+    test "$($client list-impl | grep total | grep -v total-v | jq -c '[.id]')" \
         = '["total"]'
 
     # Check basics of uploading job implementations
@@ -62,8 +62,6 @@ function test_upload_impl()
     $client upload-impl --impl total-v2 -i total.tar.gz --metadata revision=2 another=foo
 
     $client list-impl
-    test $($client list-impl | grep total | wc --lines) \
-        = "3"
     test "$($client list-impl | grep total-v1 | jq -c '[.id, .revision, .another]')" \
         = '["total-v1","1","bar"]'
     test "$($client list-impl | grep total-v2 | jq -c '[.id, .revision, .another]')" \
@@ -215,7 +213,7 @@ function test_create_job_timeout()
 
 function test_create_job_metadata()
 {
-    $client upload-impl --impl metadata --wait --metadata key=value
+    $client create-job --impl metadata --wait --metadata key=value
 }
 
 function register_keys()
@@ -225,10 +223,10 @@ function register_keys()
 
 if [[ "${1+$1}" != "--no-start" ]]; then
   start_servers
+  register_keys
   trap stop_servers EXIT
 fi
 
-register_keys
 upload_impls
 test_upload_impl
 test_upload_impl_no_file
