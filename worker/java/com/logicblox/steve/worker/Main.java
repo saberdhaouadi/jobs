@@ -226,15 +226,12 @@ public class Main {
       try {
         steve.run();
         internalErrorStreak = 0;
-      } catch (InternalException e) {
+      } catch (Exception e) {
         internalErrorStreak++;
         if(internalErrorStreak > 1) {
           System.err.println("ERROR: more than 1 internal errors occured following eachother, assuming worker is broken, shutting down: " + e.getMessage());
           shutdownSelf();
         }
-      } catch (Exception e) {
-        System.err.println("ERROR: Unhandled exception: " + e.getMessage());
-        e.printStackTrace();
       } finally {
         resetTimeout.interrupt();
         if (steve.hasCompleted()) removeIncoming(job);
