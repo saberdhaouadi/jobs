@@ -6,7 +6,7 @@ lbconfig_package(
   default_prefix='/opt/logicblox/lb-steve-protocols',
   default_targets=['jars', 'lb-libraries', 'java_protobufs'])
 
-aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.7.1"})
+aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.9.8"})
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
 
 depends_on(
@@ -53,7 +53,7 @@ classpath = [
   '$(logicblox)/lib/java/guava-15.0.jar',
   '$(logicblox)/lib/java/lb-common.jar',
   '$(s3lib)/lib/java/s3lib-0.2.jar',
-  '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
+  '$(aws)/lib/java/aws-java-sdk-1.9.8.jar',
   '$(lb_web)/lib/java/lb-web-client.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar'
 ]

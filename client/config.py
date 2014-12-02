@@ -8,7 +8,7 @@ lbconfig_package(
 
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
-aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.7.1"})
+aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.9.8"})
 
 depends_on(
   logicblox_dep,
@@ -25,11 +25,11 @@ classpath = [
 
   '$(s3lib)/lib/java/s3lib-0.2.jar',
   '$(s3lib)/lib/java/commons-io-2.4.jar',
-  '$(aws)/lib/java/aws-java-sdk-1.7.1.jar',
+  '$(aws)/lib/java/aws-java-sdk-1.9.8.jar',
 
   # all jars in lb-web, commenting out some that we don't need
   '$(lb_web)/lib/java/annotations.jar',
-  #'$(lb_web)/lib/java/aws-java-sdk-1.7.1.jar',
+  #'$(lb_web)/lib/java/aws-java-sdk-1.9.8.jar',
   '$(lb_web)/lib/java/bloxweb-credentials.jar',
   '$(lb_web)/lib/java/bloxweb-email.jar',
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
