@@ -197,7 +197,8 @@ public class Main {
 
       int receiveCount;
       try {
-        receiveCount = Integer.parseInt(job.getAttributes().get("ApproximateReceiveCount"));
+        Map<String, String> atts = job.getAttributes();
+        receiveCount = Integer.parseInt(atts.get("ApproximateReceiveCount"));
       } catch (NumberFormatException e) {
         receiveCount = 1;
       }
@@ -275,8 +276,10 @@ public class Main {
 
     while (true) {
       try {
-        ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(_incomingUrl);
-        receiveMessageRequest.setMaxNumberOfMessages(1);
+        ReceiveMessageRequest receiveMessageRequest =
+           new ReceiveMessageRequest(_incomingUrl)
+           .withAttributeNames("ApproximateReceiveCount")
+           .withMaxNumberOfMessages(1);
         List<com.amazonaws.services.sqs.model.Message> messages = sqs.receiveMessage(receiveMessageRequest).getMessages();
 
         if (messages.size() == 1)
