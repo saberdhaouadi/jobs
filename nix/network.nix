@@ -341,6 +341,13 @@ with pkgs.lib;
       services.logicblox.logicblox = platform.logicblox;
       services.logicblox.lbWeb = platform.bloxweb;
 
+      services.logicblox.config.lb-web-server = ''
+        [statsd]
+        prefix = lb.web
+        hostname = 127.0.0.1
+        port = 8125
+      '';
+
       logicblox.application.installer = builds.database.build;
       networking.firewall.allowedTCPPorts = [ 8080 55183 ];
 
