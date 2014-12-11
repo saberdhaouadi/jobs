@@ -128,7 +128,7 @@
    /**
     * If job is queued.
     */
-    queued(job) <- Job(job), ! started(job).
+    queued(job) <- Job(job), ! started(job), ! finished(job).
 
    /**
     * If job is running.
