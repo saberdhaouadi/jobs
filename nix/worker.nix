@@ -8,7 +8,7 @@ let
 
   builder-config = import <config> {};
   platform3 = builder-config.releases.platform."3.10.15";
-  platform4 = builder-config.releases.platform."4.1.4";
+  platform4 = builder-config.releases.platform."4.1.5";
   builds = import ../. {};
   
   cfg = config.lb-steve-worker;
