@@ -69,6 +69,7 @@ public class SteveHandler extends ProtoBufHandler {
   private File _tmpDir;
   private String _jobImplPrefix;
   private String _jobLogPrefix;
+  private String _defaultQueue;
 
   public SteveHandler() {
     super("Steve");
@@ -101,8 +102,10 @@ public class SteveHandler extends ProtoBufHandler {
           String key = sectionName.substring(sectionName.indexOf(':') + 1);
 
           _jobQueues.put(key, client);
-          if (jobQueueConfig.getBool("default", false))
+          if (jobQueueConfig.getBool("default", false)) {
             _jobQueues.put(null, client);
+            _defaultQueue = key;
+          }
         }
       }
 
@@ -230,6 +233,10 @@ public class SteveHandler extends ProtoBufHandler {
               new ServiceException(
                       new SimpleErrorCode(
                               "NO_SUCH_JOB_QUEUE", HttpStatus.BAD_REQUEST_400, "Job queue '" + jobQueueId + "' does not exist")));
+    }
+
+    if(jobQueueId == null && _defaultQueue != null) {
+      tags.put("job-queue", _defaultQueue);
     }
 
     ListenableFuture<String> jobId =
