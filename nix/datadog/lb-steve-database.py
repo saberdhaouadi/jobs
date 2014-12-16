@@ -9,5 +9,6 @@ class LBSteveDatabaseCheck(AgentCheck):
     def check(self, instance):
         r = requests.post("http://localhost:55183/metrics", headers={'Content-Type': 'application/json'}, data=json.dumps({}))
         metrics = json.loads(r.text)
-        for metric in metrics['metrics']:
-            self.gauge(metric['key'], metric['int_value'])
+        if 'metrics' in metrics.keys():
+            for metric in metrics['metrics']:
+                self.gauge(metric['key'], metric['int_value'])
