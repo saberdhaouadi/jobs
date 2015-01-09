@@ -87,6 +87,11 @@
     */
     duration[job] = t -> Job(job), int(t).
 
+   /**
+    * Duration of a job for billing. We charge by the minute.
+    */
+    billing_duration[job] = t -> Job(job), int(t).
+
     finished_status(s) -> string(s).
     finish_time[job] = t -> Job(job), int(t).
     start_time[job] = t -> Job(job), int(t).
@@ -136,6 +141,8 @@
     running(job) <- Job(job), !finished(job), started(job).
 
     duration[job] = d <- started(job), finished(job), d = (finish_time[job] - start_time[job]) / 1000.
+
+    billing_duration[job] = d <- d = duration[job] + 60 - int:mod[duration[job], 60].
 
     start_time[job] = t <- agg<<t = min(ts)>> status_event[job, ts] = "STARTED".
     finish_time[job] = t <- agg<<t = max(ts)>> status_event[job, ts] = s, finished_status(s).

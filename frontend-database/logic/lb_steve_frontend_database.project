@@ -7,5 +7,3 @@ lb_web_credentials, library
 lb_steve_protocols, library
 
 lb, module
-
-data/init_provision.logic, execute
