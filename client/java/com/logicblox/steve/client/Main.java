@@ -288,6 +288,12 @@ public class Main {
                     "then the S3 default_output_prefix will be used to store the outputs")
     String _output;
 
+
+    @Parameter(
+            names = {"--output-encryption-key"},
+            description = "Public key file to use for encrypting the results of the job.")
+    String _outputEncryptionKey = null;
+
     @Parameter(
             names = {"--wait"},
             description = "Wait for completion of the job by polling for the result")
@@ -337,8 +343,9 @@ public class Main {
         _metadata.add("job-queue=" + _queue);
 
       final SteveClientInterface client = getSteveClient();
+
       Futures.transform(
-              client.createJob(_impl, inputs, outputPrefix, convertCommandLineMetadata(_metadata)),
+              client.createJob(_impl, inputs, outputPrefix, _outputEncryptionKey, convertCommandLineMetadata(_metadata)),
               new AsyncFunction<String, Object>() {
                 @Override
                 public ListenableFuture<Object> apply(String id) throws Exception {

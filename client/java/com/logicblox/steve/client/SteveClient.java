@@ -46,6 +46,7 @@ public class SteveClient implements SteveClientInterface {
           String jobImpl,
           Iterable<Frontend.File> inputs,
           URI outputPrefix,
+          String outputEncryptionKey,
           Iterable<Frontend.Param> metadata)
           throws ServiceClientException {
     // TODO retry on connection issues with the same clientId
@@ -56,6 +57,10 @@ public class SteveClient implements SteveClientInterface {
                     .setClientId(clientId)
                     .setJobImpl(jobImpl)
                     .setOutput(outputPrefix.toString());
+
+    if (outputEncryptionKey != null) {
+      createReq.setOutputEncryptionKey(outputEncryptionKey);
+    }
 
     for (Frontend.File input : inputs)
       createReq.addInput(input);

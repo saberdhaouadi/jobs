@@ -19,7 +19,7 @@ public interface SteveClientInterface {
   /**
    * Create a new job, returns an asynchronous job id.
    */
-  public ListenableFuture<String> createJob(String jobImpl, Iterable<Frontend.File> inputs, URI outputPrefix, Iterable<Frontend.Param> metadata)
+  public ListenableFuture<String> createJob(String jobImpl, Iterable<Frontend.File> inputs, URI outputPrefix, String outputEncryptionKey, Iterable<Frontend.Param> metadata)
           throws ServiceClientException;
 
   /**
