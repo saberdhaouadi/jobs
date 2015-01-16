@@ -421,6 +421,8 @@ with pkgs.lib;
         }
         server {
           server_name ${env.hostName};
+          server_tokens off;
+
           listen [::]:443 default_server ssl spdy ipv6only=off;
 
           ssl_certificate         /run/keys/server.crt;
