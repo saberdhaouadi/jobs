@@ -1,0 +1,20 @@
+/**
+ * This protocol covers the messages sent to and from the Steve key server.
+ */
+package lb.steve.keys;
+
+option java_package = "com.logicblox.steve.protocol";
+
+message GetKeysRequest {
+  required string job_impl = 1;
+}
+
+message GetKeysResponse {
+  repeated Key keys = 1;
+}
+
+message Key {
+  required string name = 1;
+  required string contents = 2;
+}
+
