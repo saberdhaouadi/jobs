@@ -82,6 +82,8 @@ message Job
   required string impl_archive = 8;
   repeated Status status = 9 [(blox.options.set) = true];
   repeated File output = 10   [(blox.options.set) = true];
+
+  optional string output_encryption_key = 11;
 }
 
 message JobImpl
@@ -115,6 +117,7 @@ message CreateJobRequest
   required string user_id = 5;
   repeated File input = 6 [(blox.options.set) = true];
   repeated Param metadata = 7 [(blox.options.set) = true];
+  optional string output_encryption_key = 8;
 }
 
 // response contains Job

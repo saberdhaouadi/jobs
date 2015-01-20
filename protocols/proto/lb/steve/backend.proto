@@ -21,6 +21,9 @@ message RunJob {
 
   // Metadata on the job.
   repeated Param metadata = 6;
+
+  // Public key to encrypt the data
+  optional string encryption_key = 7;
 }
 
 // TODO add timeout etc
