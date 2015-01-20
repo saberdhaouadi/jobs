@@ -1,4 +1,4 @@
-{
+rec {
   prod =
     { hostName = "steve.logicblox.com";
       elasticIPv4 = "54.243.141.142";
@@ -13,7 +13,7 @@
   test =
     { hostName = "steve-test.logicblox.com";
       elasticIPv4 = "23.21.124.192";
-      workers = { "c3.xlarge" = { number = 1; price = "0.25"; }; "r3.xlarge" = { number = 0; price = "0.40"; }; "r3.2xlarge" = { number = 0; price = "0.75"; }; };
+      inherit (prod) workers;
     };
 
   thiago =
