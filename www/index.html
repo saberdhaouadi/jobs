@@ -118,8 +118,8 @@ $ openssl pkcs8 -topk8 -inform PEM -outform PEM -in priv.pem -out priv-pkcs.pem 
 default_output_prefix = s3://&lt;bucket-name&gt;/tmp
 
 [auth]
-username = yourusername
-key = /path/to/your/priv-pkcs.pem
+user = yourusername
+key_file = /path/to/your/priv-pkcs.pem
 </pre>
 
       <p>
