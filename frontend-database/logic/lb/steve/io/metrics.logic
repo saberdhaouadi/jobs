@@ -28,15 +28,6 @@ block(`metrics) {
     }
       <- +ensure_int_metric[k] = v, +cons[_] = resp.
 
-    // TOTAL
-    +ensure_int_metric["lb.steve.total"] = 0
-      <- !schema:Job(_), +cons[_] = _.
-
-    +ensure_int_metric["lb.steve.total"] = t
-      <-
-      agg<<t = count()>> schema:Job(_),
-      +cons[_] = _.
-
     // RUNNING
     +ensure_int_metric["lb.steve.running"] = 0
       <- !schema:Job:running(_), +cons[_] = _.
@@ -64,11 +55,6 @@ block(`metrics) {
       agg<<t = count()>> schema:JobImpl(_),
       +cons[_] = _.
 
-    // TOTAL DURATION
-    +ensure_int_metric["lb.steve.duration.total"] = n
-      <-
-      agg<<n = total(d)>> schema:Job:duration[_]=d,
-      +cons[_] = _.
 })
 
 } <-- .
