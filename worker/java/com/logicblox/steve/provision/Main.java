@@ -32,6 +32,7 @@ public class Main {
   private static double spotPrice = 0.6;
   private static int totalNeeded = 0;
   private static int maxInstances = 300;
+  private static int minInstances = 0;
   private static boolean dryRun = true;
 
   public Main() {
@@ -117,6 +118,13 @@ public class Main {
             .withType(Number.class)
             .create());
 
+    options.addOption(OptionBuilder.withLongOpt("min")
+            .withDescription("Minimum number of instances (only applies if any instances are needed)")
+            .hasArg()
+            .withArgName("number")
+            .withType(Number.class)
+            .create());
+
     options.addOption(OptionBuilder.withLongOpt("total")
             .withDescription("Total number of instances to create")
             .hasArg()
@@ -152,6 +160,9 @@ public class Main {
         totalNeeded = ((Number) _cmdline.getParsedOptionValue("total")).intValue();
       if (_cmdline.hasOption("max"))
         maxInstances = ((Number) _cmdline.getParsedOptionValue("max")).intValue();
+      if (_cmdline.hasOption("min"))
+        minInstances = ((Number) _cmdline.getParsedOptionValue("min")).intValue();
+
       if (_cmdline.hasOption("spot-price"))
         spotPrice = ((Number) _cmdline.getParsedOptionValue("spot-price")).doubleValue();
       if (_cmdline.hasOption("percentage-spot"))
@@ -194,6 +205,10 @@ public class Main {
 
     if (totalNeeded == 0) {
       return;
+    }
+
+    if (minInstances > totalNeeded) {
+      totalNeeded = minInstances;
     }
 
     int spotCurrent = getNumberOfCurrentSpotInstances();
