@@ -25,22 +25,46 @@
         };
     };
 
+
   boot.initrd.extraUtilsCommands =
     ''
-      cp -v ${pkgs.e2fsprogs}/sbin/mke2fs $out/bin
+      cp --remove-destination ${pkgs.e2fsprogs}/sbin/mke2fs $out/bin
     '';
 
-  boot.initrd.postDeviceCommands =
+  boot.initrd.postMountCommands = pkgs.lib.mkOverride 0
     ''
+      devices=""
+      nr=0
+      mkdir -p /var/lock/lvm
       for device in /dev/xvd[bcde]*; do
-        # If the disk image appears to be empty, run mke2fs to initialise.
-        # This way instances with instance storage without a filesystem 
-        # will behave the same on first boot, allowing nix store and tmp
-        # to be on instance storage.
-        FSTYPE=$(blkid -o value -s TYPE $device || true)
-        if test -z "$FSTYPE"; then
-            mke2fs -t ext3 $device
-        fi
+        echo $device
+        lvm pvcreate -f $device
+        devices="$devices $device"
+        nr=$((nr+1))
       done
+
+      lvm vgcreate raid $devices
+      lvm lvcreate --zero n raid --name raid --extents '100%FREE' --stripes $nr
+      lvm vgchange -ay raid
+
+      diskForUnionfs=/disk0
+      mke2fs -t ext4 /dev/dm-0
+      mountFS /dev/dm-0 $diskForUnionfs ext4
+
+      mkdir -m 755 -p $targetRoot/$diskForUnionfs/root
+      mkdir -m 1777 -p $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
+      mount --bind $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
+
+      mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/var $targetRoot/var
+      mount --bind $targetRoot/$diskForUnionfs/root/var $targetRoot/var
+
+      mkdir -p /unionfs-chroot/ro-nix
+      mount --rbind $targetRoot/nix /unionfs-chroot/ro-nix
+
+      mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/nix
+      mkdir -p /unionfs-chroot/rw-nix
+      mount --rbind $targetRoot/$diskForUnionfs/root/nix /unionfs-chroot/rw-nix
+
+      unionfs -o allow_other,cow,nonempty,chroot=/unionfs-chroot,max_files=32768 /rw-nix=RW:/ro-nix=RO $targetRoot/nix
     '';
 }
