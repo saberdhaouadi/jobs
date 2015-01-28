@@ -13,6 +13,7 @@ in
       releases.pdxscience."4.0.0".pdxscience
       pkgs.socat
       pkgs.jq
+      pkgs.curl
     ];
 
     LB_BLOXCOMPILER_SERVER="1";
