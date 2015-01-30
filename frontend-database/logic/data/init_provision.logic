@@ -22,3 +22,11 @@
   +lb:steve:provision:jobqueue_total_instances[] = 0
 }.
 
++lb:steve:provision:jobqueue("r3-8xlarge") {
+  +lb:steve:provision:jobqueue_percentage_queue[] = 0.3,
+  +lb:steve:provision:jobqueue_percentage_spot_instances[] = 0.9,
+  +lb:steve:provision:jobqueue_spot_instance_price[] = 3.0,
+  +lb:steve:provision:jobqueue_max_instances[] = 300,
+  +lb:steve:provision:jobqueue_total_instances[] = 0
+}.
+
