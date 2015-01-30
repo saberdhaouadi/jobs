@@ -67,7 +67,6 @@ classpath = [
   '$(lb_web)/lib/java/scala-library.jar',
   '$(lb_web)/lib/java/servlet-api-2.5.jar',
   '$(lb_web)/lib/java/webservices-api.jar',
-  '$(lb_web)/lib/java/webservices-rt.jar',
 
   '$(s3lib)/lib/java/s3lib-0.2.jar',
   '$(s3lib)/lib/java/commons-io-2.4.jar',

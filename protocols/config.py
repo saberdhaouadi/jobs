@@ -73,6 +73,7 @@ jar(
       java_protobuf_file('backend',  'com.logicblox.steve.protocol'),
       java_protobuf_file('frontend', 'com.logicblox.steve.protocol'),
       java_protobuf_file('database', 'com.logicblox.steve.protocol'),
+      java_protobuf_file('keys', 'com.logicblox.steve.protocol'),
    ],
    classpath = classpath)
 

@@ -6,7 +6,7 @@ package lb.steve.keys;
 option java_package = "com.logicblox.steve.protocol";
 
 message GetKeysRequest {
-  required string job_impl = 1;
+  required string account = 1;
 }
 
 message GetKeysResponse {
