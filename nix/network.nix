@@ -201,6 +201,17 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
+            },
+            {
+              "Action": [
+                "s3:Get*",
+                "s3:Put*",
+                "s3:List*"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                "arn:aws:s3:::${s3Name}/backups/*"
+              ]
             }
           ]
         }
