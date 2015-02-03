@@ -14,6 +14,11 @@ block(`metrics) {
     lang:pulse(`ensure_int_metric).
     ensure_int_metric[k] = v -> string(k), int(v).
 
+    running_queue(q) -> string(q).
+    running_queue(q) <- schema:Job:running(j), lb:steve:schema:Job:metadata[j, "job-queue"]=q.
+    queued_queue(q) -> string(q).
+    queued_queue(q) <- schema:Job:queued(j), lb:steve:schema:Job:metadata[j, "job-queue"]=q.
+
     // Create response
     +cons[req] = resp,
     +proto:GetMetricsResponse(resp)
@@ -30,8 +35,8 @@ block(`metrics) {
 
     // RUNNING
     +ensure_int_metric[key] = 0
-      <- !schema:Job:running(j), +cons[_] = _,
-         lb:steve:schema:Job:metadata[j, "job-queue"]=q,
+      <- !running_queue(q), +cons[_] = _,
+         lb:steve:provision:jobqueue(q),
          key="lb.steve.running."+q.
 
     +ensure_int_metric[key] = r
@@ -43,8 +48,8 @@ block(`metrics) {
 
     // QUEUED
     +ensure_int_metric[key] = 0
-      <- !schema:Job:queued(j), +cons[_] = _,
-         lb:steve:schema:Job:metadata[j, "job-queue"]=q,
+      <- !queued_queue(q), +cons[_] = _,
+         lb:steve:provision:jobqueue(q),
          key="lb.steve.queued."+q.
 
     +ensure_int_metric[key] = n
