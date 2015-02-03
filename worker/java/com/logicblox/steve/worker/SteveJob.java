@@ -145,13 +145,25 @@ public class SteveJob {
 
     // download inputs
     List<ListenableFuture<List<S3File>>> inputFiles = new ArrayList<ListenableFuture<List<S3File>>>();
+    List<String> downloaded = new ArrayList<String>();
     for (Data input : _inputs) {
       inputFiles.add(downloadInput(input));
     }
-    try {
-      MoreFutures.concat(Futures.allAsList(inputFiles)).get();
-    } catch (Exception e) {
-      throw new DownloadInputFailedException(e.getMessage(), e);
+
+    Iterable<S3File> s3files = MoreFutures.concat(Futures.successfulAsList(inputFiles)).get();
+    for (S3File s3file: s3files) {
+      if(s3file != null) {
+        downloaded.add("s3://"+s3file.getBucketName()+"/"+s3file.getKey());
+      }
+    }
+
+    top: for (Data input: _inputs) {
+      for(String download: downloaded) {
+        if(download.startsWith(input.getLocation())) {
+          continue top;
+        }
+      }
+      throw new DownloadInputFailedException("Download of input `"+input.getLocation()+"` failed.");
     }
 
     try {
@@ -206,7 +218,7 @@ public class SteveJob {
       else {
         List<ListenableFuture<S3File>> l = new ArrayList();
         l.add(_client.download(f, inputUri));
-        return Futures.allAsList(l);
+        return Futures.successfulAsList(l);
       }
     } catch (Exception e) {
       return Futures.immediateFailedFuture(new InternalException("Error downloading input " + input.getLocation()));
