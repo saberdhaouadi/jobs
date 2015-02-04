@@ -60,6 +60,10 @@ public class JobQueueClient {
             .setJob(job.id)
             .setOutput(job.outputPrefix);
 
+    if (job.outputEncryptionKey != null && ! "".equals(job.outputEncryptionKey)) {
+      request.setEncryptionKey(job.outputEncryptionKey);
+    }
+
     if (job.metadata.containsKey("timeout"))
       request.setTimeout(Integer.parseInt(job.metadata.get("timeout")));
 

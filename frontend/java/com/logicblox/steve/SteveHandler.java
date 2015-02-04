@@ -223,7 +223,6 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletResponse httpResponse,
           Frontend.JobCreateRequest req) {
     final String user = getUser(httpRequest);
-
     Map<String, String> tags = Conversions.createMap(req.getMetadataList());
     tags.put("date", Conversions.getCurrentISO8601());
 

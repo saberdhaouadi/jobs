@@ -114,7 +114,7 @@ public class LBDatabase implements Database {
                             .setOutputPrefix(output)
                             .addAllInput(Conversions.convertToDatabaseFiles(inputs))
                             .addAllMetadata(Conversions.convertToDatabaseParams(metadata));
-   
+
     if(output_encryption_key != null && ! "".equals(output_encryption_key)) {
       builder.setOutputEncryptionKey(output_encryption_key);
     }
