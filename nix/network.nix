@@ -513,6 +513,8 @@ with pkgs.lib;
             RestartSec = "10";
           };
         };
+
+        cron.restartTriggers = [ config.environment.etc.localtime.source ];
       };
 
       environment.etc =
