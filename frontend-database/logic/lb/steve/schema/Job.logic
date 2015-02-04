@@ -43,6 +43,11 @@
     output(job, url) -> Job(job), string(url).
 
     /**
+     * Encryption key to use for output files.
+     */
+    output_encryption_key[job] = key -> Job(job), string(key).
+
+    /**
      * Hashes of each output described by the URLs above.
      */
     output_hash[job, url] = hash -> Job(job), string(url), string(hash).
@@ -81,6 +86,11 @@
     * If job is running.
     */
     running(job) -> Job(job).
+
+   /**
+    * Creation datetime of the job.
+    */
+    created[job] = dt -> Job(job), datetime(dt).
 
    /**
     * Duration of a job.
@@ -146,6 +156,8 @@
 
     start_time[job] = t <- agg<<t = min(ts)>> status_event[job, ts] = "STARTED".
     finish_time[job] = t <- agg<<t = max(ts)>> status_event[job, ts] = s, finished_status(s).
+
+    created[job] = t <- metadata[job, "date"] = d, t = datetime:parse[d, "%Y-%m-%d %H:%M:%S"].
 
   })
 

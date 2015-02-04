@@ -49,8 +49,9 @@ block(`tdx) {
     file_definition_by_name["jobs"] = fd,
     file_definition(fd) {
       file_delimiter[] = "|",
-      column_headers[] = "ID,     USER,   JOBIMPL, OUTPUT_PREFIX, CLIENTID",
-      column_formats[] = "string, string, string,  string,        string"
+      column_headers[] = "ID,     USER,   JOBIMPL, OUTPUT_PREFIX, CLIENTID, OUTPUT_ENCRYPTION_KEY",
+      column_formats[] = "string, string, string,  string*,        string,   string",
+      file_columns_can_be_absent[] = "OUTPUT_ENCRYPTION_KEY"
     }.
 
     file_binding_by_name["jobs"] = fb,
@@ -75,6 +76,10 @@ block(`tdx) {
       predicate_binding_by_name["lb:steve:schema:Job:user"] =
         predicate_binding(_) {
           predicate_binding_columns[] = "ID, USER"
+        },
+      predicate_binding_by_name["lb:steve:schema:Job:output_encryption_key"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID, OUTPUT_ENCRYPTION_KEY"
         }
     }.
 

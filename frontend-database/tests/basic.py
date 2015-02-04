@@ -275,8 +275,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
-            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID
-            1|martin|logicblox.com-total|s3://something/something|a
+            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY
+            1|martin|logicblox.com-total|s3://something/something|a|
         ''')
 
 
@@ -312,8 +312,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
-            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID
-            1|martin|logicblox.com-total|s3://something/something|a
+            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY
+            1|martin|logicblox.com-total|s3://something/something|a|
         ''')
 
         self.assertDelimEqual(get_tdx_client("job_inputs").get(), '''
@@ -404,9 +404,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
-            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID
-            1|martin|logicblox.com-total|s3://something/something1|a1
-            2|martin|logicblox.com-total|s3://something/something2|a2
+            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY
+            1|martin|logicblox.com-total|s3://something/something1|a1|
+            2|martin|logicblox.com-total|s3://something/something2|a2|
         ''')
 
     def test_create_job_with_errors(self):
@@ -457,9 +457,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
-            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID
-            1|martin|logicblox.com-total|s3://something/something1|a1
-            2|martin|logicblox.com-total|s3://something/something2|a2
+            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY
+            1|martin|logicblox.com-total|s3://something/something1|a1|
+            2|martin|logicblox.com-total|s3://something/something2|a2|
         ''')
 
  
