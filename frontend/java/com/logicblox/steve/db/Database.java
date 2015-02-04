@@ -46,6 +46,7 @@ public interface Database {
    * @param jobImplId
    * @param inputs
    * @param output
+   * @param output_encryption_key
    * @param metadata
    * @return the generated id for this job (which could be reused from a previous job with this
    * clientId).
@@ -57,6 +58,7 @@ public interface Database {
           String jobImplId,
           Collection<Data> inputs,
           String output,
+          String output_encryption_key,
           Map<String, String> metadata);
 
 

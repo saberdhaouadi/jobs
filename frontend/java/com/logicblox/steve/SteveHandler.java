@@ -246,6 +246,7 @@ public class SteveHandler extends ProtoBufHandler {
                     req.getJobImpl(),
                     Conversions.convertFrontendFileToData(req.getInputList()),
                     req.getOutput(),
+                    req.hasOutputEncryptionKey() ? req.getOutputEncryptionKey() : null,
                     tags);
 
     // Once we have the job stored in the database, submit it to the queue
@@ -538,6 +539,7 @@ public class SteveHandler extends ProtoBufHandler {
                         Conversions.convertFrontendFileToData(
                                 Collections.singletonList(req.getImplementation())),
                         "",
+                        null,
                         tags);
               }
             });

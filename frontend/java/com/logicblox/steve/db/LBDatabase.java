@@ -103,20 +103,24 @@ public class LBDatabase implements Database {
           final String jobImplId,
           final Collection<Data> inputs,
           final String output,
+          final String output_encryption_key,
           final Map<String, String> metadata) {
 
-    
-    // create database request
-    final Request request = Request.newBuilder()
-            .setCreateJob(CreateJobRequest.newBuilder()
+    CreateJobRequest.Builder builder = CreateJobRequest.newBuilder()
                             .setJobId(UUID.randomUUID().toString())
                             .setUserId(userId)
                             .setClientId(clientId)
                             .setImplId(jobImplId)
                             .setOutputPrefix(output)
                             .addAllInput(Conversions.convertToDatabaseFiles(inputs))
-                            .addAllMetadata(Conversions.convertToDatabaseParams(metadata))
-            ).build();
+                            .addAllMetadata(Conversions.convertToDatabaseParams(metadata));
+   
+    if(output_encryption_key != null && ! "".equals(output_encryption_key)) {
+      builder.setOutputEncryptionKey(output_encryption_key);
+    }
+
+    // create database request
+    final Request request = Request.newBuilder().setCreateJob(builder).build();
 
     // submit and process the response
     return Futures.transform(_batcher.addRequest(request),
@@ -195,6 +199,7 @@ public class LBDatabase implements Database {
                 return new Job(job.getId(),
                         job.getClientId(),
                         job.getOutputPrefix(),
+                        job.getOutputEncryptionKey(),
                         job.getImplId(),
                         Conversions.convertFromDatabaseParams(job.getMetadataList()),
                         Conversions.convertFromDatabaseFiles(job.getInputList()),

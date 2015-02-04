@@ -138,6 +138,7 @@ public class LBDatabaseTest extends PrototypeTest {
             "impl1",
             inputs,
             "/out",
+            "",
             ImmutableMap.of("k1", "v1")).get();
 
     final Job job = db.getJob(jobId).get();
@@ -149,6 +150,7 @@ public class LBDatabaseTest extends PrototypeTest {
     Assert.assertEquals("/out", job.outputPrefix);
     Assert.assertEquals(ImmutableMap.of("k1", "v1"), job.metadata);
     Assert.assertEquals("/foo/impl1", job.jobImplArchive);
+    Assert.assertEquals("", job.outputEncryptionKey);
   }
 
 
@@ -170,6 +172,7 @@ public class LBDatabaseTest extends PrototypeTest {
             "impl1",
             inputs,
             "/out",
+            "",
             ImmutableMap.of("k1", "v1")).get();
 
     // now add status
@@ -209,6 +212,7 @@ public class LBDatabaseTest extends PrototypeTest {
             "impl1",
             inputs,
             "/out",
+            "",
             ImmutableMap.of("k1", "v1")).get();
 
     // now set the result

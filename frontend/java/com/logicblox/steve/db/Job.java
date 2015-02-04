@@ -37,6 +37,11 @@ public final class Job {
   public final String outputPrefix;
 
   /**
+   * The public key to use for encrypting results of the job execution.
+   */
+  public final String outputEncryptionKey;
+
+  /**
    * The id of the job implementation. This is only unique within the account of the user that
    * requested the job.
    */
@@ -82,6 +87,7 @@ public final class Job {
    * @param jobId
    * @param clientId
    * @param outputPrefix
+   * @param outputEncryptionKey
    * @param jobImplId
    * @param metadata
    * @param inputData
@@ -90,6 +96,7 @@ public final class Job {
   public Job(String jobId,
              String clientId,
              String outputPrefix,
+             String outputEncryptionKey,
              String jobImplId,
              Map<String, String> metadata,
              Collection<Data> inputData,
@@ -98,6 +105,7 @@ public final class Job {
     this.id = jobId;
     this.clientId = clientId;
     this.outputPrefix = outputPrefix;
+    this.outputEncryptionKey = outputEncryptionKey;
     this.jobImplId = jobImplId;
     this.jobImplArchive = jobImplArchive;
     // because strings and Data are immutable, it is safe to just wrap around unmodifiables.
@@ -111,6 +119,7 @@ public final class Job {
    * @param jobId
    * @param clientId
    * @param outputPrefix
+   * @param outputEncryptionKey
    * @param jobImplId
    * @param metadata
    * @param inputData
@@ -121,13 +130,14 @@ public final class Job {
   public Job(String jobId,
              String clientId,
              String outputPrefix,
+             String outputEncryptionKey,
              String jobImplId,
              Map<String, String> metadata,
              Collection<Data> inputData,
              String jobImplArchive,
              Collection<Data> outputData,
              List<Status> status) {
-    this(jobId, clientId, outputPrefix, jobImplId, metadata, inputData, jobImplArchive);
+    this(jobId, clientId, outputPrefix, outputEncryptionKey, jobImplId, metadata, inputData, jobImplArchive);
     this._outputData.addAll(outputData);
     this._status.addAll(status);
   }
