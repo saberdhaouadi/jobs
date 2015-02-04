@@ -106,7 +106,8 @@ public class Main {
   private MainCommand _mainCmd = new MainCommand();
   private String _user = null;
   private String _keyFile = null;
-
+  private S3Client _s3client;
+  
   public Main() {
     _logger = SystemDLogger.getLogger("SteveClient");
     _commander = new JCommander(_mainCmd);
@@ -126,6 +127,8 @@ public class Main {
       _config = new Config(file1, _config);
     if (file2 != null)
       _config = new Config(file2, _config);
+
+    _s3client = S3Utils.createS3Client(_config);
   }
 
   abstract class GlobalArgsCommand {
@@ -176,15 +179,13 @@ public class Main {
               Collections.singletonList(
                       fileBuilder.build()));
     } else {
-      S3Client s3client = S3Utils.createS3Client(_config);
-
       File inputFile = new File(input);
       if (!inputFile.exists())
         throw new UsageException("Input file does not exist");
 
       if (inputFile.isDirectory()) {
         return Futures.transform(
-                s3client.uploadDirectory(inputFile, createUniqueInputURI(), null),
+                _s3client.uploadDirectory(inputFile, createUniqueInputURI(), null),
                 new Function<List<S3File>, List<Frontend.File>>() {
                   public List<Frontend.File> apply(List<S3File> files) {
                     List<Frontend.File> result = new ArrayList<Frontend.File>();
@@ -195,7 +196,7 @@ public class Main {
                 });
       } else {
         return Futures.transform(
-                s3client.upload(inputFile, createUniqueInputURI()),
+                _s3client.upload(inputFile, createUniqueInputURI()),
                 new Function<S3File, List<Frontend.File>>() {
                   public List<Frontend.File> apply(S3File file) {
                     return Collections.singletonList(Conversions.convertToFrontendFile(file));
@@ -288,6 +289,12 @@ public class Main {
                     "then the S3 default_output_prefix will be used to store the outputs")
     String _output;
 
+
+    @Parameter(
+            names = {"--output-encryption-key"},
+            description = "Public key file to use for encrypting the results of the job.")
+    String _outputEncryptionKey = null;
+
     @Parameter(
             names = {"--wait"},
             description = "Wait for completion of the job by polling for the result")
@@ -337,8 +344,9 @@ public class Main {
         _metadata.add("job-queue=" + _queue);
 
       final SteveClientInterface client = getSteveClient();
+
       Futures.transform(
-              client.createJob(_impl, inputs, outputPrefix, convertCommandLineMetadata(_metadata)),
+              client.createJob(_impl, inputs, outputPrefix, _outputEncryptionKey, convertCommandLineMetadata(_metadata)),
               new AsyncFunction<String, Object>() {
                 @Override
                 public ListenableFuture<Object> apply(String id) throws Exception {
@@ -487,8 +495,6 @@ public class Main {
 
   private ListenableFuture<List<Frontend.File>> downloadResult(final String output, List<Frontend.File> files)
           throws IOException {
-    S3Client s3client = S3Utils.createS3Client(_config);
-
     Path p = Paths.get(output);
     if (Files.isDirectory(p) || output.endsWith("/") || files.size() > 1) {
       // Assume that we want to download the list of files to a directory.
@@ -496,7 +502,7 @@ public class Main {
 
       for (Frontend.File file : files) {
         Path targetFile = p.resolve(Conversions.getBasename(file));
-        downloads.add(s3client.download(targetFile.toFile(), URI.create(file.getUrl())));
+        downloads.add(_s3client.download(targetFile.toFile(), URI.create(file.getUrl())));
       }
 
       return Futures.transform(Futures.allAsList(downloads), Functions.constant(files));
@@ -505,7 +511,7 @@ public class Main {
       // TOOD check the ETag from the download
       return
               Futures.transform(
-                      s3client.download(p.toFile(), URI.create(files.get(0).getUrl())),
+                      _s3client.download(p.toFile(), URI.create(files.get(0).getUrl())),
                       Functions.constant(files));
     }
   }

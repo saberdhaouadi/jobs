@@ -25,6 +25,10 @@ import com.logicblox.common.Option;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.protocol.Frontend;
 
+import org.apache.commons.io.FileUtils;
+import java.io.IOException;
+import java.io.File;
+
 /**
  * Client-side API for making calls to steve. This is used by the
  * lb-steve-client, but is also intended to be used in applications.
@@ -46,6 +50,7 @@ public class SteveClient implements SteveClientInterface {
           String jobImpl,
           Iterable<Frontend.File> inputs,
           URI outputPrefix,
+          String outputEncryptionKey,
           Iterable<Frontend.Param> metadata)
           throws ServiceClientException {
     // TODO retry on connection issues with the same clientId
@@ -56,6 +61,18 @@ public class SteveClient implements SteveClientInterface {
                     .setClientId(clientId)
                     .setJobImpl(jobImpl)
                     .setOutput(outputPrefix.toString());
+
+    if (outputEncryptionKey != null && ! "".equals(outputEncryptionKey)) {
+      // read public key
+      String pubKey;
+      try {
+        pubKey = FileUtils.readFileToString(new File(outputEncryptionKey));
+        createReq.setOutputEncryptionKey(pubKey);
+      } catch (IOException e) {
+        return Futures.immediateFailedFuture(
+            new SteveClientException(_client.getURI(), "Could not read public key `"+outputEncryptionKey+"`.", "ERROR_READING_KEY"));
+      }
+    }
 
     for (Frontend.File input : inputs)
       createReq.addInput(input);
