@@ -41,6 +41,15 @@ block(`get_job) {
       schema:JobImpl:account[impl] = account,
       schema:JobImpl:archive[impl] = impl_archive.
 
+    // output_encryption_key is optional, so separate rule
+    +proto:Job_output_encryption_key[protoJob] = output_encryption_key <-
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_job[union] = req,
+      +proto:GetJobRequest_job_id[req] = jobId,
+      +service_support:job[index] = protoJob,
+      schema:Job_id@prev[job] = jobId,
+      schema:Job:output_encryption_key@prev[job] = output_encryption_key.
+
 
     // populate input with file messages
     input_cons[jobId, url] = file -> string(jobId), string(url), proto:File(file).
