@@ -94,14 +94,13 @@ block(`create_job) {
       +proto:CreateJobRequest_metadata(req, p), 
       +proto:Param_key[p] = key,
       +proto:Param_value[p] = value.    
-/*
+
     // wire output encryption key
     +schema:Job:output_encryption_key[job] = key <-
       +create_new_job(req),
       +proto:CreateJobRequest_job_id[req] = id,
       +schema:Job_id[job] = id,
       +proto:CreateJobRequest_output_encryption_key[req] = key.
-*/
 
     // Check if platform version is available.
     platform_version(p) -> string(p).
