@@ -107,7 +107,8 @@ public class SteveJob {
         throw e;
       }
     } catch (Exception e) {
-      log("Failure executing " + _id);
+      log("Failure executing " + _id + ": " + e.getMessage());
+      e.printStackTrace();
       _outgoing.notifyFailure(e);
       teardown();
     }
