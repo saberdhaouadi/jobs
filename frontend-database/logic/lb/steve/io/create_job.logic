@@ -107,7 +107,8 @@ block(`create_job) {
     platform_version(p) <-
       p = "3.10.15"
     ; p = "4.1.5"
-    ; p = "4.1.6".
+    ; p = "4.1.6"
+    ; p = "4.1.7".
 
     +service_support:export_error(index, "INVALID_PLATFORM", "Platform '" + platformId + "' not supported.") <-
       +proto:RequestEnvelope_request[_, index] = union,
