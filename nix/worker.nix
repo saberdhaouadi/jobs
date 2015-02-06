@@ -119,6 +119,25 @@ in
         mkdir -p /tmp/job
       '';
 
+    systemd.services.check-rsyslog = {
+      description = "Check closed TCP connections for rsyslogd";
+      after = [ "network.target" "syslog.service" ];
+      requires = [ "syslog.service" ];
+      wantedBy = [ "multi-user.target" ];
+      path = [ pkgs.lsof ];
+      script = ''
+        while true; do
+          if [[ -f /var/run/rsyslog.pid ]]; then
+            if lsof -i :24237 | grep CLOSE_WAIT ; then
+              systemctl restart syslog.service
+            fi
+          fi
+          sleep 60
+        done
+      '';
+    };
+
+
     # 
     systemd.services.lb-steve-worker = {
       description = "LB Steve Worker";
@@ -177,6 +196,7 @@ in
 
       *.* @@logs.papertrailapp.com:24237
     '';
+
   };
 
 }
