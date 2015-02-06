@@ -127,10 +127,8 @@ in
       path = [ pkgs.lsof ];
       script = ''
         while true; do
-          if [[ -f /var/run/rsyslog.pid ]]; then
-            if lsof -i :24237 | grep CLOSE_WAIT ; then
-              systemctl restart syslog.service
-            fi
+          if lsof -i :24237 | grep CLOSE_WAIT ; then
+            systemctl restart syslog.service
           fi
           sleep 60
         done
