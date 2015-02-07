@@ -173,6 +173,9 @@ in
 
     services.rsyslogd.enable = true;
     services.rsyslogd.extraConfig = ''
+      $ModLoad immark  # provides --MARK-- message capability
+      $MarkMessagePeriod 480 # log a MARK message every 8 minutes
+
       $DefaultNetstreamDriverCAFile ${papertrail-crt}
 
       $ActionSendStreamDriver gtls
