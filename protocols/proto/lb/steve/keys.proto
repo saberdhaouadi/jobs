@@ -18,3 +18,12 @@ message Key {
   required string contents = 2;
 }
 
+message RegisterKeyRequest {
+  required string account = 1;
+  required string name = 2;
+  required string contents = 3;
+}
+
+message RegisterKeyResponse {
+}
+
