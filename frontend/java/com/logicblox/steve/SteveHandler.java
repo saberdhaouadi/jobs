@@ -51,7 +51,6 @@ import com.logicblox.steve.common.S3Utils;
 import com.logicblox.steve.common.Status;
 import com.logicblox.steve.common.Status.StatusBuilder;
 import com.logicblox.steve.db.Database;
-import com.logicblox.steve.db.DynamoJobState;
 import com.logicblox.steve.db.LBDatabase;
 import com.logicblox.steve.db.Job;
 import com.logicblox.steve.db.JobImpl;

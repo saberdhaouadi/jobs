@@ -61,13 +61,6 @@ let
       [handler:steve]
       database_prefix = http://database-${name}:8080/db
 
-      [state]
-      implementation = dynamodb
-      iam_role = default
-      table = Job
-      endpoint = dynamodb.${region}.amazonaws.com
-      env_credentials = false
-
       ${pkgs.lib.concatMapStrings (t: ''
       [job-queue:${workerName t}]
       implementation = sqs
@@ -260,13 +253,6 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
-            },
-            {
-              "Action": [
-                "dynamodb:*"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
             }
           ]
         }
@@ -316,6 +302,7 @@ with pkgs.lib;
       };
 
   "key-server-${name}" =
+    { config, resources, ...}:
     {
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -489,10 +476,6 @@ with pkgs.lib;
           }
           location = /index.html {
               alias ${../www/index.html};
-              break;
-          }
-          location = /status.html {
-              alias /tmp/status.html;
               break;
           }
           location = /lb-steve-client.tgz {
