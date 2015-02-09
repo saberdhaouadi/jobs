@@ -24,6 +24,8 @@ message Request {
   // job implementation request
   optional ImplAddRequest impl_add = 20;
   optional ImplListRequest impl_list = 21;
+
+  optional RegisterKeyRequest register_key = 30;
 }
 
 message Response {
@@ -42,6 +44,8 @@ message Response {
   // job implementation
   optional ImplAddResponse impl_add = 20;
   optional ImplListResponse impl_list = 21;
+
+  optional RegisterKeyResponse register_key = 30;
 }
 
 /**
@@ -215,3 +219,21 @@ message JobImplInfo {
   required string id = 1;
   repeated Param metadata = 2;
 }
+
+/**
+ * Register key
+ */
+message Key {
+  required string name = 1;
+  required string contents = 2;
+}
+
+message RegisterKeyRequest {
+  required string account = 1;
+  required string name = 2;
+  required string contents = 3;
+}
+
+message RegisterKeyResponse {
+}
+
