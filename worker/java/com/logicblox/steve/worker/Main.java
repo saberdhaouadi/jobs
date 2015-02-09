@@ -78,6 +78,7 @@ public class Main {
   private static String _s3Bucket = "steve-jobs";
   private static boolean _returnJob = false;
   private static boolean _shutdownOnIdle = false;
+  private static String _keyService = "http://127.0.0.1:8080/keys";
 
   public static void parseArgs(String args[]) {
     Options options = new Options();
@@ -107,6 +108,11 @@ public class Main {
             .withArgName("URL")
             .create());
 
+    options.addOption(OptionBuilder.withLongOpt("key-service")
+            .withDescription("LB Steve Key Service")
+            .hasArg()
+            .withArgName("URL")
+            .create());
 
     options.addOption(
             OptionBuilder.withLongOpt("return-job")
@@ -129,6 +135,9 @@ public class Main {
         _outgoingUrl = _cmdline.getOptionValue("outgoing");
       if (_cmdline.hasOption("bucket"))
         _s3Bucket = _cmdline.getOptionValue("bucket");
+      if (_cmdline.hasOption("key-service"))
+        _keyService = _cmdline.getOptionValue("key-service");
+
       _returnJob = _cmdline.hasOption("return-job");
       _shutdownOnIdle = _cmdline.hasOption("shutdown-on-idle");
 
