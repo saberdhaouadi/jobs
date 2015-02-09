@@ -315,6 +315,32 @@ with pkgs.lib;
         rules = map entry ips ++ map accountEntry accounts ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
       };
 
+  "key-server-${name}" =
+    {
+      deployment.targetEnv = "ec2";
+      deployment.ec2.accessKeyId = account;
+      deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
+      deployment.ec2.securityGroups = [ "admin" ];
+      deployment.ec2.region = region;
+      deployment.ec2.instanceType = "r3.large";
+      ec2.metadata = true;
+
+      imports = [
+        <lbdevops/logicblox/production.nix>
+      ] ;
+
+      fileSystems."/keys" =
+        { autoFormat = true;
+          fsType = "xfs";
+          device = "/dev/xvdf";
+          options = "noatime";
+          ec2.size = 20;
+          ec2.encrypt = true;
+        };
+
+    };
+
+
   "database-${name}" =
     { config, pkgs, resources, ... }:
     let
