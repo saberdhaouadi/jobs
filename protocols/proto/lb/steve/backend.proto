@@ -24,6 +24,9 @@ message RunJob {
 
   // Public key to encrypt the data
   optional string encryption_key = 7;
+
+  // Account to which job belongs, needed to retrieve keys. Optional to keep compatible with older version of worker.
+  optional string account = 8;
 }
 
 // TODO add timeout etc
