@@ -20,8 +20,7 @@ message Key {
 
 message RegisterKeyRequest {
   required string account = 1;
-  required string name = 2;
-  required string contents = 3;
+  required Key key = 2;
 }
 
 message RegisterKeyResponse {
