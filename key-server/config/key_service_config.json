@@ -1,0 +1,10 @@
+{
+  "handler": "key",
+  "group": "lb:web:public",
+  "prefix": "/keys",
+  "http_method": "POST",
+  "request_protocol": "keys",
+  "request_message": "GetKeysRequest",
+  "response_protocol": "keys",
+  "response_message": "GetKeysResponse"
+}

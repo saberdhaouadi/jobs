@@ -182,6 +182,20 @@ rec {
       };
     };
 
+  key-server =
+     builder_config.buildLBConfig {
+      name = "lb-steve-key-server";
+      src = ./key-server;
+      buildInputs = [ logicblox lb_web makeWrapper ];
+      enableLBservices = false;
+      configureFlags = [
+        "--with-protocols=${protocols}"
+        "--with-commons-cli=${commons-cli}"
+        "--with-s3lib=${s3lib}"
+        "--with-aws=${aws-java-sdk}"
+      ];
+    };
+
   closures.worker =
     makeClosure (
       {config, pkgs, ...}:

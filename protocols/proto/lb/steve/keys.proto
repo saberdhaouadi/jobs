@@ -10,7 +10,7 @@ message GetKeysRequest {
 }
 
 message GetKeysResponse {
-  repeated Key keys = 1;
+  repeated Key key = 1;
 }
 
 message Key {
