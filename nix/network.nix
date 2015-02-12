@@ -24,11 +24,11 @@ let
   inherit (pkgs.lib) getAttr;
 
   worker = type:
-    { config, pkgs, resources, ... }:
+    { config, pkgs, resources, nodes, ... }:
     {
       imports = [ ./worker.nix ];
 
-      lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName type}".name} --outgoing ${resources.sqsQueues."${sqsStatusName}".name} --bucket ${s3Name}";
+      lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName type}".name} --outgoing ${resources.sqsQueues."${sqsStatusName}".name} --bucket ${s3Name} --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys";
 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -311,6 +311,8 @@ with pkgs.lib;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = "r3.large";
       ec2.metadata = true;
+      deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
+      deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -324,6 +326,127 @@ with pkgs.lib;
           ec2.size = 20;
           ec2.encrypt = true;
         };
+
+      networking.firewall.allowedTCPPorts = [ 443 ];
+      services.nginx.enable = true;
+      services.nginx.config = ''
+        worker_processes 4;
+        events {
+            worker_connections 9000;
+        }
+      '';
+      services.nginx.httpConfig = ''
+        server {
+            listen               80;
+            server_name   localhost;
+            location /nginx_status {
+                stub_status         on;
+                access_log         off;
+                allow        127.0.0.1;
+                deny               all;
+            }
+        }
+        server {
+          server_name ${env.hostName};
+          server_tokens off;
+
+          listen [::]:443 default_server ssl spdy ipv6only=off;
+
+          ssl_certificate         /run/keys/server.crt;
+          ssl_trusted_certificate /run/keys/server.crt;
+          ssl_certificate_key     /run/keys/server.key;
+
+          resolver 8.8.8.8;
+          ssl_stapling on;
+          ssl_stapling_verify on;
+          ssl_session_cache shared:SSL:10m;
+          ssl_session_timeout 5m;
+          ssl_protocols TLSv1.2 TLSv1.1 TLSv1;
+          ssl_prefer_server_ciphers on;
+
+          ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK;
+
+
+          log_format timed_combined '$remote_addr - $remote_user [$time_local]  "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
+          access_log /var/spool/nginx/logs/access.log timed_combined;
+
+          location / {
+              proxy_pass         http://localhost:8082/;
+              proxy_redirect     off;
+              proxy_set_header   Host             $host;
+              proxy_set_header   X-Real-IP        $remote_addr;
+              proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+              proxy_set_header   X-Forwarded-Proto https;
+
+              proxy_connect_timeout      180;
+              proxy_send_timeout         600;
+              proxy_read_timeout         600;
+
+              client_max_body_size 0;
+
+              break;
+          }
+
+        }
+
+      '';
+
+      nixpkgs.config.packageOverrides = pkgs: {
+        nginx = pkgs.lib.overrideDerivation pkgs.nginx (a: { configureFlags = a.configureFlags ++ ["--with-http_stub_status_module"]; } );
+      };
+
+      systemd.services = {
+        nginx.serviceConfig.LimitNOFILE = 32768;
+
+        lb-steve-key-server = {
+          description = "LB Steve Frontend";
+          after = [ "network.target" ];
+          wantedBy = [ "multi-user.target" ];
+          path = [ pkgs.jdk pkgs.bash builds.frontend ];
+          preStart = ''
+            mkdir -p /var/log/lb-steve-key-server
+          '';
+          environment.JAVA_ARGS = "-Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false";
+          serviceConfig = {
+            ExecStart = "${builds.key-server}/bin/lb-steve-key-server";
+            Restart = "always";
+            RestartSec = "10";
+          };
+        };
+      };
+
+      environment.etc =
+        let
+          jmx-config =
+            pkgs.writeText "jmx.yaml" ''
+          instances:
+            - host: 127.0.0.1
+              name: jmx_instance
+              port: 7199
+ 
+          init_config:
+            conf:
+              - include:
+                  domain: java.lang
+                  type: Threading
+              - include:
+                  domain: java.lang
+                  type: GarbageCollector
+            '';
+          nginx-config =
+            pkgs.writeText "nginx.yaml" ''
+              init_config:
+              instances:
+                -   nginx_status_url: http://127.0.0.1/nginx_status/
+          '';
+        in [
+          { source = jmx-config;
+            target = "dd-agent/conf.d/jmx.yaml";
+          }
+          { source = nginx-config;
+            target = "dd-agent/conf.d/nginx.yaml";
+          }
+        ];
 
     };
 
@@ -525,8 +648,6 @@ with pkgs.lib;
             RestartSec = "10";
           };
         };
-
-        cron.restartTriggers = [ config.environment.etc.localtime.source ];
       };
 
       environment.etc =
