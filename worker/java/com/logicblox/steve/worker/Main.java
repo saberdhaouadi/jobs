@@ -80,6 +80,8 @@ public class Main {
   private static boolean _shutdownOnIdle = false;
   private static String _keyService = "http://127.0.0.1:8080/keys";
 
+  private SteveKeyServerHelper _keyHelper;
+
   public static void parseArgs(String args[]) {
     Options options = new Options();
 
@@ -157,6 +159,8 @@ public class Main {
     this.client = S3Utils.createS3Client(null);
 
     setupSQS();
+
+    _keyHelper = new SteveKeyServerHelper(_keyService);
   }
 
   public static void main(String[] args) throws Exception {
@@ -235,9 +239,12 @@ public class Main {
               msg.getJobImpl(),
               Conversions.convertFileToData(msg.getInputList()),
               msg.getOutput(),
+              msg.hasEncryptionKey() ? msg.getEncryptionKey() : null,
               msg.getTimeout(),
               metadata,
-              receiveCount
+              msg.hasAccount() ? msg.getAccount() : "",
+              receiveCount,
+              _keyHelper
       );
 
       Thread resetTimeout = new Thread(new ResetMessageVisibilityTimeout(job.getReceiptHandle()));

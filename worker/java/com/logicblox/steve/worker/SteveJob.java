@@ -40,6 +40,8 @@ public class SteveJob {
   private long _timeout;
   private Map<String, String> _metadata;
   private int _receiveCount;
+  private String _outputEncryptionKey;
+  private String _account;
 
   private String _s3Bucket;
   private URI _outputLog;
@@ -56,7 +58,10 @@ public class SteveJob {
   private boolean _completed = false;
   private String _internalError = null;
 
-  public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, long timeout, Map<String, String> metadata, int receiveCount)
+  private File _keyDir = new File(com.logicblox.s3lib.Utils.getDefaultKeyDirectory());
+  private SteveKeyServerHelper _keyHelper;
+
+  public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, String outputEncryptionKey, long timeout, Map<String, String> metadata, String account, int receiveCount, SteveKeyServerHelper keyHelper)
           throws InternalException {
     _id = id;
     _impl = impl;
@@ -67,6 +72,9 @@ public class SteveJob {
     _s3Bucket = s3Bucket;
     _metadata = metadata;
     _receiveCount = receiveCount;
+    _outputEncryptionKey = outputEncryptionKey;
+    _keyHelper = keyHelper;
+    _account = account;
 
     try {
       _output = new URI(output);
@@ -104,6 +112,9 @@ public class SteveJob {
         _outgoing.notifyFailure(new InternalException("Retried job multiple time, but keep hitting internal error."));
       } else {
         _outgoing.notifyStatus("There was an internal error while executing the job. It will be restarted on another worker.");
+        if(e.getCause() != null) {
+          e.printStackTrace();
+        }
         throw e;
       }
     } catch (Exception e) {
@@ -126,6 +137,22 @@ public class SteveJob {
 
   private void cleanUp() throws InternalException {
     deleteDirectory(new File("/tmp/job"));
+    deleteDirectory(_keyDir);
+  }
+
+  private void setupEncryptionKeys() throws InternalException {
+    Map<String, String> keys;
+    try {
+      keys = _keyHelper.getKeys(_account);
+      _keyDir.mkdirs();
+
+      for(String key : keys.keySet()) {
+        FileUtils.writeStringToFile(new File(_keyDir,key+".pem"), keys.get(key));
+      }
+    }
+    catch(Exception e) {
+      throw new InternalException("Could not fetch encryption keys.", e);
+    }
   }
 
   private void setup() throws Exception {
@@ -143,6 +170,10 @@ public class SteveJob {
     }
 
     downloadJobImpl();
+
+    if(_outputEncryptionKey != null) {
+      setupEncryptionKeys();
+    }
 
     // download inputs
     List<ListenableFuture<List<S3File>>> inputFiles = new ArrayList<ListenableFuture<List<S3File>>>();
@@ -229,7 +260,7 @@ public class SteveJob {
   private List<S3File> uploadOutput() throws InternalException {
     try {
       log("Uploading output...");
-      return _client.uploadDirectory(_outputPath, _output, null).get();
+      return _client.uploadDirectory(_outputPath, _output, _outputEncryptionKey).get();
     } catch (Exception e) {
       throw new InternalException("Error uploading output files to " + _output, e);
     }
@@ -240,7 +271,6 @@ public class SteveJob {
 
     ObjectMetadata log = null;
     try {
-      // TODO make sure that jobs can be retried/re-executed
       log = _client.exists(_s3Bucket, String.format("jobs/%s/log", _id)).get();
     } catch (Exception e) {
       throw new InternalException("Could not determine if log file already exists in S3.", e);

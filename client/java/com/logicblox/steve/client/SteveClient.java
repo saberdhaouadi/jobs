@@ -63,15 +63,7 @@ public class SteveClient implements SteveClientInterface {
                     .setOutput(outputPrefix.toString());
 
     if (outputEncryptionKey != null && ! "".equals(outputEncryptionKey)) {
-      // read public key
-      String pubKey;
-      try {
-        pubKey = FileUtils.readFileToString(new File(outputEncryptionKey));
-        createReq.setOutputEncryptionKey(pubKey);
-      } catch (IOException e) {
-        return Futures.immediateFailedFuture(
-            new SteveClientException(_client.getURI(), "Could not read public key `"+outputEncryptionKey+"`.", "ERROR_READING_KEY"));
-      }
+      createReq.setOutputEncryptionKey(outputEncryptionKey);
     }
 
     for (Frontend.File input : inputs)

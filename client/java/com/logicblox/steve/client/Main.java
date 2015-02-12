@@ -167,7 +167,7 @@ public class Main {
   /**
    * Transparantly uploads input to S3 if it is a local file.
    */
-  protected ListenableFuture<List<Frontend.File>> createInput(String input) throws Exception {
+  protected ListenableFuture<List<Frontend.File>> createInput(String input, String _inputEncryptionKey) throws Exception {
     // TODO support hashes as parameters or lookup in S3
     // TODO should we delete the input or rely on an automatic retention policy on the bucket?
     if (input.startsWith("s3://")) {
@@ -185,7 +185,7 @@ public class Main {
 
       if (inputFile.isDirectory()) {
         return Futures.transform(
-                _s3client.uploadDirectory(inputFile, createUniqueInputURI(), null),
+                _s3client.uploadDirectory(inputFile, createUniqueInputURI(), _inputEncryptionKey),
                 new Function<List<S3File>, List<Frontend.File>>() {
                   public List<Frontend.File> apply(List<S3File> files) {
                     List<Frontend.File> result = new ArrayList<Frontend.File>();
@@ -196,7 +196,7 @@ public class Main {
                 });
       } else {
         return Futures.transform(
-                _s3client.upload(inputFile, createUniqueInputURI()),
+                _s3client.upload(inputFile, createUniqueInputURI(), _inputEncryptionKey),
                 new Function<S3File, List<Frontend.File>>() {
                   public List<Frontend.File> apply(S3File file) {
                     return Collections.singletonList(Conversions.convertToFrontendFile(file));
@@ -283,6 +283,11 @@ public class Main {
     List<String> _inputs;
 
     @Parameter(
+            names = {"--input-key"},
+            description = "Key to use for encrypting of local file inputs for the job.")
+    String _inputEncryptionKey = null;
+
+    @Parameter(
             names = {"-o", "--output"},
             description = "Output of job, to be stored in either a local directory, single output file, " +
                     "or S3 output prefix (S3 files use s3://bucket/key URLs). If local output is requested, " +
@@ -291,8 +296,8 @@ public class Main {
 
 
     @Parameter(
-            names = {"--output-encryption-key"},
-            description = "Public key file to use for encrypting the results of the job.")
+            names = {"--output-key"},
+            description = "Key that LB Jobs should use for encrypting the results of the job.")
     String _outputEncryptionKey = null;
 
     @Parameter(
@@ -312,7 +317,7 @@ public class Main {
               new ArrayList<ListenableFuture<List<Frontend.File>>>();
       if (_inputs != null) {
         for (String input : _inputs) {
-          inputFutures.add(createInput(input));
+          inputFutures.add(createInput(input, _inputEncryptionKey));
         }
       }
       Iterable<Frontend.File> inputs = MoreFutures.concat(Futures.allAsList(inputFutures)).get();
@@ -570,7 +575,7 @@ public class Main {
       }
 
       Futures.transform(
-              client.addJobImpl(_impl, createInput(_input).get().get(0), convertCommandLineMetadata(_metadata)),
+              client.addJobImpl(_impl, createInput(_input, null).get().get(0), convertCommandLineMetadata(_metadata)),
               new AsyncFunction<String, Object>() {
                 @Override
                 public ListenableFuture<Object> apply(String id) throws Exception {
