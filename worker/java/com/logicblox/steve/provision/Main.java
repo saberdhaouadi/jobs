@@ -20,11 +20,12 @@ public class Main {
   private static String queue = "c3-xlarge";
   private static String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
-  private static String ami = "ami-d68eccbe";
+  private static String ami = "ami-b8e5aed0";
   private static String key = "rob";
   private static String s3Bucket = "steve-jobs";
   private static String instanceType = "c3.xlarge";
   private static String role = "steve-jobs-worker";
+  private static String serviceUri = "http://localhost:8082/keys";
 
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
   private static double pctSpot = 0.9;
@@ -76,6 +77,12 @@ public class Main {
             .withDescription("Amazon EC2 keypair")
             .hasArg()
             .withArgName("KEY")
+            .create());
+
+    options.addOption(OptionBuilder.withLongOpt("key-service")
+            .withDescription("Keys service URI")
+            .hasArg()
+            .withArgName("URI")
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("percentage-queue")
@@ -155,6 +162,8 @@ public class Main {
         role = _cmdline.getOptionValue("role");
       if (_cmdline.hasOption("instance-type"))
         instanceType = _cmdline.getOptionValue("instance-type");
+      if (_cmdline.hasOption("key-service"))
+        serviceUri = _cmdline.getOptionValue("key-service");
 
       if (_cmdline.hasOption("total"))
         totalNeeded = ((Number) _cmdline.getParsedOptionValue("total")).intValue();
@@ -230,10 +239,11 @@ public class Main {
 
   private String getUserData() {
     return Base64.encodeBase64String(
-            String.format("WORKERARGS=\"--bucket %s --incoming %s --outgoing %s\"",
+            String.format("WORKERARGS=\"--bucket %s --incoming %s --outgoing %s --key-service %s\"",
                     s3Bucket,
                     incoming_url,
-                    outgoing_url
+                    outgoing_url,
+                    serviceUri
             ).getBytes()
     );
   }
