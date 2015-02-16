@@ -3,10 +3,10 @@ rec {
     { hostName = "steve.logicblox.com";
       elasticIPv4 = "54.243.141.142";
       workers = {
-        "c3.xlarge" = { number = 1; price = "0.25"; };
-        "r3.xlarge" = { number = 0; price = "0.40"; };
-        "r3.2xlarge" = { number = 0; price = "0.75"; };
-        "r3.8xlarge" = { number = 0; price = "3.00"; };
+        "c3.xlarge" = { number = 1; price = "0.25"; percentageSpot = "0.9"; };
+        "r3.xlarge" = { number = 0; price = "0.40"; percentageSpot = "1.0"; };
+        "r3.2xlarge" = { number = 0; price = "0.75"; percentageSpot = "1.0"; };
+        "r3.8xlarge" = { number = 0; price = "3.00"; percentageSpot = "1.0"; };
       };
     };
 

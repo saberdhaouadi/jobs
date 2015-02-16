@@ -459,7 +459,7 @@ with pkgs.lib;
         ''
           #! /bin/sh
           source /etc/profile
-          exec lb-steve-provisioner --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys --queue ${workerName t} --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --role ${resources.iamRoles.worker-role.name} --instance-type ${t} --spot-price ${env.workers."${t}".price} $@
+          exec lb-steve-provisioner --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys --queue ${workerName t} --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --role ${resources.iamRoles.worker-role.name} --instance-type ${t} --spot-price ${env.workers."${t}".price} --percentage-spot ${env.workers."${t}".percentageSpot} $@
         '';
       provisionScripts = map script instanceTypes;
       run-provisioner = t: "${script t}/bin/run-provisioner-${workerName t}";
