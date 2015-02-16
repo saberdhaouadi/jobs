@@ -26,7 +26,7 @@ public class S3Utils {
 
   private static ListeningScheduledExecutorService getInternalExecutor(ConfigMap c) {
     return MoreExecutors.listeningDecorator(
-            Executors.newScheduledThreadPool(50));
+            Executors.newScheduledThreadPool(25));
   }
 
   protected static KeyProvider getKeyProvider(ConfigMap config) {
