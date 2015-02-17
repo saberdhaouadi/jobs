@@ -1,5 +1,6 @@
 package com.logicblox.steve.common;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -45,7 +46,7 @@ public class S3Utils {
     int retryCount = 10;
 
     S3Client result = new S3Client(
-            null,
+            (AWSCredentialsProvider)null,
             getHttpExecutor(config),
             getInternalExecutor(config),
             chunkSize,
