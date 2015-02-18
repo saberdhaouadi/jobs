@@ -173,6 +173,8 @@ in
 
     services.rsyslogd.enable = true;
     services.rsyslogd.extraConfig = ''
+      $ModLoad imjournal
+
       $ModLoad immark  # provides --MARK-- message capability
       $MarkMessagePeriod 240 # log a MARK message every 8 minutes
 
