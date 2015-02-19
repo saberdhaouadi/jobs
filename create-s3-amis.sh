@@ -34,6 +34,6 @@ export TIMESTAMP=$(date +%Y%m%d%H%M)
             -a "$EC2_ACCESS_KEY" -s "$EC2_SECRET_KEY" --location "$s3location" \
             --url http://s3.amazonaws.com
 
-        aws ec2 register-image --image-location $bucket/$TIMESTAMP/nixos.img.manifest.xml --name "$name $TIMESTAMP" --region us-east-1 --virtualization-type hvm
+        aws ec2 register-image --image-location $bucket/$TIMESTAMP/nixos.img.manifest.xml --name "$name $TIMESTAMP $(basename $p)" --region us-east-1 --virtualization-type hvm
     done
 
