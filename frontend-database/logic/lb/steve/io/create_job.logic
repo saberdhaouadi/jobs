@@ -126,8 +126,8 @@ block(`create_job) {
       +proto:Param_key[p] = "timeout",
       +proto:Param_value[p] = t,
       string:int:convert[t] = timeout,
-      timeout >=0,
-      timeout <= 40000.
+      timeout < 0,
+      timeout > 40000.
 
   })
 
