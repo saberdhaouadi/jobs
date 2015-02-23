@@ -143,10 +143,14 @@ public class SteveJob {
   private void setupEncryptionKeys() throws InternalException {
     Map<String, String> keys;
     try {
+      System.out.println("Fetching keys...");
       keys = _keyHelper.getKeys(_account);
+      System.out.println("Received "+keys.keySet().size()+" keys.");
       _keyDir.mkdirs();
+      System.out.println("Created "+_keyDir);
 
       for(String key : keys.keySet()) {
+        System.out.println("Writing "+_keyDir+"/"+key+".pem");
         FileUtils.writeStringToFile(new File(_keyDir,key+".pem"), keys.get(key));
       }
     }
