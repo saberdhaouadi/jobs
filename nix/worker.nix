@@ -200,6 +200,21 @@ in
       *.* @@logs.papertrailapp.com:24237
     '';
 
+    services.logrotate.enable = true;
+    services.logrotate.config = ''
+      /var/log/messages {
+        missingok
+        hourly
+        rotate 7
+        compress
+        sharedscripts
+        postrotate
+          ${pkgs.coreutils}/bin/kill -HUP `${pkgs.coreutils}/bin/cat /var/run/rsyslogd.pid`
+        endscript
+      }
+    '';
+
+
   };
 
 }
