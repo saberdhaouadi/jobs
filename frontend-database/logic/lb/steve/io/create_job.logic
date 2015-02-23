@@ -118,6 +118,17 @@ block(`create_job) {
       +proto:Param_value[p] = platformId,
       !platform_version(platformId).
 
+    // Check timeout value
+    +service_support:export_error(index, "INVALID_TIMEOUT", "Timeout should be between 0 and 40000 seconds.") <-
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_create_job[union] = req,
+      +proto:CreateJobRequest_metadata(req, p),
+      +proto:Param_key[p] = "timeout",
+      +proto:Param_value[p] = t,
+      string:int:convert[t] = timeout,
+      timeout >=0,
+      timeout <= 40000.
+
   })
 
 } <-- .
