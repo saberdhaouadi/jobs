@@ -59,36 +59,33 @@ public class LBDatabase implements Database {
     _batcher.shutdown();
   }
 
-  // TODO - make getUser async.
   @Override
-  public User getUser(String userId) {
+  public ListenableFuture<User> getUser(String userId) {
     // create database request
     final Request request = Request.newBuilder()
             .setGetUser(GetUserRequest.newBuilder()
                             .setUserId(userId)
             ).build();    
     
-    try {
-      // submit and process the response
-      return Futures.transform(_batcher.addRequest(request),
-              new Function<Response, User>() {
-                public User apply(Response response) {
+    return Futures.transform(_batcher.addRequest(request),
+            new Function<Response, User>() {
+              public User apply(Response response) {
 
-                  checkError(response);
-                  final com.logicblox.steve.protocol.Database.User user = response.getUser();
-                  return new User(user.getId(), user.getAccountId(), user.getPublicKey());
-                }
-              }).get();
-
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
+                checkError(response);
+                final com.logicblox.steve.protocol.Database.User user = response.getUser();
+                return new User(user.getId(), user.getAccountId(), user.getPublicKey());
+              }
+            });
   }
 
-  // TODO - make getAccount async.
   @Override
-  public Account getAccount(String userId) {
-    return new Account(getUser(userId).getAccountId());
+  public ListenableFuture<Account> getAccount(String userId) {
+    return Futures.transform(getUser(userId),
+            new Function<User, Account>() {
+              public Account apply(User u) {
+                return new Account(u.getAccountId());
+              }
+            });
   }
 
 
@@ -197,6 +194,8 @@ public class LBDatabase implements Database {
                 
                 final com.logicblox.steve.protocol.Database.Job job = response.getJob();
                 return new Job(job.getId(),
+                        job.getUserId(),
+                        job.getAccountId(),
                         job.getClientId(),
                         job.getOutputPrefix(),
                         job.getOutputEncryptionKey(),

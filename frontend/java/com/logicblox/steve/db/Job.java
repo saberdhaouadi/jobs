@@ -32,6 +32,16 @@ public final class Job {
   public final String clientId;
 
   /**
+   * User id of the user who created the job.
+   */
+  public final String userId;
+
+  /**
+   * Account id to which job belongs.
+   */
+  public final String accountId;
+
+  /**
    * The prefix of the path where to store the results of the job execution.
    */
   public final String outputPrefix;
@@ -94,6 +104,8 @@ public final class Job {
    * @param jobImplArchive
    */
   public Job(String jobId,
+             String userId,
+             String accountId,
              String clientId,
              String outputPrefix,
              String outputEncryptionKey,
@@ -103,6 +115,8 @@ public final class Job {
              String jobImplArchive) {
 
     this.id = jobId;
+    this.userId = userId;
+    this.accountId = accountId;
     this.clientId = clientId;
     this.outputPrefix = outputPrefix;
     this.outputEncryptionKey = outputEncryptionKey;
@@ -128,6 +142,8 @@ public final class Job {
    * @param status
    */
   public Job(String jobId,
+             String userId,
+             String accountId,
              String clientId,
              String outputPrefix,
              String outputEncryptionKey,
@@ -137,7 +153,7 @@ public final class Job {
              String jobImplArchive,
              Collection<Data> outputData,
              List<Status> status) {
-    this(jobId, clientId, outputPrefix, outputEncryptionKey, jobImplId, metadata, inputData, jobImplArchive);
+    this(jobId, userId, accountId, clientId, outputPrefix, outputEncryptionKey, jobImplId, metadata, inputData, jobImplArchive);
     this._outputData.addAll(outputData);
     this._status.addAll(status);
   }

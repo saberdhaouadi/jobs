@@ -55,14 +55,14 @@ public class LBDatabaseTest extends PrototypeTest {
   }
 
   @Test
-  public void testGetUser() {
-    final User martin = db.getUser("martin");
+  public void testGetUser() throws Exception {
+    final User martin = db.getUser("martin").get();
     Assert.assertEquals("logicblox.com", martin.getAccountId());
   }
 
   @Test
-  public void testGetAccount() {
-    Assert.assertEquals("logicblox.com", db.getAccount("martin").getId());
+  public void testGetAccount() throws Exception {
+    Assert.assertEquals("logicblox.com", db.getAccount("martin").get().getId());
   }
 
 

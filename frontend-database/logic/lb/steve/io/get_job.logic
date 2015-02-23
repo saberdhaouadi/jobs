@@ -25,6 +25,7 @@ block(`get_job) {
     +proto:Job_impl_id[protoJob] = impl_id,
     +proto:Job_output_prefix[protoJob] = output_prefix,
     +proto:Job_user_id[protoJob] = user_id,
+    +proto:Job_account_id[protoJob] = account,
     +proto:Job_impl_archive[protoJob] = impl_archive <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_get_job[union] = req,

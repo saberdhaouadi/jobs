@@ -58,7 +58,8 @@ public class JobQueueClient {
             // TODO include ETag of implementation
             .setJobImpl(job.jobImplArchive)
             .setJob(job.id)
-            .setOutput(job.outputPrefix);
+            .setOutput(job.outputPrefix)
+            .setAccount(job.accountId);
 
     if (job.outputEncryptionKey != null && ! "".equals(job.outputEncryptionKey)) {
       request.setEncryptionKey(job.outputEncryptionKey);

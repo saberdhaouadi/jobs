@@ -24,10 +24,10 @@ public interface Database {
    * @param userId
    * @return
    */
-  public User getUser(String userId);
+  public ListenableFuture<User> getUser(String userId);
 
 
-  public Account getAccount(String userId);
+  public ListenableFuture<Account> getAccount(String userId);
 
   /**
    * Initial creation of a job in the database.

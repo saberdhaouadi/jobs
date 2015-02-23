@@ -84,6 +84,7 @@ message Job
   repeated File output = 10   [(blox.options.set) = true];
 
   optional string output_encryption_key = 11;
+  required string account_id = 12;
 }
 
 message JobImpl
