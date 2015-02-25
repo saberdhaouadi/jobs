@@ -291,6 +291,7 @@ with pkgs.lib;
        "162071310369"
        "216775848791"
        "716415058944"
+       "006491606506" # PDX Science
       ];
     in
       { config, resources, ... }:
