@@ -48,13 +48,27 @@ public class Main {
 
     @Override
     public void run() {
+      long start = System.currentTimeMillis();
       while (!Thread.currentThread().isInterrupted()) {
-        try {
-          sqs.changeMessageVisibility(_incomingUrl, _handle, 180);
-        } catch (Exception e) {
-          // We don't care much about exceptions updating the message
-          // visibility timeout, we'll just log it.
-          System.err.println("WARNING: Failed to update visibility timeout for message: " + e.getMessage());
+        if ( System.currentTimeMillis() - start <= 40000000) {
+          try {
+            sqs.changeMessageVisibility(_incomingUrl, _handle, 180);
+          } catch (Exception e) {
+            // We don't care much about exceptions updating the message
+            // visibility timeout, we'll just log it.
+            System.err.println("WARNING: Failed to update visibility timeout for message: " + e.getMessage());
+          }
+        }
+        else {
+          // For Walgreens, we allow timeouts > 40000s for the time being. We delete the message
+          // after 40000s, which means they lose the recoverability in case of instance termination.
+          // The timeout is only allowed for the i2-2xlarge queue, which uses on-demand instances
+          // only, which means they do not suffer from spot instance termination, like other queues.
+          try {
+            sqs.deleteMessage(new DeleteMessageRequest(_incomingUrl, _handle));
+          } catch (Exception e) {
+            System.err.println("WARNING: Failed to delete message: " + e.getMessage());
+          }
         }
 
         try {
