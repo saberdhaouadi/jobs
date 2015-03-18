@@ -179,27 +179,22 @@ public class SteveJob {
       setupEncryptionKeys();
     }
 
-    // download inputs
-    List<ListenableFuture<List<S3File>>> inputFiles = new ArrayList<ListenableFuture<List<S3File>>>();
-    List<String> downloaded = new ArrayList<String>();
     for (Data input : _inputs) {
-      inputFiles.add(downloadInput(input));
-    }
-
-    Iterable<S3File> s3files = MoreFutures.concat(Futures.successfulAsList(inputFiles)).get();
-    for (S3File s3file: s3files) {
-      if(s3file != null) {
-        downloaded.add("s3://"+s3file.getBucketName()+"/"+s3file.getKey());
-      }
-    }
-
-    top: for (Data input: _inputs) {
-      for(String download: downloaded) {
-        if(download.startsWith(input.getLocation())) {
-          continue top;
+      try {
+        List<S3File> fs = downloadInput(input).get();
+        int failed = 0;
+        for(S3File f: fs) {
+          if(f==null) {
+            failed++;
+          }
+        }
+        if(failed > 0) {
+          throw new DownloadInputFailedException(failed+" out of "+fs.size()+" downloads of input `"+input.getLocation()+"` failed.");
         }
       }
-      throw new DownloadInputFailedException("Download of input `"+input.getLocation()+"` failed.");
+      catch (ExecutionException e) {
+        throw new DownloadInputFailedException(e.getMessage(), e);
+      }
     }
 
     try {
