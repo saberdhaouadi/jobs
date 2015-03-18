@@ -49,6 +49,8 @@ public class Main {
     @Override
     public void run() {
       long start = System.currentTimeMillis();
+      boolean deleted = false;
+
       while (!Thread.currentThread().isInterrupted()) {
         if ( System.currentTimeMillis() - start <= 40000000) {
           try {
@@ -65,7 +67,10 @@ public class Main {
           // The timeout is only allowed for the i2-2xlarge queue, which uses on-demand instances
           // only, which means they do not suffer from spot instance termination, like other queues.
           try {
-            sqs.deleteMessage(new DeleteMessageRequest(_incomingUrl, _handle));
+            if(!deleted) {
+              sqs.deleteMessage(new DeleteMessageRequest(_incomingUrl, _handle));
+              deleted = true;
+           }
           } catch (Exception e) {
             System.err.println("WARNING: Failed to delete message: " + e.getMessage());
           }
