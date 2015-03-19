@@ -20,7 +20,7 @@ public class Main {
   private static String queue = "c3-xlarge";
   private static String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
-  private static String ami = "ami-caf2d6a2";
+  private static String ami = "ami-3e321e56";
   private static String key = "rob";
   private static String s3Bucket = "steve-jobs";
   private static String instanceType = "c3.xlarge";
@@ -229,8 +229,6 @@ public class Main {
     System.err.println(String.format("%s: Number of current spot instances      : %d", queue, spotCurrent));
     System.err.println(String.format("%s: Number of current on-demand instances : %d", queue, odCurrent));
 
-
-    //System.exit(1);
     if (spotNeeded > 0)
       createSpotInstances(spotNeeded);
     if (odNeeded > 0)
