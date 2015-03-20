@@ -1,0 +1,84 @@
+main
+  uploadImpls()
+; (  succeed()
+  || fail()
+  )
+
+workflow succeed()
+     runOnAllPlatforms(impl="noop")
+  || runOnAllQueues(impl="noop")
+  || runJob(impl="gurobi")
+  || runJob(impl="ancestor")
+  || runJob(impl="metadata", metadata={"key=value"})
+  || runTotal()
+
+workflow fail()
+     runJob(impl="timeout", metadata={"timeout=30"})
+  || runJob(impl="fail")
+
+
+workflow runOnAllQueues(impl)
+  forall(q in {"c3-xlarge", "r3-xlarge", "r3-2xlarge", "r3-8xlarge", "i2-2xlarge" }) {
+    runJob(impl=$impl, metadata={"job-queue=$(q)"})
+  }
+
+workflow runOnAllPlatforms(impl)
+  forall(p in { "3.10.15", "4.1.5", "4.1.6", "4.1.7", "4.1.8" }) {
+    runJob(impl=$impl, metadata={"platform=$(p)"})
+  }
+
+workflow uploadImpls()
+  forall(i in {"noop", "gurobi", "total", "timeout", "metadata", "identity", "fail", "ancestor"}) {
+    uploadImpl(impl=$i)
+  }
+
+workflow runTotal()
+  lb.CopyFiles(
+    files = {"testdata/total.txt"},
+//    if_missing="FAIL",
+    dest = "s3://steve-jobs-martin/inputs"
+  )
+; runJob(impl="total", inputs={"s3://steve-jobs-martin/inputs/total.txt"})
+
+
+workflow runJob(impl, metadata*={}, inputs*={})[job, lb_jobs_service, lb_jobs_username, lb_jobs_key, impl_upload]
+
+  lb.GetEnv(name="LB_JOBS_SERVICE", var=$lb_jobs_service, default="https://steve-test.logicblox.com/job")
+; lb.GetEnv(name="LB_JOBS_USERNAME", var=$lb_jobs_username, default="martin")
+; lb.GetEnv(name="LB_JOBS_KEY", var=$lb_jobs_key, default="./martin.pem")
+
+; lb.steve.CreateJob(
+    job_impl_id = $impl,
+    output = "s3://steve-jobs-martin/outputs",
+    input = $inputs,
+    job_id = $job,
+    metadata = $metadata,
+    service = $lb_jobs_service,
+    username = $lb_jobs_username,
+    key = $lb_jobs_key)
+
+; lb.steve.Wait(job_id = $job, service = $lb_jobs_service, username = $lb_jobs_username, key = $lb_jobs_key)
+
+
+workflow uploadImpl(impl, metadata*={}, inputs*={})[job, lb_jobs_service, lb_jobs_username, lb_jobs_key, impl_upload]
+
+  lb.GetEnv(name="LB_JOBS_SERVICE", var=$lb_jobs_service, default="https://steve-test.logicblox.com/job")
+; lb.GetEnv(name="LB_JOBS_USERNAME", var=$lb_jobs_username, default="martin")
+; lb.GetEnv(name="LB_JOBS_KEY", var=$lb_jobs_key, default="./martin.pem")
+
+; lb.CopyFiles(
+    files = {"$(impl).tar.gz"},
+//    if_missing="FAIL",
+    dest = "s3://steve-jobs-martin/inputs"
+  )
+
+; lb.steve.UploadJobImpl(
+    job_impl_id = $impl,
+    archive_url = "s3://steve-jobs-martin/inputs/$(impl).tar.gz",
+    job_id = $impl_upload, service = "https://steve-test.logicblox.com/job", username = "martin", key = "./martin.pem")
+
+; lb.steve.Wait(
+    job_id = $impl_upload,
+    service = $lb_jobs_service,
+    username = $lb_jobs_username,
+    key = $lb_jobs_key)
