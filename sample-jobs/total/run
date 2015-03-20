@@ -6,4 +6,4 @@ set -u
 input=$1
 output=$2
 
-cat $input/* | awk 'BEGIN {TOT=0} {TOT+=$1} END {print TOT}' > $output/result.txt
+cat $input/*.txt | awk 'BEGIN {TOT=0} {TOT+=$1} END {print TOT}' > $output/result.txt

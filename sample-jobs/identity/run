@@ -6,6 +6,6 @@ set -u
 input=$1
 output=$2
 
-for f in $input/*; do
+for f in $input/*.txt; do
   cp $f $output
 done
