@@ -186,17 +186,6 @@ with pkgs.lib;
             },
             {
               "Action": [
-                "ec2:Describe*",
-                "ec2:RunInstances",
-                "ec2:RequestSpotInstances",
-                "ec2:CreateTags",
-                "iam:PassRole"
-              ],
-              "Effect": "Allow",
-              "Resource": [ "*" ]
-            },
-            {
-              "Action": [
                 "s3:Get*",
                 "s3:Put*",
                 "s3:List*"
@@ -205,6 +194,42 @@ with pkgs.lib;
               "Resource": [
                 "arn:aws:s3:::${s3Name}/backups/*"
               ]
+            }
+          ]
+        }
+      '';
+    };
+
+  resources.iamRoles.provisioner-role =
+    { resources, ... }:
+    {
+      accessKeyId = account;
+      policy = ''
+        {
+          "Statement": [
+            {
+              "Action": [
+                "sqs:GetQueueAttributes"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                ${pkgs.lib.concatStrings (map (t: ''
+                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsName t}".name}",
+                '') instanceTypes)
+                }
+                "arn:aws:sqs:${region}:${accountId}:${resources.sqsQueues."${sqsStatusName}".name}"
+              ]
+            },
+            {
+              "Action": [
+                "ec2:Describe*",
+                "ec2:RunInstances",
+                "ec2:RequestSpotInstances",
+                "ec2:CreateTags",
+                "iam:PassRole"
+              ],
+              "Effect": "Allow",
+              "Resource": [ "*" ]
             }
           ]
         }
@@ -301,6 +326,44 @@ with pkgs.lib;
         description = "Security group for frontend";
         rules = map entry ips ++ map accountEntry accounts ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
       };
+
+  "provisioner-${name}" =
+    { config, resources, nodes, ...}:
+    let
+      script = t: pkgs.writeScriptBin "run-provisioner-${workerName t}"
+        ''
+          #! /bin/sh
+          source /etc/profile
+          exec lb-steve-provisioner $@ --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys --queue ${workerName t} --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --role ${resources.iamRoles.worker-role.name} --instance-type ${t} --spot-price ${env.workers."${t}".price} --percentage-spot ${env.workers."${t}".percentageSpot}
+        '';
+      provisionScripts = map script instanceTypes;
+      run-provisioner = t: "${script t}/bin/run-provisioner-${workerName t}";
+      provisioner-service = t: {
+        description = "Steve Provisioner";
+        path = [ pkgs.jdk ];
+        serviceConfig = {
+          ExecStart = "${run-provisioner t}";
+        };
+        startAt = "*:0/5";
+      };
+    in
+    {
+      deployment.targetEnv = "ec2";
+      deployment.ec2.accessKeyId = account;
+      deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
+      deployment.ec2.securityGroups = [ "admin" ];
+      deployment.ec2.region = region;
+      deployment.ec2.instanceType = "r3.large";
+      deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
+      ec2.metadata = true;
+
+      imports = [
+        <lbdevops/logicblox/production.nix>
+      ] ;
+
+      environment.systemPackages = [ builds.worker ] ++ provisionScripts;
+      systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes);
+    };
 
   "key-server-${name}" =
     { config, resources, ...}:
@@ -455,23 +518,7 @@ with pkgs.lib;
   "database-${name}" =
     { config, pkgs, resources, nodes, ... }:
     let
-      platform = builder-config.getPlatform <platform_release>;
-      script = t: pkgs.writeScriptBin "run-provisioner-${workerName t}"
-        ''
-          #! /bin/sh
-          source /etc/profile
-          exec lb-steve-provisioner --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys --queue ${workerName t} --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --role ${resources.iamRoles.worker-role.name} --instance-type ${t} --spot-price ${env.workers."${t}".price} --percentage-spot ${env.workers."${t}".percentageSpot} $@
-        '';
-      provisionScripts = map script instanceTypes;
-      run-provisioner = t: "${script t}/bin/run-provisioner-${workerName t}";
-      provisioner-service = t: {
-        description = "Steve Provisioner";
-        path = [ pkgs.jdk ];
-        serviceConfig = {
-          ExecStart = "${run-provisioner t}";
-        };
-        startAt = "*:0/5";
-      };
+      platform = builder-config.getPlatform "4.1.7"; #<platform_release>;
     in
     {
       deployment.targetEnv = "ec2";
@@ -505,9 +552,6 @@ with pkgs.lib;
 
       logicblox.application.installer = builds.database.build;
       networking.firewall.allowedTCPPorts = [ 8080 55183 ];
-
-      environment.systemPackages = [ builds.worker ] ++ provisionScripts;
-      systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes);
 
       deployment.ec2.blockDeviceMapping."/dev/xvdg".size = 100;
       deployment.ec2.blockDeviceMapping."/dev/xvdh".size = 100;
