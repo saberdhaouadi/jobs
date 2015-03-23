@@ -2,7 +2,6 @@
 , fetchurl
 , logicblox
 , lb_web
-, lb_workflow
 , s3lib
 , jdk
 , unzip
@@ -111,7 +110,7 @@ rec {
     builder_config.buildLBConfig {
       name = "lb-steve-client";
       src = ./client;
-      buildInputs = [ logicblox lb_web lb_workflow ];
+      buildInputs = [ logicblox lb_web ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
