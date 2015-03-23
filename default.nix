@@ -1,5 +1,5 @@
 { src_s3lib ? <src_s3lib>
-, platform_release ? <platform_release> # "4.1.1"
+, platform_release ? "4.1.7"
 }:
 let
   builder_config = import <config> {};
@@ -14,6 +14,7 @@ in
   import ./job.nix {
     logicblox = platform.logicblox;
     lb_web = platform.bloxweb;
+    lb_workflow = platform.lb_workflow;
     inherit s3lib builder_config;
     inherit (pkgs) python stdenv fetchurl unzip makeWrapper runCommand jdk;
   }

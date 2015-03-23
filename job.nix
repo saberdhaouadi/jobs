@@ -2,6 +2,7 @@
 , fetchurl
 , logicblox
 , lb_web
+, lb_workflow
 , s3lib
 , jdk
 , unzip
@@ -96,7 +97,6 @@ rec {
       name = "jobs-frontend";
       src = ./frontend;
       buildInputs = [ logicblox lb_web makeWrapper client.build worker pkgs.jq pkgs.scala_2_10 ];
-      enableLBservices = true;
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-frontend-database=${database.build}"
@@ -104,14 +104,14 @@ rec {
         "--with-aws=${aws-java-sdk}"
         "--with-commons-cli=${commons-cli}"
       ];
-      doCheck = "true";
+      doCheck = true;
     };
 
   client.build =
     builder_config.buildLBConfig {
       name = "lb-steve-client";
       src = ./client;
-      buildInputs = [ logicblox lb_web ];
+      buildInputs = [ logicblox lb_web lb_workflow ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
@@ -178,7 +178,7 @@ rec {
         configureFlags = [
           "--with-protocols=${protocols}"
         ];
-        doCheck = "true";
+        doCheck = true;
       };
     };
 
@@ -186,7 +186,7 @@ rec {
      builder_config.buildLBConfig {
       name = "lb-steve-key-server";
       src = ./key-server;
-      buildInputs = [ logicblox lb_web makeWrapper ];
+      buildInputs = [ logicblox lb_web makeWrapper pkgs.jq pkgs.scala_2_10 ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
