@@ -10,6 +10,8 @@ block(`tdx) {
   alias_all(`lb:web:config:delim),
 
   clauses(`{
+    service_by_prefix["/tdx/txn/*"] = x,
+    delim_txn_service(x).
 
     file_definition_by_name["users"] = fd,
     file_definition(fd) {
