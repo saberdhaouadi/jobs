@@ -542,6 +542,7 @@ with pkgs.lib;
       services.logicblox.enable = true;
       services.logicblox.logicblox = platform.logicblox;
       services.logicblox.lbWeb = platform.bloxweb;
+      services.logicblox.lbWorkflow = platform.lb-workflow;
 
       services.logicblox.config.lb-web-server = ''
         [statsd]
