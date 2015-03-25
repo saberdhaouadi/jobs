@@ -29,7 +29,7 @@ public class Main {
 
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
   private static double pctSpot = 0.9;
-  private static double pctQueue = 1 / 3f;
+  private static double pctQueue = 0.6;
   private static double spotPrice = 0.6;
   private static int totalNeeded = 0;
   private static int maxInstances = 300;
