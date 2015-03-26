@@ -6,14 +6,12 @@ lbconfig_package(
   default_prefix='/opt/logicblox/lb-steve-protocols',
   default_targets=['jars', 'lb-libraries', 'java_protobufs'])
 
-aws_dep = ("aws", {'default_path': "/opt/logicblox/lb-universe-deps/"})
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
 
 depends_on(
   logicblox_dep,
   lb_web_dep,
-  s3lib_dep,
-  aws_dep
+  s3lib_dep
 )
 
 protobuf_protocol(
