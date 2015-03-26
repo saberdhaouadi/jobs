@@ -63,7 +63,7 @@ rec {
         "--with-protocols=${protocols}"
         "--with-frontend-database=${database.build}"
         "--with-s3lib=${s3lib}"
-        "--with-commons-cli=${commons-cli}"
+        "--with-commons-cli=${deps.commons-cli}"
       ];
       doCheck = true;
     };
@@ -104,8 +104,8 @@ rec {
       buildInputs = [ logicblox lb_web makeWrapper ];
       enableLBservices = false;
       configureFlags = [
-        "--with-commons-exec=${commons-exec}"
-        "--with-commons-cli=${commons-cli}"
+        "--with-commons-exec=${deps.commons-exec}"
+        "--with-commons-cli=${deps.commons-cli}"
         "--with-protocols=${protocols}"
         "--with-s3lib=${s3lib}"
       ];
@@ -148,7 +148,7 @@ rec {
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
-        "--with-commons-cli=${commons-cli}"
+        "--with-commons-cli=${deps.commons-cli}"
         "--with-s3lib=${s3lib}"
       ];
     };
