@@ -15,48 +15,11 @@ let
   version = builder_config.version;
   bloxweb = lb_web;
 
-  buildjar = {name, url, sha256} :
-    stdenv.mkDerivation rec {
-      inherit name;
-      src = fetchurl { inherit url sha256; };
-      buildCommand = ''
-        ensureDir $out/lib/java
-        cp $src $out/lib/java/$name.jar
-      '';
+  deps =
+    import ./deps.nix {
+      inherit pkgs;
     };
 
-  commons-exec =
-    buildjar {
-      name = "commons-exec";
-      url = http://repo1.maven.org/maven2/org/apache/commons/commons-exec/1.2/commons-exec-1.2.jar;
-      sha256 = "1f0b1cg17k79cjij6fpichrh9jzrn0q3dxf8z2a8af23id1w49pk";
-    };
-
-  commons-cli =
-    buildjar {
-      name = "commons-cli";
-      url = http://repo1.maven.org/maven2/commons-cli/commons-cli/1.2/commons-cli-1.2.jar;
-      sha256 = "1nar28vxmzsjiw12phv77q8qr6jjnbsx9kvwidb9nd3djm8qkkg7";
-    };
-
-  aws-java-sdk =
-    stdenv.mkDerivation rec {
-      name = "aws-java-sdk-1.9.8";
-      src = fetchurl {
-        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.9.8.zip;
-        sha256 = "04nfx917cmyxv2n5g62js9cgh37jg635zhn9v4kr9xiq292bv3yv";
-      };
-      buildInputs = [unzip];
-      buildCommand = ''
-        unzip $src
-
-        ensureDir $out/lib/java
-
-        for f in $(find ${name} -name '*.jar'); do
-          cp $f $out/lib/java
-        done
-      '';
-    };
 
   makeClosure = module: buildFromConfig module (config: config.system.build.toplevel);
 
@@ -100,7 +63,6 @@ rec {
         "--with-protocols=${protocols}"
         "--with-frontend-database=${database.build}"
         "--with-s3lib=${s3lib}"
-        "--with-aws=${aws-java-sdk}"
         "--with-commons-cli=${commons-cli}"
       ];
       doCheck = true;
@@ -114,7 +76,6 @@ rec {
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
-        "--with-aws=${aws-java-sdk}"
         "--with-s3lib=${s3lib}"
       ];
     };
@@ -132,7 +93,6 @@ rec {
       buildInputs = [ logicblox lb_web ];
       enableLBservices = false;
       configureFlags = [
-        "--with-aws=${aws-java-sdk}"
         "--with-s3lib=${s3lib}"
       ];
     };
@@ -147,7 +107,6 @@ rec {
         "--with-commons-exec=${commons-exec}"
         "--with-commons-cli=${commons-cli}"
         "--with-protocols=${protocols}"
-        "--with-aws=${aws-java-sdk}"
         "--with-s3lib=${s3lib}"
       ];
       postInstall = ''
@@ -191,7 +150,6 @@ rec {
         "--with-protocols=${protocols}"
         "--with-commons-cli=${commons-cli}"
         "--with-s3lib=${s3lib}"
-        "--with-aws=${aws-java-sdk}"
       ];
     };
 
