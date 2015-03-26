@@ -8,7 +8,6 @@ lbconfig_package(
 
 
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
-aws_dep = ("aws", {'default_path': "/opt/logicblox/lb-universe-deps/"})
 
 commons_exec_dep = (
   "commons_exec", {'default_path': "/opt/logicblox/deps/commons-exec-1.2"}
@@ -24,7 +23,6 @@ depends_on(
     logicblox_dep,
     lb_web_dep,
     s3lib_dep,
-    aws_dep,
     commons_exec_dep,
     protocols_dep,
     commons_cli_dep)
@@ -35,9 +33,8 @@ bin_program('lb-steve-provisioner')
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
 
-  '$(aws)/lib/java/aws-java-sdk-1.9.8.jar',
-  '$(aws)/lib/java/joda-time-2.2.jar',
-
+  '$(s3lib)/lib/java/aws-java-sdk-1.9.8.jar',
+  '$(s3lib)/lib/java/joda-time-2.2.jar',
   '$(s3lib)/lib/java/jcommander-1.29.jar',
   '$(s3lib)/lib/java/commons-io-2.4.jar',
   '$(s3lib)/lib/java/guava-15.0.jar',

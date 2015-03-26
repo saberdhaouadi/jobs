@@ -16,7 +16,6 @@ depends_on(
   logicblox_dep,
   lb_web_dep,
   s3lib_dep,
-  aws_dep,
   commons_cli_dep,
   protocols_dep,
   frontend_database_dep)
