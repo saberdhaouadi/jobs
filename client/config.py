@@ -8,7 +8,7 @@ lbconfig_package(
 
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
-aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.9.8"})
+aws_dep = ("aws", {'default_path': "/opt/logicblox/lb-universe-deps/"})
 
 depends_on(
   logicblox_dep,

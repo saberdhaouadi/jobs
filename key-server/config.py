@@ -9,7 +9,7 @@ lbconfig_package(
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
 commons_cli_dep = ( "commons_cli", {'default_path': "/opt/logicblox/deps/commons-cli-1.2"})
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib"})
-aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.9.8"})
+aws_dep = ("aws", {'default_path': "/opt/logicblox/lb-universe-deps/"})
 
 depends_on(
   logicblox_dep,

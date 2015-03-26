@@ -8,7 +8,7 @@ lbconfig_package(
 
 
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
-aws_dep = ("aws", {'default_path': "/opt/logicblox/deps/aws-java-sdk-1.9.8"})
+aws_dep = ("aws", {'default_path': "/opt/logicblox/lb-universe-deps/"})
 
 commons_exec_dep = (
   "commons_exec", {'default_path': "/opt/logicblox/deps/commons-exec-1.2"}
