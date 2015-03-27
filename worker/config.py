@@ -49,7 +49,7 @@ classpath = [
   '$(commons_exec)/lib/java/commons-exec.jar',
   '$(commons_cli)/lib/java/commons-cli.jar',
   
-  '$(lb_web)/lib/java/commons-codec-1.9.jar',,
+  '$(lb_web)/lib/java/commons-codec-1.9.jar',
   '$(lb_web)/lib/java/protobuf-java-format-1.3.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar',  
   '$(lb_web)/lib/java/lb-web-client.jar',
@@ -64,7 +64,7 @@ classpath = [
   '$(lb_web)/lib/java/jetty-util-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/protobuf-2.5.0.jar',
   '$(lb_web)/lib/java/lb-common.jar',
-  '$(lb_web)/lib/java/lb-common-protocol.jar',
+  '$(lb_web)/lib/java/lb-common-protocol.jar'
 ]
 
 jar(
