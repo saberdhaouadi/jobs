@@ -28,7 +28,6 @@ config_file('$(lb_web)/config/lb-web-server.config')
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
 
-  # all jars in lb-web, commenting out some that we don't need
   '$(lb_web)/lib/java/annotations.jar',
   '$(lb_web)/lib/java/bloxweb-credentials.jar',
   '$(lb_web)/lib/java/bloxweb-email.jar',
@@ -37,16 +36,9 @@ classpath = [
   '$(lb_web)/lib/java/commons-configuration-1.8.jar',
   '$(lb_web)/lib/java/commons-httpclient-3.1.jar',
   '$(lb_web)/lib/java/commons-lang-2.6.jar',
-  '$(lb_web)/lib/java/commons-logging-1.1.1.jar',
-  #'$(lb_web)/lib/java/datalog-generator.jar',
   '$(lb_web)/lib/java/esapi-2.0.1.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar',
   '$(lb_web)/lib/java/guava-15.0.jar',
-  '$(lb_web)/lib/java/httpclient-4.2.3.jar',
-  '$(lb_web)/lib/java/httpcore-4.2.jar',
-  '$(lb_web)/lib/java/jackson-annotations-2.1.1.jar',
-  '$(lb_web)/lib/java/jackson-core-2.1.1.jar',
-  '$(lb_web)/lib/java/jackson-databind-2.1.1.jar',
   '$(lb_web)/lib/java/java-statsd-client-2.0.0.jar',
   '$(lb_web)/lib/java/jcommander-1.29.jar',
   '$(lb_web)/lib/java/jetty-client-7.6.7.v20120910.jar',
@@ -78,7 +70,13 @@ classpath = [
 
   '$(s3lib)/lib/java/s3lib-0.2.jar',
   '$(s3lib)/lib/java/commons-io-2.4.jar',
-  '$(s3lib)/lib/java/aws-java-sdk-1.9.26.jar',
+  '$(s3lib)/lib/java/aws-java-sdk-1.9.8.jar',
+  '$(s3lib)/lib/java/httpclient-4.3.jar',
+  '$(s3lib)/lib/java/httpcore-4.3.jar',  
+  '$(s3lib)/lib/java/jackson-annotations-2.3.0.jar',
+  '$(s3lib)/lib/java/jackson-core-2.3.2.jar',
+  '$(s3lib)/lib/java/jackson-databind-2.3.2.jar',
+  '$(s3lib)/lib/java/commons-logging-1.1.3.jar',
 
   '$(commons_cli)/lib/java/commons-cli.jar'
 ]
