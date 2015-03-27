@@ -42,6 +42,8 @@ classpath = [
   '$(s3lib)/lib/java/jackson-annotations-2.3.0.jar',
   '$(s3lib)/lib/java/jackson-core-2.3.2.jar',
   '$(s3lib)/lib/java/jackson-databind-2.3.2.jar',
+  '$(s3lib)/lib/java/httpclient-4.3.jar',
+  '$(s3lib)/lib/java/httpcore-4.3.jar',
   
   '$(commons_exec)/lib/java/commons-exec.jar',
   '$(commons_cli)/lib/java/commons-cli.jar',
@@ -52,8 +54,6 @@ classpath = [
   '$(lb_web)/lib/java/gson-2.2.4.jar',  
   '$(lb_web)/lib/java/lb-web-client.jar',
   '$(lb_web)/lib/java/lb-web-server.jar',
-  '$(lb_web)/lib/java/httpclient-4.2.3.jar',
-  '$(lb_web)/lib/java/httpcore-4.2.jar',
   '$(lb_web)/lib/java/jetty-client-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-continuation-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-http-7.6.7.v20120910.jar',
