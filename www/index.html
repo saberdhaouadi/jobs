@@ -157,6 +157,28 @@ State: SUCCEEDED
 [2] "dave" [1] "john" 
 </pre>
 
+      <h3>Metadata</h3>
+
+      <p>
+        You can attach arbitrary metadata to a job, and this metadata will be available as a JSON
+        file, called metadata.json, in the input data directory (the first argument passed to your
+        run script of your job implementation). An example metadata.json:
+      </p>
+
+      <pre>
+{"job-queue":"c3-xlarge","date":"2015-03-30 11:10:44.927+00:00"}
+</pre>
+
+      <ul>        
+        <li>Reserved metadata keys</li>
+        <ul>
+           <li><b>date</b> - Date/time the job was created.</li>
+           <li><b>job-queue</b> - Job queue to use.</li>
+           <li><b>timeout</b> - Number of seconds (n) after which a job run will time out. Between 0 and 40000.</li>
+           <li><b>no-services</b> - If you want to skip starting LB services. Can only be 'true'.</li>
+       </ul>
+      </ul>
+
     </div>
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
