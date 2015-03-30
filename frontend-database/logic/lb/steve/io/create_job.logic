@@ -119,6 +119,14 @@ block(`create_job) {
       +proto:Param_value[p] = platformId,
       !platform_version(platformId).
 
+    // Check no-services value
+    +service_support:export_error(index, "INVALID_METADATA", "Value of 'no-services' can only be 'true'.") <-
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_create_job[union] = req,
+      +proto:CreateJobRequest_metadata(req, p),
+      +proto:Param_key[p] = "no-services",
+      +proto:Param_value[p] != "true".
+
     // Check timeout value
     +service_support:export_error(index, "INVALID_TIMEOUT", "Timeout should be between 0 and 40000 seconds.") <-
       +proto:RequestEnvelope_request[_, index] = union,
