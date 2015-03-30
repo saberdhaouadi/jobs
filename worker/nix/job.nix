@@ -53,7 +53,12 @@ in
         socat tcp4-listen:41954,fork unix-connect:/sockets/gurobi &> /dev/null &
       fi
 
-      if type -P lb &> /dev/null; then
+      # check for no-services=true in metadata.json. if set, then do not start
+      # services
+      if [[ -f /tmp/job/in/metadata.json ]]; then
+        NOSERVICES=$(cat /tmp/job/in/metadata.json | jq -r  '."no-services"')
+      fi
+      if [[ "$NOSERVICES" != "true" ]]; then
         start_lb
       fi
 
