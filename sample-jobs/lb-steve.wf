@@ -75,7 +75,7 @@ workflow uploadImpl(impl, metadata*={}, inputs*={})[job, lb_jobs_service, lb_job
 ; lb.steve.UploadJobImpl(
     job_impl_id = $impl,
     archive_url = "s3://steve-jobs-martin/inputs/$(impl).tar.gz",
-    job_id = $impl_upload, service = "https://steve-test.logicblox.com/job", username = "martin", key = "./martin.pem")
+    job_id = $impl_upload, service = $lb_jobs_service, username = $lb_jobs_username, key = $lb_jobs_key)
 
 ; lb.steve.Wait(
     job_id = $impl_upload,
