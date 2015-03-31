@@ -302,6 +302,10 @@ with pkgs.lib;
         "41.224.243.6"
         "196.203.15.130"
         "54.174.171.234"
+        "54.77.137.60" # kiabi-dev
+        "54.154.69.157" # kiabi-dev
+        "52.17.16.150" # kiabi-dev
+        "52.0.109.86" # pdf-wfm-dev
       ];
       accountEntry = account:
         {
