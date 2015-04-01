@@ -169,13 +169,27 @@ State: SUCCEEDED
 {"job-queue":"c3-xlarge","date":"2015-03-30 11:10:44.927+00:00"}
 </pre>
 
-      <ul>        
+      <ul>
         <li>Reserved metadata keys</li>
         <ul>
            <li><b>date</b> - Date/time the job was created.</li>
            <li><b>job-queue</b> - Job queue to use.</li>
            <li><b>timeout</b> - Number of seconds (n) after which a job run will time out. Between 0 and 40000.</li>
            <li><b>no-services</b> - If you want to skip starting LB services. Can only be 'true'.</li>
+       </ul>
+      </ul>
+
+      <h3>FAQ</h3>
+
+      <ul>
+          <li><b>I can't see the log of a jobs!</b></li>
+        <ul>
+           <li>
+             The log of a job is only available once a job finishes. If there is no log when a job has
+             finished, make sure to check the job status for potential errors. If you have a long running job,
+             you have the possibility to send some status information by logging lines starting with
+             <i>PROGRESS:</i>. These messages will show up in the job status in (nearly) realtime.
+           </li>
        </ul>
       </ul>
 
