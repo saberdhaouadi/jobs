@@ -50,15 +50,21 @@ public class Main {
     public void run() {
       long start = System.currentTimeMillis();
       boolean deleted = false;
+      int error_count = 0;
 
       while (!Thread.currentThread().isInterrupted()) {
         if ( System.currentTimeMillis() - start <= 40000000) {
           try {
             sqs.changeMessageVisibility(_incomingUrl, _handle, 180);
+            error_count = 0;
           } catch (Exception e) {
             // We don't care much about exceptions updating the message
             // visibility timeout, we'll just log it.
             System.err.println("WARNING: Failed to update visibility timeout for message: " + e.getMessage());
+            error_count++;
+            if (error_count >= 5) {
+              return;
+            }
           }
         }
         else {
@@ -70,7 +76,7 @@ public class Main {
             if(!deleted) {
               sqs.deleteMessage(new DeleteMessageRequest(_incomingUrl, _handle));
               deleted = true;
-           }
+            }
           } catch (Exception e) {
             System.err.println("WARNING: Failed to delete message: " + e.getMessage());
           }
