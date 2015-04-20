@@ -1,5 +1,7 @@
 from lbconfig.api import *
 
+deps = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
+
 lbconfig_package(
   'lb-steve-frontend',
   version='1.0',
@@ -10,7 +12,7 @@ protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocol
 frontend_database_dep = ("frontend_database", {'default_path': "/opt/logicblox/lb-steve-frontend-database"})
 
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib"})
-commons_cli_dep = ( "commons_cli", {'default_path': "/opt/logicblox/deps/commons-cli-1.2"})
+commons_cli_dep = ( "commons_cli", {'default_path': deps})
 
 depends_on(
   logicblox_dep,
