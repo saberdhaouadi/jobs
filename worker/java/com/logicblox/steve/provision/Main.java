@@ -22,6 +22,7 @@ public class Main {
   private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
   private static String ami = "ami-3a1d2b52";
   private static String key = "rob";
+  private static String region = "us-east-1";
   private static String s3Bucket = "steve-jobs";
   private static String instanceType = "c3.xlarge";
   private static String role = "steve-jobs-worker";
@@ -71,6 +72,12 @@ public class Main {
             .withDescription("Amazon Machine Image ID")
             .hasArg()
             .withArgName("AMI")
+            .create());
+
+    options.addOption(OptionBuilder.withLongOpt("region")
+            .withDescription("Amazon EC2 region")
+            .hasArg()
+            .withArgName("REGION")
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("key")
@@ -156,6 +163,8 @@ public class Main {
         outgoing_url = _cmdline.getOptionValue("outgoing");
       if (_cmdline.hasOption("ami"))
         ami = _cmdline.getOptionValue("ami");
+      if (_cmdline.hasOption("region"))
+        region = _cmdline.getOptionValue("region");
       if (_cmdline.hasOption("key"))
         key = _cmdline.getOptionValue("key");
       if (_cmdline.hasOption("role"))
@@ -198,7 +207,7 @@ public class Main {
     sqs.setRegion(Region.getRegion(Regions.US_EAST_1));
 
     ec2 = new AmazonEC2Client();
-    ec2.setRegion(Region.getRegion(Regions.US_EAST_1));
+    ec2.setRegion(Regions.valueOf(region));
   }
 
   public void go() {
