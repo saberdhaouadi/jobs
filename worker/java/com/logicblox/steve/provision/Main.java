@@ -207,7 +207,7 @@ public class Main {
     sqs.setRegion(Region.getRegion(Regions.US_EAST_1));
 
     ec2 = new AmazonEC2Client();
-    ec2.setRegion(Region.getRegion(Regions.valueOf(region)));
+    ec2.setRegion(Region.getRegion(Regions.fromName(region)));
   }
 
   public void go() {
