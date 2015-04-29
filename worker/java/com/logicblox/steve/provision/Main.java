@@ -268,12 +268,12 @@ public class Main {
             );
     DescribeSpotInstanceRequestsResult spres = ec2.describeSpotInstanceRequests(spreq);
     for (SpotInstanceRequest r : spres.getSpotInstanceRequests()) {
-      if (r.getStatus().getCode().startsWith("pending") || r.getStatus().getCode().equals("fulfilled")) {
+      if (r.getState() == "open" || r.getState() == "active") {
         result++;
       }
     }
 
-    return result;
+    return spres.getSpotInstanceRequests().size();
   }
 
   // get number of on-demand instances that are not yet terminated
