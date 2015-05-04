@@ -23,6 +23,33 @@ let
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
 
+  key-proxy = region:
+    { config, pkgs, resources, nodes, ... }:
+    {
+      deployment.targetEnv = "ec2";
+      deployment.ec2.accessKeyId = account;
+      deployment.ec2.keyPair = resources.ec2KeyPairs."kp-${region}".name;
+      deployment.ec2.securityGroups = [ "admin" ];
+      deployment.ec2.region = region;
+      deployment.ec2.instanceType = "c3.large";
+      deployment.ec2.elasticIPv4 = resources.elasticIPs."key-ip-${region}";
+
+      networking.firewall.allowedTCPPorts = [ 443 ];
+
+      services.haproxy.enable = true;
+      services.haproxy.config = ''
+        listen l1 0.0.0.0:443
+            mode tcp
+            clitimeout 180000
+            srvtimeout 180000
+            contimeout 4000
+            server srv1 ${nodes."key-server-${name}".config.networking.publicIPv4}:443
+
+        global
+            user haproxy
+      '';
+    };
+
   worker = type:
     { config, pkgs, resources, nodes, ... }:
     {
@@ -98,7 +125,16 @@ with pkgs.lib;
 {
   network.description = "Steve Jobs [${name}]";
 
+  resources.elasticIPs.key-ip-us-west-1 = { region = "us-west-1" ; accessKeyId = account; };
+  "key-proxy-${name}-us-west-1" = key-proxy "us-west-1";
+
+  resources.elasticIPs.key-ip-us-west-2 = { region = "us-west-2" ; accessKeyId = account; };
+  "key-proxy-${name}-us-west-2" = key-proxy "us-west-2";
+
   resources.ec2KeyPairs.kp = { inherit region ; accessKeyId = account; };
+  resources.ec2KeyPairs.kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
+  resources.ec2KeyPairs.kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
+
   resources.sqsQueues = sqsQueues // { "${sqsStatusName}" = sqsStatusQueue;  };
   resources.s3Buckets."${s3Name}-bucket" = { inherit region ; accessKeyId = account; name = s3Name; };
 
@@ -284,7 +320,7 @@ with pkgs.lib;
       '';
     };
 
-  resources.ec2SecurityGroups.frontend-sg = 
+  resources.ec2SecurityGroups.frontend-sg =
     let 
       entry = ip:
         {
