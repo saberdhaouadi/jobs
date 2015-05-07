@@ -17,6 +17,7 @@ in
     ];
 
     LB_MONITOR_RULE_TIME="30";
+    LB_MEM="50%";
 
     GRB_LICENSE_FILE = pkgs.writeText "gurobi.lic" "TOKENSERVER=127.0.0.1";
 
