@@ -50,12 +50,12 @@ let
       '';
     };
 
-  worker = type:
+  worker = queue: type:
     { config, pkgs, resources, nodes, ... }:
     {
       imports = [ ./worker.nix ];
 
-      lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName type}".name} --outgoing ${resources.sqsQueues."${sqsStatusName}".name} --bucket ${s3Name} --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys";
+      lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName queue}".name} --outgoing ${resources.sqsQueues."${sqsStatusName}".name} --bucket ${s3Name} --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys";
 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -773,4 +773,4 @@ with pkgs.lib;
 
     };
 
-} // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
+} // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
