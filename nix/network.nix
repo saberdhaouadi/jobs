@@ -68,7 +68,7 @@ let
       # Tags are needed, so provisioner sees running worker instances for this
       # deployments, and does not start new instances if not necessary.
       deployment.ec2.tags.S3Bucket = s3Name;
-      deployment.ec2.tags.IncomingQueue = sqsURL type;
+      deployment.ec2.tags.IncomingQueue = sqsURL queue;
       deployment.ec2.tags.OutgoingQueue = sqsStatusURL;
 
       ec2.metadata = true;
