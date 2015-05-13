@@ -102,7 +102,7 @@ public class StatusQueueClient {
 
         // wait if there were no messages
         if (messages.size() == 0)
-          Thread.sleep(5 * 1000);
+          Thread.sleep(500);
 
       } catch (Exception exc) {
         exc.printStackTrace();
