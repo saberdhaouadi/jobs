@@ -59,7 +59,7 @@ import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
 
 public class SteveHandler extends ProtoBufHandler {
-  private static final long MAX_IMPL_SIZE = 50;
+  private static final long MAX_IMPL_SIZE = 70;
   private static final long MAX_LOG_SIZE = 50;
 
   private Database _db;
