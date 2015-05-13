@@ -89,6 +89,11 @@ in
     nix.useChroot = true;
     nix.package = pkgs.nixUnstable;
 
+    systemd.extraConfig = ''
+      DefaultCPUAccounting=true
+      DefaultMemoryAccounting=true
+    '';
+
     systemd.services.gurobi-socket =
       { description = "Create Gurobi unix domain socket";
         wantedBy = [ "multi-user.target" ];
