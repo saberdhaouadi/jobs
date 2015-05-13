@@ -60,6 +60,9 @@ message JobStatus {
 
   // If the status change is 'progress', then details can be provided.
   optional ProgressDetails progress_details = 12;
+
+  // When a job is finished, supply some resource usage
+  optional ResourceUsage resource_usage = 13;
 }
 
 message FailedDetails {
@@ -73,6 +76,11 @@ message SucceededDetails {
 
 message ProgressDetails {
   required string message = 1;
+}
+
+message ResourceUsage {
+  required int64 cpu_usage = 1;
+  required int64 max_memory = 2;
 }
 
 /**

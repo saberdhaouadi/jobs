@@ -71,7 +71,7 @@ public class OutgoingQueueHelper {
     sendResult(msgBuilder.build());
   }
 
-  public void notifySuccess(List<S3File> result) {
+  public void notifySuccess(List<S3File> result, long cpuUsage, long maxMemory) {
     Backend.JobStatus.Builder msgBuilder = getBuilder();
     msgBuilder.setStatusCode(Backend.StatusCode.SUCCEEDED);
 
@@ -84,6 +84,7 @@ public class OutgoingQueueHelper {
     }
 
     msgBuilder.setSucceededDetails(details);
+    msgBuilder.setResourceUsage(Backend.ResourceUsage.newBuilder().setCpuUsage(cpuUsage).setMaxMemory(maxMemory));
     sendResult(msgBuilder.build());
   }
 

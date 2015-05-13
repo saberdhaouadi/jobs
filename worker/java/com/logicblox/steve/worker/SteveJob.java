@@ -60,6 +60,8 @@ public class SteveJob {
 
   private File _keyDir = new File(com.logicblox.s3lib.Utils.getDefaultKeyDirectory());
   private SteveKeyServerHelper _keyHelper;
+  private File _cpuacct = new File("/sys/fs/cgroup/cpu,cpuacct/system.slice/nix-daemon.service/cpuacct.usage");
+  private File _memacct = new File("/sys/fs/cgroup/memory/system.slice/nix-daemon.service/memory.memsw.max_usage_in_bytes");
 
   public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, String outputEncryptionKey, long timeout, Map<String, String> metadata, String account, int receiveCount, SteveKeyServerHelper keyHelper)
           throws InternalException {
@@ -94,14 +96,29 @@ public class SteveJob {
 
   public void run() throws Exception {
     log("Starting..." + _id);
+    long cpuUsage = 0;
+    long maxMemory = 0;
 
     try {
       _outgoing.notifyStart();
       setup();
       runJob();
       log("Successfully executed " + _id);
+      try {
+        cpuUsage = Long.parseLong(FileUtils.readFileToString(_cpuacct).trim());
+        maxMemory = Long.parseLong(FileUtils.readFileToString(_memacct).trim());
+      }
+      catch(NumberFormatException e) {
+        log("Could not parse the resource usage from cgroups: "+ e.getMessage());
+        e.printStackTrace();
+      }
+      catch(IOException e) {
+        log("Could not read resource usage from cgroups: " + e.getMessage());
+        e.printStackTrace();
+      }
+
       List<S3File> output = uploadOutput();
-      _outgoing.notifySuccess(output);
+      _outgoing.notifySuccess(output, cpuUsage, maxMemory);
       log("Successfully uploaded output files for job " + _id);
       teardown();
     } catch (JobKilledException k) {
@@ -202,6 +219,15 @@ public class SteveJob {
       FileUtils.writeStringToFile(_metadataPath, data);
     } catch (IOException e) {
       throw new InternalException("Could not write metadata.", e);
+    }
+
+    try {
+      FileUtils.writeStringToFile(_memacct, "-1");
+      FileUtils.writeStringToFile(_cpuacct, "0");
+    }
+    catch (IOException e) {
+      log("Could not reset cgroup counters: "+ e.getMessage());
+      e.printStackTrace();
     }
   }
 
