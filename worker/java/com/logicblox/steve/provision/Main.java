@@ -93,14 +93,14 @@ public class Main {
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("percentage-queue")
-            .withDescription("Set total instances to the given percentage of total messages that are in the queue. Only valid when --total is not used.")
+            .withDescription("Set total instances to the given percentage of total messages that are in the queue. Only valid when --total is not used (value should be between 0 and 1)")
             .hasArg()
             .withArgName("percentage")
             .withType(Number.class)
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("percentage-spot")
-            .withDescription("Percentage of spot instance of total")
+            .withDescription("Percentage of spot instance of total (value should be between 0 and 1)")
             .hasArg()
             .withArgName("percentage")
             .withType(Number.class)
