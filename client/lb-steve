@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
-prefix=$(cd $(dirname $BASH_SOURCE)/.. ; pwd -P)
+platform=$(uname)
+if [[ "$platform" == "Linux" ]]; then
+  prefix=$(readlink -f $(dirname $(readlink -f $BASH_SOURCE))/..)
+else
+  prefix=$(cd $(dirname $BASH_SOURCE)/.. ; pwd -P)
+fi
+
 export LB_WEBSERVER_HOME=$prefix
 exec java -cp "$prefix/lib/java/*" com.logicblox.steve.client.Main $@
