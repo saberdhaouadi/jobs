@@ -68,11 +68,3 @@ jar(
 link_libs(classpath)
 
 install_files(classpath, 'lib/java')
-
-rule(
-  output='install',
-  input = [],
-  commands = [
-    'ln -sf lb-steve $(prefix)/bin/lb-steve-client',
-  ]
-)
