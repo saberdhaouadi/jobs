@@ -19,12 +19,15 @@ protocols_dep = (
   "protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"}
 )
 
+aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
+
 depends_on(
     logicblox_dep,
     lb_web_dep,
     s3lib_dep,
     commons_exec_dep,
     protocols_dep,
+    aws_java_sdk_dep,
     commons_cli_dep)
 
 bin_program('lb-steve-worker')
@@ -33,7 +36,6 @@ bin_program('lb-steve-provisioner')
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
 
-  '$(s3lib)/lib/java/aws-java-sdk-1.9.8.jar',
   '$(s3lib)/lib/java/joda-time-2.2.jar',
   '$(s3lib)/lib/java/jcommander-1.29.jar',
   '$(s3lib)/lib/java/commons-io-2.4.jar',
@@ -45,6 +47,8 @@ classpath = [
   '$(s3lib)/lib/java/httpclient-4.3.jar',
   '$(s3lib)/lib/java/httpcore-4.3.jar',
   '$(s3lib)/lib/java/commons-logging-1.1.3.jar',
+
+  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.9.38.jar',
 
   '$(commons_exec)/lib/java/commons-exec.jar',
   '$(commons_cli)/lib/java/commons-cli.jar',

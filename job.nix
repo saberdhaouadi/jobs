@@ -109,6 +109,7 @@ rec {
         "--with-commons-cli=${deps.commons-cli}"
         "--with-protocols=${protocols}"
         "--with-s3lib=${s3lib}"
+        "--with-aws-java-sdk=${deps.aws-java-sdk}"
       ];
       postInstall = ''
         for b in lb-steve-worker lb-steve-provisioner; do 
