@@ -14,6 +14,12 @@ let
 
 in
 rec {
+  aws-java-sdk =
+    buildjar {
+      name = "aws-java-sdk-1.9.38";
+      url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.9.38.zip;
+      sha256 = "0mmy6pfk0qmx58hv7zn5f319zc7n81l6mh0rsxpxlrapd9gjadsx";
+    };
 
   commons-exec =
     buildjar {
