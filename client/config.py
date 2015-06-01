@@ -8,11 +8,13 @@ lbconfig_package(
 
 s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
+aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
 
 depends_on(
   logicblox_dep,
   lb_web_dep,
   s3lib_dep,
+  aws_java_sdk_dep,
   protocols_dep)
 
 bin_program('lb-steve')
@@ -23,13 +25,14 @@ classpath = [
 
   '$(s3lib)/lib/java/s3lib-0.2.jar',
   '$(s3lib)/lib/java/commons-io-2.4.jar',
-  '$(s3lib)/lib/java/aws-java-sdk-1.9.8.jar',
   '$(s3lib)/lib/java/httpclient-4.3.jar',
   '$(s3lib)/lib/java/httpcore-4.3.jar',  
   '$(s3lib)/lib/java/jackson-annotations-2.3.0.jar',
   '$(s3lib)/lib/java/jackson-core-2.3.2.jar',
   '$(s3lib)/lib/java/jackson-databind-2.3.2.jar',
   '$(s3lib)/lib/java/commons-logging-1.1.3.jar',
+
+  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.9.38.jar',
 
   '$(lb_web)/lib/java/annotations.jar',
   '$(lb_web)/lib/java/bloxweb-credentials.jar',

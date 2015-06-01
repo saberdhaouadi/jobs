@@ -77,6 +77,7 @@ rec {
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-s3lib=${s3lib}"
+        "--with-aws-java-sdk=${deps.aws-java-sdk}"
       ];
     };
 
