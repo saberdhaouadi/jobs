@@ -12,7 +12,7 @@ let
       '';
     };
 
-  aws-sdk-java =
+  aws-java-sdk =
     with pkgs; stdenv.mkDerivation rec {
       name = "aws-java-sdk-1.9.38";
       src = fetchurl {
