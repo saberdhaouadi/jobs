@@ -12,14 +12,25 @@ let
       '';
     };
 
+  aws-sdk-java =
+    with pkgs; stdenv.mkDerivation rec {
+      name = "aws-java-sdk-1.9.38";
+      src = fetchurl {
+        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.9.38.zip;
+        sha256 = "0mmy6pfk0qmx58hv7zn5f319zc7n81l6mh0rsxpxlrapd9gjadsx";
+      };
+      buildCommand = ''
+        unzip $src
+        mkdir -p $out/lib/java
+        cp $name/lib/$name.jar $out/lib/java
+      '';
+    };
+
+
+
 in
 rec {
-  aws-java-sdk =
-    buildjar {
-      name = "aws-java-sdk-1.9.38";
-      url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.9.38.zip;
-      sha256 = "0mmy6pfk0qmx58hv7zn5f319zc7n81l6mh0rsxpxlrapd9gjadsx";
-    };
+  inherit aws-java-sdk;
 
   commons-exec =
     buildjar {
