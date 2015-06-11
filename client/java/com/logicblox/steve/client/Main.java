@@ -154,14 +154,21 @@ public class Main {
     public abstract void invoke() throws Exception;
   }
 
-  protected URI createUniqueInputURI() throws URISyntaxException {
+  protected URI createUniqueURI(String option) throws URISyntaxException, UsageException {
     String id = UUID.randomUUID().toString();
-    return URI.create(_config.getStringError("default_input_prefix") + "/" + id);
+    String optionValue = _config.getStringError(option);
+    if(! optionValue.startsWith("s3://") ) {
+       throw new UsageException("Incorrect option '"+option+" = "+optionValue+"', should be a S3 URL.");
+    }
+    return URI.create(optionValue + "/" + id);
   }
 
-  protected URI createUniqueOutputPrefixURI() throws URISyntaxException {
-    String id = UUID.randomUUID().toString();
-    return URI.create(_config.getStringError("default_output_prefix") + "/" + id);
+  protected URI createUniqueInputURI() throws URISyntaxException, UsageException {
+    return createUniqueURI("default_input_prefix");
+  }
+
+  protected URI createUniqueOutputPrefixURI() throws URISyntaxException, UsageException {
+    return createUniqueURI("default_output_prefix");
   }
 
   /**
