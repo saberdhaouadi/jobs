@@ -1,7 +1,13 @@
 #! /bin/sh
 set -e
 
+echo LogFile gurobi_test.log > gurobi.env
+
+echo PROGRESS: Testing if gurobi works
 lb create trivial_gurobi --lib BloxOptimize,Gurobi5Plugin --overwrite
 lb addblock trivial_gurobi --file trivial.logic 
 lb print trivial_gurobi x > $2/x.txt
 lb print trivial_gurobi y > $2/y.txt
+
+echo PROGRESS: Testing if gurobi.env worked
+test -f gurobi_test.log
