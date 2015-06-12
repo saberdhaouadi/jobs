@@ -111,7 +111,8 @@ block(`create_job) {
     ; p = "4.1.7"
     ; p = "4.1.8"
     ; p = "4.1.9"
-    ; p = "4.2.0".
+    ; p = "4.2.0"
+    ; p = "4.2.1".
 
     +service_support:export_error(index, "INVALID_PLATFORM", "Platform '" + platformId + "' not supported.") <-
       +proto:RequestEnvelope_request[_, index] = union,
