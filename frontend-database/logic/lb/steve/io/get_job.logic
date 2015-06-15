@@ -51,6 +51,20 @@ block(`get_job) {
       schema:Job_id@prev[job] = jobId,
       schema:Job:output_encryption_key@prev[job] = output_encryption_key.
 
+    +proto:Job_max_memory[protoJob] = m <-
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_job[union] = req,
+      +proto:GetJobRequest_job_id[req] = jobId,
+      +service_support:job[index] = protoJob,
+      schema:Job:max_memory@prev[jobId] = m.
+
+    +proto:Job_cpu_usage[protoJob] = u <-
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_get_job[union] = req,
+      +proto:GetJobRequest_job_id[req] = jobId,
+      +service_support:job[index] = protoJob,
+      schema:Job:cpu_usage@prev[jobId] = u.
+
 
     // populate input with file messages
     input_cons[jobId, url] = file -> string(jobId), string(url), proto:File(file).
@@ -114,7 +128,6 @@ block(`get_job) {
       schema:Job:status_event@prev[job, ts] = event,
       schema:Job:status_machine@prev[job, ts] = machine,
       schema:Job:status_message@prev[job, ts] = message.
-
 
     // populate output with file messages
     output_cons[jobId, url] = file -> string(jobId), string(url), proto:File(file).

@@ -51,9 +51,9 @@ block(`tdx) {
     file_definition_by_name["jobs"] = fd,
     file_definition(fd) {
       file_delimiter[] = "|",
-      column_headers[] = "ID,     USER,   JOBIMPL, OUTPUT_PREFIX, CLIENTID, OUTPUT_ENCRYPTION_KEY",
-      column_formats[] = "string, string, string,  string*,        string,   string",
-      file_columns_can_be_absent[] = "OUTPUT_ENCRYPTION_KEY"
+      column_headers[] = "ID,     USER,   JOBIMPL, OUTPUT_PREFIX, CLIENTID, OUTPUT_ENCRYPTION_KEY, CPU_USAGE, MAX_MEMORY",
+      column_formats[] = "string, string, string,  string*,       string,   string,                int,       int",
+      file_columns_can_be_absent[] = "OUTPUT_ENCRYPTION_KEY, CPU_USAGE, MAX_MEMORY"
     }.
 
     file_binding_by_name["jobs"] = fb,
@@ -82,6 +82,14 @@ block(`tdx) {
       predicate_binding_by_name["lb:steve:schema:Job:output_encryption_key"] =
         predicate_binding(_) {
           predicate_binding_columns[] = "ID, OUTPUT_ENCRYPTION_KEY"
+        },
+      predicate_binding_by_name["lb:steve:schema:Job:cpu_usage"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID, CPU_USAGE"
+        },
+      predicate_binding_by_name["lb:steve:schema:Job:max_memory"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID, MAX_MEMORY"
         }
     }.
 

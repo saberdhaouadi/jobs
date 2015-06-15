@@ -46,6 +46,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         self.assertEquals(expected_job.output_prefix, actual_job.output_prefix)
         self.assertEquals(expected_job.user_id, actual_job.user_id)
         self.assertEquals(expected_job.impl_archive, actual_job.impl_archive)
+        self.assertEquals(expected_job.cpu_usage, actual_job.cpu_usage)
+        self.assertEquals(expected_job.max_memory, actual_job.max_memory)
 
         self.assertMessageUnorderedEqual(expected_job.input, actual_job.input)
         self.assertMessageUnorderedEqual(expected_job.metadata, actual_job.metadata)
@@ -275,8 +277,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
-            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY
-            1|martin|logicblox.com-total|s3://something/something|a|
+            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY|CPU_USAGE|MAX_MEMORY
+            1|martin|logicblox.com-total|s3://something/something|a|||
         ''')
 
 
@@ -312,8 +314,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
-            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY
-            1|martin|logicblox.com-total|s3://something/something|a|
+            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY|CPU_USAGE|MAX_MEMORY
+            1|martin|logicblox.com-total|s3://something/something|a|||
         ''')
 
         self.assertDelimEqual(get_tdx_client("job_inputs").get(), '''
@@ -404,9 +406,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
-            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY
-            1|martin|logicblox.com-total|s3://something/something1|a1|
-            2|martin|logicblox.com-total|s3://something/something2|a2|
+            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY|CPU_USAGE|MAX_MEMORY
+            1|martin|logicblox.com-total|s3://something/something1|a1|||
+            2|martin|logicblox.com-total|s3://something/something2|a2|||
         ''')
 
     def test_create_job_with_errors(self):
@@ -457,9 +459,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
-            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY
-            1|martin|logicblox.com-total|s3://something/something1|a1|
-            2|martin|logicblox.com-total|s3://something/something2|a2|
+            ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY|CPU_USAGE|MAX_MEMORY
+            1|martin|logicblox.com-total|s3://something/something1|a1|||
+            2|martin|logicblox.com-total|s3://something/something2|a2|||
         ''')
 
  
@@ -634,6 +636,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req.status.event = "the event3"
         req.status.machine = "the machine3"
         req.status.message = "status message3"
+        req.status.cpu_usage = 1;
+        req.status.max_memory = 2;
         
         client.dynamic_call(envelope)
 
@@ -678,6 +682,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
                 input { url: "the url without hash" }
                 output { url: "the url 1" hash: "the hash 1" }
                 output { url: "the url 2" hash: "the hash 2" }
+                cpu_usage: 1
+                max_memory: 2
               }
             }
             ''', expected_response)

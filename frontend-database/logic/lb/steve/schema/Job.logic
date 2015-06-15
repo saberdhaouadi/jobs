@@ -105,6 +105,13 @@
     finished_status(s) -> string(s).
     finish_time[job] = t -> Job(job), int(t).
     start_time[job] = t -> Job(job), int(t).
+
+
+   /**
+    * Resource usage of job. CPU usage is total nanoseconds. Max Memory is maximum number of bytes used.
+    */
+    cpu_usage[job] = u -> Job(job), int(u).
+    max_memory[job] = m -> Job(job), int(m).
   }),
 
   sealed(`{
@@ -158,7 +165,6 @@
     finish_time[job] = t <- agg<<t = max(ts)>> status_event[job, ts] = s, finished_status(s).
 
     created[job] = t <- metadata[job, "date"] = d, t = datetime:parse[d, "%Y-%m-%d %H:%M:%S"].
-
   })
 
 } <-- .
