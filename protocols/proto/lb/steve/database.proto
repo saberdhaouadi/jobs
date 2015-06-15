@@ -85,6 +85,9 @@ message Job
 
   optional string output_encryption_key = 11;
   required string account_id = 12;
+
+  optional int64 cpu_usage = 13;
+  optional int64 max_memory = 14;
 }
 
 message JobImpl
@@ -195,10 +198,12 @@ message File
 
 message Status
 {  
-  required int64  timestamp = 1;
-  required string event     = 2;
-  required string machine   = 3;
-  required string message   = 4;
+  required int64  timestamp  = 1;
+  required string event      = 2;
+  required string machine    = 3;
+  required string message    = 4;
+  optional int64  cpu_usage  = 5;
+  optional int64  max_memory = 6;
 }
 
 
