@@ -150,6 +150,10 @@ public class StatusQueueClient {
       }
       case SUCCEEDED: {
         status.event = Status.Event.SUCCEEDED;
+        if(protoStatus.hasResourceUsage()) {
+          status.cpuUsage = protoStatus.getResourceUsage().getCpuUsage();
+          status.maxMemory = protoStatus.getResourceUsage().getMaxMemory();
+        }
         if (protoStatus.hasSucceededDetails()) {
           final List<Data> output =
                   Conversions.convertFileToData(protoStatus.getSucceededDetails().getOutputList());

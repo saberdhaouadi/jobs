@@ -361,6 +361,11 @@ public class SteveHandler extends ProtoBufHandler {
                   b.addOutput(Conversions.convertDataToFrontendFile(d));
                 }
 
+                if( job.hasCpuUsage() && job.hasMaxMemory()) {
+                  b.addCpuUsage(job.getCpuUsage());
+                  b.addMaxMemory(job.getMaxMemory());
+                }
+
                 Frontend.Response.Builder response = Frontend.Response.newBuilder();
                 response.setResult(b);
                 return Futures.immediateFuture(response.build());
