@@ -203,8 +203,11 @@ public class LBDatabase implements Database {
                         Conversions.convertFromDatabaseParams(job.getMetadataList()),
                         Conversions.convertFromDatabaseFiles(job.getInputList()),
                         job.getImplArchive(),
+                        job.hasCpuUsage() ? job.getCpuUsage(): 0,
+                        job.hasMaxMemory() ? job.getMaxMemory() : 0,
                         Conversions.convertFromDatabaseFiles(job.getOutputList()),
-                        Conversions.convertFromDatabaseStatus(job.getStatusList()));
+                        Conversions.convertFromDatabaseStatus(job.getStatusList())
+                        );
               }
             });    
   }

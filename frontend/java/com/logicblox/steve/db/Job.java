@@ -72,6 +72,13 @@ public final class Job {
    */
   public final String jobImplArchive;
 
+
+  /**
+   * Resource usage of job
+   */
+  public final long cpuUsage;
+  public final long maxMemory;
+
   // mutable state
 
   /**
@@ -112,7 +119,9 @@ public final class Job {
              String jobImplId,
              Map<String, String> metadata,
              Collection<Data> inputData,
-             String jobImplArchive) {
+             String jobImplArchive,
+             long cpuUsage,
+             long maxMemory) {
 
     this.id = jobId;
     this.userId = userId;
@@ -125,6 +134,8 @@ public final class Job {
     // because strings and Data are immutable, it is safe to just wrap around unmodifiables.
     this.metadata = Collections.unmodifiableMap(metadata);
     this.inputData = Collections.unmodifiableCollection(inputData);
+    this.cpuUsage = cpuUsage;
+    this.maxMemory = maxMemory;
   }
 
   /**
@@ -151,9 +162,11 @@ public final class Job {
              Map<String, String> metadata,
              Collection<Data> inputData,
              String jobImplArchive,
+             long cpuUsage,
+             long maxMemory,
              Collection<Data> outputData,
              List<Status> status) {
-    this(jobId, userId, accountId, clientId, outputPrefix, outputEncryptionKey, jobImplId, metadata, inputData, jobImplArchive);
+    this(jobId, userId, accountId, clientId, outputPrefix, outputEncryptionKey, jobImplId, metadata, inputData, jobImplArchive, cpuUsage, maxMemory);
     this._outputData.addAll(outputData);
     this._status.addAll(status);
   }

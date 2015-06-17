@@ -18,6 +18,8 @@ import scala.collection.mutable
 import com.google.common.util.concurrent.SettableFuture
 import scala.util.Failure
 import scala.util.Success
+import com.timgroup.statsd.StatsDClient
+import com.timgroup.statsd.NonBlockingStatsDClient
 
 import com.logicblox.util._
 
@@ -30,6 +32,11 @@ class LBDatabaseBatcher(client: ProtobufServiceClient) extends Batcher[Request, 
    * An implicit context to execute future combinators asynchronously.
    */
   implicit val context = ExecutionContext.fromExecutor(new scala.concurrent.forkjoin.ForkJoinPool)
+
+  /**
+   * Statsd client to monitor batch related metrics.
+   */
+  val statsd = new NonBlockingStatsDClient("lb.steve.internal", "localhost", 8125)
     
   /**
    * Do not impose a limit in the number of requests per batch.
@@ -40,9 +47,7 @@ class LBDatabaseBatcher(client: ProtobufServiceClient) extends Batcher[Request, 
    * The implementation of batching.
    */
   def execute(work: Seq[Request]): Future[Seq[Response]] = {
-    
-    // for debugging
-    //println("Batch of size " + work.size)
+    statsd.recordExecutionTime("batcher.size", work.size)
     
     // TODO - this code puts all requests in the same transaction. We may want to split readonly
     // requests (getters) vs write requests.
