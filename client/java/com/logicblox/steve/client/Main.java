@@ -107,7 +107,7 @@ public class Main {
   private String _user = null;
   private String _keyFile = null;
   private S3Client _s3client;
-  
+
   public Main() {
     _logger = SystemDLogger.getLogger("SteveClient");
     _commander = new JCommander(_mainCmd);
@@ -154,21 +154,21 @@ public class Main {
     public abstract void invoke() throws Exception;
   }
 
-  protected URI createUniqueURI(String option) throws URISyntaxException, UsageException {
+  protected URI createUniqueURI(String option, String base) throws URISyntaxException, UsageException {
     String id = UUID.randomUUID().toString();
     String optionValue = _config.getStringError(option);
     if(! optionValue.startsWith("s3://") ) {
        throw new UsageException("Incorrect option '"+option+" = "+optionValue+"', should be a S3 URL.");
     }
-    return URI.create(optionValue + "/" + id);
+    return URI.create(optionValue + "/" + id + (base != null ? "/" + base : ""));
   }
 
-  protected URI createUniqueInputURI() throws URISyntaxException, UsageException {
-    return createUniqueURI("default_input_prefix");
+  protected URI createUniqueInputURI(String base) throws URISyntaxException, UsageException {
+    return createUniqueURI("default_input_prefix", base);
   }
 
   protected URI createUniqueOutputPrefixURI() throws URISyntaxException, UsageException {
-    return createUniqueURI("default_output_prefix");
+    return createUniqueURI("default_output_prefix", null);
   }
 
   /**
@@ -192,7 +192,7 @@ public class Main {
 
       if (inputFile.isDirectory()) {
         return Futures.transform(
-                _s3client.uploadDirectory(inputFile, createUniqueInputURI(), _inputEncryptionKey),
+                _s3client.uploadDirectory(inputFile, createUniqueInputURI(inputFile.getName()), _inputEncryptionKey),
                 new Function<List<S3File>, List<Frontend.File>>() {
                   public List<Frontend.File> apply(List<S3File> files) {
                     List<Frontend.File> result = new ArrayList<Frontend.File>();
@@ -203,7 +203,7 @@ public class Main {
                 });
       } else {
         return Futures.transform(
-                _s3client.upload(inputFile, createUniqueInputURI(), _inputEncryptionKey),
+                _s3client.upload(inputFile, createUniqueInputURI(inputFile.getName()), _inputEncryptionKey),
                 new Function<S3File, List<Frontend.File>>() {
                   public List<Frontend.File> apply(S3File file) {
                     return Collections.singletonList(Conversions.convertToFrontendFile(file));
