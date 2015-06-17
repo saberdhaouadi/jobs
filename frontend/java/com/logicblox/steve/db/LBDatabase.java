@@ -40,6 +40,7 @@ public class LBDatabase implements Database {
   final String _dbServicesPrefix;
   final ProtobufServiceClient _client;
   final LBDatabaseBatcher _batcher;
+  final LBDatabaseBatcher _readOnlyBatcher;
 
   public LBDatabase() {
     this("http://localhost:8080/db");
@@ -48,8 +49,12 @@ public class LBDatabase implements Database {
   public LBDatabase(String dbServicesPrefix) {
     _dbServicesPrefix = dbServicesPrefix;
     _client = ServiceConnector.create(_dbServicesPrefix).createProtobufClient();
+
     _batcher = new LBDatabaseBatcher(_client);
     _batcher.start();
+
+    _readOnlyBatcher = new LBDatabaseBatcher(_client, true);
+    _readOnlyBatcher.start();
   }
   
   /**
@@ -57,6 +62,7 @@ public class LBDatabase implements Database {
    */
   public void shutdown() {
     _batcher.shutdown();
+    _readOnlyBatcher.shutdown();
   }
 
   @Override
@@ -67,7 +73,7 @@ public class LBDatabase implements Database {
                             .setUserId(userId)
             ).build();    
     
-    return Futures.transform(_batcher.addRequest(request),
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
             new Function<Response, User>() {
               public User apply(Response response) {
 
@@ -186,7 +192,7 @@ public class LBDatabase implements Database {
             ).build();
 
     // submit and process the response
-    return Futures.transform(_batcher.addRequest(request),
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
             new Function<Response, Job>() {
               public Job apply(Response response) {
 
@@ -254,7 +260,7 @@ public class LBDatabase implements Database {
             ).build();
 
     // submit and process the response
-    return Futures.transform(_batcher.addRequest(request),
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
             new Function<Response, JobImpl>() {
               public JobImpl apply(Response response) {
 
@@ -279,7 +285,7 @@ public class LBDatabase implements Database {
             ).build();
     
     // submit and process the response
-    return Futures.transform(_batcher.addRequest(request),
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
             new Function<Response, Iterable<JobImpl>>() {
               public Iterable<JobImpl> apply(Response response) {
 

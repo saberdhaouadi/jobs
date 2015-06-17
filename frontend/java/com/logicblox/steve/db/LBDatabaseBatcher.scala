@@ -26,7 +26,7 @@ import com.logicblox.util._
 /**
  * An implementation of a Batcher that batches LBDatabase requests, and return responses.
  */
-class LBDatabaseBatcher(client: ProtobufServiceClient) extends Batcher[Request, Response] {
+class LBDatabaseBatcher(client: ProtobufServiceClient, readOnly: Boolean = false) extends Batcher[Request, Response] {
 
   /**
    * An implicit context to execute future combinators asynchronously.
@@ -37,6 +37,7 @@ class LBDatabaseBatcher(client: ProtobufServiceClient) extends Batcher[Request, 
    * Statsd client to monitor batch related metrics.
    */
   val statsd = new NonBlockingStatsDClient("lb.steve.internal", "localhost", 8125)
+  val metric = if readOnly "batcher.read.size" else "batcher.write.size"
     
   /**
    * Do not impose a limit in the number of requests per batch.
@@ -47,17 +48,17 @@ class LBDatabaseBatcher(client: ProtobufServiceClient) extends Batcher[Request, 
    * The implementation of batching.
    */
   def execute(work: Seq[Request]): Future[Seq[Response]] = {
-    statsd.recordExecutionTime("batcher.size", work.size)
-    
-    // TODO - this code puts all requests in the same transaction. We may want to split readonly
-    // requests (getters) vs write requests.
+    statsd.recordExecutionTime(metric, work.size)
     
     // add all requests to the envelope
     val builder = RequestEnvelope.newBuilder().addAllRequest(work);
 
     // use the protobuf client to post the envelope as a request, and hook 
     // a function to process the response
-    client.postMessage(new ProtoBufExchange(builder.build(), ResponseEnvelope.newBuilder()))
+    val exch = new ProtoBufExchange(builder.build(), ResponseEnvelope.newBuilder())
+    exch.setReadOnly(readOnly)
+
+    client.postMessage(exch)
     .map(exchange => {
       exchange.getResponseMessage().asInstanceOf[ResponseEnvelope].getResponseList()
     })
