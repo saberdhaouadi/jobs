@@ -204,12 +204,16 @@ public class Conversions {
   }
 
   public static Database.Status convertToDatabaseStatus(Status status) {
-    return Database.Status.newBuilder()
+    Database.Status.Builder res = Database.Status.newBuilder()
             .setTimestamp(status.timestamp)
             .setEvent(status.event.toString())
             .setMachine(status.machine)
-            .setMessage(status.hasMessage() ? status.message : "")
-            .build();
+            .setMessage(status.hasMessage() ? status.message : "");
+    if(status.cpuUsage != 0)
+        res.setCpuUsage(status.cpuUsage);
+    if(status.maxMemory !=0)
+        res.setMaxMemory(status.maxMemory);
+    return res.build();
   }
 
   public static Status convertFromDatabaseStatus(Database.Status status) {
@@ -217,7 +221,7 @@ public class Conversions {
             status.getTimestamp(),
             Event.valueOf(status.getEvent()),
             status.getMachine(),
-            status.getMessage());
+            status.getMessage(), 0, 0);
   }
 
   // multiple

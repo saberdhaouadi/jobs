@@ -25,6 +25,9 @@ public final class Status {
   public final Event event;
   public final String machine;
   public final String message;
+  public final long cpuUsage;
+  public final long maxMemory;
+
 
   /**
    * Construct an immutable status with this content. Values may be null.
@@ -33,12 +36,17 @@ public final class Status {
    * @param event
    * @param machine
    * @param message
+   * @param cpuUsage
+   * @param maxMemory
    */
-  public Status(long timestamp, Event event, String machine, String message) {
+  public Status(long timestamp, Event event, String machine, String message, long cpuUsage, long maxMemory) {
     this.timestamp = timestamp;
     this.event = event;
     this.machine = machine;
     this.message = message;
+
+    this.cpuUsage = cpuUsage;
+    this.maxMemory = maxMemory;
   }
 
   public boolean hasMessage() {
@@ -54,9 +62,11 @@ public final class Status {
     public Event event = null;
     public String machine = null;
     public String message = null;
+    public long cpuUsage;
+    public long maxMemory;
 
     public Status build() {
-      return new Status(timestamp, event, machine, message);
+      return new Status(timestamp, event, machine, message, cpuUsage, maxMemory);
     }
   }
 
