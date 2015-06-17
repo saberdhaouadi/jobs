@@ -114,6 +114,19 @@ block(`create_job) {
     ; p = "4.2.0"
     ; p = "4.2.1".
 
+    +service_support:export_error(index, "INVALID_INPUT", "Input '" + url + "' is invalid. Should be a S3 URL.") <-
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_create_job[union] = req,
+      +proto:CreateJobRequest_input(req, f),
+      +proto:File_url[f] = url,
+      ! string:like(url, "s3://%").
+
+    +service_support:export_error(index, "INVALID_OUTPUT", "Output '" + prefix + "' is invalid. Should be a S3 URL.") <-
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_create_job[union] = req,
+      +proto:CreateJobRequest_output_prefix[req] = prefix,
+      ! string:like(prefix, "s3://%").
+
     +service_support:export_error(index, "INVALID_PLATFORM", "Platform '" + platformId + "' not supported.") <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
