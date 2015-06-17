@@ -1,0 +1,22 @@
+main importAll()
+
+workflow importAll()[location]
+  lb.GetEnv(name="IMPORT_DIR", var=$location, default="/tmp/import")
+; lb.TdxImport(
+    workspace="lb-steve",
+    load={
+      "/tdx/users=$(location)/users.csv.gz",
+      "/tdx/jobimpls=$(location)/jobimpls.csv.gz",
+      "/tdx/jobimpl_metadata=$(location)/jobimpl_metadata.csv.gz",
+      "/tdx/jobs=$(location)/jobs.csv.gz",
+      "/tdx/job_metadata=$(location)/job_metadata.csv.gz",
+      "/tdx/job_inputs=$(location)/job_inputs.csv.gz",
+      "/tdx/job_outputs=$(location)/job_outputs.csv.gz",
+      "/tdx/job_status=$(location)/job_status.csv.gz",
+      "/tdx/provision-config=$(location)/provision-config.csv.gz"
+    },
+    load_timeout=36000,
+    txn_timeout=30000,
+    txn_service="/tdx/txn",
+    transport="http://localhost:8080")
+
