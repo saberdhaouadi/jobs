@@ -282,12 +282,12 @@ public class SteveJob {
     }
   }
 
-  private List<S3File> uploadOutput() throws InternalException {
+  private List<S3File> uploadOutput() throws UploadOutputFailedException {
     try {
       log("Uploading output...");
       return _client.uploadDirectory(_outputPath, _output, _outputEncryptionKey).get();
     } catch (Exception e) {
-      throw new InternalException("Error uploading output files to " + _output, e);
+      throw new UploadOutputFailedException("Error uploading output files to " + _output, e);
     }
   }
 

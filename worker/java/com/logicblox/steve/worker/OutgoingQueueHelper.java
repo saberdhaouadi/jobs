@@ -62,6 +62,11 @@ public class OutgoingQueueHelper {
               Backend.FailedDetails.newBuilder()
                       .setErrorCode("DOWNLOAD_FAILED")
                       .setErrorMessage(e.getMessage()));
+    } else if (e instanceof UploadOutputFailedException) {
+      msgBuilder.setFailedDetails(
+              Backend.FailedDetails.newBuilder()
+                      .setErrorCode("UPLOAD_FAILED")
+                      .setErrorMessage(e.getMessage()));
     } else {
       msgBuilder.setFailedDetails(
               Backend.FailedDetails.newBuilder()
