@@ -77,5 +77,7 @@ jar(
   srcdir = 'java',
   classpath = classpath)
 
+link_libs(classpath)
+
 install_files(classpath, 'lib/java')
 
