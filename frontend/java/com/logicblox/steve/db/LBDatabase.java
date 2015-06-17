@@ -50,7 +50,7 @@ public class LBDatabase implements Database {
     _dbServicesPrefix = dbServicesPrefix;
     _client = ServiceConnector.create(_dbServicesPrefix).createProtobufClient();
 
-    _batcher = new LBDatabaseBatcher(_client);
+    _batcher = new LBDatabaseBatcher(_client, false);
     _batcher.start();
 
     _readOnlyBatcher = new LBDatabaseBatcher(_client, true);

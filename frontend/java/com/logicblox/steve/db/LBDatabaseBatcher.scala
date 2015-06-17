@@ -26,7 +26,7 @@ import com.logicblox.util._
 /**
  * An implementation of a Batcher that batches LBDatabase requests, and return responses.
  */
-class LBDatabaseBatcher(client: ProtobufServiceClient, readOnly: Boolean = false) extends Batcher[Request, Response] {
+class LBDatabaseBatcher(client: ProtobufServiceClient, readOnly: Boolean) extends Batcher[Request, Response] {
 
   /**
    * An implicit context to execute future combinators asynchronously.
@@ -37,7 +37,7 @@ class LBDatabaseBatcher(client: ProtobufServiceClient, readOnly: Boolean = false
    * Statsd client to monitor batch related metrics.
    */
   val statsd = new NonBlockingStatsDClient("lb.steve.internal", "localhost", 8125)
-  val metric = if readOnly "batcher.read.size" else "batcher.write.size"
+  val metric = if (readOnly) "batcher.read.size" else "batcher.write.size"
     
   /**
    * Do not impose a limit in the number of requests per batch.
@@ -56,7 +56,7 @@ class LBDatabaseBatcher(client: ProtobufServiceClient, readOnly: Boolean = false
     // use the protobuf client to post the envelope as a request, and hook 
     // a function to process the response
     val exch = new ProtoBufExchange(builder.build(), ResponseEnvelope.newBuilder())
-    exch.setReadOnly(readOnly)
+    exch.setReadonly(readOnly)
 
     client.postMessage(exch)
     .map(exchange => {
