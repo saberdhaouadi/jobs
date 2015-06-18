@@ -18,10 +18,12 @@ rec {
       inherit (prod) workers;
     };
 
-  thiago =
-    { hostName = "steve-thiago.logicblox.com";
+  dev =
+    { hostName = "steve-dev.logicblox.com";
       elasticIPv4 = "54.163.249.223";
-      workers = { "c3.xlarge" = { number = 1; price = "0.25"; }; };
+      workers = {
+        "c3.xlarge-online" = { number = 1; price = "0.25"; percentageSpot = "0"; instanceType = "c3.xlarge"; };
+      };
     };
 
   martin =
