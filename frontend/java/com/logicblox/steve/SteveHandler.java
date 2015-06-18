@@ -361,10 +361,14 @@ public class SteveHandler extends ProtoBufHandler {
                   b.addOutput(Conversions.convertDataToFrontendFile(d));
                 }
 
-                if( job.cpuUsage != 0 && job.maxMemory != 0) {
-                  b.setCpuUsage(job.cpuUsage);
-                  b.setMaxMemory(job.maxMemory);
-                }
+                /**
+                 * Only set this once all clients have updated to the new client,
+                 * with these fields in the protocol.
+                 */
+                //if( job.cpuUsage != 0 && job.maxMemory != 0) {
+                //  b.setCpuUsage(job.cpuUsage);
+                //  b.setMaxMemory(job.maxMemory);
+                //}
 
                 Frontend.Response.Builder response = Frontend.Response.newBuilder();
                 response.setResult(b);

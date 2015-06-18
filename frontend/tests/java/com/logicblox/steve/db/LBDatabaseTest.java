@@ -128,8 +128,8 @@ public class LBDatabaseTest extends PrototypeTest {
     testSetGetJobImpl();
 
     final Collection<Data> inputs = ImmutableList.of(
-            new Data("/foo/input1", Option.wrap("hash1")),
-            new Data("/foo/input2")
+            new Data("s3://somebucket/foo/input1", Option.wrap("hash1")),
+            new Data("s3://somebucket/foo/input2")
     );
 
     final String jobId = db.createJob(
@@ -137,7 +137,7 @@ public class LBDatabaseTest extends PrototypeTest {
             "1",
             "impl1",
             inputs,
-            "/out",
+            "s3://somebucket/out",
             "",
             ImmutableMap.of("k1", "v1")).get();
 
@@ -147,7 +147,7 @@ public class LBDatabaseTest extends PrototypeTest {
     Assert.assertEquals("1", job.clientId);
     Assert.assertEquals("impl1", job.jobImplId);
     compareCollections(inputs, job.inputData);
-    Assert.assertEquals("/out", job.outputPrefix);
+    Assert.assertEquals("s3://somebucket/out", job.outputPrefix);
     Assert.assertEquals(ImmutableMap.of("k1", "v1"), job.metadata);
     Assert.assertEquals("/foo/impl1", job.jobImplArchive);
     Assert.assertEquals("", job.outputEncryptionKey);
@@ -162,8 +162,8 @@ public class LBDatabaseTest extends PrototypeTest {
 
     // create a job
     final Collection<Data> inputs = ImmutableList.of(
-            new Data("/foo/input1", Option.wrap("hash1")),
-            new Data("/foo/input2")
+            new Data("s3://somebucket/foo/input1", Option.wrap("hash1")),
+            new Data("s3://somebucket/foo/input2")
     );
 
     final String jobId = db.createJob(
@@ -171,7 +171,7 @@ public class LBDatabaseTest extends PrototypeTest {
             "1",
             "impl1",
             inputs,
-            "/out",
+            "s3://somebucket/out",
             "",
             ImmutableMap.of("k1", "v1")).get();
 
@@ -188,7 +188,7 @@ public class LBDatabaseTest extends PrototypeTest {
     Assert.assertEquals("1", job.clientId);
     Assert.assertEquals("impl1", job.jobImplId);
     compareCollections(inputs, job.inputData);
-    Assert.assertEquals("/out", job.outputPrefix);
+    Assert.assertEquals("s3://somebucket/out", job.outputPrefix);
     Assert.assertEquals(ImmutableMap.of("k1", "v1"), job.metadata);
     Assert.assertEquals("/foo/impl1", job.jobImplArchive);
     Assert.assertEquals(ImmutableList.of(status1, status2), job.getStatus());
@@ -202,8 +202,8 @@ public class LBDatabaseTest extends PrototypeTest {
 
     // create a job
     final Collection<Data> inputs = ImmutableList.of(
-            new Data("/foo/input1", Option.wrap("hash1")),
-            new Data("/foo/input2")
+            new Data("s3://somebucket/foo/input1", Option.wrap("hash1")),
+            new Data("s3://somebucket/foo/input2")
     );
 
     final String jobId = db.createJob(
@@ -211,7 +211,7 @@ public class LBDatabaseTest extends PrototypeTest {
             "1",
             "impl1",
             inputs,
-            "/out",
+            "s3://somebucket/out",
             "",
             ImmutableMap.of("k1", "v1")).get();
 
@@ -228,7 +228,7 @@ public class LBDatabaseTest extends PrototypeTest {
     Assert.assertEquals("1", job.clientId);
     Assert.assertEquals("impl1", job.jobImplId);
     compareCollections(inputs, job.inputData);
-    Assert.assertEquals("/out", job.outputPrefix);
+    Assert.assertEquals("s3://somebucket/out", job.outputPrefix);
     Assert.assertEquals(ImmutableMap.of("k1", "v1"), job.metadata);
     Assert.assertEquals("/foo/impl1", job.jobImplArchive);
     compareCollections(output, job.getOutputData());

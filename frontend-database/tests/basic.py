@@ -81,7 +81,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req = envelope.request.add().set_impl
         req.impl_id = "total"
         req.user_id = "martin"
-        req.file.url = "the url"
+        req.file.url = "s3://somebucket/key"
         req.file.hash = "the hash"
         m = req.metadata.add()
         m.key = "the key1"
@@ -100,7 +100,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
             IMPLID|ID|USER|ARCHIVE|ARCHIVE_HASH
             logicblox.com-steve:internal:process-jobimpl|steve:internal:process-jobimpl|logicblox.com||
             otherdomain.com-steve:internal:process-jobimpl|steve:internal:process-jobimpl|otherdomain.com||
-            logicblox.com-total|total|martin|the url|the hash
+            logicblox.com-total|total|martin|s3://somebucket/key|the hash
         ''')
         self.assertDelimEqual(get_tdx_client("jobimpl_metadata").get(), '''
             IMPLID|ID|KEY|VALUE
@@ -114,7 +114,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req = envelope.request.add().set_impl
         req.impl_id = "total"
         req.user_id = "martin"
-        req.file.url = "the url"
+        req.file.url = "s3://somebucket/key"
         m = req.metadata.add()
         m.key = "the key1"
         m.value = "the value1"
@@ -133,7 +133,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
             IMPLID|ID|USER|ARCHIVE|ARCHIVE_HASH
             logicblox.com-steve:internal:process-jobimpl|steve:internal:process-jobimpl|logicblox.com||
             otherdomain.com-steve:internal:process-jobimpl|steve:internal:process-jobimpl|otherdomain.com||
-            logicblox.com-total|total|martin|the url|
+            logicblox.com-total|total|martin|s3://somebucket/key|
         ''')
         self.assertDelimEqual(get_tdx_client("jobimpl_metadata").get(), '''
             IMPLID|ID|KEY|VALUE
@@ -155,7 +155,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         expected_response = client.dynamic_response()
         text_format.Merge('''
             response { 
-              impl { id: "total" user_id: "martin" account_id: "logicblox.com" file { url: "the url" hash: "the hash" }
+              impl { id: "total" user_id: "martin" account_id: "logicblox.com" file { url: "s3://somebucket/key" hash: "the hash" }
                 metadata { key: "the key1" value: "the value1" }
                 metadata { key: "the key2" value: "the value2" }
               }
@@ -175,7 +175,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req = envelope.request.add().set_impl
         req.impl_id = "total2"
         req.user_id = "martin"
-        req.file.url = "the url2"
+        req.file.url = "s3://somebucket/key2"
         req.file.hash = "the hash2"
         client.dynamic_call(envelope)
 
@@ -184,7 +184,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req = envelope.request.add().set_impl
         req.impl_id = "total3"
         req.user_id = "jack"
-        req.file.url = "the url3"
+        req.file.url = "s3://somebucket/key3"
         req.file.hash = "the hash3"
         client.dynamic_call(envelope)
 
@@ -197,11 +197,11 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         expected_response = client.dynamic_response()
         text_format.Merge('''
             response { 
-              impl { id: "total" user_id: "martin" account_id: "logicblox.com" file { url: "the url" hash: "the hash" }
+              impl { id: "total" user_id: "martin" account_id: "logicblox.com" file { url: "s3://somebucket/key" hash: "the hash" }
                 metadata { key: "the key1" value: "the value1" }
                 metadata { key: "the key2" value: "the value2" }
               }
-              impl { id: "total2" user_id: "martin" account_id: "logicblox.com" file { url: "the url2" hash: "the hash2" } }
+              impl { id: "total2" user_id: "martin" account_id: "logicblox.com" file { url: "s3://somebucket/key2" hash: "the hash2" } }
             }
             ''', expected_response)
         self.compare_job_impls(expected_response, client.dynamic_call(envelope))
@@ -218,7 +218,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req = envelope.request.add().set_impl
         req.impl_id = "total"
         req.user_id = "martin"
-        req.file.url = "the url new"
+        req.file.url = "s3://somebucket/key new"
         req.file.hash = "the hash"
         # change the value of key1
         m = req.metadata.add()
@@ -244,7 +244,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         expected_response = client.dynamic_response()
         text_format.Merge('''
             response { 
-              impl { id: "total" user_id: "martin" account_id: "logicblox.com" file { url: "the url new" hash: "the hash" }
+              impl { id: "total" user_id: "martin" account_id: "logicblox.com" file { url: "s3://somebucket/key new" hash: "the hash" }
                 metadata { key: "the key1" value: "the value1 new" }
                 metadata { key: "the key3" value: "the value3" }
               }
@@ -296,10 +296,10 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req.output_prefix = "s3://something/something"
         req.user_id = "martin"
         f = req.input.add()
-        f.url = "the url"
+        f.url = "s3://somebucket/key"
         f.hash = "the hash"
         f = req.input.add()
-        f.url = "the url without hash"
+        f.url = "s3://somebucket/key without hash"
         m = req.metadata.add()
         m.key = "the key1"
         m.value = "the value1"
@@ -320,8 +320,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         self.assertDelimEqual(get_tdx_client("job_inputs").get(), '''
             ID|INPUT|HASH
-            1|the url|the hash
-            1|the url without hash|
+            1|s3://somebucket/key|the hash
+            1|s3://somebucket/key without hash|
         ''')
 
         self.assertDelimEqual(get_tdx_client("job_metadata").get(), '''
@@ -356,10 +356,10 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
                 output_prefix: "s3://something/something"
                 user_id: "martin"
                 input {
-                  url: "the url without hash"
+                  url: "s3://somebucket/key without hash"
                 }
                 input {
-                  url: "the url"
+                  url: "s3://somebucket/key"
                   hash: "the hash"
                 }
                 metadata {
@@ -370,7 +370,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
                   key: "the key1"
                   value: "the value1"
                 }
-                impl_archive: "the url"
+                impl_archive: "s3://somebucket/key"
               }
             }
             ''', expected_response)
@@ -531,7 +531,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
                 impl_id: "total"
                 output_prefix: "s3://something/something"
                 user_id: "martin"
-                impl_archive: "the url"
+                impl_archive: "s3://somebucket/key"
                 status { timestamp: 3 event: "the event3" machine: "the machine3" message: "status message3" }
                 status { timestamp: 1 event: "the event" machine: "the machine" message: "status message" } 
               }
@@ -554,19 +554,19 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req = envelope.request.add().set_result
         req.job_id = "1"
         f = req.output.add()
-        f.url = "the url 1"
+        f.url = "s3://somebucket/key 1"
         f.hash = "the hash 1"
         f = req.output.add()
-        f.url = "the url 2"
+        f.url = "s3://somebucket/key 2"
         f.hash = "the hash 2"
 
         req = envelope.request.add().set_result
         req.job_id = "wrong id"
         f = req.output.add()
-        f.url = "the url 3"
+        f.url = "s3://somebucket/key 3"
         f.hash = "the hash 3"
         f = req.output.add()
-        f.url = "the url 4"
+        f.url = "s3://somebucket/key 4"
         f.hash = "the hash 4"
 
 
@@ -582,8 +582,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("job_outputs").get(), '''
             ID|OUTPUT|HASH
-            1|the url 1|the hash 1
-            1|the url 2|the hash 2
+            1|s3://somebucket/key 1|the hash 1
+            1|s3://somebucket/key 2|the hash 2
         ''')
 
         # now use get result
@@ -605,9 +605,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
                 impl_id: "total"
                 output_prefix: "s3://something/something"
                 user_id: "martin"
-                impl_archive: "the url"
-                output { url: "the url 1" hash: "the hash 1" }
-                output { url: "the url 2" hash: "the hash 2" }
+                impl_archive: "s3://somebucket/key"
+                output { url: "s3://somebucket/key 1" hash: "the hash 1" }
+                output { url: "s3://somebucket/key 2" hash: "the hash 2" }
               }
             }
             response { error { code: "NO_SUCH_JOB" message: "Job '5' does not exist." } }
@@ -646,10 +646,10 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req = envelope.request.add().set_result
         req.job_id = "1"
         f = req.output.add()
-        f.url = "the url 1"
+        f.url = "s3://somebucket/key 1"
         f.hash = "the hash 1"
         f = req.output.add()
-        f.url = "the url 2"
+        f.url = "s3://somebucket/key 2"
         f.hash = "the hash 2"
 
         client.dynamic_call(envelope)
@@ -675,13 +675,13 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
                 user_id: "martin"
                 metadata { key: "the key2" value: "the value2" }
                 metadata { key: "the key1" value: "the value1" }
-                impl_archive: "the url"
+                impl_archive: "s3://somebucket/key"
                 status { timestamp: 3 event: "the event3" machine: "the machine3" message: "status message3" }
                 status { timestamp: 1 event: "the event1" machine: "the machine1" message: "status message1" } 
-                input { url: "the url"   hash: "the hash" }
-                input { url: "the url without hash" }
-                output { url: "the url 1" hash: "the hash 1" }
-                output { url: "the url 2" hash: "the hash 2" }
+                input { url: "s3://somebucket/key"   hash: "the hash" }
+                input { url: "s3://somebucket/key without hash" }
+                output { url: "s3://somebucket/key 1" hash: "the hash 1" }
+                output { url: "s3://somebucket/key 2" hash: "the hash 2" }
                 cpu_usage: 1
                 max_memory: 2
               }

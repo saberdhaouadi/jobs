@@ -125,7 +125,8 @@ block(`create_job) {
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_output_prefix[req] = prefix,
-      ! string:like(prefix, "s3://%").
+      ! string:like(prefix, "s3://%"),
+      prefix != "".
 
     +service_support:export_error(index, "INVALID_PLATFORM", "Platform '" + platformId + "' not supported.") <-
       +proto:RequestEnvelope_request[_, index] = union,
