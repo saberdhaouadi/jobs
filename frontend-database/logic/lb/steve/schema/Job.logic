@@ -112,7 +112,6 @@
     */
     cpu_usage[job] = u -> Job(job), int(u).
     max_memory[job] = m -> Job(job), int(m).
-    max_disk_usage[job] = m -> Job(job), int(m).
   }),
 
   sealed(`{

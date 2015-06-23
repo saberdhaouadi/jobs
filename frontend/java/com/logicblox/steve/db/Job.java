@@ -78,7 +78,6 @@ public final class Job {
    */
   public final long cpuUsage;
   public final long maxMemory;
-  public final long maxDiskUsage;
 
   // mutable state
 
@@ -122,8 +121,7 @@ public final class Job {
              Collection<Data> inputData,
              String jobImplArchive,
              long cpuUsage,
-             long maxMemory,
-             long maxDiskUsage) {
+             long maxMemory) {
 
     this.id = jobId;
     this.userId = userId;
@@ -138,7 +136,6 @@ public final class Job {
     this.inputData = Collections.unmodifiableCollection(inputData);
     this.cpuUsage = cpuUsage;
     this.maxMemory = maxMemory;
-    this.maxDiskUsage = maxDiskUsage;
   }
 
   /**
@@ -167,10 +164,9 @@ public final class Job {
              String jobImplArchive,
              long cpuUsage,
              long maxMemory,
-             long maxDiskUsage,
              Collection<Data> outputData,
              List<Status> status) {
-    this(jobId, userId, accountId, clientId, outputPrefix, outputEncryptionKey, jobImplId, metadata, inputData, jobImplArchive, cpuUsage, maxMemory, maxDiskUsage);
+    this(jobId, userId, accountId, clientId, outputPrefix, outputEncryptionKey, jobImplId, metadata, inputData, jobImplArchive, cpuUsage, maxMemory);
     this._outputData.addAll(outputData);
     this._status.addAll(status);
   }

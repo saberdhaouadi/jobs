@@ -112,7 +112,6 @@ message JobResultResponse {
   repeated File output = 2;
   optional int64 cpu_usage = 3;
   optional int64 max_memory = 4;
-  optional int64 max_disk_usage = 5;
 }
 
 

@@ -29,14 +29,12 @@ block(`add_status) {
       schema:Job_id[job] = jobId.
 
     ^schema:Job:cpu_usage[job] = u,
-    ^schema:Job:max_memory[job] = m,
-    ^schema:Job:max_disk_usage[job] = d  <-
+    ^schema:Job:max_memory[job] = m  <-
       +proto:RequestEnvelope_request[_, _] = union,
       +proto:Request_add_status[union] = req,
       +proto:AddStatusRequest_status[req] = status,
       +proto:Status_cpu_usage[status]=u,
       +proto:Status_max_memory[status]=m,
-      +proto:Status_max_disk_usage[status]=d,
       +proto:AddStatusRequest_job_id[req] = jobId,
       schema:Job_id[job] = jobId.
 

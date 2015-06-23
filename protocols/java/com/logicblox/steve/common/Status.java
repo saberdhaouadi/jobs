@@ -27,7 +27,6 @@ public final class Status {
   public final String message;
   public final long cpuUsage;
   public final long maxMemory;
-  public final long maxDiskUsage;
 
 
   /**
@@ -39,9 +38,8 @@ public final class Status {
    * @param message
    * @param cpuUsage
    * @param maxMemory
-   * @param maxDiskUsage
    */
-  public Status(long timestamp, Event event, String machine, String message, long cpuUsage, long maxMemory, long maxDiskUsage) {
+  public Status(long timestamp, Event event, String machine, String message, long cpuUsage, long maxMemory) {
     this.timestamp = timestamp;
     this.event = event;
     this.machine = machine;
@@ -49,7 +47,6 @@ public final class Status {
 
     this.cpuUsage = cpuUsage;
     this.maxMemory = maxMemory;
-    this.maxDiskUsage = maxDiskUsage;
   }
 
   public boolean hasMessage() {
@@ -67,10 +64,9 @@ public final class Status {
     public String message = null;
     public long cpuUsage;
     public long maxMemory;
-    public long maxDiskUsage;
 
     public Status build() {
-      return new Status(timestamp, event, machine, message, cpuUsage, maxMemory, maxDiskUsage);
+      return new Status(timestamp, event, machine, message, cpuUsage, maxMemory);
     }
   }
 

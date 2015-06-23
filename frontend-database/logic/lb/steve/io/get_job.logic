@@ -65,13 +65,6 @@ block(`get_job) {
       +service_support:job[index] = protoJob,
       schema:Job:cpu_usage@prev[jobId] = u.
 
-    +proto:Job_max_disk_usage[protoJob] = u <-
-      +proto:RequestEnvelope_request[_, index] = union,
-      +proto:Request_get_job[union] = req,
-      +proto:GetJobRequest_job_id[req] = jobId,
-      +service_support:job[index] = protoJob,
-      schema:Job:max_disk_usage@prev[jobId] = u.
-
 
     // populate input with file messages
     input_cons[jobId, url] = file -> string(jobId), string(url), proto:File(file).

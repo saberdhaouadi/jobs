@@ -368,7 +368,6 @@ public class SteveHandler extends ProtoBufHandler {
                 //if( job.cpuUsage != 0 && job.maxMemory != 0) {
                 //  b.setCpuUsage(job.cpuUsage);
                 //  b.setMaxMemory(job.maxMemory);
-                //  b.setMaxDiskUsage(job.maxDiskUsage);
                 //}
 
                 Frontend.Response.Builder response = Frontend.Response.newBuilder();

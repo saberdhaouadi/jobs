@@ -88,7 +88,6 @@ message Job
 
   optional int64 cpu_usage = 13;
   optional int64 max_memory = 14;
-  optional int64 max_disk_usage = 15;
 }
 
 message JobImpl
@@ -203,9 +202,8 @@ message Status
   required string event      = 2;
   required string machine    = 3;
   required string message    = 4;
-  optional int64  cpu_usage      = 5;
-  optional int64  max_memory     = 6;
-  optional int64  max_disk_usage = 7;
+  optional int64  cpu_usage  = 5;
+  optional int64  max_memory = 6;
 }
 
 
