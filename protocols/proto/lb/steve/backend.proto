@@ -81,6 +81,7 @@ message ProgressDetails {
 message ResourceUsage {
   required int64 cpu_usage = 1;
   required int64 max_memory = 2;
+  required int64 max_disk_usage = 3;
 }
 
 /**

@@ -213,6 +213,8 @@ public class Conversions {
         res.setCpuUsage(status.cpuUsage);
     if(status.maxMemory !=0)
         res.setMaxMemory(status.maxMemory);
+    if(status.maxDiskUsage != 0)
+        res.setMaxDiskUsage(status.maxDiskUsage);
     return res.build();
   }
 

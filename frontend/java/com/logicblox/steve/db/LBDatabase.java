@@ -211,6 +211,7 @@ public class LBDatabase implements Database {
                         job.getImplArchive(),
                         job.hasCpuUsage() ? job.getCpuUsage(): 0,
                         job.hasMaxMemory() ? job.getMaxMemory() : 0,
+                        job.hasMaxDiskUsage() ? job.getMaxDiskUsage() : 0,
                         Conversions.convertFromDatabaseFiles(job.getOutputList()),
                         Conversions.convertFromDatabaseStatus(job.getStatusList())
                         );
