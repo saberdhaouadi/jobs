@@ -54,7 +54,6 @@ public class LBDatabase implements Database {
     _batcher.start();
 
     _readOnlyBatcher = new LBDatabaseBatcher(_client, true);
-    _readOnlyBatcher.window = 200;
     _readOnlyBatcher.start();
   }
   
