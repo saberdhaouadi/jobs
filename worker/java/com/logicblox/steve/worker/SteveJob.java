@@ -58,6 +58,9 @@ public class SteveJob {
   private boolean _completed = false;
   private String _internalError = null;
 
+  private long _diskFreeStart = 0;
+  private long _maxDiskUsage = 0;
+ 
   private File _keyDir = new File(com.logicblox.s3lib.Utils.getDefaultKeyDirectory());
   private SteveKeyServerHelper _keyHelper;
   private File _cpuacct = new File("/sys/fs/cgroup/cpu,cpuacct/system.slice/nix-daemon.service/cpuacct.usage");
@@ -98,7 +101,6 @@ public class SteveJob {
     log("Starting..." + _id);
     long cpuUsage = 0;
     long maxMemory = 0;
-    long maxDiskUsage = 0;
 
     try {
       _outgoing.notifyStart();
@@ -119,7 +121,7 @@ public class SteveJob {
       }
 
       List<S3File> output = uploadOutput();
-      _outgoing.notifySuccess(output, cpuUsage, maxMemory, maxDiskUsage);
+      _outgoing.notifySuccess(output, cpuUsage, maxMemory, _maxDiskUsage);
       log("Successfully uploaded output files for job " + _id);
       teardown();
     } catch (JobKilledException k) {
@@ -191,6 +193,8 @@ public class SteveJob {
     } catch (Exception e) {
     }
 
+    _diskFreeStart = _inputPath.getFreeSpace();
+
     downloadJobImpl();
 
     if(_outputEncryptionKey != null) {
@@ -222,10 +226,10 @@ public class SteveJob {
       throw new InternalException("Could not write metadata.", e);
     }
 
-    resetCgroupCounters();
+    resetCounters();
   }
 
-  private void resetCgroupCounters() {
+  private void resetCounters() {
     try {
       FileUtils.writeStringToFile(_memacct, "-1");
       FileUtils.writeStringToFile(_cpuacct, "0");
@@ -419,5 +423,12 @@ public class SteveJob {
 
   public boolean hasCompleted() {
     return _completed;
+  }
+
+  public void updateMaxDiskUsage() {
+    long currentUsage = _diskFreeStart - _inputPath.getFreeSpace();
+    if(_maxDiskUsage < currentUsage) {
+      _maxDiskUsage = currentUsage;
+    }
   }
 }

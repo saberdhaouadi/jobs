@@ -27,5 +27,8 @@ public class SteveJobLogHandler extends LogOutputStream {
     if (line.endsWith("timed out after " + _job.getTimeout() + " seconds")) {
       _job.setTimedOut();
     }
+
+    // update max disk usage
+    _job.updateMaxDiskUsage();
   }
 }
