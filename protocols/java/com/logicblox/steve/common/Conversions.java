@@ -213,6 +213,8 @@ public class Conversions {
         res.setCpuUsage(status.cpuUsage);
     if(status.maxMemory !=0)
         res.setMaxMemory(status.maxMemory);
+    if(status.maxDiskUsage != 0)
+        res.setMaxDiskUsage(status.maxDiskUsage);
     return res.build();
   }
 
@@ -221,7 +223,7 @@ public class Conversions {
             status.getTimestamp(),
             Event.valueOf(status.getEvent()),
             status.getMachine(),
-            status.getMessage(), 0, 0);
+            status.getMessage(), 0, 0, 0);
   }
 
   // multiple

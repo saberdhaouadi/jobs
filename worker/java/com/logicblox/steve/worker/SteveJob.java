@@ -98,6 +98,7 @@ public class SteveJob {
     log("Starting..." + _id);
     long cpuUsage = 0;
     long maxMemory = 0;
+    long maxDiskUsage = 0;
 
     try {
       _outgoing.notifyStart();
@@ -118,7 +119,7 @@ public class SteveJob {
       }
 
       List<S3File> output = uploadOutput();
-      _outgoing.notifySuccess(output, cpuUsage, maxMemory);
+      _outgoing.notifySuccess(output, cpuUsage, maxMemory, maxDiskUsage);
       log("Successfully uploaded output files for job " + _id);
       teardown();
     } catch (JobKilledException k) {
@@ -221,6 +222,10 @@ public class SteveJob {
       throw new InternalException("Could not write metadata.", e);
     }
 
+    resetCgroupCounters();
+  }
+
+  private void resetCgroupCounters() {
     try {
       FileUtils.writeStringToFile(_memacct, "-1");
       FileUtils.writeStringToFile(_cpuacct, "0");

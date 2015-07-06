@@ -176,10 +176,10 @@ public class LBDatabaseTest extends PrototypeTest {
             ImmutableMap.of("k1", "v1")).get();
 
     // now add status
-    final Status status1 = new Status(12, Event.STARTED, "my machine", "great message", 0, 0);
+    final Status status1 = new Status(12, Event.STARTED, "my machine", "great message", 0, 0, 0);
     db.addStatus(jobId, status1).get();
 
-    final Status status2 = new Status(32, Event.CANCELLED, "my machine", "great message", 0, 0);
+    final Status status2 = new Status(32, Event.CANCELLED, "my machine", "great message", 0, 0, 0);
     db.addStatus(jobId, status2).get();
 
     final Job job = db.getJob(jobId).get();

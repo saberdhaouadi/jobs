@@ -153,6 +153,7 @@ public class StatusQueueClient {
         if(protoStatus.hasResourceUsage()) {
           status.cpuUsage = protoStatus.getResourceUsage().getCpuUsage();
           status.maxMemory = protoStatus.getResourceUsage().getMaxMemory();
+          status.maxDiskUsage = protoStatus.getResourceUsage().getMaxDiskUsage();
         }
         if (protoStatus.hasSucceededDetails()) {
           final List<Data> output =
