@@ -18,7 +18,7 @@ workflow fail()
 
 
 workflow runOnAllQueues(impl)
-  forall(q in {"c3-xlarge", "r3-xlarge", "r3-2xlarge", "r3-8xlarge", "i2-2xlarge" }) {
+  forall(q in {"c3-xlarge", "r3-xlarge", "r3-2xlarge", "r3-8xlarge", "i2-2xlarge", "c3-4xlarge" }) {
     runJob(impl=$impl, metadata={"job-queue=$(q)"})
   }
 
