@@ -112,7 +112,8 @@ block(`create_job) {
     ; p = "4.1.8"
     ; p = "4.1.9"
     ; p = "4.2.0"
-    ; p = "4.2.1".
+    ; p = "4.2.1"
+    ; p = "4.3.0".
 
     +service_support:export_error(index, "INVALID_INPUT", "Input '" + url + "' is invalid. Should be a S3 URL.") <-
       +proto:RequestEnvelope_request[_, index] = union,
