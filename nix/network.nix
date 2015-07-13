@@ -95,7 +95,7 @@ let
       env_credentials = false
       sqs_endpoint = sqs.${region}.amazonaws.com
       sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsName t}
-      ${if (pkgs.lib.head instanceTypes == t) then "default = true" else ""}
+      ${if (t == "c3.xlarge") then "default = true" else ""}
       '') instanceTypes}
 
       [status-queue]
