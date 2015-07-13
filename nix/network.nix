@@ -343,6 +343,8 @@ with pkgs.lib;
         "54.154.69.157" # kiabi-dev
         "52.17.16.150" # kiabi-dev
         "52.16.133.24" # kiabi-dev
+        "54.76.162.121" # kiabi-dev
+        "54.77.94.210" # kiabi-dev
         "52.0.109.86" # pdf-wfm-dev
         "52.5.128.41" # pdf-wfm-dev
       ];
