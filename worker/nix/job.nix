@@ -14,6 +14,7 @@ in
       pkgs.socat
       pkgs.jq
       pkgs.curl
+      pkgs.perl
     ];
 
     LB_MONITOR_RULE_TIME="30";
