@@ -216,6 +216,13 @@ public class Main {
     int waitingMsgs = Integer.parseInt(result.get("ApproximateNumberOfMessages"));
     int busyMsgs = Integer.parseInt(result.get("ApproximateNumberOfMessagesNotVisible"));
 
+    // For workloads where only a few jobs are queued/running, start instance for each.
+    // This will prevent the most common scenario, where we get notified by jobs that are
+    // queued longer than an hour.
+    if (busyMsgs + waitingMsgs <= 5) {
+      minInstances = busyMsgs + waitingMsgs;
+    }
+
     if (totalNeeded == 0) {
       totalNeeded = (int) Math.ceil((busyMsgs + waitingMsgs) * pctQueue);
     }
