@@ -129,7 +129,7 @@ public class SteveJob {
       _killed = true;
     } catch (InternalException e) {
       if(_receiveCount >= 2) {
-        _outgoing.notifyFailure(new InternalException("Retried job multiple time, but keep hitting internal error."));
+        _outgoing.notifyFailure(new InternalException("Retried job multiple time, but keep hitting internal error."), cpuUsage, maxMemory, _maxDiskUsage);
       } else {
         _outgoing.notifyStatus("There was an internal error while executing the job. It will be restarted on another worker.");
         if(e.getCause() != null) {
@@ -140,7 +140,7 @@ public class SteveJob {
     } catch (Exception e) {
       log("Failure executing " + _id + ": " + e.getMessage());
       e.printStackTrace();
-      _outgoing.notifyFailure(e);
+      _outgoing.notifyFailure(e, cpuUsage, maxMemory, _maxDiskUsage);
       teardown();
     }
   }

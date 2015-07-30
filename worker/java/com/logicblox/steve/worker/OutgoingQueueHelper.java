@@ -44,7 +44,7 @@ public class OutgoingQueueHelper {
     }
   }
 
-  public void notifyFailure(Exception e) {
+  public void notifyFailure(Exception e, long cpuUsage, long maxMemory, long maxDiskUsage) {
     Backend.JobStatus.Builder msgBuilder = getBuilder();
     msgBuilder.setStatusCode(Backend.StatusCode.FAILED);
 
@@ -72,6 +72,7 @@ public class OutgoingQueueHelper {
               Backend.FailedDetails.newBuilder()
                       .setErrorCode("INTERNAL_ERROR"));
     }
+    msgBuilder.setResourceUsage(Backend.ResourceUsage.newBuilder().setCpuUsage(cpuUsage).setMaxMemory(maxMemory).setMaxDiskUsage(maxDiskUsage));
 
     sendResult(msgBuilder.build());
   }
