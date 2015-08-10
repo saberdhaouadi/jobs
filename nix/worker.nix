@@ -152,6 +152,7 @@ in
         ExecStart = "${workerScript}/bin/worker ${optionalString cfg.shutdownOnIdle "--shutdown-on-idle"}";
         Restart = "always";
         RestartSec = "10";
+        LimitNOFILE = 65536;
       };
     };
 
