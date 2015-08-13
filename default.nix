@@ -1,5 +1,5 @@
 { src_s3lib ? <src_s3lib>
-, platform_release ? "4.1.7"
+, platform_release
 }:
 let
   builder_config = import <config> {};
