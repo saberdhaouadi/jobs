@@ -65,6 +65,7 @@ in
       fi
 
       tar --strip-components=1 -xf /tmp/job/job.tar.gz
+      chmod -R u+w .
 
       echo ""
       echo "running job"
