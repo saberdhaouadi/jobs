@@ -20,7 +20,7 @@ public class Main {
   private static String queue = "c3-xlarge";
   private static String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
-  private static String ami = "ami-bfce66d4";
+  private static String ami = "ami-dfa60cb4";
   private static String key = "rob";
   private static String region = "us-east-1";
   private static String s3Bucket = "steve-jobs";
