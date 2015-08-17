@@ -48,13 +48,15 @@
     +JobImpl_code[impl] = code,
     +id[impl] = implId,
     +archive[impl] = "",
-    +system:app:User(userId),
-    +JobImpl:user[impl] = userId,
-    +User_account[userId] = account  <-
+    +system:app:User(user),
+    +system:app:User:name[user]=userId,
+    +JobImpl:user[impl] = user,
+    +User_account[user] = account  <-
       +Account@initial(account),
+      +Account_id[account] = accountId,
       implId="steve:internal:process-jobimpl",
-      code = account + "-" + implId,
-      userId = account + "".
+      code = accountId + "-" + implId,
+      userId = accountId + "".
 
   })
 

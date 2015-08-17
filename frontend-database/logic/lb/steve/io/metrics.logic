@@ -36,7 +36,7 @@ block(`metrics) {
     // RUNNING
     +ensure_int_metric[key] = 0
       <- !running_queue(q), +cons[_] = _,
-         lb:steve:provision:jobqueue(q),
+         lb:steve:provision:jobqueue_id[_]=q,
          key="lb.steve.running."+q.
 
     +ensure_int_metric[key] = r
@@ -49,7 +49,7 @@ block(`metrics) {
     // QUEUED
     +ensure_int_metric[key] = 0
       <- !queued_queue(q), +cons[_] = _,
-         lb:steve:provision:jobqueue(q),
+         lb:steve:provision:jobqueue_id[_]=q,
          key="lb.steve.queued."+q.
 
     +ensure_int_metric[key] = n
@@ -71,7 +71,7 @@ block(`metrics) {
     // LONGEST QUEUED
     +ensure_int_metric[key] = 0
       <- !queued_queue(q), +cons[_] = _,
-         lb:steve:provision:jobqueue(q),
+         lb:steve:provision:jobqueue_id[_]=q,
          key="lb.steve.queued_time."+q+".max".
 
     +ensure_int_metric[key] = n
@@ -85,7 +85,7 @@ block(`metrics) {
     // SHORTEST QUEUED
     +ensure_int_metric[key] = 0
       <- !queued_queue(q), +cons[_] = _,
-         lb:steve:provision:jobqueue(q),
+         lb:steve:provision:jobqueue_id[_]=q,
          key="lb.steve.queued_time."+q+".min".
 
     +ensure_int_metric[key] = n

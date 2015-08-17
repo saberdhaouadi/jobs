@@ -33,7 +33,8 @@ block(`create_job) {
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_client_id[req] = clientId,
-      schema:Job:by_client_id@prev[clientId] = jobId.
+      schema:Job:by_client_id@prev[clientId] = job,
+      schema:Job_id[job]=jobId.
 
     // job needs to be created
     +create_new_job(req) <-

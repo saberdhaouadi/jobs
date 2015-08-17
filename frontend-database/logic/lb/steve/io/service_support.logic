@@ -161,8 +161,8 @@ block(`service_support) {
       +ensure_impl(index, userId, jobImplId),
       system:app:User:name(user:userId),
       schema:User_account@prev[user] = account,
-      schema:Account_id(account:accountId),
-      code = account + "-" + jobImplId,
+      schema:Account_id[account] = accountId,
+      code = accountId + "-" + jobImplId,
       !schema:JobImpl_code[_] = code.
 
   })

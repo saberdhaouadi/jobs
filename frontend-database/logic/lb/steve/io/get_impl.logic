@@ -73,7 +73,7 @@ block(`get_impl) {
     +proto:File(file),
     +proto:File_url[file] = url,
     +proto:JobImpl_user_id[proto] = userId,
-    +proto:JobImpl_account_id[proto] = account,
+    +proto:JobImpl_account_id[proto] = accountId,
     +proto:JobImpl_file[proto] = file <-      
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_get_impl[union] = _,
@@ -82,6 +82,7 @@ block(`get_impl) {
       schema:JobImpl:user@prev[impl] = user,
       system:app:User:name@prev(user:userId),
       schema:User_account@prev[user] = account,
+      schema:Account_id@prev[account] = accountId,
       schema:JobImpl:archive@prev[impl] = url.
         
     // hash is optional, so it needs a separate rule

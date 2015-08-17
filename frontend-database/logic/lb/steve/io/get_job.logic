@@ -25,7 +25,7 @@ block(`get_job) {
     +proto:Job_impl_id[protoJob] = impl_id,
     +proto:Job_output_prefix[protoJob] = output_prefix,
     +proto:Job_user_id[protoJob] = user_id,
-    +proto:Job_account_id[protoJob] = account,
+    +proto:Job_account_id[protoJob] = account_id,
     +proto:Job_impl_archive[protoJob] = impl_archive <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_get_job[union] = req,
@@ -39,6 +39,7 @@ block(`get_job) {
       schema:JobImpl:id[impl] = impl_id,
       system:app:User:name(user:user_id),
       schema:User_account@prev[user] = account,
+      schema:Account_id@prev[account] = account_id,
       schema:JobImpl:account[impl] = account,
       schema:JobImpl:archive[impl] = impl_archive.
 
@@ -56,21 +57,24 @@ block(`get_job) {
       +proto:Request_get_job[union] = req,
       +proto:GetJobRequest_job_id[req] = jobId,
       +service_support:job[index] = protoJob,
-      schema:Job:max_memory@prev[jobId] = m.
+      schema:Job_id@prev[job]=jobId,
+      schema:Job:max_memory@prev[job] = m.
 
     +proto:Job_cpu_usage[protoJob] = u <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_get_job[union] = req,
       +proto:GetJobRequest_job_id[req] = jobId,
       +service_support:job[index] = protoJob,
-      schema:Job:cpu_usage@prev[jobId] = u.
+      schema:Job_id@prev[job]=jobId,
+      schema:Job:cpu_usage@prev[job] = u.
 
     +proto:Job_max_disk_usage[protoJob] = u <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_get_job[union] = req,
       +proto:GetJobRequest_job_id[req] = jobId,
       +service_support:job[index] = protoJob,
-      schema:Job:max_disk_usage@prev[jobId] = u.
+      schema:Job_id@prev[job]=jobId,
+      schema:Job:max_disk_usage@prev[job] = u.
 
 
     // populate input with file messages

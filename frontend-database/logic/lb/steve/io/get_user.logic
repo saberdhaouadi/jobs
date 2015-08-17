@@ -23,7 +23,7 @@ block(`get_user) {
     +user_cons[user] = proto,
     +proto:User(proto),
     +proto:User_id[proto] = userId,
-    +proto:User_account_id[proto] = account,
+    +proto:User_account_id[proto] = accountId,
     +proto:User_public_key[proto] = key,
     +proto:ResponseEnvelope_response[env, index] = resp,
     +proto:Response_user[resp] = proto <-
@@ -33,6 +33,7 @@ block(`get_user) {
       +proto:GetUserRequest_user_id[req] = userId,      
       system:app:User:name(user:userId),
       schema:User_account@prev[user] = account,
+      schema:Account_id@prev[account] = accountId,
       lb:web:credentials:database:public_key[user] = key.
 
   })
