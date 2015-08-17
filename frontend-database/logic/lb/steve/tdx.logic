@@ -277,6 +277,30 @@ block(`tdx) {
     delim_service(x) {
       delim_file_binding[] = "jobimpl_metadata"
     }.
+  }),
+
+  clauses(`{
+    file_definition_by_name["platform_versions"] = fd,
+    file_definition(fd) {
+      file_delimiter[] = "|",
+      column_headers[] = "VERSION",
+      column_formats[] = "string"
+    }.
+
+    file_binding_by_name["platform_versions"] = fb,
+    file_binding(fb) {
+      predicate_binding_by_name["lb:steve:schema:supported_platform_version"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "VERSION"
+        },
+      file_binding_definition_name[] = "platform_versions"
+    }.
+
+    service_by_prefix["/tdx/platform_versions"] = x,
+    delim_service(x) {
+      delim_file_binding[] = "platform_versions"
+    }.
   })
+
 
 } <-- . 

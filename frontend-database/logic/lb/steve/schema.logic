@@ -23,6 +23,10 @@ block(`schema) {
      */
     User_account[u] = a -> system:app:User(u), Account(a).
 
+    /**
+     * Whether a version is a supported platform version
+     */
+    supported_platform_version(p) -> string(p).
   })
 
 } <-- .

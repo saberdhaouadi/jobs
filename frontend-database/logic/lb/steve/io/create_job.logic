@@ -102,20 +102,6 @@ block(`create_job) {
       +schema:Job_id[job] = id,
       +proto:CreateJobRequest_output_encryption_key[req] = key.
 
-    // Check if platform version is available.
-    platform_version(p) -> string(p).
-    platform_version(p) <-
-      p = "3.10.15"
-    ; p = "4.1.5"
-    ; p = "4.1.6"
-    ; p = "4.1.7"
-    ; p = "4.1.8"
-    ; p = "4.1.9"
-    ; p = "4.2.0"
-    ; p = "4.2.1"
-    ; p = "4.3.0"
-    ; p = "4.3.1".
-
     +service_support:export_error(index, "INVALID_INPUT", "Input '" + url + "' is invalid. Should be a S3 URL.") <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
@@ -136,7 +122,7 @@ block(`create_job) {
       +proto:CreateJobRequest_metadata(req, p),
       +proto:Param_key[p] = "platform",
       +proto:Param_value[p] = platformId,
-      !platform_version(platformId).
+      !lb:steve:schema:supported_platform_version(platformId).
 
     // Check no-services value
     +service_support:export_error(index, "INVALID_METADATA", "Value of 'no-services' can only be 'true'.") <-
