@@ -13,7 +13,8 @@ workflow importAll()[location]
       "/tdx/job_inputs=$(location)/job_inputs.csv.gz",
       "/tdx/job_outputs=$(location)/job_outputs.csv.gz",
       "/tdx/job_status=$(location)/job_status.csv.gz",
-      "/tdx/provision-config=$(location)/provision-config.csv.gz"
+      "/tdx/provision-config=$(location)/provision-config.csv.gz",
+      "/tdx/platform_versions=$(location)/platform_versions.csv.gz"
     },
     load_timeout=36000,
     txn_timeout=30000,
