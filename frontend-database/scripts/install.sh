@@ -11,7 +11,7 @@ function trap_handler() {
 
 top=$(cd $(dirname $0); pwd)
 
-tdx="users jobimpls jobimpl_metadata jobs job_metadata job_inputs job_outputs job_status provision-config"
+tdx="users jobimpls jobimpl_metadata jobs job_metadata job_inputs job_outputs job_status provision-config platform_versions"
 backup_dir="$LB_DEPLOYMENT_HOME/exports/`date +"%Y%m%d-%H%M%S"`"
 latest_link=$LB_DEPLOYMENT_HOME/exports/latest
 
@@ -39,7 +39,9 @@ lb web-server load-services
 if [[ -e $latest_link ]]; then
   echo "Importing data from $(readlink -f $latest_link)"
   for t in $tdx; do
-    echo " - $t"
-    lb web-client import -n -i file://$latest_link/$t.csv http://localhost:8080/tdx/$t
+    if [[ -f $latest_link/$t.csv ]]; then
+      echo " - $t"
+      lb web-client import -n -i file://$latest_link/$t.csv http://localhost:8080/tdx/$t
+    fi
   done
 fi
