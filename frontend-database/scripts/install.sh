@@ -33,7 +33,11 @@ fi
 db_created=1
 lb create --overwrite lb-steve
 
-lb addproject lb-steve $top/share/lb_steve_frontend_database --libpath $LB_WEBSERVER_HOME:$top/share
+proj=$top/share/lb_steve_frontend_database
+if [[ ! -d $proj ]]; then
+  proj=$top/share/lb-steve-frontend-database/lb_steve_frontend_database
+fi
+lb addproject lb-steve $proj --libpath $LB_WEBSERVER_HOME:$top/share
 lb web-server load-services
 
 if [[ -e $latest_link ]]; then
