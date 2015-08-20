@@ -589,6 +589,10 @@ with pkgs.lib;
       services.logicblox.logicblox = platform.logicblox;
       services.logicblox.lbWeb = platform.bloxweb;
       services.logicblox.lbWorkflow = platform.lb-workflow;
+      services.logicblox.config.lb-server = ''
+        [workspace]
+        auto_backup_mode=none
+      '';
 
       services.logicblox.config.lb-web-server = ''
         [statsd]
