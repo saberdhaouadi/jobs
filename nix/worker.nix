@@ -8,8 +8,7 @@ let
 
   builder-config = import <config> {};
   platform3 = builder-config.releases.platform."3.10.15";
-  platform4 = builder-config.releases.platform."4.1.7";
-  builds = import ../. { platform_release = platform4; };
+  builds = import ../. { platform_release = builder-config.getPlatform "4.3.1"; };
   
   cfg = config.lb-steve-worker;
   workerScript =
@@ -63,8 +62,6 @@ in
     environment.systemPackages = [
       platform3.logicblox
       platform3.bloxweb
-      platform4.logicblox
-      platform4.bloxweb
       builder-config.releases.pdxscience."4.0.0".pdxscience
 
       # actual packages

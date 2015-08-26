@@ -74,7 +74,7 @@ let
       ec2.metadata = true;
     };
 
-  builds = import ../. {};
+  builds = import ../. { platform_release = builder-config.getPlatform "4.3.1"; };
   s3Name = "steve-jobs-${name}";
   frontendConfig = pkgs.writeText "lb-steve-frontend.config" 
     ''
@@ -564,7 +564,7 @@ with pkgs.lib;
   "database-${name}" =
     { config, pkgs, resources, nodes, ... }:
     let
-      platform = builder-config.getPlatform "4.1.7"; #<platform_release>;
+      platform = builder-config.getPlatform "4.3.1"; #<platform_release>;
     in
     {
       deployment.targetEnv = "ec2";
@@ -582,6 +582,7 @@ with pkgs.lib;
         <lbdevops/logicblox/production.nix>
         <lbdevops/nixos/logicblox/lb40-module.nix>
         <lbdevops/nixos/logicblox/installer.nix>
+        <lbdevops/nixos/logicblox/datadog/all.nix>
         ./datadog/database.nix
       ] ;
 

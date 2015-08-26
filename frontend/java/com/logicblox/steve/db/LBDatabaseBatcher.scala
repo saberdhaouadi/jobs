@@ -47,7 +47,7 @@ class LBDatabaseBatcher(client: ProtobufServiceClient, readOnly: Boolean) extend
   /**
    * Use different window for readOnly batcher.
    */
-  override def window = if (readOnly) 200 else 500
+  override def window = if (readOnly) 100 else 200
   
   /**
    * The implementation of batching.

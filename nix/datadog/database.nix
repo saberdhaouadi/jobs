@@ -10,15 +10,5 @@
       [{}]
   '';
 
-  environment.etc."dd-agent/conf.d/process.yaml".text = ''
-    init_config:
-
-    instances:
-       - name: lb-server
-         search_string: ['lb-server']
-
-       - name: lb-pager
-         search_string: ['lb-pager']
-  '';
 }
 
