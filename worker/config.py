@@ -58,6 +58,7 @@ classpath = [
   '$(lb_web)/lib/java/gson-2.2.4.jar',  
   '$(lb_web)/lib/java/lb-web-client.jar',
   '$(lb_web)/lib/java/lb-web-server.jar',
+  '$(lb_web)/lib/java/log4j-1.2.13.jar',
   '$(lb_web)/lib/java/jetty-client-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-continuation-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-http-7.6.7.v20120910.jar',

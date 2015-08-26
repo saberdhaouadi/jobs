@@ -1,4 +1,4 @@
-{ src_s3lib ? <src_s3lib>
+{ src_s3lib ? <src_s3lib-dev>
 , platform_release
 }:
 let

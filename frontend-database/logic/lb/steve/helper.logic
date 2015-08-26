@@ -1,0 +1,22 @@
+block(`helper) {
+
+  export(`{
+    /**
+     * Pulse predicate to fail a job.
+     */
+    fail_job(job, reason) -> lb:steve:schema:Job(job), string(reason).
+  }),
+
+  clauses(`{
+    lang:pulse(`fail_job).
+
+    +lb:steve:schema:Job:status_event[job, ts] = "FAILED",
+    +lb:steve:schema:Job:status_machine[job, ts] = "frontend",
+    +lb:steve:schema:Job:status_message[job, ts] = message
+      <- +fail_job(job, reason),
+         ts = datetime:offset[datetime:create[1970,1,1,0,0,0],datetime:now[],"seconds"],
+         message = "INTERNAL_ERROR: "+reason.
+  })
+
+} <-- .
+
