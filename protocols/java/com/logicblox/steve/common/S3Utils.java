@@ -43,7 +43,7 @@ public class S3Utils {
     long chunkSize = Utils.getDefaultChunkSize();
 
     // TODO make retry count configurable
-    int retryCount = 3;
+    int retryCount = 7;
 
     S3Client result = new S3Client(
             (AWSCredentialsProvider)null,
