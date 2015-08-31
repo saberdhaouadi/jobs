@@ -28,7 +28,7 @@ public class SteveJobLogHandler extends LogOutputStream {
       _job.setTimedOut();
     }
 
-    if (line.endsWith("caused by lack of free disk space") {
+    if (line.endsWith("caused by lack of free disk space")) {
       _job.setDiskFull();
     }
 
