@@ -55,6 +55,7 @@ public class SteveJob {
 
   private boolean _timedOut = false;
   private boolean _killed = false;
+  private boolean _diskFull = false;
   private boolean _completed = false;
   private String _internalError = null;
 
@@ -395,6 +396,8 @@ public class SteveJob {
         throw new JobTimedOutException();
       } else if (_internalError != null) {
         throw new InternalException(_internalError);
+      } else if (_diskFull) {
+        throw new DiskFullException();
       } else if (exit == 1) {
         throw new JobKilledException();
       } else if (logPath.exists()) {
@@ -411,6 +414,10 @@ public class SteveJob {
 
   public void setTimedOut() {
     _timedOut = true;
+  }
+
+  public void setDiskFull() {
+    _diskFull = true;
   }
 
   public void setInternalError(String msg) {

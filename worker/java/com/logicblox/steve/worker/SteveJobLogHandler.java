@@ -28,6 +28,10 @@ public class SteveJobLogHandler extends LogOutputStream {
       _job.setTimedOut();
     }
 
+    if (line.endsWith("free disk space") {
+      _job.setDiskFull();
+    }
+
     // update max disk usage
     _job.updateMaxDiskUsage();
   }

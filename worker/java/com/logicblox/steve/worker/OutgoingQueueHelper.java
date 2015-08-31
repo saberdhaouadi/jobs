@@ -53,6 +53,10 @@ public class OutgoingQueueHelper {
               Backend.FailedDetails.newBuilder()
                       .setErrorCode("JOB_FAILED")
                       .setErrorMessage(e.getMessage()));
+    } else if (e instanceof DiskFullException) {
+      msgBuilder.setFailedDetails(
+              Backend.FailedDetails.newBuilder()
+                      .setErrorCode("DISK_FULL"));
     } else if (e instanceof JobTimedOutException) {
       msgBuilder.setFailedDetails(
               Backend.FailedDetails.newBuilder()
