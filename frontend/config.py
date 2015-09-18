@@ -52,7 +52,7 @@ classpath = [
   '$(lb_web)/lib/java/jetty-servlet-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-util-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-websocket-7.6.7.v20120910.jar',
-  '$(lb_web)/lib/java/joda-time-2.2.jar',
+  '$(lb_web)/lib/java/joda-time-2.8.1.jar',
   '$(lb_web)/lib/java/lb-common.jar',
   '$(lb_web)/lib/java/lb-common-protocol.jar',
   '$(lb_web)/lib/java/lb-web-client.jar',
@@ -77,12 +77,12 @@ classpath = [
 
   '$(s3lib)/lib/java/s3lib-0.2.jar',
   '$(s3lib)/lib/java/commons-io-2.4.jar',
-  '$(s3lib)/lib/java/aws-java-sdk-1.9.8.jar',
-  '$(s3lib)/lib/java/httpclient-4.3.jar',
-  '$(s3lib)/lib/java/httpcore-4.3.jar',  
-  '$(s3lib)/lib/java/jackson-annotations-2.3.0.jar',
-  '$(s3lib)/lib/java/jackson-core-2.3.2.jar',
-  '$(s3lib)/lib/java/jackson-databind-2.3.2.jar',
+  '$(s3lib)/lib/java/aws-java-sdk-1.10.20.jar',
+  '$(s3lib)/lib/java/httpclient-4.3.6.jar',
+  '$(s3lib)/lib/java/httpcore-4.3.3.jar',
+  '$(s3lib)/lib/java/jackson-annotations-2.5.3.jar',
+  '$(s3lib)/lib/java/jackson-core-2.5.3.jar',
+  '$(s3lib)/lib/java/jackson-databind-2.5.3.jar',
   '$(s3lib)/lib/java/commons-logging-1.1.3.jar',
 
   '$(commons_cli)/lib/java/commons-cli.jar'

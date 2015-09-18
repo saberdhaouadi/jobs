@@ -36,16 +36,16 @@ bin_program('lb-steve-provisioner')
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
 
-  '$(s3lib)/lib/java/joda-time-2.2.jar',
+  '$(s3lib)/lib/java/joda-time-2.8.1.jar',
   '$(s3lib)/lib/java/jcommander-1.29.jar',
   '$(s3lib)/lib/java/commons-io-2.4.jar',
   '$(s3lib)/lib/java/guava-15.0.jar',
   '$(s3lib)/lib/java/s3lib-0.2.jar',
-  '$(s3lib)/lib/java/jackson-annotations-2.3.0.jar',
-  '$(s3lib)/lib/java/jackson-core-2.3.2.jar',
-  '$(s3lib)/lib/java/jackson-databind-2.3.2.jar',
-  '$(s3lib)/lib/java/httpclient-4.3.jar',
-  '$(s3lib)/lib/java/httpcore-4.3.jar',
+  '$(s3lib)/lib/java/jackson-annotations-2.5.3.jar',
+  '$(s3lib)/lib/java/jackson-core-2.5.3.jar',
+  '$(s3lib)/lib/java/jackson-databind-2.5.3.jar',
+  '$(s3lib)/lib/java/httpclient-4.3.6.jar',
+  '$(s3lib)/lib/java/httpcore-4.3.3.jar',
   '$(s3lib)/lib/java/commons-logging-1.1.3.jar',
 
   '$(aws_java_sdk)/lib/java/aws-java-sdk-1.9.38.jar',
