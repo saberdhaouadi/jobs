@@ -380,7 +380,7 @@ with pkgs.lib;
         ''
           #! /bin/sh
           source /etc/profile
-          exec lb-steve-provisioner $@ --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys --queue ${workerName t} --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --role ${resources.iamRoles.worker-role.name} --instance-type ${env.workers."${t}".instanceType or t} --spot-price ${env.workers."${t}".price} --percentage-spot ${env.workers."${t}".percentageSpot} --percentage-queue ${env.workers."${t}".percentageQueue or "0.6"} --max ${env.workers."${t}".max or "300"}
+          exec lb-steve-provisioner $@ --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys --queue ${workerName t} --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --role ${resources.iamRoles.worker-role.name} --instance-type ${env.workers."${t}".instanceType or t} --spot-price ${env.workers."${t}".price} --percentage-spot ${env.workers."${t}".percentageSpot} --percentage-queue ${env.workers."${t}".percentageQueue or "0.6"} --max ${env.workers."${t}".max or "300"} --min ${env.workers."${t}".min or "0"}
         '';
       provisionScripts = map script instanceTypes;
       run-provisioner = t: "${script t}/bin/run-provisioner-${workerName t}";
