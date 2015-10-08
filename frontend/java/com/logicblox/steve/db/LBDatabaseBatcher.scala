@@ -42,7 +42,7 @@ class LBDatabaseBatcher(client: ProtobufServiceClient, readOnly: Boolean) extend
   /**
    * Do not impose a limit in the number of requests per batch.
    */
-  override def maxSize = Int.MaxValue
+  override def maxSize = if (readOnly) 10 else Int.MaxValue
 
   /**
    * Use different window for readOnly batcher.
