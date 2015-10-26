@@ -23,6 +23,24 @@ let
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
 
+  profiler = with pkgs; stdenv.mkDerivation {
+    name = "lightweight-java-profiler";
+    src = fetchsvn {
+      url = "http://lightweight-java-profiler.googlecode.com/svn/trunk";
+      rev = 12;
+      sha256 = "06mc3hwv83w9cbajqw247swifxz2kjgikswgkk9a0qzpjkx06lpk";
+    };
+    buildInputs = [ jdk ];
+    preConfigure = ''
+      sed -i 's|32|64|' Makefile
+      sed -i 's|"PRIdPTR"|" PRIdPTR "|' src/display.cc
+    '';
+    installPhase = ''
+      mkdir -p $out/lib
+      cp build-64/liblagent.so $out/lib
+    '';
+  };
+
   key-proxy = region:
     { config, pkgs, resources, nodes, ... }:
     {
@@ -408,8 +426,10 @@ with pkgs.lib;
         ./datadog/provisioner.nix
       ] ;
 
-      environment.systemPackages = [ builds.worker ] ++ provisionScripts;
+      environment.systemPackages = [ builds.worker pkgs.linuxPackages.sysdig ] ++ provisionScripts;
       systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes);
+      boot.extraModulePackages = [ pkgs.linuxPackages.sysdig ];
+      boot.kernelModules = [ "sysdig-probe" ] ;
     };
 
   "key-server-${name}" =
@@ -447,6 +467,7 @@ with pkgs.lib;
         }
       '';
       services.nginx.httpConfig = ''
+        log_format timed_combined '$remote_addr - $remote_user [$time_local]  "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
         server {
             listen               80;
             server_name   localhost;
@@ -478,7 +499,6 @@ with pkgs.lib;
           ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK;
 
 
-          log_format timed_combined '$remote_addr - $remote_user [$time_local]  "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
           access_log /var/spool/nginx/logs/access.log timed_combined;
 
           location / {
@@ -657,6 +677,7 @@ with pkgs.lib;
         }
       '';
       services.nginx.httpConfig = ''
+        log_format timed_combined '$remote_addr - $remote_user [$time_local]  "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
         server {
             listen               80;
             server_name   localhost;
@@ -688,8 +709,8 @@ with pkgs.lib;
           ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK;
 
 
-          log_format timed_combined '$remote_addr - $remote_user [$time_local]  "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
           access_log /var/spool/nginx/logs/access.log timed_combined;
+          error_log /var/spool/nginx/logs/error.log error;
 
           location = / {
               try_files $uri /index.html;
