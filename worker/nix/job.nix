@@ -8,6 +8,7 @@ in
     name = "job-${toString builtins.currentTime}";
     buildInputs = [
       pkgs.pythonFull
+      pkgs.pythonPackages.pandas
       platform.logicblox
       platform.bloxweb
       releases.pdxscience."4.0.0".pdxscience
