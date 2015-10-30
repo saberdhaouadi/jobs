@@ -67,4 +67,17 @@
 
       unionfs -o allow_other,cow,nonempty,chroot=/unionfs-chroot,max_files=32768 /rw-nix=RW:/ro-nix=RO $targetRoot/nix
     '';
+
+
+  system.build.amazonImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
+    inherit pkgs lib config;
+    partitioned = config.ec2.hvm;
+    diskSize = if config.ec2.hvm then 2048 else 8192;
+    configFile = pKkgs.writeText "configuration.nix"
+      ''
+        {
+        }
+      '';
+  };
+
 }
