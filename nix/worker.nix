@@ -7,7 +7,6 @@ let
   };
 
   builder-config = import <config> {};
-  platform3 = builder-config.releases.platform."3.10.15";
   builds = import ../. { platform_release = builder-config.getPlatform "4.3.1"; };
   
   cfg = config.lb-steve-worker;
@@ -60,8 +59,6 @@ in
     # Adding packages that are used by the jobs to the system
     # closure, to make them immediately available.
     environment.systemPackages = [
-      platform3.logicblox
-      platform3.bloxweb
       builder-config.releases.pdxscience."4.0.0".pdxscience
 
       # actual packages
