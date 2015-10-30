@@ -3,6 +3,7 @@
 , account ? "lb-jobs"
 , accountId ? "826045886586"
 , name
+, logToken ? ""
 }:
 let
   environments = import ./environments.nix;
@@ -92,7 +93,7 @@ let
       ec2.metadata = true;
     };
 
-  builds = import ../. { platform_release = builder-config.getPlatform "4.3.1"; };
+  builds = import ../. { platform_release = builder-config.getPlatform (import ../lb-version.nix); };
   s3Name = "steve-jobs-${name}";
   frontendConfig = pkgs.writeText "lb-steve-frontend.config" 
     ''
@@ -585,7 +586,7 @@ with pkgs.lib;
   "database-${name}" =
     { config, pkgs, resources, nodes, ... }:
     let
-      platform = builder-config.getPlatform "4.3.1"; #<platform_release>;
+      platform = builder-config.getPlatform (import ../lb-version.nix);
     in
     {
       deployment.targetEnv = "ec2";
@@ -802,6 +803,12 @@ with pkgs.lib;
           }
         ];
 
+    };
+
+
+  defaults =
+    { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> ];
+      logging.logentries.logToken = logToken;
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )

@@ -1,5 +1,5 @@
 { src_s3lib ? <src_s3lib>
-, platform_release
+, platform_release ? import ./lb-version.nix
 }:
 let
   builder_config = import <config> {};

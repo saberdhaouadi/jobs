@@ -7,7 +7,7 @@ let
   };
 
   builder-config = import <config> {};
-  builds = import ../. { platform_release = builder-config.getPlatform "4.3.1"; };
+  builds = import ../. { platform_release = builder-config.getPlatform (import ../lb-version.nix ); };
   
   cfg = config.lb-steve-worker;
   workerScript =
