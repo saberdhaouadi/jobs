@@ -173,6 +173,7 @@ in
     time.timeZone = "UTC";
 
     nixpkgs.config.allowUnfree = true;
+    nixpkgs.config.allowBroken = true;
 
     services.rsyslogd.enable = true;
     services.rsyslogd.extraConfig = ''
