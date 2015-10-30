@@ -89,7 +89,7 @@ public class Main {
 
   private void loadServiceContext() throws Exception {
     try {
-      _ctx.getServiceMapScanner().rescan(_ctx, Collections.singletonList("key"), true, false);
+      _ctx.getServiceMapScanner().rescan(_ctx, Collections.singletonList("key"), true);
     } catch (Error e) {
       throw e;
     } catch (Exception e) {
