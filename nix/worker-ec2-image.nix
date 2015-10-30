@@ -2,7 +2,7 @@
 {
   imports = [
     ./worker.nix
-    <nixpkgs/nixos/modules/virtualisation/amazon-config.nix>
+    <nixpkgs/nixos/modules/virtualisation/amazon-image.nix>
   ];
 
   ec2.metadata = true;

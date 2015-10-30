@@ -43,12 +43,6 @@ let
           description = ''
           '';
         };
-        ec2.metadata = pkgs.lib.mkOption {
-          default = false;
-          type = pkgs.lib.types.bool;
-          description = ''
-          '';
-        };
       };
     };
 
