@@ -73,7 +73,7 @@
     inherit pkgs lib config;
     partitioned = config.ec2.hvm;
     diskSize = if config.ec2.hvm then 2048 else 8192;
-    configFile = pKkgs.writeText "configuration.nix"
+    configFile = pkgs.writeText "configuration.nix"
       ''
         {
         }
