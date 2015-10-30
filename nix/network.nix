@@ -19,7 +19,7 @@ let
   sqsStatusURL = "https://sqs.${region}.amazonaws.com/${accountId}/${sqsStatusName}";
   sqsQueues = with pkgs.lib; listToAttrs (map (n: nameValuePair (sqsName n) (sqsQueue n)) instanceTypes) ;
 
-  pkgs = import <nixpkgs> { config.allowUnfree = true; allowBroken = true; };
+  pkgs = import <nixpkgs> { config.allowUnfree = true; config.allowBroken = true; };
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
 
