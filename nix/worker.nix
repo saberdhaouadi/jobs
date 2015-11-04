@@ -34,6 +34,8 @@ let
         systemctl poweroff
       '';
 
+  platform3 = builder-config.releases.platform."3.10.15";
+
 in
 {
   imports = [ <lbdevops/logicblox/config/users.nix> ];
@@ -60,6 +62,8 @@ in
     # closure, to make them immediately available.
     environment.systemPackages = [
       builder-config.releases.pdxscience."4.0.0".pdxscience
+      platform3.logicblox
+      platform3.bloxweb
 
       # actual packages
       builds.worker
