@@ -11,12 +11,11 @@ in
       pkgs.pythonPackages.pandas
       platform.logicblox
       platform.bloxweb
-      releases.pdxscience."4.0.0".pdxscience
       pkgs.socat
       pkgs.jq
       pkgs.curl
       pkgs.perl
-    ];
+    ] ++ pkgs.lib.optional ((pkgs.lib.substring 0 1 platform_version) == "3") releases.pdxscience."4.0.0".pdxscience;
 
     LB_MONITOR_RULE_TIME="30";
     LB_MEM="50%";

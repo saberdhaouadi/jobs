@@ -64,6 +64,7 @@ in
       builder-config.releases.pdxscience."4.0.0".pdxscience
       platform3.logicblox
       platform3.bloxweb
+      pkgs.protobuf2_5
 
       # actual packages
       builds.worker
