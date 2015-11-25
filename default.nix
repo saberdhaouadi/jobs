@@ -1,15 +1,11 @@
-{ src_s3lib ? <src_s3lib>
-, platform_release ? import ./lb-version.nix
+{ platform_release ? import ./lb-version.nix
 }:
 let
   builder_config = import <config> {};
   inherit (builder_config) pkgs getPlatform;
   platform = getPlatform platform_release;
 
-  s3lib =
-    let jobs = import src_s3lib { s3lib = src_s3lib; };
-     in jobs.build;
-
+  s3lib = platform.s3lib;
 in
   import ./job.nix {
     logicblox = platform.logicblox;
