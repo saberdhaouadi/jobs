@@ -48,7 +48,7 @@ classpath = [
   '$(s3lib)/lib/java/httpcore-4.3.3.jar',
   '$(s3lib)/lib/java/commons-logging-1.1.3.jar',
 
-  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.9.38.jar',
+  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.10.37.jar',
 
   '$(commons_exec)/lib/java/commons-exec.jar',
   '$(commons_cli)/lib/java/commons-cli.jar',

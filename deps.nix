@@ -14,10 +14,10 @@ let
 
   aws-java-sdk =
     with pkgs; stdenv.mkDerivation rec {
-      name = "aws-java-sdk-1.9.38";
+      name = "aws-java-sdk-1.10.37";
       src = fetchurl {
-        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.9.38.zip;
-        sha256 = "0mmy6pfk0qmx58hv7zn5f319zc7n81l6mh0rsxpxlrapd9gjadsx";
+        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.10.37.zip;
+        sha256 = "15gjq7zrv26cna9qniqv90hl6xdpw61c2lsk0jnhx62c7q1cr6kf";
       };
       buildInputs = [ pkgs.unzip ];
       buildCommand = ''
