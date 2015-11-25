@@ -32,7 +32,7 @@ classpath = [
   '$(s3lib)/lib/java/jackson-databind-2.5.3.jar',
   '$(s3lib)/lib/java/commons-logging-1.1.3.jar',
 
-  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.9.38.jar',
+  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.10.37.jar',
 
   '$(lb_web)/lib/java/annotations.jar',
   '$(lb_web)/lib/java/bloxweb-credentials.jar',
