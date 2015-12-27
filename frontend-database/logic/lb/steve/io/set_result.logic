@@ -26,7 +26,7 @@ block(`set_result) {
       schema:Job_id[job] = jobId.
 
     // Hash is optional, so it needs a separate rule.
-    +schema:Job:output_hash[job, url] = hash <-
+    ^schema:Job:output_hash[job, url] = hash <-
       +proto:RequestEnvelope_request[_, _] = union,
       +proto:Request_set_result[union] = req,
       +proto:SetResultRequest_job_id[req] = jobId,
