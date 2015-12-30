@@ -24,6 +24,7 @@ block(`service_config) {
 
   service_by_group["/metrics", "lb:web:internal"] = x,
     default_protobuf_service(x) {
+      readonly(),
       protobuf_protocol[] = "lb:steve:database",
       protobuf_request_message[] = "GetMetricsRequest",
       protobuf_response_message[] = "GetMetricsResponse"

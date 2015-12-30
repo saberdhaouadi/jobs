@@ -96,6 +96,17 @@ block(`metrics) {
       key="lb.steve.queued_time."+q+".min",
       w=datetime:offset[datetime:parse[lb:steve:schema:Job:metadata[j, "date"], "%Y-%m-%d %H:%M:%S"],datetime:now[],"seconds"].
 
+    // QUEUED JOBS WITH DURATION > TIMEOUT
+    +ensure_int_metric[key] = 0
+      <- !schema:Job:running(_), +cons[_] = _,
+         key="lb.steve.running.due".
+
+    +ensure_int_metric[key] = t
+      <-
+      agg<<t = total(d)>> schema:Job(j), schema:Job:running(j),
+      d = 
+      +cons[_] = _,
+      key="lb.steve.running.due".
 
 })
 
