@@ -39,6 +39,7 @@ public class LBDatabase implements Database {
   final Logger _logger = SystemDLogger.getLogger("LBDatabase");
   final String _dbServicesPrefix;
   final ProtobufServiceClient _client;
+  final ProtobufServiceClient _roClient;
   final LBDatabaseBatcher _batcher;
   final LBDatabaseBatcher _readOnlyBatcher;
 
@@ -49,11 +50,12 @@ public class LBDatabase implements Database {
   public LBDatabase(String dbServicesPrefix) {
     _dbServicesPrefix = dbServicesPrefix;
     _client = ServiceConnector.create(_dbServicesPrefix).createProtobufClient();
+    _roClient = ServiceConnector.create(_dbServicesPrefix+"_ro").createProtobufClient();
 
     _batcher = new LBDatabaseBatcher(_client, false);
     _batcher.start();
 
-    _readOnlyBatcher = new LBDatabaseBatcher(_client, true);
+    _readOnlyBatcher = new LBDatabaseBatcher(_roClient, true);
     _readOnlyBatcher.start();
   }
   
