@@ -11,11 +11,23 @@ block(`service_config) {
     prefix[] = s -> string(s).
     prefix[] = "/db".
 
-    // TODO - allow for prefix to be configures?
+    // constant to prefix the readonly services
+    prefix_ro[] = s -> string(s).
+    prefix_ro[] = "/db_ro".
 
     // declare service
     service_by_prefix[prefix[]] = x,
     default_protobuf_service(x) {
+      protobuf_protocol[] = "lb:steve:database",
+      protobuf_request_message[] = "RequestEnvelope",
+      protobuf_response_message[] = "ResponseEnvelope",
+      service_parameter["enable_http_control"] = "false"
+    }.
+
+    // declare readonly service
+    service_by_prefix[prefix_ro[]] = x,
+    default_protobuf_service(x) {
+      readonly(),
       protobuf_protocol[] = "lb:steve:database",
       protobuf_request_message[] = "RequestEnvelope",
       protobuf_response_message[] = "ResponseEnvelope",
