@@ -52,10 +52,9 @@ classpath = [
 
   '$(commons_exec)/lib/java/commons-exec.jar',
   '$(commons_cli)/lib/java/commons-cli.jar',
-  
+
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
-  '$(lb_web)/lib/java/protobuf-java-format-1.3.jar',
-  '$(lb_web)/lib/java/gson-2.2.4.jar',  
+  '$(lb_web)/lib/java/gson-2.2.4.jar',
   '$(lb_web)/lib/java/lb-web-client.jar',
   '$(lb_web)/lib/java/lb-web-server.jar',
   '$(lb_web)/lib/java/log4j-1.2.13.jar',

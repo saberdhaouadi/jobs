@@ -63,7 +63,6 @@ classpath = [
   '$(lb_web)/lib/java/opensaml-2.6.4.jar',
   '$(lb_web)/lib/java/openws-1.5.4.jar',
   '$(lb_web)/lib/java/protobuf-2.5.0.jar',
-  '$(lb_web)/lib/java/protobuf-java-format-1.3.jar',
   '$(lb_web)/lib/java/scala-library.jar',
   '$(lb_web)/lib/java/servlet-api-2.5.jar',
   '$(lb_web)/lib/java/velocity-1.7.jar',
@@ -129,4 +128,3 @@ check_jar(
   resources={'tests/java/com/logicblox/steve/db/users.csv': 'com/logicblox/steve/db/users.csv'}
   #resources={'tests/users.csv':'com/logicblox/steve/db/users.csv'}
 )
-
