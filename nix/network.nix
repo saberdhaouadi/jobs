@@ -594,7 +594,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "r3.2xlarge";
+      deployment.ec2.instanceType = "c3.4xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = true;
@@ -627,20 +627,13 @@ with pkgs.lib;
       logicblox.application.installer = builds.database.build;
       networking.firewall.allowedTCPPorts = [ 8080 55183 ];
 
-      deployment.ec2.blockDeviceMapping."/dev/xvdg".size = 100;
-      deployment.ec2.blockDeviceMapping."/dev/xvdh".size = 100;
-      deployment.ec2.blockDeviceMapping."/dev/xvdg".deleteOnTermination = true;
-      deployment.ec2.blockDeviceMapping."/dev/xvdh".deleteOnTermination = true;
-      deployment.ec2.blockDeviceMapping."/dev/xvdg".volumeType = "gp2";
-      deployment.ec2.blockDeviceMapping."/dev/xvdh".volumeType = "gp2";
-
-      deployment.autoRaid0.raid.devices = [ "/dev/xvdg" "/dev/xvdh" ];
-
       fileSystems."/data" =
         { autoFormat = true;
           fsType = "xfs";
-          device = "/dev/raid/raid";
+          device = "/dev/xvdf";
           options = "noatime";
+          ec2.size = 1000;
+          ec2.volumeType = "gp2";
         };
     };
 

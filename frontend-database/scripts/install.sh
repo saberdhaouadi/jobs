@@ -45,7 +45,7 @@ if [[ -e $latest_link ]]; then
   for t in $tdx; do
     if [[ -f $latest_link/$t.csv ]]; then
       echo " - $t"
-      lb web-client import -n -i file://$latest_link/$t.csv http://localhost:8080/tdx/$t
+      lb web-client import --timeout 3600 -n -i file://$latest_link/$t.csv http://localhost:8080/tdx/$t
     fi
   done
 fi
