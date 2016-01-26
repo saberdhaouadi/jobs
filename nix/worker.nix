@@ -2,8 +2,8 @@
 with pkgs.lib;
 let
   papertrail-crt = pkgs.fetchurl {
-    url = https://papertrailapp.com/tools/syslog.papertrail.crt;
-    md5 = "cee9b8d2d503188ccecbb22b49cd3bec";
+    url = https://papertrailapp.com/tools/papertrail-bundle.pem;
+    sha256 = "1jxap6ilkfx15dn8ar0b5aykqy9947qdny7r0pyb8ifwjx1m0fn0";
   };
 
   builder-config = import <config> {};
@@ -185,6 +185,7 @@ in
       $MarkMessagePeriod 240 # log a MARK message every 8 minutes
 
       $DefaultNetstreamDriverCAFile ${papertrail-crt}
+      $ActionSendStreamDriverPermittedPeer *.papertrailapp.com
 
       $ActionSendStreamDriver gtls
       $ActionSendStreamDriverMode 1
