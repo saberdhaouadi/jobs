@@ -80,7 +80,7 @@ block(`metrics) {
       +cons[_] = _,
       lb:steve:schema:Job:metadata[j, "job-queue"]=q,
       key="lb.steve.queued_time."+q+".max",
-      w=datetime:offset[datetime:parse[lb:steve:schema:Job:metadata[j, "date"], "%Y-%m-%d %H:%M:%S"],datetime:now[],"seconds"].
+      w=datetime:offset[lb:steve:schema:Job:created[j],datetime:now[],"seconds"].
 
     // SHORTEST QUEUED
     +ensure_int_metric[key] = 0
@@ -94,7 +94,7 @@ block(`metrics) {
       +cons[_] = _,
       lb:steve:schema:Job:metadata[j, "job-queue"]=q,
       key="lb.steve.queued_time."+q+".min",
-      w=datetime:offset[datetime:parse[lb:steve:schema:Job:metadata[j, "date"], "%Y-%m-%d %H:%M:%S"],datetime:now[],"seconds"].
+      w=datetime:offset[lb:steve:schema:Job:created[j],datetime:now[],"seconds"].
 
 })
 
