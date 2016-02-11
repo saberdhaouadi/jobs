@@ -765,7 +765,7 @@ with pkgs.lib;
           preStart = ''
             mkdir -p /var/log/lb-steve-worker
           '';
-          environment.JAVA_ARGS = "-Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false";
+          environment.JAVA_ARGS = "-Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -XX:+PreserveFramePointer";
           serviceConfig = {
             ExecStart = "${builds.frontend}/bin/lb-steve-frontend --config ${frontendConfig}";
             Restart = "always";
