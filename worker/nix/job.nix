@@ -10,6 +10,7 @@ in
       pkgs.pythonFull
       pkgs.pythonPackages.pandas
       pkgs.pythonPackages.scikitlearn
+      pkgs.pythonPackages.matplotlib
       platform.logicblox
       platform.bloxweb
       pkgs.socat
