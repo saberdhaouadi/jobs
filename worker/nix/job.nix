@@ -9,6 +9,7 @@ in
     buildInputs = [
       pkgs.pythonFull
       pkgs.pythonPackages.pandas
+      pkgs.pythonPackages.scikitlearn
       platform.logicblox
       platform.bloxweb
       pkgs.socat
