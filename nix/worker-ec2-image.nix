@@ -3,7 +3,10 @@
   imports = [
     ./worker.nix
     <nixpkgs/nixos/modules/virtualisation/amazon-image.nix>
+    <lbdevops/logicblox/config/logging/logentries.nix>
   ];
+
+  logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
 
   ec2.metadata = true;
   ec2.hvm = true;

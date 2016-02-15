@@ -1,11 +1,6 @@
 { config, pkgs, ... }:
 with pkgs.lib;
 let
-  papertrail-crt = pkgs.fetchurl {
-    url = https://papertrailapp.com/tools/papertrail-bundle.pem;
-    sha256 = "1jxap6ilkfx15dn8ar0b5aykqy9947qdny7r0pyb8ifwjx1m0fn0";
-  };
-
   builder-config = import <config> {};
   builds = import ../. { platform_release = builder-config.getPlatform (import ../lb-version.nix ); };
   
@@ -176,36 +171,6 @@ in
 
     nixpkgs.config.allowUnfree = true;
     nixpkgs.config.allowBroken = true;
-
-    services.rsyslogd.enable = true;
-    services.rsyslogd.extraConfig = ''
-      $ModLoad imjournal
-
-      $ModLoad immark  # provides --MARK-- message capability
-      $MarkMessagePeriod 240 # log a MARK message every 8 minutes
-
-      $DefaultNetstreamDriverCAFile ${papertrail-crt}
-      $ActionSendStreamDriverPermittedPeer *.papertrailapp.com
-
-      $ActionSendStreamDriver gtls
-      $ActionSendStreamDriverMode 1
-      $ActionSendStreamDriverAuthMode x509/name
-
-      $ActionResumeInterval 10
-      $ActionQueueSize 100000
-      $ActionQueueDiscardMark 97500
-      $ActionQueueHighWaterMark 80000
-      $ActionQueueType LinkedList
-      $ActionQueueFileName papertrailqueue
-      $ActionQueueCheckpointInterval 100
-      $ActionQueueMaxDiskSpace 2g
-      $ActionResumeRetryCount -1
-      $ActionQueueSaveOnShutdown on
-      $ActionQueueTimeoutEnqueue 10
-      $ActionQueueDiscardSeverity 0
-
-      *.* @@logs.papertrailapp.com:24237
-    '';
 
     services.logrotate.enable = true;
     services.logrotate.config = ''

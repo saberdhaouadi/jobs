@@ -811,8 +811,9 @@ with pkgs.lib;
 
 
   defaults =
+    { lib, ... }:
     { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> ];
-      logging.logentries.logToken = logToken;
+      logging.logentries.logToken = lib.mkOverride 0 logToken;
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
