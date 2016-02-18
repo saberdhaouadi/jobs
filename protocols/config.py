@@ -55,7 +55,7 @@ lb_library(
 )
 
 classpath = [
-  '$(logicblox)/lib/java/protobuf-2.5.0.jar',
+  '$(logicblox)/lib/java/protobuf-2.6.1.jar',
   '$(logicblox)/lib/java/guava-15.0.jar',
   '$(logicblox)/lib/java/lb-common.jar',
   '$(s3lib)/lib/java/s3lib-0.2.jar',

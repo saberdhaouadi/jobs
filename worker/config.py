@@ -66,7 +66,7 @@ classpath = [
   '$(lb_web)/lib/java/jetty-server-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-servlet-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-util-7.6.7.v20120910.jar',
-  '$(lb_web)/lib/java/protobuf-2.5.0.jar',
+  '$(lb_web)/lib/java/protobuf-2.6.1.jar',
   '$(lb_web)/lib/java/lb-common.jar',
   '$(lb_web)/lib/java/lb-common-protocol.jar'
 ]
