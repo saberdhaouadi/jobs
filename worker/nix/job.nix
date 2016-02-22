@@ -11,6 +11,7 @@ in
       pkgs.pythonPackages.pandas
       pkgs.pythonPackages.scikitlearn
       pkgs.pythonPackages.matplotlib
+      pkgs.pythonPackages.plotly
       platform.logicblox
       platform.bloxweb
       pkgs.socat
