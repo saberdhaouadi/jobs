@@ -62,7 +62,7 @@ classpath = [
   '$(lb_web)/lib/java/not-yet-commons-ssl-0.3.9.jar',
   '$(lb_web)/lib/java/opensaml-2.6.4.jar',
   '$(lb_web)/lib/java/openws-1.5.4.jar',
-  '$(lb_web)/lib/java/protobuf-2.5.0.jar',
+  '$(lb_web)/lib/java/protobuf-2.6.1.jar',
   '$(lb_web)/lib/java/scala-library.jar',
   '$(lb_web)/lib/java/servlet-api-2.5.jar',
   '$(lb_web)/lib/java/velocity-1.7.jar',
