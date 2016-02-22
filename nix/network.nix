@@ -90,7 +90,6 @@ let
       deployment.ec2.tags.IncomingQueue = sqsURL queue;
       deployment.ec2.tags.OutgoingQueue = sqsStatusURL;
 
-      ec2.metadata = true;
     };
 
   builds = import ../. { platform_release = builder-config.getPlatform (import ../lb-version.nix); };
@@ -431,7 +430,6 @@ with pkgs.lib;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
-      ec2.metadata = true;
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -453,7 +451,6 @@ with pkgs.lib;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
       deployment.ec2.instanceType = "r3.large";
-      ec2.metadata = true;
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
 
@@ -609,7 +606,6 @@ with pkgs.lib;
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = true;
-      ec2.metadata = true;
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -662,7 +658,6 @@ with pkgs.lib;
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
       deployment.ec2.ebsInitialRootDiskSize = 100;
-      ec2.metadata = true;
 
       imports = [ <lbdevops/logicblox/production.nix> ];
 

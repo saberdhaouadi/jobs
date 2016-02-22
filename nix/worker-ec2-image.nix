@@ -8,7 +8,6 @@
 
   logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
 
-  ec2.metadata = true;
   ec2.hvm = true;
   networking.hostName = pkgs.lib.mkForce "i-worker";
 
