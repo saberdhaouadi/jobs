@@ -3,6 +3,7 @@
 let
   inherit (import <config/lib> {}) releases pkgs;
   platform = builtins.getAttr platform_version releases.platform;
+  isFullPlatform = pkgs.lib.versionAtLeast platform_version "4.3.7";
 in
   pkgs.stdenv.mkDerivation rec {
     name = "job-${toString builtins.currentTime}";
@@ -12,13 +13,13 @@ in
       pkgs.pythonPackages.scikitlearn
       pkgs.pythonPackages.matplotlib
       pkgs.pythonPackages.plotly
-      platform.logicblox
-      platform.bloxweb
       pkgs.socat
       pkgs.jq
       pkgs.curl
       pkgs.perl
-    ] ++ pkgs.lib.optional ((pkgs.lib.substring 0 1 platform_version) == "3") releases.pdxscience."4.0.0".pdxscience;
+    ] ++ pkgs.lib.optional isFullPlatform releases.platforms."${platform_version}"
+      ++ pkgs.lib.optionals (! isFullPlatform) [ platform.logicblox platform.bloxweb ]
+      ++ pkgs.lib.optional ((pkgs.lib.substring 0 1 platform_version) == "3") releases.pdxscience."4.0.0".pdxscience;
 
     LB_MONITOR_RULE_TIME="30";
     LB_MEM="50%";
