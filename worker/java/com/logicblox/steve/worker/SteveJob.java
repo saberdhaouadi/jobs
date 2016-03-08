@@ -129,7 +129,7 @@ public class SteveJob {
       _outgoing.notifyStatus("Job was killed. It will be restarted on another worker.");
       _killed = true;
     } catch (InternalException e) {
-      if(_receiveCount >= 2) {
+      if(_receiveCount >= 5) {
         _outgoing.notifyFailure(new InternalException("Retried job multiple time, but keep hitting internal error."), cpuUsage, maxMemory, _maxDiskUsage);
       } else {
         _outgoing.notifyStatus("There was an internal error while executing the job. It will be restarted on another worker.");
