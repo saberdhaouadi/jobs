@@ -47,6 +47,7 @@ in
             return
           else
             cmd=restart
+            sleep 5
           fi
         done
         echo "INTERNAL_ERROR: Could not start LB services."
