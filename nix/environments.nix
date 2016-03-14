@@ -10,8 +10,8 @@ rec {
         "r3.xlarge" = { number = 0; price = "0.40"; percentageSpot = "1.0"; max = "500"; };
         "r3.2xlarge" = { number = 0; price = "0.75"; percentageSpot = "1.0"; };
         "r3.8xlarge" = { number = 0; price = "3.00"; percentageSpot = "1.0"; };
-        "i2.xlarge" = { number = 0; price = "3.00"; percentageSpot = "0"; percentageQueue = "1.0"; max = "200"; min = "75"; };
-        "i2.2xlarge" = { number = 0; price = "3.00"; percentageSpot = "0"; percentageQueue = "1.0"; max = "200"; min = "75"; };
+        "i2.xlarge" = { number = 0; price = "0.86"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; };
+        "i2.2xlarge" = { number = 0; price = "1.71"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; };
       };
     };
 
