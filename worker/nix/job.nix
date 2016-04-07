@@ -13,6 +13,7 @@ in
       pkgs.pythonPackages.scikitlearn
       pkgs.pythonPackages.matplotlib
       pkgs.pythonPackages.plotly
+      pkgs.pythonPackages.statsmodels
       pkgs.socat
       pkgs.jq
       pkgs.curl
