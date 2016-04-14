@@ -38,14 +38,10 @@ public class LBDatabase implements Database {
 
   final Logger _logger = SystemDLogger.getLogger("LBDatabase");
   final String _dbServicesPrefix;
-
-  final LBDatabaseBatcher _getUserBatcher;
-  final LBDatabaseBatcher _createJobBatcher;
-  final LBDatabaseBatcher _addStatusBatcher;
-  final LBDatabaseBatcher _setResultBatcher;
-  final LBDatabaseBatcher _getJobBatcher;
-  final LBDatabaseBatcher _setJobImplBatcher;
-  final LBDatabaseBatcher _getJobImplBatcher;
+  final ProtobufServiceClient _client;
+  final ProtobufServiceClient _roClient;
+  final LBDatabaseBatcher _batcher;
+  final LBDatabaseBatcher _readOnlyBatcher;
 
   public LBDatabase() {
     this("http://localhost:8080/db");
@@ -53,40 +49,22 @@ public class LBDatabase implements Database {
 
   public LBDatabase(String dbServicesPrefix) {
     _dbServicesPrefix = dbServicesPrefix;
+    _client = ServiceConnector.create(_dbServicesPrefix).createProtobufClient();
+    _roClient = ServiceConnector.create(_dbServicesPrefix+"_ro").createProtobufClient();
 
-    _createJobBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/createJob").createProtobufClient(), false);
-    _createJobBatcher.start();
+    _batcher = new LBDatabaseBatcher(_client, false);
+    _batcher.start();
 
-    _addStatusBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/addStatus").createProtobufClient(), false);
-    _addStatusBatcher.start();
-
-    _setResultBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/setResult").createProtobufClient(), false);
-    _setResultBatcher.start();
-
-    _setJobImplBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/setJobImpl").createProtobufClient(), false);
-    _setJobImplBatcher.start();
-
-    _getJobBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getJob").createProtobufClient(), true);
-    _getJobBatcher.start();
-
-    _getUserBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getUser").createProtobufClient(), true);
-    _getUserBatcher.start();
-
-    _getJobImplBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getJobImpl").createProtobufClient(), true);
-    _getJobImplBatcher.start();
+    _readOnlyBatcher = new LBDatabaseBatcher(_roClient, true);
+    _readOnlyBatcher.start();
   }
   
   /**
    * Allow the database implementation to cleanup resources.
    */
   public void shutdown() {
-    _getUserBatcher.shutdown();
-    _createJobBatcher.shutdown();
-    _addStatusBatcher.shutdown();
-    _setResultBatcher.shutdown();
-    _getJobBatcher.shutdown();
-    _setJobImplBatcher.shutdown();
-    _getJobImplBatcher.shutdown();
+    _batcher.shutdown();
+    _readOnlyBatcher.shutdown();
   }
 
   @Override
@@ -97,7 +75,7 @@ public class LBDatabase implements Database {
                             .setUserId(userId)
             ).build();    
     
-    return Futures.transform(_getUserBatcher.addRequest(request),
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
             new Function<Response, User>() {
               public User apply(Response response) {
 
@@ -150,7 +128,7 @@ public class LBDatabase implements Database {
     final Request request = Request.newBuilder().setCreateJob(builder).build();
 
     // submit and process the response
-    return Futures.transform(_createJobBatcher.addRequest(request),
+    return Futures.transform(_batcher.addRequest(request),
             new Function<Response, String>() {
               public String apply(Response response) {
 
@@ -171,7 +149,7 @@ public class LBDatabase implements Database {
             ).build();
     
     // submit and process the response
-    return Futures.transform(_addStatusBatcher.addRequest(request),
+    return Futures.transform(_batcher.addRequest(request),
             new Function<Response, String>() {
               public String apply(Response response) {
 
@@ -192,7 +170,7 @@ public class LBDatabase implements Database {
             ).build();
     
     // submit and process the response
-    return Futures.transform(_setResultBatcher.addRequest(request),
+    return Futures.transform(_batcher.addRequest(request),
             new Function<Response, String>() {
               public String apply(Response response) {
 
@@ -216,7 +194,7 @@ public class LBDatabase implements Database {
             ).build();
 
     // submit and process the response
-    return Futures.transform(_getJobBatcher.addRequest(request),
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
             new Function<Response, Job>() {
               public Job apply(Response response) {
 
@@ -265,7 +243,7 @@ public class LBDatabase implements Database {
             ).build();
 
     // submit and process the response
-    return Futures.transform(_setJobImplBatcher.addRequest(request),
+    return Futures.transform(_batcher.addRequest(request),
             new Function<Response, String>() {
               public String apply(Response response) {
 
@@ -285,7 +263,7 @@ public class LBDatabase implements Database {
             ).build();
 
     // submit and process the response
-    return Futures.transform(_getJobImplBatcher.addRequest(request),
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
             new Function<Response, JobImpl>() {
               public JobImpl apply(Response response) {
 
@@ -310,7 +288,7 @@ public class LBDatabase implements Database {
             ).build();
     
     // submit and process the response
-    return Futures.transform(_getJobImplBatcher.addRequest(request),
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
             new Function<Response, Iterable<JobImpl>>() {
               public Iterable<JobImpl> apply(Response response) {
 
