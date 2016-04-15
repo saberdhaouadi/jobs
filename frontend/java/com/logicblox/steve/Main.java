@@ -19,6 +19,7 @@ import com.logicblox.bloxweb.BloxWebServer;
 import com.logicblox.bloxweb.GlobalConfig;
 import com.logicblox.bloxweb.UsageException;
 import com.logicblox.bloxweb.config.Config;
+import com.logicblox.bloxweb.service.ConfigFiles;
 import com.logicblox.bloxweb.config.ConfigLocator;
 import com.logicblox.bloxweb.config.ConfigValidator;
 import com.logicblox.bloxweb.config.ValidationMessage;
@@ -46,16 +47,15 @@ public class Main {
         Collection<ValidationMessage> messages = ConfigValidator.validate(main._config);
         ConfigValidator.handleMessages(messages, logger);
 
-        main._ctx = ServiceContext.fromConfig(main._config, main._logger);
+        main._ctx = new ServiceContext(main._logger, new ConfigFiles(main._config,Option.<Config>none(),Option.<Config>none()));
+        main._ctx.init();
         // Create job-auth realm for authentication
         Specification.Realm.Builder realm = Specification.Realm.newBuilder().setName("job-auth").setConfig("default-signature");
         main._ctx.getAuthenticationProvider().addRealm(realm.build());
 
         final BloxWebServer bloxwebServer = new BloxWebServer(
                 Option.some(main._logDir),
-                main._config,
-                main._ctx,
-                main._logger);
+                main._ctx);
 
         // start web server
         // TODO: exceptions in this thread gets caught how?

@@ -11,13 +11,11 @@ lbconfig_package(
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
 frontend_database_dep = ("frontend_database", {'default_path': "/opt/logicblox/lb-steve-frontend-database"})
 
-s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib"})
 commons_cli_dep = ( "commons_cli", {'default_path': deps})
 
 depends_on(
   logicblox_dep,
   lb_web_dep,
-  s3lib_dep,
   commons_cli_dep,
   protocols_dep,
   frontend_database_dep)
@@ -62,8 +60,7 @@ classpath = [
   '$(lb_web)/lib/java/not-yet-commons-ssl-0.3.9.jar',
   '$(lb_web)/lib/java/opensaml-2.6.4.jar',
   '$(lb_web)/lib/java/openws-1.5.4.jar',
-  '$(lb_web)/lib/java/protobuf-2.5.0.jar',
-  '$(lb_web)/lib/java/protobuf-java-format-1.3.jar',
+  '$(lb_web)/lib/java/protobuf-2.6.1.jar',
   '$(lb_web)/lib/java/scala-library.jar',
   '$(lb_web)/lib/java/servlet-api-2.5.jar',
   '$(lb_web)/lib/java/velocity-1.7.jar',
@@ -75,15 +72,15 @@ classpath = [
   '$(lb_web)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
   '$(lb_web)/lib/java/google-oauth-client-1.19.0.jar',
 
-  '$(s3lib)/lib/java/s3lib-0.2.jar',
-  '$(s3lib)/lib/java/commons-io-2.4.jar',
-  '$(s3lib)/lib/java/aws-java-sdk-1.10.20.jar',
-  '$(s3lib)/lib/java/httpclient-4.3.6.jar',
-  '$(s3lib)/lib/java/httpcore-4.3.3.jar',
-  '$(s3lib)/lib/java/jackson-annotations-2.5.3.jar',
-  '$(s3lib)/lib/java/jackson-core-2.5.3.jar',
-  '$(s3lib)/lib/java/jackson-databind-2.5.3.jar',
-  '$(s3lib)/lib/java/commons-logging-1.1.3.jar',
+  '$(lb_web)/lib/java/s3lib-0.2.jar',
+  '$(lb_web)/lib/java/commons-io-2.4.jar',
+  '$(lb_web)/lib/java/aws-java-sdk-1.10.20.jar',
+  '$(lb_web)/lib/java/httpclient-4.3.6.jar',
+  '$(lb_web)/lib/java/httpcore-4.3.3.jar',
+  '$(lb_web)/lib/java/jackson-annotations-2.5.3.jar',
+  '$(lb_web)/lib/java/jackson-core-2.5.3.jar',
+  '$(lb_web)/lib/java/jackson-databind-2.5.3.jar',
+  '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
 
   '$(commons_cli)/lib/java/commons-cli.jar'
 ]

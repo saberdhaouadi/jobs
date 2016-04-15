@@ -92,7 +92,7 @@ let
 
     };
 
-  builds = import ../. { platform_release = builder-config.getPlatform (import ../lb-version.nix); };
+  builds = import ../. { platform_release = builder-config.getLB (import ../lb-version.nix); };
   s3Name = "steve-jobs-${name}";
   frontendConfig = pkgs.writeText "lb-steve-frontend.config" 
     ''
@@ -594,7 +594,7 @@ with pkgs.lib;
   "database-${name}" =
     { config, pkgs, resources, nodes, ... }:
     let
-      platform = builder-config.getPlatform (import ../lb-version.nix);
+      logicblox = builder-config.getLB (import ../lb-version.nix);
     in
     {
       deployment.targetEnv = "ec2";
@@ -616,11 +616,9 @@ with pkgs.lib;
       ] ;
 
       services.logicblox.enable = true;
-      services.logicblox.logicblox = platform.logicblox;
-      services.logicblox.lbWeb = platform.bloxweb;
-      services.logicblox.lbWorkflow = platform.lb-workflow;
+      services.logicblox.logicblox = logicblox;
       services.logicblox.config.lb-server = ''
-        [workspace]
+        [lb-steve]
         auto_backup_mode=none
       '';
 

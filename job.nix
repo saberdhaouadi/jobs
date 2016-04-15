@@ -1,8 +1,6 @@
 { stdenv
 , fetchurl
 , logicblox
-, lb_web
-, s3lib
 , jdk
 , unzip
 , builder_config
@@ -13,7 +11,6 @@
 let
   inherit (builder_config) pkgs;
   version = builder_config.version;
-  bloxweb = lb_web;
 
   deps =
     import ./deps.nix {
@@ -52,11 +49,10 @@ rec {
      builder_config.buildLBConfig {
       name = "jobs-frontend";
       src = ./frontend;
-      buildInputs = [ logicblox lb_web makeWrapper client.build worker pkgs.jq pkgs.scala_2_10 ];
+      buildInputs = [ logicblox makeWrapper client.build worker pkgs.jq pkgs.scala_2_10 ];
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-frontend-database=${database.build}"
-        "--with-s3lib=${s3lib}"
         "--with-commons-cli=${deps.commons-cli}"
       ];
       doCheck = true;
@@ -66,11 +62,10 @@ rec {
     builder_config.buildLBConfig {
       name = "lb-steve-client";
       src = ./client;
-      buildInputs = [ logicblox lb_web ];
+      buildInputs = [ logicblox ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
-        "--with-s3lib=${s3lib}"
         "--with-aws-java-sdk=${deps.aws-java-sdk}"
       ];
     };
@@ -85,24 +80,20 @@ rec {
     builder_config.buildLBConfig {
       name = "jobs-protocols";
       src = ./protocols;
-      buildInputs = [ logicblox lb_web ];
+      buildInputs = [ logicblox ];
       enableLBservices = false;
-      configureFlags = [
-        "--with-s3lib=${s3lib}"
-      ];
     };
 
   worker =
     builder_config.buildLBConfig {
       name = "jobs-worker";
       src = ./worker;
-      buildInputs = [ logicblox lb_web makeWrapper ];
+      buildInputs = [ logicblox makeWrapper ];
       enableLBservices = false;
       configureFlags = [
         "--with-commons-exec=${deps.commons-exec}"
         "--with-commons-cli=${deps.commons-cli}"
         "--with-protocols=${protocols}"
-        "--with-s3lib=${s3lib}"
         "--with-aws-java-sdk=${deps.aws-java-sdk}"
       ];
       postInstall = ''
@@ -124,11 +115,11 @@ rec {
 
   database =
     builder_config.genericAppJobset {
-      inherit logicblox bloxweb;
+      inherit logicblox;
       build = builder_config.buildLBConfig {
         name = "jobs-database";
         src = ./frontend-database;
-        buildInputs = [ logicblox lb_web ];
+        buildInputs = [ logicblox ];
         configureFlags = [
           "--with-protocols=${protocols}"
         ];
@@ -140,12 +131,11 @@ rec {
      builder_config.buildLBConfig {
       name = "lb-steve-key-server";
       src = ./key-server;
-      buildInputs = [ logicblox lb_web makeWrapper pkgs.jq pkgs.scala_2_10 ];
+      buildInputs = [ logicblox makeWrapper pkgs.jq pkgs.scala_2_10 ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-commons-cli=${deps.commons-cli}"
-        "--with-s3lib=${s3lib}"
       ];
     };
 

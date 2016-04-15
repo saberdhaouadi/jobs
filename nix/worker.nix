@@ -2,7 +2,7 @@
 with pkgs.lib;
 let
   builder-config = import <config> {};
-  builds = import ../. { platform_release = builder-config.getPlatform (import ../lb-version.nix ); };
+  builds = import ../. { platform_release = builder-config.getLB (import ../lb-version.nix ); };
   
   cfg = config.lb-steve-worker;
   workerScript =
