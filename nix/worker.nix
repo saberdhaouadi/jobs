@@ -60,6 +60,7 @@ in
       platform3.logicblox
       platform3.bloxweb
       pkgs.protobuf2_5
+      pkgs.fio
 
       # actual packages
       builds.worker
