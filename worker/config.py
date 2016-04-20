@@ -37,6 +37,7 @@ classpath = [
   '$(lb_web)/lib/java/jcommander-1.29.jar',
   '$(lb_web)/lib/java/commons-io-2.4.jar',
   '$(lb_web)/lib/java/guava-15.0.jar',
+  '$(lb_web)/lib/java/google-http-client-1.19.0.jar',
   '$(lb_web)/lib/java/s3lib-0.2.jar',
   '$(lb_web)/lib/java/jackson-annotations-2.5.3.jar',
   '$(lb_web)/lib/java/jackson-core-2.5.3.jar',
