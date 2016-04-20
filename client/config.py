@@ -38,6 +38,7 @@ classpath = [
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
   '$(lb_web)/lib/java/commons-configuration-1.8.jar',
   '$(lb_web)/lib/java/commons-lang-2.6.jar',
+  '$(lb_web)/lib/java/google-http-client-1.19.0.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar',
   '$(lb_web)/lib/java/guava-15.0.jar',
   '$(lb_web)/lib/java/java-statsd-client-2.0.0.jar',
