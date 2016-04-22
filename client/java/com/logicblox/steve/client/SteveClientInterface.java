@@ -73,6 +73,12 @@ public interface SteveClientInterface {
   public ListenableFuture<List<Frontend.JobImplInfo>> getJobImplList()
           throws ServiceClientException;
 
+  /**
+   * Get/download job implementation
+   */
+  public ListenableFuture<String> copyJobImpl(String id, URI destination)
+          throws ServiceClientException;
+
   public interface StateNotify {
     public void notify(Frontend.State state);
   }
