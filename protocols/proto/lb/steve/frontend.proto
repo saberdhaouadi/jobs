@@ -24,6 +24,7 @@ message Request {
   // job implementation request
   optional ImplAddRequest impl_add = 20;
   optional ImplListRequest impl_list = 21;
+  optional ImplGetRequest impl_get = 22;
 
   optional RegisterKeyRequest register_key = 30;
 }
@@ -44,6 +45,7 @@ message Response {
   // job implementation
   optional ImplAddResponse impl_add = 20;
   optional ImplListResponse impl_list = 21;
+  optional ImplGetResponse impl_get = 22;
 
   optional RegisterKeyResponse register_key = 30;
 }
@@ -183,6 +185,18 @@ message ImplListRequest {
 
 message ImplListResponse {
   repeated JobImplInfo job_impl = 1;  
+}
+
+/**
+ * Get/download implementation
+ */
+message ImplGetRequest {
+  required string id = 1;
+  required string destination = 2;
+}
+
+message ImplGetResponse {
+  required File file = 1;
 }
 
 /**
