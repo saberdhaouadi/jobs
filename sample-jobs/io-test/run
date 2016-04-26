@@ -1,0 +1,11 @@
+#! /bin/sh
+set -e
+set -x
+
+input=$1
+function metadata() {
+  echo $(jq -r ".\"$1\"" $input/metadata.json)
+}
+filesize=$(metadata "filesize")
+rw=$(metadata "rw")
+python ./diskplorer.py -o $2/$(metadata "job-queue")-$rw-$filesize.svg --filesize $filesize --rw $rw
