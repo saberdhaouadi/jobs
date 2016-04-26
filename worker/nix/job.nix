@@ -1,4 +1,5 @@
 { platform_version
+, dependencies ? []
 }:
 let
   inherit (import <config/lib> {}) releases pkgs;
@@ -21,7 +22,8 @@ in
       pkgs.fio
     ] ++ pkgs.lib.optional isFullPlatform releases.platforms."${platform_version}"
       ++ pkgs.lib.optionals (! isFullPlatform) [ platform.logicblox platform.bloxweb ]
-      ++ pkgs.lib.optional ((pkgs.lib.substring 0 1 platform_version) == "3") releases.pdxscience."4.0.0".pdxscience;
+      ++ pkgs.lib.optional ((pkgs.lib.substring 0 1 platform_version) == "3") releases.pdxscience."4.0.0".pdxscience
+      ++ dependencies;
 
     LB_MONITOR_RULE_TIME="30";
     LB_MEM="50%";

@@ -346,7 +346,16 @@ public class SteveJob {
     log("Running the actual job...");
 
     // determine .drv
-    _drv = readFromStdout("nix-instantiate", "<worker/nix/job.nix>", "--argstr", "platform_version", _metadata.containsKey("platform") ? _metadata.get("platform") : "3.10.15" );
+    _drv = readFromStdout(
+            "nix-instantiate",
+            "<worker/nix/job.nix>",
+            "--argstr",
+            "platform_version",
+            _metadata.containsKey("platform") ? _metadata.get("platform") : "3.10.15",
+            "--arg",
+            "dependencies",
+            _metadata.containsKey("dependencies") ? "with (import <config/lib> {}).pkgs; ["+_metadata.get("dependencies").replace(",", " ")+"]" : "[]"
+          );
 
     // build .drv
     nixStoreRealise(_drv, _id);
