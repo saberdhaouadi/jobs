@@ -33,6 +33,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
+import com.beust.jcommander.converters.IParameterSplitter;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -283,7 +284,8 @@ public class Main {
     @Parameter(
             names = {"-m", "--metadata"},
             description = "Metadata of the form key=value ",
-            variableArity = true)
+            variableArity = true,
+            splitter = NoSplitter.class)
     List<String> _metadata = new ArrayList<String>();
 
     @Parameter(
@@ -321,6 +323,7 @@ public class Main {
 
     @Override
     public void invoke() throws Exception {
+      System.out.println(_metadata);
       // Collect inputs, uploading local files to S3 if needed.
       List<ListenableFuture<List<Frontend.File>>> inputFutures =
               new ArrayList<ListenableFuture<List<Frontend.File>>>();
@@ -550,7 +553,8 @@ public class Main {
     @Parameter(
             names = {"-m", "--metadata"},
             description = "Metadata of the form key=value ",
-            variableArity = true)
+            variableArity = true, 
+            splitter = NoSplitter.class)
     List<String> _metadata;
 
     @Parameter(
@@ -795,5 +799,12 @@ public class Main {
     StringBuilder builder = new StringBuilder();
     _commander.usage(command, builder);
     System.err.println(builder.toString());
+  }
+
+  public static class NoSplitter implements IParameterSplitter {
+    @Override
+    public List<String> split(String value) {
+      return Collections.singletonList(value);
+    }
   }
 }
