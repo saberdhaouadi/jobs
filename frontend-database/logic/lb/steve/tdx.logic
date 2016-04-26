@@ -10,6 +10,11 @@ block(`tdx) {
   alias_all(`lb:web:config:delim),
 
   clauses(`{
+    service_by_prefix["/tdx/delim"] = x,
+    dynamic_delim_service(x) <- .
+  })
+
+  clauses(`{
     service_by_prefix["/tdx/txn/*"] = x,
     delim_txn_service(x).
 
