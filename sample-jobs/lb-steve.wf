@@ -11,6 +11,7 @@ workflow succeed()
   || runJob(impl="ancestor")
   || runJob(impl="metadata", metadata={"key=value"})
   || runTotal()
+  || runRTest()
 
 workflow fail()
      runJob(impl="timeout", metadata={"timeout=30"})
@@ -40,6 +41,8 @@ workflow runTotal()
   )
 ; runJob(impl="total", inputs={"s3://steve-jobs-martin/inputs/total.txt"})
 
+workflow runRTest()
+  runJob(impl="r-test", metadata={"no-services=true", "dependencies=R,rPackages.nlme,rPackages.data_table"})
 
 workflow runJob(impl, metadata*={}, inputs*={})[job, lb_jobs_service, lb_jobs_username, lb_jobs_key, impl_upload]
 
