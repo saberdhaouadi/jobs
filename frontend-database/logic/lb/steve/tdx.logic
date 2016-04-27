@@ -12,7 +12,7 @@ block(`tdx) {
   clauses(`{
     service_by_prefix["/tdx/delim"] = x,
     dynamic_delim_service(x) <- .
-  })
+  }),
 
   clauses(`{
     service_by_prefix["/tdx/txn/*"] = x,
