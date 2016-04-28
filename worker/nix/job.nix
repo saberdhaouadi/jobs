@@ -79,7 +79,9 @@ in
 
       echo ""
       echo "running job"
-      if [[ -f ./run ]]; then
+      if [[ -x ./run ]]; then
+        ./run /tmp/job/in /tmp/job/out
+      elif [[ -f ./run ]]; then
         bash run /tmp/job/in /tmp/job/out
       else
         echo "ERROR: 'run' script not found in job!"
