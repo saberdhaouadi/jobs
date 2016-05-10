@@ -67,9 +67,11 @@
       done
 
       set -x
-      echo "Creating raid from $devices"
+      echo "vgcreate"
       lvm vgcreate raid $devices
-      lvm lvcreate --zero n raid --name raid --extents '100%FREE' --stripes $nr
+      echo "lvcreate"
+      lvm lvcreate -vvv --zero n raid --name raid --extents '100%FREE' --stripes $nr
+      echo "vgchange"
       lvm vgchange -ay raid
 
       diskForUnionfs=/disk0
