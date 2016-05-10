@@ -67,6 +67,8 @@
       done
 
       set -x
+      echo stopping udevd
+      udevadm control --exit
       echo "vgcreate"
       lvm vgcreate raid $devices
       echo "lvcreate"
