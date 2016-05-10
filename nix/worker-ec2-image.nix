@@ -67,14 +67,12 @@
       done
 
       set -x
-      echo stopping udevd
-      udevadm control --exit
       echo "vgcreate"
       lvm vgcreate raid $devices
       echo "lvcreate"
-      lvm lvcreate -vvv --zero n raid --name raid --extents '100%FREE' --stripes $nr
+      lvm lvcreate -vvv --noudevsync --zero n raid --name raid --extents '100%FREE' --stripes $nr
       echo "vgchange"
-      lvm vgchange -ay raid
+      lvm vgchange --noudevsync -ay raid
 
       diskForUnionfs=/disk0
       echo "Creating ext4 filesystem on /dev/dm-0"
