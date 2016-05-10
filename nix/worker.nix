@@ -14,6 +14,8 @@ let
       ${optionalString (config.deployment.targetEnv or "" == "") ''
         if [[ -f /root/user-data ]] ; then
           source /root/user-data
+        elif [[ -f /etc/ec2-metadata/user-data ]]; then
+          source /etc/ec2-metadata/user-data
         else
           exit 1
         fi
