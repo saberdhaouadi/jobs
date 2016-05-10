@@ -66,13 +66,17 @@
         nr=$((nr+1))
       done
 
+      set -x
+      echo "Creating raid from $devices"
       lvm vgcreate raid $devices
       lvm lvcreate --zero n raid --name raid --extents '100%FREE' --stripes $nr
       lvm vgchange -ay raid
 
       diskForUnionfs=/disk0
+      echo "Creating ext4 filesystem on /dev/dm-0"
       mke2fs -t ext4 /dev/dm-0
-      mountFS /dev/dm-0 $diskForUnionfs ext4
+      echo "Mounting /dev/dm-0 to $diskForUnionfs"
+      mountFS /dev/dm-0 $diskForUnionfs "" ext4
 
       mkdir -m 755 -p $targetRoot/$diskForUnionfs/root
       mkdir -m 1777 -p $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
@@ -89,6 +93,7 @@
       mount --rbind $targetRoot/$diskForUnionfs/root/nix /unionfs-chroot/rw-nix
 
       unionfs -o allow_other,cow,nonempty,chroot=/unionfs-chroot,max_files=32768 /rw-nix=RW:/ro-nix=RO $targetRoot/nix
+      set +x
     '';
 
 
