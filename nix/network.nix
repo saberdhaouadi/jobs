@@ -377,6 +377,7 @@ with pkgs.lib;
         "52.19.49.187"
         "52.17.149.122"
         "54.77.230.190"
+        "52.5.80.40" # meijer-dev
       ];
       accountEntry = account:
         {
