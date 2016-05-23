@@ -193,14 +193,12 @@ public class Main {
         throw new UsageException("Input file does not exist");
 
       if (inputFile.isDirectory()) {
+        URI tempURI = createUniqueInputURI(inputFile.getName());
         return Futures.transform(
-                _s3client.uploadDirectory(inputFile, createUniqueInputURI(inputFile.getName()), _inputEncryptionKey),
+                _s3client.uploadDirectory(inputFile, tempURI, _inputEncryptionKey),
                 new Function<List<S3File>, List<Frontend.File>>() {
                   public List<Frontend.File> apply(List<S3File> files) {
-                    List<Frontend.File> result = new ArrayList<Frontend.File>();
-                    for (S3File f : files)
-                      result.add(Conversions.convertToFrontendFile(f));
-                    return result;
+                    return Collections.singletonList(Frontend.File.newBuilder().setUrl(tempURI.toString()+"/").build());
                   }
                 });
       } else {
