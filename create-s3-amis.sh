@@ -1,6 +1,11 @@
 #! /bin/sh -e
-build=0
+set -x
+build=$1
+if [[ "$build" == "" ]]; then 
 curl -o build.json -H 'Content-Type: application/json' -L -s https://bob.logicblox.com/job/jobs/default/worker_image.ec2/latest
+else
+curl -o build.json -H 'Content-Type: application/json' -L -s https://bob.logicblox.com/build/$build
+fi
 
 build=$(cat build.json | json id)
 export TIMESTAMP=$(date +%Y%m%d%H%M)
