@@ -13,7 +13,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.base.Predicate;
 
 import com.logicblox.concurrent.FutureTransform;
 import com.logicblox.concurrent.MoreFutures;
@@ -29,8 +28,6 @@ import com.logicblox.steve.protocol.Frontend;
 import org.apache.commons.io.FileUtils;
 import java.io.IOException;
 import java.io.File;
-
-import com.logicblox.s3lib.Utils;
 
 /**
  * Client-side API for making calls to steve. This is used by the
@@ -266,30 +263,6 @@ public class SteveClient implements SteveClientInterface {
   }
 
   /**
-   * Copy download job implementation to a S3 location
-   */
-  public ListenableFuture<String> copyJobImpl(final String id, URI destination)
-          throws ServiceClientException {
-    Frontend.ImplGetRequest.Builder getReq =
-            Frontend.ImplGetRequest.newBuilder()
-                    .setDestination(destination.toString())
-                    .setId(id);
-
-    Frontend.Request.Builder req =
-            Frontend.Request.newBuilder()
-                    .setImplGet(getReq);
-
-    return Futures.transform(
-            post(req.build()),
-            new Function<Frontend.Response, String>() {
-              @Override
-              public String apply(Frontend.Response response) {
-                return id;
-              }
-            });
-  }
-
-  /**
    * Utility for the end-to-end posting of a request.
    */
   private ListenableFuture<Frontend.Response> post(Frontend.Request req)
@@ -300,13 +273,7 @@ public class SteveClient implements SteveClientInterface {
     ProtoBufExchange exchange = new ProtoBufExchange(reqB, respB, Option.<String>none());
     exchange.setRequestMessage(req);
 
-    ListenableFuture<ProtoBufExchange> pm = executeWithRetry(new Callable<ListenableFuture<ProtoBufExchange>>() {
-      public ListenableFuture<ProtoBufExchange> call() throws ServiceClientException {
-        return _client.postMessage(exchange);
-      }
-    });
-
-    return instrumentForErrorHandling(exchange, pm);
+    return instrumentForErrorHandling(exchange, _client.postMessage(exchange));
   }
 
   /**
@@ -339,32 +306,17 @@ public class SteveClient implements SteveClientInterface {
                   try {
                     response = (Frontend.Response) e1.getResponseMessage();
                   } catch (Exception e) {
-                    System.err.println(e);
                     // on purpose ignore all exceptions. We'll just rethrow
                     // the original exception.
                   }
 
                   if (response != null)
                     return Futures.immediateFailedFuture(
-                      new SteveClientException(exc.getMessage(), exc.getStatus(), response));
+                            new SteveClientException(exc.getMessage(), exc.getStatus(), response));
                 }
 
                 return Futures.immediateFailedFuture(t);
               }
             });
   }
-
-  protected <V> ListenableFuture<V> executeWithRetry(Callable<ListenableFuture<V>> callable) {
-    return Utils.executeWithRetry(_scheduler, callable, _retryCondition, _retryDelayFunction, TimeUnit.MILLISECONDS, _retryCount);
-  }
-
-  private Function<Integer, Integer> _retryDelayFunction = Utils.createExponentialDelayFunction(300, 20 * 1000);
-
-  protected int _retryCount = 3;
-
-  private Predicate<Throwable> _retryCondition = new Predicate<Throwable>() {
-     public boolean apply(Throwable t) {
-       return ! ( (t instanceof ServiceClientException) || (t instanceof SteveClientException) );
-     }
-  };
 }

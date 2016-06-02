@@ -41,9 +41,6 @@ import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.concurrent.MoreFutures;
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.S3File;
-import com.logicblox.s3lib.CopyOptions;
-import com.logicblox.s3lib.CopyOptionsBuilder;
-import com.logicblox.s3lib.Utils;
 import com.logicblox.sqs.SQSClient;
 import com.logicblox.sqs.SQSClients;
 import com.logicblox.sqs.SQSException;
@@ -208,8 +205,6 @@ public class SteveHandler extends ProtoBufHandler {
       resp = handleLog(httpRequest, httpResponse, request.getLog());
     } else if (request.hasImplAdd()) {
       resp = handleImplAdd(httpRequest, httpResponse, request.getImplAdd());
-    } else if (request.hasImplGet()) {
-      resp = handleImplGet(httpRequest, httpResponse, request.getImplGet());
     } else if (request.hasImplList()) {
       resp = handleImplList(httpRequest, httpResponse, request.getImplList());
     } else {
@@ -254,6 +249,8 @@ public class SteveHandler extends ProtoBufHandler {
 
     // Once we have the job stored in the database, submit it to the queue
     ListenableFuture<Job> job = Futures.transform(jobId, new AsyncFunction<String, Job>() {
+
+      @Override
       public ListenableFuture<Job> apply(String id) {
         return _db.getJob(id);
       }
@@ -587,60 +584,6 @@ public class SteveHandler extends ProtoBufHandler {
         tmpFile.delete();
       }
     });
-  }
-
-  private ListenableFuture<Frontend.Response> handleImplGet(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
-          Frontend.ImplGetRequest req) throws IOException {
-    final String user = getUser(httpRequest);
-
-    URI tmpUrl;
-    try {
-      tmpUrl = Utils.getURI(req.getDestination());
-    } catch (URISyntaxException exc) {
-      throw new ServiceException(
-              new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax"));
-    }
-
-    final URI dest = tmpUrl;
-
-    ListenableFuture<JobImpl> impl = _db.getJobImpl(user, req.getId());
-    ListenableFuture<S3File> s3File = Futures.transform(impl,
-           new AsyncFunction<JobImpl, S3File>() {
-              public ListenableFuture<S3File> apply(JobImpl impl) throws IOException {
-                URI archive;
-                try {
-                  archive = Utils.getURI(impl.archive.getLocation());
-                }
-                catch(URISyntaxException e) {
-                  return Futures.immediateFailedFuture(new ServiceException(new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax")));
-                }
-                CopyOptions options = new CopyOptionsBuilder()
-                  .setSourceBucketName(Utils.getBucket(archive))
-                  .setSourceKey(Utils.getObjectKey(archive))
-                  .setDestinationBucketName(Utils.getBucket(dest))
-                  .setDestinationKey(Utils.getObjectKey(dest))
-                  .setCannedAcl("bucket-owner-full-control")
-                  .createCopyOptions();
-                return _s3client.copy(options);
-              }
-           });
-
-    return Futures.transform(
-            s3File,
-            new Function<S3File, Frontend.Response>() {
-              public Frontend.Response apply(S3File loc) {
-                Frontend.File file = Conversions.convertDataToFrontendFile(Conversions.convertS3FileToData(loc));
-                Frontend.ImplGetResponse.Builder resp = Frontend.ImplGetResponse.newBuilder().setFile(file);
-
-                return
-                        Frontend.Response.newBuilder()
-                                .setImplGet(resp)
-                                .build();
-              }
-            });
-
   }
 
   /**

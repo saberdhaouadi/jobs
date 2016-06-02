@@ -68,7 +68,6 @@ import com.logicblox.bloxweb.client.Transports;
 import com.logicblox.bloxweb.client.SignUtils;
 import com.logicblox.bloxweb.config.Config;
 import com.logicblox.bloxweb.config.ConfigLocator;
-import com.logicblox.bloxweb.client.ServiceClientException;
 
 import com.logicblox.common.Option;
 import com.logicblox.common.logging.Logger;
@@ -118,7 +117,6 @@ public class Main {
     _commander.addCommand("log", new LogCommand());
     _commander.addCommand("output", new OutputCommand());
     _commander.addCommand("upload-impl", new UploadJobImplCommand());
-    _commander.addCommand("download-impl", new DownloadJobImplCommand());
     _commander.addCommand("list-impl", new ListJobImplCommand());
     _commander.addCommand("help", new HelpCommand());
 
@@ -592,47 +590,6 @@ public class Main {
 
                   if (_wait)
                     return (ListenableFuture) client.wait(id, _pollDelay, new IncrementalStateNotify());
-                  else
-                    return Futures.immediateFuture((Object) id);
-                }
-              }).get();
-    }
-  }
-
-  /**
-   * Download job implementation
-   */
-  @Parameters(commandDescription = "Download job implementation")
-  class DownloadJobImplCommand extends Command {
-    @Parameter(
-            names = {"--impl"},
-            description = "Job implementation identifier",
-            required = true)
-    String _impl;
-
-    @Parameter(
-            names = {"-o", "--output"},
-            description = "Output location (S3 URL or local file)",
-            required = true)
-    String _output;
-
-    @Override
-    public void invoke() throws Exception {
-      final SteveClientInterface client = getSteveClient();
-
-      URI outputURI;
-      final boolean autoDownload = !_output.startsWith("s3://");
-      if (autoDownload)
-        outputURI = createUniqueOutputPrefixURI();
-      else
-        outputURI = URI.create(_output);
-
-      Futures.transform(client.copyJobImpl(_impl, outputURI),
-              new AsyncFunction<String, Object>() {
-                @Override
-                public ListenableFuture<Object> apply(String id) throws Exception {
-                  if(autoDownload)
-                    return (ListenableFuture) _s3client.download(new File(_output),outputURI);
                   else
                     return Futures.immediateFuture((Object) id);
                 }
