@@ -364,7 +364,7 @@ public class SteveClient implements SteveClientInterface {
 
   private Predicate<Throwable> _retryCondition = new Predicate<Throwable>() {
      public boolean apply(Throwable t) {
-       return ! ( (t instanceof ServiceClientException) || (t instanceof SteveClientException) );
+       return ! (t instanceof SteveClientException);
      }
   };
 }
