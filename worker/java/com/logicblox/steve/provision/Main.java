@@ -11,6 +11,7 @@ import org.apache.commons.cli.*;
 import org.apache.commons.codec.binary.Base64;
 
 import java.util.*;
+import java.lang.InterruptedException;
 
 public class Main {
   private AmazonSQS sqs;
@@ -346,7 +347,23 @@ public class Main {
             .withTags(new Tag("OutgoingQueue", outgoing_url))
     ;
 
-    ec2.createTags(createTagsRequest);
+    int retryCount = 0;
+    while(retryCount < 10) {
+      retryCount++;
+      try {
+        ec2.createTags(createTagsRequest);
+        return;
+      }
+      catch(Exception e) {
+        System.err.println("Error creating tags for "+id+" :"+e.getMessage());
+        e.printStackTrace();
+        try {
+          Thread.sleep(10000);
+        } catch (InterruptedException ie) {
+        }
+      }
+    }
+    System.err.println("Could not tag instance "+id);
   }
 
   public void createSpotInstances(int nr) {
