@@ -41,6 +41,11 @@ block(`service_support) {
     export_job_id(index, jobId) -> int(index), string(jobId).
 
     /**
+     * Export a client id in the response with this index.
+     */
+    export_client_id(index, clientId) -> int(index), string(clientId).
+
+    /**
      * Export a job in the response with this index.
      */
     export_job(index, jobIb) -> int(index), string(jobIb).
@@ -133,6 +138,11 @@ block(`service_support) {
     // JOB ID: add a job id to the response
     +proto:Response_job_id[resp] = id <-
       +export_job_id(i, id),
+      +response[i] = resp.
+
+    // CLIENT ID: add a client id to the response
+    +proto:Response_client_id[resp] = id <-
+      +export_client_id(i, id),
       +response[i] = resp.
 
 

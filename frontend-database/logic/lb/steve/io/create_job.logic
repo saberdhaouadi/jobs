@@ -29,7 +29,8 @@ block(`create_job) {
     lang:pulse(`create_new_job).
 
     // job with this client id already exists, export success
-    +service_support:export_job_id(index, jobId) <-
+    +service_support:export_job_id(index, jobId),
+    +service_support:export_client_id(index, clientId) <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_client_id[req] = clientId,

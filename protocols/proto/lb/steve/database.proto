@@ -66,6 +66,10 @@ message Response
 
   // for ListPlatformsRequest
   repeated string platform = 7 [(blox.options.set) = true];
+
+  // temporary optional field to signal the result is a cached result from previous
+  // request with same client-id
+  optional string client_id = 8;
 }
 
 //
