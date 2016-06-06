@@ -121,6 +121,8 @@ public class Main {
     _commander.addCommand("upload-impl", new UploadJobImplCommand());
     _commander.addCommand("download-impl", new DownloadJobImplCommand());
     _commander.addCommand("list-impl", new ListJobImplCommand());
+    _commander.addCommand("list-queues", new ListQueuesCommand());
+    _commander.addCommand("list-platforms", new ListPlatformsCommand());
     _commander.addCommand("help", new HelpCommand());
 
     File file1 = ConfigLocator.getDefaultConfigFile("lb-steve-client.config");
@@ -679,6 +681,50 @@ public class Main {
                     System.out.println(Conversions.toJSON(info));
 
                   return infos;
+                }
+              }).get();
+    }
+  }
+
+  /**
+   * List queues
+   */
+  @Parameters(commandDescription = "List queues")
+  class ListQueuesCommand extends Command {
+    @Override
+    public void invoke() throws Exception {
+      SteveClientInterface client = getSteveClient();
+      Futures.transform(
+              client.getQueues(),
+              new Function<List<String>, Object>() {
+                @Override
+                public Object apply(List<String> queues) {
+                  for (String queue : queues)
+                    System.out.println(queue);
+
+                  return queues;
+                }
+              }).get();
+    }
+  }
+
+  /**
+   * List platforms
+   */
+  @Parameters(commandDescription = "List platforms")
+  class ListPlatformsCommand extends Command {
+    @Override
+    public void invoke() throws Exception {
+      SteveClientInterface client = getSteveClient();
+      Futures.transform(
+              client.getPlatforms(),
+              new Function<List<String>, Object>() {
+                @Override
+                public Object apply(List<String> platforms) {
+                  for (String platform : platforms)
+                    System.out.println(platform);
+
+                  return platforms;
                 }
               }).get();
     }

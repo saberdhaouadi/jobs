@@ -74,6 +74,18 @@ public interface SteveClientInterface {
           throws ServiceClientException;
 
   /**
+   * List queues
+   */
+  public ListenableFuture<List<String>> getQueues()
+          throws ServiceClientException;
+
+  /**
+   * List platforms
+   */
+  public ListenableFuture<List<String>> getPlatforms()
+          throws ServiceClientException;
+
+  /**
    * Get/download job implementation
    */
   public ListenableFuture<String> copyJobImpl(String id, URI destination)

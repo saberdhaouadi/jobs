@@ -27,6 +27,9 @@ message Request {
   optional ImplGetRequest impl_get = 22;
 
   optional RegisterKeyRequest register_key = 30;
+
+  optional ListPlatformsRequest list_platforms = 31;
+  optional ListQueuesRequest list_queues = 32;
 }
 
 message Response {
@@ -48,6 +51,9 @@ message Response {
   optional ImplGetResponse impl_get = 22;
 
   optional RegisterKeyResponse register_key = 30;
+
+  optional ListPlatformsResponse list_platforms = 31;
+  optional ListQueuesResponse list_queues = 32;
 }
 
 /**
@@ -200,6 +206,27 @@ message ImplGetResponse {
 }
 
 /**
+ * Get platforms
+ */
+message ListPlatformsRequest {
+}
+
+message ListPlatformsResponse {
+  repeated string platform = 1;
+}
+
+/**
+ * Get queues
+ */
+message ListQueuesRequest {
+}
+
+message ListQueuesResponse {
+  repeated string queue = 1;
+}
+
+
+/**
  * General
  */
 message Param {
@@ -246,9 +273,8 @@ message Key {
 }
 
 message RegisterKeyRequest {
-  required string account = 1;
-  required string name = 2;
-  required string contents = 3;
+  required string name = 1;
+  required string contents = 2;
 }
 
 message RegisterKeyResponse {

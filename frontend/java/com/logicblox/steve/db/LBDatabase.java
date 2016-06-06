@@ -29,6 +29,10 @@ import com.logicblox.steve.protocol.Database.Request;
 import com.logicblox.steve.protocol.Database.Response;
 import com.logicblox.steve.protocol.Database.SetJobImplRequest;
 import com.logicblox.steve.protocol.Database.SetResultRequest;
+import com.logicblox.steve.protocol.Database.ListPlatformsRequest;
+import com.logicblox.steve.protocol.Database.ListQueuesRequest;
+
+
 
 /**
  * An implementation of Database backed by a LogicBlox workspace. This implementation does not cache
@@ -305,6 +309,29 @@ public class LBDatabase implements Database {
               }
             });
   }
+
+  @Override
+  public ListenableFuture<Iterable<String>> getQueues() {
+    final Request request = Request.newBuilder().setListQueues(ListQueuesRequest.newBuilder().build()).build();
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
+            new Function<Response, Iterable<String>>() {
+               public Iterable<String> apply(Response response) {
+                   return response.getQueueList();
+               }
+           });
+  }
+
+  @Override
+  public ListenableFuture<Iterable<String>> getPlatforms() {
+    final Request request = Request.newBuilder().setListPlatforms(ListPlatformsRequest.newBuilder().build()).build();
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
+            new Function<Response, Iterable<String>>() {
+               public Iterable<String> apply(Response response) {
+                   return response.getPlatformList();
+               }
+           });
+  }
+
 
   //
   // HELPERS

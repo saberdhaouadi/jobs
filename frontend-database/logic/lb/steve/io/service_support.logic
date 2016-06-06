@@ -51,6 +51,16 @@ block(`service_support) {
     export_impl(index, implCode) -> int(index), string(implCode).
 
     /**
+     * Export a queue in the response with this index.
+     */
+    export_queue(index, queue) -> int(index), string(queue).
+
+    /**
+     * Export a platform in the response with this index.
+     */
+    export_platform(index, platform) -> int(index), string(platform).
+
+    /**
      * Export an error with this content in the response with this index.
      */
     export_error(index, code, message) -> int(index), string(code), string(message).
@@ -146,7 +156,15 @@ block(`service_support) {
       schema:JobImpl_code@prev[impl] = implCode,
       schema:JobImpl:id@prev[impl] = implId.
 
+    // QUEUE: add queue to response
+    +proto:Response_queue(resp, queue) <-
+      +response[i] = resp,
+      +export_queue(i,queue).
 
+    // PLATFORM: add platform to response
+    +proto:Response_platform(resp, platform) <-
+      +response[i] = resp,
+      +export_platform(i, platform).
 
     // error checking rules
     +export_error(index, "NO_SUCH_USER", "User '" + userId + "' does not exist.") <-

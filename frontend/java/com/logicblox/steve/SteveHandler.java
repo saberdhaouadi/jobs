@@ -212,6 +212,10 @@ public class SteveHandler extends ProtoBufHandler {
       resp = handleImplGet(httpRequest, httpResponse, request.getImplGet());
     } else if (request.hasImplList()) {
       resp = handleImplList(httpRequest, httpResponse, request.getImplList());
+    } else if (request.hasListPlatforms()) {
+      resp = handleListPlatforms(httpRequest, httpResponse, request.getListPlatforms());
+    } else if (request.hasListQueues()) {
+      resp = handleListQueues(httpRequest, httpResponse, request.getListQueues());
     } else {
       resp = Futures.immediateFailedFuture(
               new ServiceException(
@@ -665,6 +669,40 @@ public class SteveHandler extends ProtoBufHandler {
                         Frontend.Response.newBuilder()
                                 .setImplList(resp)
                                 .build();
+              }
+            });
+  }
+
+  private ListenableFuture<Frontend.Response> handleListPlatforms(
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          Frontend.ListPlatformsRequest req) {
+    return Futures.transform(
+            _db.getPlatforms(),
+            new Function<Iterable<String>, Frontend.Response>() {
+              public Frontend.Response apply(Iterable<String> platforms) {
+                Frontend.ListPlatformsResponse.Builder resp = Frontend.ListPlatformsResponse.newBuilder();
+                for (String platform: platforms) {
+                  resp.addPlatform(platform);
+                }
+                return Frontend.Response.newBuilder().setListPlatforms(resp).build();
+              }
+            });
+  }
+
+  private ListenableFuture<Frontend.Response> handleListQueues(
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          Frontend.ListQueuesRequest req) {
+    return Futures.transform(
+            _db.getQueues(),
+            new Function<Iterable<String>, Frontend.Response>() {
+              public Frontend.Response apply(Iterable<String> queues) {
+                Frontend.ListQueuesResponse.Builder resp = Frontend.ListQueuesResponse.newBuilder();
+                for (String queue: queues) {
+                  resp.addQueue(queue);
+                }
+                return Frontend.Response.newBuilder().setListQueues(resp).build();
               }
             });
   }

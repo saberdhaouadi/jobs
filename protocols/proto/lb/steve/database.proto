@@ -34,6 +34,9 @@ message Request
   optional GetJobImplRequest get_impl = 6;
 
   optional GetUserRequest get_user = 7;
+
+  optional ListQueuesRequest list_queues = 8;
+  optional ListPlatformsRequest list_platforms = 9;
 }
 
 //
@@ -57,7 +60,13 @@ message Response
 
   // for GetUserRequest
   optional User user = 5;
-}  
+
+  // for ListQueuesRequest
+  repeated string queue = 6 [(blox.options.set) = true];
+
+  // for ListPlatformsRequest
+  repeated string platform = 7 [(blox.options.set) = true];
+}
 
 //
 // RESPONSE MESSAGES
@@ -170,6 +179,13 @@ message GetJobImplRequest
   optional string impl_id = 2;
 }
 
+message ListPlatformsRequest
+{
+}
+
+message ListQueuesRequest
+{
+}
 
 //
 // REQUESTS ON USERS

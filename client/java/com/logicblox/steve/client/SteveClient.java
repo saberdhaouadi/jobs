@@ -266,6 +266,44 @@ public class SteveClient implements SteveClientInterface {
   }
 
   /**
+   * List Queues 
+   */
+  public ListenableFuture<List<String>> getQueues()
+          throws ServiceClientException {
+    Frontend.Request.Builder req =
+            Frontend.Request.newBuilder()
+                    .setListQueues(Frontend.ListQueuesRequest.newBuilder());
+
+    return Futures.transform(
+            post(req.build()),
+            new Function<Frontend.Response, List<String>>() {
+              @Override
+              public List<String> apply(Frontend.Response response) {
+                return response.getListQueues().getQueueList();
+              }
+            });
+  }
+
+  /**
+   * List 
+   */
+  public ListenableFuture<List<String>> getPlatforms()
+          throws ServiceClientException {
+    Frontend.Request.Builder req =
+            Frontend.Request.newBuilder()
+                    .setListPlatforms(Frontend.ListPlatformsRequest.newBuilder());
+
+    return Futures.transform(
+            post(req.build()),
+            new Function<Frontend.Response, List<String>>() {
+              @Override
+              public List<String> apply(Frontend.Response response) {
+                return response.getListPlatforms().getPlatformList();
+              }
+            });
+  }
+
+  /**
    * Copy download job implementation to a S3 location
    */
   public ListenableFuture<String> copyJobImpl(final String id, URI destination)

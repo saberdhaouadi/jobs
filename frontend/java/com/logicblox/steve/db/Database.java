@@ -127,6 +127,16 @@ public interface Database {
   public ListenableFuture<Iterable<JobImpl>> getJobImpl(String userId);
 
   /**
+   * Get supported platforms
+   */
+  public ListenableFuture<Iterable<String>> getPlatforms();
+
+  /**
+   * Get queues
+   */
+  public ListenableFuture<Iterable<String>> getQueues();
+
+  /**
    * Allow the database implementation to cleanup resources.
    */
   public void shutdown();
