@@ -72,6 +72,7 @@ public class SteveHandler extends ProtoBufHandler {
   private String _jobImplPrefix;
   private String _jobLogPrefix;
   private String _defaultQueue;
+  private String _dataDir;
 
   public SteveHandler() {
     super("Steve");
@@ -85,6 +86,8 @@ public class SteveHandler extends ProtoBufHandler {
 
     _s3client = S3Utils.createS3Client(handlerConfig);
     _tmpDir = handlerConfig.getFileError("tmpdir");
+
+    _dataDir = handlerConfig.getStringError("logdir")+"/status";
 
     Section jobImplConfig = handlerConfig.getParent().getSection("job-implementations");
     _jobImplPrefix = jobImplConfig.getStringError("prefix");
@@ -127,7 +130,7 @@ public class SteveHandler extends ProtoBufHandler {
       SQSClient statusClient = sqsClients.getSQSClient(statusQueueConfig);
 
       SQSQueueHandle statusQueue = getQueueFromConfig(statusClient, statusQueueConfig);
-      StatusQueueClient status = new StatusQueueClient(statusClient, statusQueue, _db);
+      StatusQueueClient status = new StatusQueueClient(statusClient, statusQueue, _db, _dataDir);
       status.start();
     } catch (SQSException exc) {
       throw new HandlerValidationException(exc);

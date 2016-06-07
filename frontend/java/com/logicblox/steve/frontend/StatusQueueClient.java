@@ -3,7 +3,10 @@ package com.logicblox.steve.frontend;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Date;
+import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.text.SimpleDateFormat;
 
 import com.googlecode.protobuf.format.JsonFormat;
 import com.logicblox.sqs.SQSClientInterface;
@@ -15,6 +18,9 @@ import com.logicblox.steve.common.Status;
 import com.logicblox.steve.common.Status.StatusBuilder;
 import com.logicblox.steve.db.Database;
 import com.logicblox.steve.protocol.Backend;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Monitors a queue for status responses posted by workers about jobs, and then informs the updates
@@ -43,6 +49,11 @@ public class StatusQueueClient {
   private final AtomicBoolean _terminate = new AtomicBoolean(false);
 
   /**
+   * Location to store processed status messages
+   */
+  private final String _dataDir;
+
+  /**
    * Create a client for checking status responses using the sqs client, monitoring this queue, and
    * informing updates to this database.
    *
@@ -50,7 +61,7 @@ public class StatusQueueClient {
    * @param queue
    * @param db
    */
-  public StatusQueueClient(SQSClientInterface sqs, SQSQueueHandle queue, Database db) {
+  public StatusQueueClient(SQSClientInterface sqs, SQSQueueHandle queue, Database db, String dataDir) {
     if (sqs == null)
       throw new IllegalArgumentException("queue client must be non-null");
     if (queue == null)
@@ -61,6 +72,7 @@ public class StatusQueueClient {
     _sqs = sqs;
     _queue = queue;
     _db = db;
+    _dataDir = dataDir;
   }
 
   /**
@@ -90,12 +102,18 @@ public class StatusQueueClient {
       try {
         final List<SQSReceivedMessage> messages = _sqs.receive(_queue);
 
+        int i = 0;
         for (final SQSReceivedMessage msg : messages) {
           try {
-            processStatus(msg.getBody());
+            String body = msg.getBody();
+            processStatus(body);
+            i++;
           } catch (Exception exc) {
             exc.printStackTrace();
           }
+        }
+        if(messages.size() != 0) { 
+          System.out.println("Processed "+ i +" out of "+ messages.size() +" received status messages");
         }
 
         _sqs.delete(messages);
@@ -107,6 +125,20 @@ public class StatusQueueClient {
       } catch (Exception exc) {
         exc.printStackTrace();
       }
+    }
+  }
+
+  private void writeStatusMessage(String jobid, String statusString) {
+    try {
+      Date date = new Date();
+      //System.out.println(date);
+      File dir = new File(_dataDir+"/"+new SimpleDateFormat("yyyyMMdd").format(date)+"/"+jobid);
+      dir.mkdirs();
+      //System.out.println(dir);
+      FileUtils.writeStringToFile(new File(dir,new SimpleDateFormat("HHmmssSSS").format(date)), statusString);
+    } catch (IOException e) {
+      System.err.println("WARNING: Could not write status message to disk.");
+      e.printStackTrace();
     }
   }
 
@@ -130,6 +162,8 @@ public class StatusQueueClient {
     }
 
     final Backend.JobStatus protoStatus = builder.build();
+
+    writeStatusMessage(protoStatus.getJob(), statusString);
 
     // start building a status object
     final StatusBuilder status = new StatusBuilder();
