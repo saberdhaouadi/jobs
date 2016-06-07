@@ -11,9 +11,12 @@ instance_ids = []
 for i in ec2.get_all_instance_status(filters={'instance-status.status': 'impaired'}, max_results=1000):
     instance_ids.append(i.id)
 
-print "Terminating", instance_ids
-
 if instance_ids != []:
-    instances = ec2.get_all_instances(instance_ids, filters={'iam-instance-profile.arn': instance_profile_arn})
+    print "Found impaired instances:", instance_ids
+
+    instances = ec2.get_all_instances(filters={'iam-instance-profile.arn': instance_profile_arn})
     for res in instances:
-        res.instances[0].terminate()
+        instance = res.instances[0]
+        if instance.id in instance_ids:
+            print "Terminating", instance.id
+            instance[0].terminate()
