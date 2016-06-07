@@ -24,6 +24,8 @@ let
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
 
+  instanceProfileArn = name: "arn:aws:iam::${accountId}:instance-profile/${name}";
+
   profiler = with pkgs; stdenv.mkDerivation {
     name = "lightweight-java-profiler";
     src = fetchsvn {
@@ -279,6 +281,7 @@ with pkgs.lib;
               "Action": [
                 "ec2:Describe*",
                 "ec2:RunInstances",
+                "ec2:TerminateInstances",
                 "ec2:RequestSpotInstances",
                 "ec2:CreateTags",
                 "iam:PassRole"
@@ -423,6 +426,15 @@ with pkgs.lib;
         };
         startAt = "*:0/5";
       };
+      terminate-impaired = {
+        description = "Terminating impaired workers";
+        path = [ pkgs.pythonFull ];
+        serviceConfig = {
+          ExecStart = "${./scripts/terminate-impaired} ${instanceProfileArn resources.iamRoles.worker-role.name}";
+        };
+        environment.PYTHONPATH = "${pkgs.pythonPackages.boto}/lib/python2.7/site-packages";
+        #startAt = "*:0";
+      };
     in
     {
       deployment.targetEnv = "ec2";
@@ -439,7 +451,7 @@ with pkgs.lib;
       ] ;
 
       environment.systemPackages = [ builds.worker pkgs.linuxPackages.sysdig ] ++ provisionScripts;
-      systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes);
+      systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes) // { inherit terminate-impaired; };
       boot.extraModulePackages = [ pkgs.linuxPackages.sysdig ];
       boot.kernelModules = [ "sysdig-probe" ] ;
     };
