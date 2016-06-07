@@ -102,6 +102,7 @@ let
       logdir = /var/log/lb-steve-worker
       authentication_cache = $(LB_DEPLOYMENT_HOME)/authentication_cache
       tmpdir = /tmp
+      http_server_threads = 500
 
       [handler:steve]
       database_prefix = http://database-${name}:8080/db
@@ -472,8 +473,11 @@ with pkgs.lib;
       services.nginx.enable = true;
       services.nginx.config = ''
         worker_processes 4;
+        worker_rlimit_nofile 30000;
         events {
             worker_connections 9000;
+            use epoll;
+            multi_accept on;
         }
       '';
       services.nginx.httpConfig = ''
@@ -509,7 +513,7 @@ with pkgs.lib;
           ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK;
 
 
-          access_log /var/spool/nginx/logs/access.log timed_combined;
+          access_log /var/spool/nginx/logs/access.log timed_combined buffer=16k;
 
           location / {
               proxy_pass         http://localhost:8082/;
@@ -644,7 +648,13 @@ with pkgs.lib;
     };
 
   "steve-${name}" =
-    { config, pkgs, resources, ... }:
+    { config, pkgs, resources, lib, ... }:
+    let
+      block-ip = pkgs.writeScriptBin "block-ip" ''
+        #! /usr/bin/env bash
+        exec iptables -I INPUT 1 -s $1 -j DROP
+      '';
+    in
     {
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -660,9 +670,27 @@ with pkgs.lib;
 
       imports = [ <lbdevops/logicblox/production.nix> ];
 
+      boot.kernel.sysctl = {
+        "net.ipv4.ip_local_port_range" = "1024 65000";
+        "net.ipv4.tcp_tw_reuse" = "1";
+        "net.ipv4.tcp_fin_timeout" = "15";
+        "net.core.netdev_max_backlog" = "4096";
+        "net.core.rmem_max" = "16777216";
+        "net.core.somaxconn" = "4096";
+        "net.core.wmem_max" = "16777216";
+        "net.ipv4.tcp_max_syn_backlog" = "20480";
+        "net.ipv4.tcp_max_tw_buckets" = "400000";
+        "net.ipv4.tcp_no_metrics_save" = "1";
+        "net.ipv4.tcp_rmem" = "4096 87380 16777216";
+        "net.ipv4.tcp_syn_retries" = "2";
+        "net.ipv4.tcp_synack_retries" = "2";
+        "net.ipv4.tcp_wmem" = "4096 65536 16777216";
+        "vm.min_free_kbytes" = "65536";
+      };
+
       networking.firewall.allowedTCPPorts = [ 443 ];
 
-      environment.systemPackages = [ builds.frontend builds.client.build pkgs.jdk pkgs.awscli pkgs.nodejs];
+      environment.systemPackages = [ builds.frontend builds.client.build pkgs.jdk pkgs.awscli pkgs.nodejs block-ip];
 
       security.pam.loginLimits =
         [ { domain = "*"; item = "nofile"; type = "-"; value = "32768"; }
@@ -671,8 +699,11 @@ with pkgs.lib;
       services.nginx.enable = true;
       services.nginx.config = ''
         worker_processes 4;
+        worker_rlimit_nofile 30000;
         events {
             worker_connections 9000;
+            use epoll;
+            multi_accept on;
         }
       '';
       services.nginx.httpConfig = ''
@@ -708,7 +739,7 @@ with pkgs.lib;
           ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK;
 
 
-          access_log /var/spool/nginx/logs/access.log timed_combined;
+          access_log /var/spool/nginx/logs/access.log timed_combined buffer=16k;
           error_log /var/spool/nginx/logs/error.log error;
 
           location = / {
@@ -759,7 +790,7 @@ with pkgs.lib;
           preStart = ''
             mkdir -p /var/log/lb-steve-worker
           '';
-          environment.JAVA_ARGS = "-Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -XX:+PreserveFramePointer";
+          environment.JAVA_ARGS = "-server -Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -XX:+PreserveFramePointer";
           serviceConfig = {
             ExecStart = "${builds.frontend}/bin/lb-steve-frontend --config ${frontendConfig}";
             Restart = "always";
