@@ -14,7 +14,7 @@ block(`helper) {
     +lb:steve:schema:Job:status_machine[job, ts] = "frontend",
     +lb:steve:schema:Job:status_message[job, ts] = message
       <- +fail_job(job, reason),
-         ts = datetime:offset[datetime:create[1970,1,1,0,0,0],datetime:now[],"seconds"],
+         ts = datetime:offset[datetime:create[1970,1,1,0,0,0],datetime:now[],"seconds"]*1000,
          message = "INTERNAL_ERROR: "+reason.
   })
 
