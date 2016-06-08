@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.TimeZone;
 
 import com.google.common.collect.ImmutableList;
@@ -16,7 +17,6 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.logicblox.common.Option;
 import com.logicblox.s3lib.S3File;
 import com.logicblox.steve.common.Status.Event;
 import com.logicblox.steve.protocol.Backend;
@@ -40,7 +40,7 @@ public class Conversions {
   }
 
   public static Data convertS3FileToData(S3File file) {
-    return new Data(getURI(file).toString(), Option.some("etag:" + file.getETag()));
+    return new Data(getURI(file).toString(), Optional.of("etag:" + file.getETag()));
   }
 
   public static String getCurrentISO8601() {
@@ -90,7 +90,7 @@ public class Conversions {
   }
 
   public static Data convertFileToData(Frontend.File file) {
-    return new Data(file.getUrl(), Option.wrap(file.hasHash() ? file.getHash() : null));
+    return new Data(file.getUrl(), Optional.of(file.hasHash() ? file.getHash() : null));
   }
 
   public static Frontend.File convertToFrontendFile(S3File file) {
@@ -158,7 +158,7 @@ public class Conversions {
   }
 
   public static Data convertFileToData(Backend.File file) {
-    return new Data(file.getUrl(), Option.wrap(file.hasHash() ? file.getHash() : null));
+    return new Data(file.getUrl(), Optional.of(file.hasHash() ? file.getHash() : null));
   }
 
   public static Backend.File convertDataToBackendFile(Data d) {
@@ -186,7 +186,7 @@ public class Conversions {
   }
 
   public static Data convertFromDatabaseFile(Database.File d) {
-    return new Data(d.getUrl(), d.hasHash() ? Option.wrap(d.getHash()) : Option.<String>none());
+    return new Data(d.getUrl(), d.hasHash() ? Optional.of(d.getHash()) : Optional.<String>empty());
   }
 
   public static Collection<Database.Param> convertToDatabaseParams(Map<String, String> input) {

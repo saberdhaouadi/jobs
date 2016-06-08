@@ -3,6 +3,7 @@ package com.logicblox.steve.db;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 import junit.framework.Assert;
 
@@ -16,7 +17,6 @@ import com.logicblox.bloxweb.client.ClientConfigUtils;
 import com.logicblox.bloxweb.client.DelimImportOptions;
 import com.logicblox.bloxweb.client.DelimServiceClient;
 import com.logicblox.bloxweb.client.ServiceConnector;
-import com.logicblox.common.Option;
 import com.logicblox.steve.common.Data;
 import com.logicblox.steve.common.Status;
 import com.logicblox.steve.common.Status.Event;
@@ -128,7 +128,7 @@ public class LBDatabaseTest extends PrototypeTest {
     testSetGetJobImpl();
 
     final Collection<Data> inputs = ImmutableList.of(
-            new Data("s3://somebucket/foo/input1", Option.wrap("hash1")),
+            new Data("s3://somebucket/foo/input1", Optional.of("hash1")),
             new Data("s3://somebucket/foo/input2")
     );
 
@@ -162,7 +162,7 @@ public class LBDatabaseTest extends PrototypeTest {
 
     // create a job
     final Collection<Data> inputs = ImmutableList.of(
-            new Data("s3://somebucket/foo/input1", Option.wrap("hash1")),
+            new Data("s3://somebucket/foo/input1", Optional.of("hash1")),
             new Data("s3://somebucket/foo/input2")
     );
 
@@ -202,7 +202,7 @@ public class LBDatabaseTest extends PrototypeTest {
 
     // create a job
     final Collection<Data> inputs = ImmutableList.of(
-            new Data("s3://somebucket/foo/input1", Option.wrap("hash1")),
+            new Data("s3://somebucket/foo/input1", Optional.of("hash1")),
             new Data("s3://somebucket/foo/input2")
     );
 
