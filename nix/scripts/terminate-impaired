@@ -19,4 +19,4 @@ if instance_ids != []:
         instance = res.instances[0]
         if instance.id in instance_ids:
             print "Terminating", instance.id
-            instance[0].terminate()
+            instance.terminate()
