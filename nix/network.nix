@@ -382,6 +382,7 @@ with pkgs.lib;
         "52.17.149.122"
         "54.77.230.190"
         "52.5.80.40" # meijer-dev
+        "23.23.52.210" # wfm-staging
       ];
       accountEntry = account:
         {
@@ -635,7 +636,7 @@ with pkgs.lib;
       services.logicblox.enable = true;
       services.logicblox.logicblox = logicblox;
       services.logicblox.config.lb-server = ''
-        [lb-steve]
+        [workspace]
         auto_backup_mode=none
       '';
 
