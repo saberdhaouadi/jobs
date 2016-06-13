@@ -24,10 +24,7 @@ rec {
   dev =
     { hostName = "steve-dev.logicblox.com";
       elasticIPv4 = "54.163.249.223";
-      workers = {
-        "c3.xlarge-online" = { number = 1; price = "0.25"; percentageSpot = "0"; instanceType = "c3.xlarge"; max = "50";};
-        inherit (prod.workers) "c3.xlarge";
-      };
+      inherit (prod) workers;
     };
 
   martin =
