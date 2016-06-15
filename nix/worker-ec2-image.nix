@@ -80,4 +80,13 @@
       '';
   };
 
+  # Datadog setup
+  systemd.services.dd-agent.enable = lib.mkForce false;
+  systemd.services.dogstatsd.enable = lib.mkForce false;
+  services.dd-agent.enable = true;
+  services.dd-agent.api_key = builtins.readFile <global_creds/datadog-lb>;
+  services.dd-agent.tags = [
+    "lb-jobs"
+  ];
+
 }
