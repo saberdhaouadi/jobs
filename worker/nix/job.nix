@@ -5,8 +5,9 @@ let
   inherit (import <config/lib> {}) releases pkgs;
   platform = builtins.getAttr platform_version releases.platform;
   isFullPlatform = pkgs.lib.versionAtLeast platform_version "4.3.7";
+  metadata = builtins.fromJSON (builtins.readFile /tmp/job/in/metadata.json);
 in
-  pkgs.stdenv.mkDerivation rec {
+  pkgs.stdenv.mkDerivation (metadata // rec {
     name = "job-${toString builtins.currentTime}";
     buildInputs = [
       pkgs.pythonFull
@@ -100,4 +101,4 @@ in
       rm -f /tmp/LB_default_DaemonLock* || true
       rm -rf /dev/shm/LB_* || true
     '';
-  }
+  })
