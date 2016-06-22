@@ -123,6 +123,8 @@ public class Main {
     _commander.addCommand("list-impl", new ListJobImplCommand());
     _commander.addCommand("list-queues", new ListQueuesCommand());
     _commander.addCommand("list-platforms", new ListPlatformsCommand());
+    _commander.addCommand("list-metadata-keys", new ListMetadataKeysCommand());
+    _commander.addCommand("list-metadata-values", new ListMetadataValuesCommand());
     _commander.addCommand("help", new HelpCommand());
 
     File file1 = ConfigLocator.getDefaultConfigFile("lb-steve-client.config");
@@ -725,6 +727,56 @@ public class Main {
                     System.out.println(platform);
 
                   return platforms;
+                }
+              }).get();
+    }
+  }
+
+  /**
+   * List metadata keys
+   */
+  @Parameters(commandDescription = "List metadata keys")
+  class ListMetadataKeysCommand extends Command {
+    @Override
+    public void invoke() throws Exception {
+      SteveClientInterface client = getSteveClient();
+      Futures.transform(
+              client.getMetadataKeys(),
+              new Function<List<String>, Object>() {
+                @Override
+                public Object apply(List<String> keys) {
+                  for (String key : keys)
+                    System.out.println(key);
+
+                  return keys;
+                }
+              }).get();
+    }
+  }
+
+  /**
+   * List metadata values
+   */
+  @Parameters(commandDescription = "List metadata values")
+  class ListMetadataValuesCommand extends Command {
+    @Parameter(
+            names = {"--metadata-key"},
+            description = "Metadata key",
+            required = true)
+    String _key;
+
+    @Override
+    public void invoke() throws Exception {
+      SteveClientInterface client = getSteveClient();
+      Futures.transform(
+              client.getMetadataValues(_key),
+              new Function<List<String>, Object>() {
+                @Override
+                public Object apply(List<String> values) {
+                  for (String value : values)
+                    System.out.println(value);
+
+                  return values;
                 }
               }).get();
     }

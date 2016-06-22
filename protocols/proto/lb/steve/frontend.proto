@@ -30,6 +30,9 @@ message Request {
 
   optional ListPlatformsRequest list_platforms = 31;
   optional ListQueuesRequest list_queues = 32;
+
+  optional ListMetadataKeysRequest list_metadata_keys = 33;
+  optional ListMetadataValuesRequest list_metadata_values = 34;
 }
 
 message Response {
@@ -54,6 +57,9 @@ message Response {
 
   optional ListPlatformsResponse list_platforms = 31;
   optional ListQueuesResponse list_queues = 32;
+
+  optional ListMetadataKeysResponse list_metadata_keys = 33;
+  optional ListMetadataValuesResponse list_metadata_values = 34;
 }
 
 /**
@@ -223,6 +229,29 @@ message ListQueuesRequest {
 
 message ListQueuesResponse {
   repeated string queue = 1;
+}
+
+
+/**
+ * Get metadata keys
+ */
+message ListMetadataKeysRequest {
+}
+
+message ListMetadataKeysResponse {
+  repeated string key = 1;
+}
+
+
+/**
+ * Get metadata values
+ */
+message ListMetadataValuesRequest {
+  required string key = 1;
+}
+
+message ListMetadataValuesResponse {
+  repeated string value = 1;
 }
 
 

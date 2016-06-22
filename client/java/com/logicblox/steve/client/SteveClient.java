@@ -266,7 +266,7 @@ public class SteveClient implements SteveClientInterface {
   }
 
   /**
-   * List Queues 
+   * List Queues
    */
   public ListenableFuture<List<String>> getQueues()
           throws ServiceClientException {
@@ -285,7 +285,7 @@ public class SteveClient implements SteveClientInterface {
   }
 
   /**
-   * List 
+   * List platforms
    */
   public ListenableFuture<List<String>> getPlatforms()
           throws ServiceClientException {
@@ -299,6 +299,44 @@ public class SteveClient implements SteveClientInterface {
               @Override
               public List<String> apply(Frontend.Response response) {
                 return response.getListPlatforms().getPlatformList();
+              }
+            });
+  }
+
+  /**
+   * List metadata keys
+   */
+  public ListenableFuture<List<String>> getMetadataKeys()
+          throws ServiceClientException {
+    Frontend.Request.Builder req =
+            Frontend.Request.newBuilder()
+                    .setListMetadataKeys(Frontend.ListMetadataKeysRequest.newBuilder());
+
+    return Futures.transform(
+            post(req.build()),
+            new Function<Frontend.Response, List<String>>() {
+              @Override
+              public List<String> apply(Frontend.Response response) {
+                return response.getListMetadataKeys().getKeyList();
+              }
+            });
+  }
+
+  /**
+   * List metadata values
+   */
+  public ListenableFuture<List<String>> getMetadataValues(String key)
+          throws ServiceClientException {
+    Frontend.Request.Builder req =
+            Frontend.Request.newBuilder()
+                    .setListMetadataValues(Frontend.ListMetadataValuesRequest.newBuilder().setKey(key));
+
+    return Futures.transform(
+            post(req.build()),
+            new Function<Frontend.Response, List<String>>() {
+              @Override
+              public List<String> apply(Frontend.Response response) {
+                return response.getListMetadataValues().getValueList();
               }
             });
   }

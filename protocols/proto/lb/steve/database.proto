@@ -37,6 +37,9 @@ message Request
 
   optional ListQueuesRequest list_queues = 8;
   optional ListPlatformsRequest list_platforms = 9;
+
+  optional ListMetadataKeysRequest list_metadata_keys = 10;
+  optional ListMetadataValuesRequest list_metadata_values = 11;
 }
 
 //
@@ -70,6 +73,12 @@ message Response
   // temporary optional field to signal the result is a cached result from previous
   // request with same client-id
   optional string client_id = 8;
+
+  // for ListMetadataKeysRequest
+  repeated string metadata_key = 9 [(blox.options.set) = true];
+
+  // for ListMetadataValuesRequest
+  repeated string metadata_value = 10 [(blox.options.set) = true];
 }
 
 //
@@ -189,6 +198,17 @@ message ListPlatformsRequest
 
 message ListQueuesRequest
 {
+}
+
+message ListMetadataKeysRequest
+{
+  required string user_id = 1;
+}
+
+message ListMetadataValuesRequest
+{
+  required string user_id = 1;
+  required string key = 2;
 }
 
 //

@@ -137,6 +137,16 @@ public interface Database {
   public ListenableFuture<Iterable<String>> getQueues();
 
   /**
+   * Get metadata keys 
+   */
+  public ListenableFuture<Iterable<String>> getMetadataKeys(String user);
+
+  /**
+   * Get metadata values
+   */
+  public ListenableFuture<Iterable<String>> getMetadataValues(String user, String key);
+
+  /**
    * Allow the database implementation to cleanup resources.
    */
   public void shutdown();

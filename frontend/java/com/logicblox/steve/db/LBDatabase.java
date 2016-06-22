@@ -31,7 +31,8 @@ import com.logicblox.steve.protocol.Database.SetJobImplRequest;
 import com.logicblox.steve.protocol.Database.SetResultRequest;
 import com.logicblox.steve.protocol.Database.ListPlatformsRequest;
 import com.logicblox.steve.protocol.Database.ListQueuesRequest;
-
+import com.logicblox.steve.protocol.Database.ListMetadataKeysRequest;
+import com.logicblox.steve.protocol.Database.ListMetadataValuesRequest;
 
 
 /**
@@ -332,6 +333,27 @@ public class LBDatabase implements Database {
            });
   }
 
+  @Override
+  public ListenableFuture<Iterable<String>> getMetadataKeys(String user) {
+    final Request request = Request.newBuilder().setListMetadataKeys(ListMetadataKeysRequest.newBuilder().setUserId(user).build()).build();
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
+            new Function<Response, Iterable<String>>() {
+               public Iterable<String> apply(Response response) {
+                   return response.getMetadataKeyList();
+               }
+           });
+  }
+
+  @Override
+  public ListenableFuture<Iterable<String>> getMetadataValues(String user, String key) {
+    final Request request = Request.newBuilder().setListMetadataValues(ListMetadataValuesRequest.newBuilder().setUserId(user).setKey(key).build()).build();
+    return Futures.transform(_readOnlyBatcher.addRequest(request),
+            new Function<Response, Iterable<String>>() {
+               public Iterable<String> apply(Response response) {
+                   return response.getMetadataValueList();
+               }
+           });
+  }
 
   //
   // HELPERS

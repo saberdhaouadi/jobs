@@ -66,6 +66,16 @@ block(`service_support) {
     export_platform(index, platform) -> int(index), string(platform).
 
     /**
+     * Export a metadata key in the response with this index.
+     */
+    export_metadata_key(index, key) -> int(index), string(key).
+
+    /**
+     * Export a metadata value in the response with this index.
+     */
+    export_metadata_value(index, value) -> int(index), string(value).
+
+    /**
      * Export an error with this content in the response with this index.
      */
     export_error(index, code, message) -> int(index), string(code), string(message).
@@ -107,6 +117,10 @@ block(`service_support) {
     lang:pulse(`export_job_id).
     lang:pulse(`export_job).
     lang:pulse(`export_impl).
+    lang:pulse(`export_platform).
+    lang:pulse(`export_queue).
+    lang:pulse(`export_metadata_key).
+    lang:pulse(`export_metadata_value).
 
     lang:pulse(`ensure_user).
     lang:pulse(`ensure_job).
@@ -175,6 +189,16 @@ block(`service_support) {
     +proto:Response_platform(resp, platform) <-
       +response[i] = resp,
       +export_platform(i, platform).
+
+    // METADATA KEY: add metadata key to response
+    +proto:Response_metadata_key(resp, key) <-
+      +response[i] = resp,
+      +export_metadata_key(i, key).
+
+    // METADATA VALUE: add metadata value to response
+    +proto:Response_metadata_value(resp, value) <-
+      +response[i] = resp,
+      +export_metadata_value(i, value).
 
     // error checking rules
     +export_error(index, "NO_SUCH_USER", "User '" + userId + "' does not exist.") <-

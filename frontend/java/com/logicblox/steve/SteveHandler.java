@@ -219,6 +219,10 @@ public class SteveHandler extends ProtoBufHandler {
       resp = handleListPlatforms(httpRequest, httpResponse, request.getListPlatforms());
     } else if (request.hasListQueues()) {
       resp = handleListQueues(httpRequest, httpResponse, request.getListQueues());
+    } else if (request.hasListMetadataKeys()) {
+      resp = handleListMetadataKeys(httpRequest, httpResponse, request.getListMetadataKeys());
+    } else if (request.hasListMetadataValues()) {
+      resp = handleListMetadataValues(httpRequest, httpResponse, request.getListMetadataValues());
     } else {
       resp = Futures.immediateFailedFuture(
               new ServiceException(
@@ -706,6 +710,42 @@ public class SteveHandler extends ProtoBufHandler {
                   resp.addQueue(queue);
                 }
                 return Frontend.Response.newBuilder().setListQueues(resp).build();
+              }
+            });
+  }
+
+  private ListenableFuture<Frontend.Response> handleListMetadataKeys(
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          Frontend.ListMetadataKeysRequest req) {
+    final String user = getUser(httpRequest);
+    return Futures.transform(
+            _db.getMetadataKeys(user),
+            new Function<Iterable<String>, Frontend.Response>() {
+              public Frontend.Response apply(Iterable<String> keys) {
+                Frontend.ListMetadataKeysResponse.Builder resp = Frontend.ListMetadataKeysResponse.newBuilder();
+                for (String key: keys) {
+                  resp.addKey(key);
+                }
+                return Frontend.Response.newBuilder().setListMetadataKeys(resp).build();
+              }
+            });
+  }
+
+  private ListenableFuture<Frontend.Response> handleListMetadataValues(
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          Frontend.ListMetadataValuesRequest req) {
+    final String user = getUser(httpRequest);
+    return Futures.transform(
+            _db.getMetadataValues(user, req.getKey()),
+            new Function<Iterable<String>, Frontend.Response>() {
+              public Frontend.Response apply(Iterable<String> values) {
+                Frontend.ListMetadataValuesResponse.Builder resp = Frontend.ListMetadataValuesResponse.newBuilder();
+                for (String value: values) {
+                  resp.addValue(value);
+                }
+                return Frontend.Response.newBuilder().setListMetadataValues(resp).build();
               }
             });
   }
