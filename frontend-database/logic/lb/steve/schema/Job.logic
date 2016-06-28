@@ -105,6 +105,8 @@
     finished_status(s) -> string(s).
     finish_time[job] = t -> Job(job), int(t).
     start_time[job] = t -> Job(job), int(t).
+    finish[job] = t -> Job(job), datetime(t).
+    start[job] = t -> Job(job), datetime(t).
 
 
    /**
@@ -164,6 +166,9 @@
 
     start_time[job] = t <- agg<<t = min(ts)>> status_event[job, ts] = "STARTED".
     finish_time[job] = t <- agg<<t = max(ts)>> status_event[job, ts] = s, finished_status(s).
+
+    start[job] = s <- s = datetime:add[datetime:create[1970, 1, 1, 0, 0, 0], lb:steve:schema:Job:start_time[job]/1000, "seconds"].
+    finish[job] = s <- s = datetime:add[datetime:create[1970, 1, 1, 0, 0, 0], lb:steve:schema:Job:finish_time[job]/1000, "seconds"].
 
     created[job] = t <- metadata[job, "date"] = d, t = datetime:parse[d, "%Y-%m-%d %H:%M:%S"].
   })
