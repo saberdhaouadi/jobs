@@ -11,6 +11,10 @@ block(`provision) {
     jobqueue_spot_instance_price[q] = p -> jobqueue(q), decimal(p).
     jobqueue_max_instances[q] = n -> jobqueue(q), int(n).
     jobqueue_total_instances[q] = n -> jobqueue(q), int(n).
+
+    jobqueue_cpu[q] = n -> jobqueue(q), int(n).
+    jobqueue_memory[q] = n -> jobqueue(q), int(n).
+    jobqueue_disk[q] = n -> jobqueue(q), int(n).
   })
 
 } <-- .
