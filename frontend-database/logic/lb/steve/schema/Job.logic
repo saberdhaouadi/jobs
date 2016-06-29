@@ -185,7 +185,7 @@
 
     cpu_util[job] = u <-
       u = int:decimal:convert[c]/(int:decimal:convert[qc]*int:decimal:convert[d]),
-      d = duration[job], c = cpu_usage[job]/1000000000, qc = lb:steve:provision:jobqueue_cpu[queue[job]].
+      d = duration[job], d > 0, c = cpu_usage[job]/1000000000, qc = lb:steve:provision:jobqueue_cpu[queue[job]].
 
     max_memory_util[job] = u <-
       u = int:decimal:convert[m]/int:decimal:convert[qm],
