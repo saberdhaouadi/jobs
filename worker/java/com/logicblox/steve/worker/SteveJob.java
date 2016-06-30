@@ -343,19 +343,39 @@ public class SteveJob {
   }
 
   private void runJob() throws Exception {
-    log("Running the actual job...");
+    log("Checking for platform-releases.nix override.");
+
+    ObjectMetadata platformOverride;
+    try {
+      String key = "override/platform-releases.nix";
+      platformOverride = _client.exists(_s3Bucket, key).get();
+      if (platformOverride != null) {
+        _client.download(new File("/tmp/platform-releases.nix"), new URI(String.format("s3://%s/%s", _s3Bucket, key))).get();
+        log("Downloaded override for platform-releases.nix.");
+      }
+    } catch (Exception e) {
+      platformOverride = null;
+      log("Could not check for platform-releases.nix override, skipping.");
+    }
+
+    log("Running the actual job.");
+
+    ArrayList<String> args = new ArrayList<String>();
+    args.add("nix-instantiate");
+    args.add("<worker/nix/job.nix>");
+    args.add("--argstr");
+    args.add("platform_version");
+    args.add(_metadata.containsKey("platform") ? _metadata.get("platform") : "3.10.15");
+    args.add("--arg");
+    args.add("dependencies");
+    args.add(_metadata.containsKey("dependencies") ? "with (import <config/lib> {}).pkgs; ["+_metadata.get("dependencies").replace(",", " ")+"]" : "[]");
+    if (platformOverride != null) {
+      args.add("-I");
+      args.add("platform-releases=/tmp/platform-releases.nix");
+    }
 
     // determine .drv
-    _drv = readFromStdout(
-            "nix-instantiate",
-            "<worker/nix/job.nix>",
-            "--argstr",
-            "platform_version",
-            _metadata.containsKey("platform") ? _metadata.get("platform") : "3.10.15",
-            "--arg",
-            "dependencies",
-            _metadata.containsKey("dependencies") ? "with (import <config/lib> {}).pkgs; ["+_metadata.get("dependencies").replace(",", " ")+"]" : "[]"
-          );
+    _drv = readFromStdout(args.toArray(new String[args.size()]));
 
     // build .drv
     nixStoreRealise(_drv, _id);
