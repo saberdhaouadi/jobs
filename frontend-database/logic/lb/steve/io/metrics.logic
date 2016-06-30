@@ -33,7 +33,7 @@ block(`metrics) {
     }
       <- +ensure_int_metric[k] = v, +cons[_] = resp.
 
-    // RUNNING
+    // RUNNING PER QUEUE
     +ensure_int_metric[key] = 0
       <- !running_queue(q), +cons[_] = _,
          lb:steve:provision:jobqueue_id[_]=q,
@@ -46,7 +46,18 @@ block(`metrics) {
       lb:steve:schema:Job:metadata[j, "job-queue"]=q,
       key="lb.steve.running."+q.
 
-    // QUEUED
+    // RUNNING TOTAL
+    +ensure_int_metric[key] = 0
+      <- !lb:steve:schema:Job:running(_), +cons[_] = _,
+         key="lb.steve.running.total".
+
+    +ensure_int_metric[key] = r
+      <-
+      agg<<r = count()>> schema:Job:running(_),
+      +cons[_] = _,
+      key="lb.steve.running.total".
+
+    // QUEUED PER QUEUE
     +ensure_int_metric[key] = 0
       <- !queued_queue(q), +cons[_] = _,
          lb:steve:provision:jobqueue_id[_]=q,
@@ -58,6 +69,17 @@ block(`metrics) {
       +cons[_] = _,
       lb:steve:schema:Job:metadata[j, "job-queue"]=q,
       key="lb.steve.queued."+q.
+
+    // QUEUED TOTAL
+    +ensure_int_metric[key] = 0
+      <- !lb:steve:schema:Job:running(_), +cons[_] = _,
+         key="lb.steve.queued.total".
+
+    +ensure_int_metric[key] = r
+      <-
+      agg<<r = count()>> schema:Job:running(_),
+      +cons[_] = _,
+      key="lb.steve.queued.total".
 
      // TOTAL IMPL
     +ensure_int_metric["lb.steve.impl.total"] = 0
