@@ -23,14 +23,15 @@ import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.bloxweb.client.ProtobufServiceClient;
 import com.logicblox.bloxweb.client.ServiceClientException;
 
+import com.logicblox.s3lib.ExpBackoffRetryPolicy;
+import com.logicblox.s3lib.ThrowableRetriableTask;
+import com.logicblox.s3lib.ThrowableRetryPolicy;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.protocol.Frontend;
 
 import org.apache.commons.io.FileUtils;
 import java.io.IOException;
 import java.io.File;
-
-import com.logicblox.s3lib.Utils;
 
 /**
  * Client-side API for making calls to steve. This is used by the
@@ -431,16 +432,27 @@ public class SteveClient implements SteveClientInterface {
   }
 
   protected <V> ListenableFuture<V> executeWithRetry(Callable<ListenableFuture<V>> callable) {
-    return Utils.executeWithRetry(_scheduler, callable, _retryCondition, _retryDelayFunction, TimeUnit.MILLISECONDS, _retryCount);
+    int initialDelay = 300;
+    int maxDelay = 20 * 1000;
+
+    ThrowableRetryPolicy trp = new ExpBackoffRetryPolicy(
+      initialDelay, maxDelay, _retryCount, TimeUnit.MILLISECONDS) {
+      @Override
+      public boolean retryOnThrowable(Throwable t) {
+        return ! (t instanceof SteveClientException);
+      }
+    };
+
+    Callable<ListenableFuture<V>> rt = new ThrowableRetriableTask(callable, _scheduler, trp);
+    ListenableFuture<V> f;
+    try  {
+      f = rt.call();
+    } catch (Exception e) {
+      f = Futures.immediateFailedFuture(e);
+    }
+
+    return f;
   }
 
-  private Function<Integer, Integer> _retryDelayFunction = Utils.createExponentialDelayFunction(300, 20 * 1000);
-
   protected int _retryCount = 3;
-
-  private Predicate<Throwable> _retryCondition = new Predicate<Throwable>() {
-     public boolean apply(Throwable t) {
-       return ! (t instanceof SteveClientException);
-     }
-  };
 }
