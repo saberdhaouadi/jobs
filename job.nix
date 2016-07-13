@@ -159,7 +159,7 @@ let
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB {
       name = "lb-jobs-install-with-data";
-      buildInputs = [ logicblox bt pkgs.time ];
+      buildInputs = [ logicblox bt pkgs.bc ];
       requiredSystemFeatures = ["perf"];
       LB_CONFIG = ./config/perf;
       buildCommand = ''
