@@ -1,4 +1,5 @@
 { platform_release ? import ./lb-version.nix
+, benchmarks ? null
 }:
 let
   builder_config = import <config> {};
@@ -7,6 +8,6 @@ let
 in
   import ./job.nix {
     logicblox = platform;
-    inherit builder_config;
+    inherit builder_config benchmarks;
     inherit (pkgs) python stdenv fetchurl unzip makeWrapper runCommand jdk;
   }

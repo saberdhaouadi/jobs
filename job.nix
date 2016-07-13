@@ -7,6 +7,7 @@
 , makeWrapper
 , runCommand
 , python
+, benchmarks
 }:
 let
   inherit (builder_config) pkgs;
@@ -16,7 +17,6 @@ let
     import ./deps.nix {
       inherit pkgs;
     };
-
 
   makeClosure = module: buildFromConfig module (config: config.system.build.toplevel);
 
@@ -43,8 +43,14 @@ let
       };
     };
 
-in
-rec {
+  data =
+    builder_config.fetchs3 {
+      url = "s3://logicblox-private/data/lb-jobs-20160713.tgz";
+      sha256 = "1ql3zazlk4k8v72x2s8zl0519nmzcxh8qyg4m6c846j03jvlgrj2";
+    };
+
+  jobs = rec {
+
   frontend =
      builder_config.buildLBConfig {
       name = "jobs-frontend";
@@ -146,5 +152,43 @@ rec {
       }
     );
 
-}
+  } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
+  benchmark.install-with-data =
+    let
+      bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
+    in builder_config.buildLB {
+      name = "lb-jobs-install-with-data";
+      buildInputs = [ logicblox bt ];
+      requiredSystemFeatures = ["perf"];
+      buildCommand = ''
+        lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)
+        iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
+        cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
+        memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
+
+        pushd $LB_DEPLOYMENT_HOME
+        mkdir exports
+        pushd exports
+        tar xvf ${data}
+        ln -s 20160608-083904 latest
+        popd
+        popd
+
+        ${jobs.database.build}/install.sh
+
+        pkill -f iousg-monitor
+        pkill -f cpuusg-monitor
+        pkill -f memusg-monitor
+
+        mkdir -p $out/report
+        cp iousg-monitor.csv cpuusg-monitor.csv memusg-monitor.csv $out/report
+
+        iousg-monitor-plot  iousg-monitor.csv  $out/report/iousg  "lb-server"
+        cpuusg-monitor-plot cpuusg-monitor.csv $out/report/cpuusg "lb-server"
+        memusg-monitor-plot memusg-monitor.csv $out/report/memusg "lb-server"
+      '';
+    };
+  });
+
+in jobs
