@@ -182,11 +182,19 @@ let
         pkill -f memusg-monitor
 
         mkdir -p $out/report
+        wssize=$(du -BM --max-depth=0 "$dudir" | sed 's/M//' | awk '{print $1}')
+        echo "disk-usage-final,$wssize" >> $out/report/stats.csv
+
         cp iousg-monitor.csv cpuusg-monitor.csv memusg-monitor.csv $out/report
 
         iousg-monitor-plot  iousg-monitor.csv  $out/report/iousg  "lb-server"
         cpuusg-monitor-plot cpuusg-monitor.csv $out/report/cpuusg "lb-server"
         memusg-monitor-plot memusg-monitor.csv $out/report/memusg "lb-server"
+
+        mkdir -p $out/nix-support
+        for f in $out/report/*; do
+          echo "file data $f" >> $out/nix-support/hydra-build-products
+        done
       '';
     };
   });
