@@ -182,6 +182,7 @@ let
         pkill -f memusg-monitor
 
         mkdir -p $out/report
+        dudir="$LB_DEPLOYMENT_HOME/workspaces"
         wssize=$(du -BM --max-depth=0 "$dudir" | sed 's/M//' | awk '{print $1}')
         echo "disk-usage-final,$wssize" >> $out/report/stats.csv
 
