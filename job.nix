@@ -221,17 +221,13 @@ let
         popd
         popd
 
-        set -o pipefail
-        ${jobs.database.build}/install.sh | tee load-results.log
-        set +o pipefail
+        ${jobs.database.build}/install.sh
 
         pkill -f iousg-monitor
         pkill -f cpuusg-monitor
         pkill -f memusg-monitor
 
         mkdir -p $out/report
-
-        grep '^#RESULT#' load-results.log | awk '{print $2 "|" $3 "|" $4 "|" $5}' > load-results.csv
 
         fancy_report load
 

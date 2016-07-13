@@ -1,15 +1,22 @@
 #! /usr/bin/env bash
 set -e
 
-result_time()
+function record_span()
 {
   local id="$1"
   shift
-  if type -P time; then
-    env time -f "#RESULT# $id %e seconds" $@
-  else
-    $@
+
+  local t1="$(date +%s.%N)"
+  "$@"
+  local t2="$(date +%s.%N)"
+
+  if ! type -P bc &> /dev/null; then
+    return
   fi
+
+  local t3="$(echo "$t2 - $t1" | bc)"
+
+  echo "${id},${t1},${t2},${t3}" >> load-results.csv
 }
 
 db_created=
@@ -34,10 +41,10 @@ if [[ -d "$(lb filepath lb-steve)" ]]; then
   echo "Export data to $backup_dir"
   for t in $tdx; do
     echo " - $t"
-    result_time "lb-jobs-load export-$t" lb web-client export --timeout 3600 -n -o file://$backup_dir/$t.csv http://localhost:8080/tdx/$t
+    record_span "export-$t" lb web-client export --timeout 3600 -n -o file://$backup_dir/$t.csv http://localhost:8080/tdx/$t
   done
 
-  result_time "lb-jobs-load export-workspace" lb export-workspace lb-steve $backup_dir/workspace
+  record_span "export-workspace" lb export-workspace lb-steve $backup_dir/workspace
   rm -f $latest_link
   ln -s $backup_dir $latest_link
 fi
@@ -57,7 +64,7 @@ if [[ -e $latest_link ]]; then
   for t in $tdx; do
     if [[ -f $latest_link/$t.csv ]]; then
       echo " - $t"
-      result_time "lb-jobs-load import-$t" lb web-client import --timeout 3600 -n -i file://$latest_link/$t.csv http://localhost:8080/tdx/$t
+      record_span "import-$t" lb web-client import --timeout 3600 -n -i file://$latest_link/$t.csv http://localhost:8080/tdx/$t
     fi
   done
 fi
