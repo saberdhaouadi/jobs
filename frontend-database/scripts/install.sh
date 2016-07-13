@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 set -e
-
+set -x
 function record_span()
 {
   local id="$1"
