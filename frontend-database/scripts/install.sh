@@ -1,5 +1,13 @@
 #! /usr/bin/env bash
 set -e
+
+result_time()
+{
+  local id="$1"
+  shift
+  env time -f "#RESULT# $id %e seconds" $@
+}
+
 db_created=
 
 function trap_handler() {
@@ -22,10 +30,10 @@ if [[ -d "$(lb filepath lb-steve)" ]]; then
   echo "Export data to $backup_dir"
   for t in $tdx; do
     echo " - $t"
-    lb web-client export --timeout 3600 -n -o file://$backup_dir/$t.csv http://localhost:8080/tdx/$t
+    result_time "lb-jobs-load export-$t" lb web-client export --timeout 3600 -n -o file://$backup_dir/$t.csv http://localhost:8080/tdx/$t
   done
 
-  lb export-workspace lb-steve $backup_dir/workspace
+  result_time "lb-jobs-load export-workspace" lb export-workspace lb-steve $backup_dir/workspace
   rm -f $latest_link
   ln -s $backup_dir $latest_link
 fi
@@ -45,7 +53,7 @@ if [[ -e $latest_link ]]; then
   for t in $tdx; do
     if [[ -f $latest_link/$t.csv ]]; then
       echo " - $t"
-      lb web-client import --timeout 3600 -n -i file://$latest_link/$t.csv http://localhost:8080/tdx/$t
+      result_time "lb-jobs-load import-$t" lb web-client import --timeout 3600 -n -i file://$latest_link/$t.csv http://localhost:8080/tdx/$t
     fi
   done
 fi

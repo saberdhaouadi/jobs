@@ -175,13 +175,17 @@ let
         popd
         popd
 
-        ${jobs.database.build}/install.sh
+        set -o pipefail
+        ${jobs.database.build}/install.sh | tee results.log
+        set +o pipefail
 
         pkill -f iousg-monitor
         pkill -f cpuusg-monitor
         pkill -f memusg-monitor
 
         mkdir -p $out/report
+        grep '^#RESULT#' results.log | awk '{print $2 "|" $3 "|" $4 "|" $5}' > $out/report/results.csv
+
         dudir="$LB_DEPLOYMENT_HOME/workspaces"
         wssize=$(du -BM --max-depth=0 "$dudir" | sed 's/M//' | awk '{print $1}')
         echo "disk-usage-final,$wssize" >> $out/report/stats.csv
