@@ -222,7 +222,7 @@ let
         popd
 
         set -o pipefail
-        ${jobs.database.build}/install.sh | tee results.log
+        ${jobs.database.build}/install.sh | tee load-results.log
         set +o pipefail
 
         pkill -f iousg-monitor
@@ -233,7 +233,7 @@ let
 
         fancy_report load
 
-        grep '^#RESULT#' results.log | awk '{print $2 "|" $3 "|" $4 "|" $5}' > $out/report/results.csv
+        grep '^#RESULT#' load-results.log | awk '{print $2 "|" $3 "|" $4 "|" $5}' > load-results.csv
 
         dudir="$LB_DEPLOYMENT_HOME/workspaces"
         wssize=$(du -BM --max-depth=0 "$dudir" | sed 's/M//' | awk '{print $1}')
