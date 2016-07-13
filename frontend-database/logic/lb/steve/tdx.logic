@@ -9,8 +9,16 @@ block(`tdx) {
   alias_all(`lb:web:config:service_abbr),
   alias_all(`lb:web:config:delim),
 
+  export(`{
+    exported_job(j) -> lb:steve:schema:Job(j).
+  }),
+
   clauses(`{
-    service_by_prefix["/tdx/delim"] = x,
+    lang:pulse(`exported_job).
+
+    service_by_prefix["/tdx/jobdata"] = x,
+    readonly(x),
+    inactive_block_name[x] = "lb:steve:export_jobdata",
     dynamic_delim_service(x) <- .
   }),
 

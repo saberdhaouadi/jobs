@@ -1,0 +1,22 @@
+block(`list_metadata_values) {
+
+  alias(`lb:steve:database, `proto),
+
+  clauses(`{
+    +service_support:export_metadata_value(index, value)
+      <-
+      // Match request info
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_list_metadata_values[union] = req,
+      +proto:ListMetadataValuesRequest_user_id[req] = userId,
+      +proto:ListMetadataValuesRequest_key[req] = key,
+
+      // Fetch values that user has access to
+      lb:steve:schema:Job:metadata@prev[job,key]=value,
+      lb:steve:schema:Job:impl@prev[job]=impl,
+      lb:steve:schema:JobImpl:account@prev[impl]=account,
+      lb:steve:schema:User_account@prev[user]=account,
+      system:app:User:name@prev(user:userId).
+})
+
+} <-- .

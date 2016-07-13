@@ -1,0 +1,18 @@
+block(`export_jobdata) {
+
+  inactive(),
+  alias_all(`lb:steve),
+  clauses(`{
+    +tdx:exported_job(j) <-
+      lb:steve:schema:Job:metadata@prev[j,key]=value,
+      +lb:web:http:Request_uri[_] = uri,
+      +lb:web:http:RequestURI_service_prefix[uri] = "/tdx/jobdata",
+      +lb:web:http:RequestURI_parameter[uri,_] = kf,
+      +lb:web:http:Field_name[kf] = "key",
+      +lb:web:http:Field_value[kf,_] = key,
+      +lb:web:http:RequestURI_parameter[uri,_] = vf,
+      +lb:web:http:Field_name[vf] = "value",
+      +lb:web:http:Field_value[vf,_] = value.
+  })
+} <-- .
+
