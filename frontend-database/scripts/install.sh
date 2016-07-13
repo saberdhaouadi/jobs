@@ -5,7 +5,11 @@ result_time()
 {
   local id="$1"
   shift
-  env time -f "#RESULT# $id %e seconds" $@
+  if type -P time; then
+    env time -f "#RESULT# $id %e seconds" $@
+  else
+    $@
+  fi
 }
 
 db_created=
