@@ -231,9 +231,9 @@ let
 
         mkdir -p $out/report
 
-        fancy_report load
-
         grep '^#RESULT#' load-results.log | awk '{print $2 "|" $3 "|" $4 "|" $5}' > load-results.csv
+
+        fancy_report load
 
         dudir="$LB_DEPLOYMENT_HOME/workspaces"
         wssize=$(du -BM --max-depth=0 "$dudir" | sed 's/M//' | awk '{print $1}')
