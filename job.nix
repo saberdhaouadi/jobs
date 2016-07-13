@@ -161,7 +161,53 @@ let
       name = "lb-jobs-install-with-data";
       buildInputs = [ logicblox bt pkgs.time ];
       requiredSystemFeatures = ["perf"];
+      LB_CONFIG = ./config/perf;
       buildCommand = ''
+        function fancy_report_append_logs()
+        {
+          local id=$1
+          local results=$2
+
+          mkdir -p $id-report/logs
+          cat $results >> $id-report/logs/results.csv
+          cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.log >> $id-report/logs/lb-server.log
+          cat $LB_DEPLOYMENT_HOME/logs/current/lb-web-server.log >> $id-report/logs/lb-web-server.log
+          cat iousg-monitor.csv >> $id-report/logs/iousg-monitor.csv
+          cat cpuusg-monitor.csv >> $id-report/logs/cpuusg-monitor.csv
+          cat memusg-monitor.csv >> $id-report/logs/memusg-monitor.csv
+
+          if test -e $id-wf-logs; then
+            set -x
+            find $id-wf-logs -name '*.log' | xargs cp -t $id-report
+          fi
+        }
+
+        function fancy_report_finalize()
+        {
+          local id=$1
+
+          pushd $id-report
+          lb-fancy-report logs report measure
+          tar czf $out/report/$id-report.tar.gz report
+          popd
+
+          cp $id-report/logs/results.csv $out/report/$id-results.csv
+          rm -rf $id-report
+        }
+
+        function fancy_report()
+        {
+          local id=$1
+          cp $LB_DEPLOYMENT_HOME/logs/current/lb-server.log $out/report/$id-lb-server.log
+          cp $LB_DEPLOYMENT_HOME/logs/current/lb-web-server.log $out/report/$id-lb-web-server.log
+          log_analyzer.py -f $out/report/$id-lb-server.log extract_rules --logic -n 100 > $out/report/$id-top-rules.log
+          gzip $out/report/$id-lb-server.log
+          gzip $out/report/$id-lb-web-server.log
+
+          fancy_report_append_logs $id $id-results.csv
+          fancy_report_finalize $id
+        }
+
         lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)
         iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
         cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
@@ -184,6 +230,9 @@ let
         pkill -f memusg-monitor
 
         mkdir -p $out/report
+
+        fancy_report load
+
         grep '^#RESULT#' results.log | awk '{print $2 "|" $3 "|" $4 "|" $5}' > $out/report/results.csv
 
         dudir="$LB_DEPLOYMENT_HOME/workspaces"
