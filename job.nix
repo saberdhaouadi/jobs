@@ -74,7 +74,7 @@ let
 
           local t3="$(echo "$t2 - $t1" | bc)"
 
-          echo "''${id},''${t1},''${t2},''${t3}" >> load-results.csv
+          echo "''${id},''${t1},''${t2},''${t3}" >> ${id}-results.csv
         }
 
 
@@ -144,7 +144,7 @@ let
 
         mkdir -p $out/report
 
-        fancy_report load
+        fancy_report ${id}
 
         dudir="$LB_DEPLOYMENT_HOME/workspaces"
         wssize=$(du -BM --max-depth=0 "$dudir" | sed 's/M//' | awk '{print $1}')
