@@ -240,7 +240,7 @@ let
 
         tar -C $out/report -xvzf $out/report/load-report.tar.gz
         mv $out/report/report $out/report/load-report
-        echo "doc load-report $out/report/load-report"
+        echo "doc load-report $out/report/load-report" >> $out/nix-support/hydra-build-products
       '';
     };
   });
