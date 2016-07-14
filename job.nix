@@ -49,6 +49,116 @@ let
       sha256 = "1ql3zazlk4k8v72x2s8zl0519nmzcxh8qyg4m6c846j03jvlgrj2";
     };
 
+
+  bench = name: command: id:
+    let
+      bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
+    in builder_config.buildLB {
+      inherit name;
+      buildInputs = [ logicblox bt pkgs.bc ];
+      requiredSystemFeatures = ["perf"];
+      LB_CONFIG = ./config/perf;
+      buildCommand = ''
+        function record_span()
+        {
+          local id="$1"
+          shift
+
+          local t1="$(date +%s.%N)"
+          "$@"
+          local t2="$(date +%s.%N)"
+
+          if ! type -P bc &> /dev/null; then
+            return
+          fi
+
+          local t3="$(echo "$t2 - $t1" | bc)"
+
+          echo "''${id},''${t1},''${t2},''${t3}" >> load-results.csv
+        }
+
+
+        function fancy_report_append_logs()
+        {
+          local id=$1
+          local results=$2
+
+          mkdir -p $id-report/logs
+          cat $results >> $id-report/logs/results.csv
+          cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.log >> $id-report/logs/lb-server.log
+          cat $LB_DEPLOYMENT_HOME/logs/current/lb-web-server.log >> $id-report/logs/lb-web-server.log
+          cat iousg-monitor.csv >> $id-report/logs/iousg-monitor.csv
+          cat cpuusg-monitor.csv >> $id-report/logs/cpuusg-monitor.csv
+          cat memusg-monitor.csv >> $id-report/logs/memusg-monitor.csv
+
+          if test -e $id-wf-logs; then
+            set -x
+            find $id-wf-logs -name '*.log' | xargs cp -t $id-report
+          fi
+        }
+
+        function fancy_report_finalize()
+        {
+          local id=$1
+
+          pushd $id-report
+          lb-fancy-report logs report measure
+          tar czf $out/report/$id-report.tar.gz report
+          popd
+
+          cp $id-report/logs/results.csv $out/report/$id-results.csv
+          rm -rf $id-report
+        }
+
+        function fancy_report()
+        {
+          local id=$1
+          cp $LB_DEPLOYMENT_HOME/logs/current/lb-server.log $out/report/$id-lb-server.log
+          cp $LB_DEPLOYMENT_HOME/logs/current/lb-web-server.log $out/report/$id-lb-web-server.log
+          log_analyzer.py -f $out/report/$id-lb-server.log extract_rules --logic -n 100 > $out/report/$id-top-rules.log
+          gzip $out/report/$id-lb-server.log
+          gzip $out/report/$id-lb-web-server.log
+
+          fancy_report_append_logs $id $id-results.csv
+          fancy_report_finalize $id
+        }
+
+        lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)
+        iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
+        cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
+        memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
+
+        pushd $LB_DEPLOYMENT_HOME
+        mkdir exports
+        pushd exports
+        tar xvf ${data}
+        ln -s 20160608-083904 latest
+        popd
+        popd
+
+        ${command}
+
+        pkill -f iousg-monitor
+        pkill -f cpuusg-monitor
+        pkill -f memusg-monitor
+
+        mkdir -p $out/report
+
+        fancy_report load
+
+        dudir="$LB_DEPLOYMENT_HOME/workspaces"
+        wssize=$(du -BM --max-depth=0 "$dudir" | sed 's/M//' | awk '{print $1}')
+        echo "disk-usage-final,$wssize" >> $out/report/stats.csv
+
+        mkdir -p $out/nix-support
+        echo "file data $out/report/stats.csv" >> $out/nix-support/hydra-build-products
+
+        tar -C $out/report -xvzf $out/report/${id}-report.tar.gz
+        mv $out/report/report $out/report/${id}-report
+        echo "doc ${id}-report $out/report/${id}-report" >> $out/nix-support/hydra-build-products
+      '';
+    };
+
   jobs = rec {
 
   frontend =
@@ -154,95 +264,17 @@ let
 
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
-  benchmark.install-with-data =
-    let
-      bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
-    in builder_config.buildLB {
-      name = "lb-jobs-install-with-data";
-      buildInputs = [ logicblox bt pkgs.bc ];
-      requiredSystemFeatures = ["perf"];
-      LB_CONFIG = ./config/perf;
-      buildCommand = ''
-        function fancy_report_append_logs()
-        {
-          local id=$1
-          local results=$2
+    benchmark.load-data =
+      bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load";
 
-          mkdir -p $id-report/logs
-          cat $results >> $id-report/logs/results.csv
-          cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.log >> $id-report/logs/lb-server.log
-          cat $LB_DEPLOYMENT_HOME/logs/current/lb-web-server.log >> $id-report/logs/lb-web-server.log
-          cat iousg-monitor.csv >> $id-report/logs/iousg-monitor.csv
-          cat cpuusg-monitor.csv >> $id-report/logs/cpuusg-monitor.csv
-          cat memusg-monitor.csv >> $id-report/logs/memusg-monitor.csv
-
-          if test -e $id-wf-logs; then
-            set -x
-            find $id-wf-logs -name '*.log' | xargs cp -t $id-report
-          fi
-        }
-
-        function fancy_report_finalize()
-        {
-          local id=$1
-
-          pushd $id-report
-          lb-fancy-report logs report measure
-          tar czf $out/report/$id-report.tar.gz report
-          popd
-
-          cp $id-report/logs/results.csv $out/report/$id-results.csv
-          rm -rf $id-report
-        }
-
-        function fancy_report()
-        {
-          local id=$1
-          cp $LB_DEPLOYMENT_HOME/logs/current/lb-server.log $out/report/$id-lb-server.log
-          cp $LB_DEPLOYMENT_HOME/logs/current/lb-web-server.log $out/report/$id-lb-web-server.log
-          log_analyzer.py -f $out/report/$id-lb-server.log extract_rules --logic -n 100 > $out/report/$id-top-rules.log
-          gzip $out/report/$id-lb-server.log
-          gzip $out/report/$id-lb-web-server.log
-
-          fancy_report_append_logs $id $id-results.csv
-          fancy_report_finalize $id
-        }
-
-        lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)
-        iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
-        cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
-        memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
-
-        pushd $LB_DEPLOYMENT_HOME
-        mkdir exports
-        pushd exports
-        tar xvf ${data}
-        ln -s 20160608-083904 latest
-        popd
-        popd
-
+    benchmark.get-metrics =
+      bench "lb-jobs-metrics-call" ''
         ${jobs.database.build}/install.sh
-
-        pkill -f iousg-monitor
-        pkill -f cpuusg-monitor
-        pkill -f memusg-monitor
-
-        mkdir -p $out/report
-
-        fancy_report load
-
-        dudir="$LB_DEPLOYMENT_HOME/workspaces"
-        wssize=$(du -BM --max-depth=0 "$dudir" | sed 's/M//' | awk '{print $1}')
-        echo "disk-usage-final,$wssize" >> $out/report/stats.csv
-
-        mkdir -p $out/nix-support
-        echo "file data $out/report/stats.csv" >> $out/nix-support/hydra-build-products
-
-        tar -C $out/report -xvzf $out/report/load-report.tar.gz
-        mv $out/report/report $out/report/load-report
-        echo "doc load-report $out/report/load-report" >> $out/nix-support/hydra-build-products
-      '';
-    };
+        echo '{}' > post.json
+        record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
+        record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
+        record_span "get-metrics-100000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 100000 http://localhost:55183/metrics
+      '' "metrics";
   });
 
 in jobs
