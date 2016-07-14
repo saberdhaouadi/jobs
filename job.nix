@@ -52,10 +52,11 @@ let
 
   bench = name: command: id:
     let
+      heap_profiling = true;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB {
       inherit name;
-      buildInputs = [ logicblox bt pkgs.bc ];
+      buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl ];
       requiredSystemFeatures = ["perf"];
       LB_CONFIG = ./config/perf;
       buildCommand = ''
@@ -123,7 +124,21 @@ let
           fancy_report_finalize $id
         }
 
-        lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)
+            ${pkgs.lib.optionalString heap_profiling ''
+              # Enable heap-profiling for throughput phase
+              lb server stop
+              mkdir hprof
+              echo "Launching lb-server under heap-profiler"
+              LD_LIBRARY_PATH=${pkgs.glibc}/lib \
+              LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
+              HEAPPROFILE=hprof/lb-server.hprof \
+                lb-server --daemonize false &
+              sleep 60
+            ''}
+        ${if heap_profiling
+            then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
+            else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
+
         iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
         cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
         memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
@@ -143,6 +158,24 @@ let
         pkill -f memusg-monitor
 
         mkdir -p $out/report
+
+        ${pkgs.lib.optionalString heap_profiling ''
+              pushd hprof
+              ls -l
+              t1_prof=$(ls lb-server.hprof.*.heap | head -n 3 | tail -n 1)
+              t2_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
+
+              pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof.pdf
+              pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof.pdf
+              pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof-alloc.pdf
+              pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof-alloc.pdf
+              pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff.pdf || true
+              pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc.pdf || true
+              popd
+
+              pkill -f "lb-server --daemonize"
+        ''}
+
 
         fancy_report ${id}
 
