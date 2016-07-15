@@ -81,15 +81,6 @@ block(`metrics) {
       +cons[_] = _,
       key="lb.steve.queued.total".
 
-     // TOTAL IMPL
-    +ensure_int_metric["lb.steve.impl.total"] = 0
-      <- !schema:Job(_), +cons[_] = _.
-
-    +ensure_int_metric["lb.steve.impl.total"] = t
-      <-
-      agg<<t = count()>> schema:JobImpl(_),
-      +cons[_] = _.
-
     // LONGEST QUEUED
     +ensure_int_metric[key] = 0
       <- !queued_queue(q), +cons[_] = _,
@@ -103,21 +94,6 @@ block(`metrics) {
       lb:steve:schema:Job:metadata[j, "job-queue"]=q,
       key="lb.steve.queued_time."+q+".max",
       w=datetime:offset[lb:steve:schema:Job:created[j],datetime:now[],"seconds"].
-
-    // SHORTEST QUEUED
-    +ensure_int_metric[key] = 0
-      <- !queued_queue(q), +cons[_] = _,
-         lb:steve:provision:jobqueue_id[_]=q,
-         key="lb.steve.queued_time."+q+".min".
-
-    +ensure_int_metric[key] = n
-      <-
-      agg<<n = min(w)>> schema:Job(j), schema:Job:queued(j),
-      +cons[_] = _,
-      lb:steve:schema:Job:metadata[j, "job-queue"]=q,
-      key="lb.steve.queued_time."+q+".min",
-      w=datetime:offset[lb:steve:schema:Job:created[j],datetime:now[],"seconds"].
-
 })
 
 } <-- .
