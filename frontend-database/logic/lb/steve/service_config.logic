@@ -39,7 +39,8 @@ block(`service_config) {
       readonly(),
       protobuf_protocol[] = "lb:steve:database",
       protobuf_request_message[] = "GetMetricsRequest",
-      protobuf_response_message[] = "GetMetricsResponse"
+      protobuf_response_message[] = "GetMetricsResponse",
+      service_parameter["enable_http_control"] = "false"
     }.
 
   })  
