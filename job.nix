@@ -50,11 +50,11 @@ let
     };
 
 
-  bench = name: command: id:
+  bench = name: command: id: attrs:
     let
       heap_profiling = false;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
-    in builder_config.buildLB {
+    in builder_config.buildLB (attrs // {
       inherit name;
       buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl ];
       requiredSystemFeatures = ["perf"];
@@ -190,7 +190,7 @@ let
         mv $out/report/report $out/report/${id}-report
         echo "doc ${id}-report $out/report/${id}-report" >> $out/nix-support/hydra-build-products
       '';
-    };
+    });
 
   jobs = rec {
 
@@ -298,7 +298,7 @@ let
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
     benchmark.load-data =
-      bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load";
+      bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
 
     benchmark.get-metrics =
       bench "lb-jobs-metrics-call" ''
@@ -306,7 +306,15 @@ let
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
-      '' "metrics";
+      '' "metrics" {};
+
+    benchmark.get-metrics-2G =
+      bench "lb-jobs-metrics-call" ''
+        ${jobs.database.build}/install.sh
+        echo '{}' > post.json
+        record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
+        record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
+      '' "metrics" { LB_MEM="2G"; };
   });
 
 in jobs
