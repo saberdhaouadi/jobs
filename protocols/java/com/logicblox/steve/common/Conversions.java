@@ -40,7 +40,7 @@ public class Conversions {
   }
 
   public static Data convertS3FileToData(S3File file) {
-    return new Data(getURI(file).toString(), Optional.some("etag:" + file.getETag()));
+    return new Data(getURI(file).toString(), Optional.of("etag:" + file.getETag()));
   }
 
   public static String getCurrentISO8601() {
