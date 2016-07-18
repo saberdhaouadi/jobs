@@ -1,6 +1,5 @@
 package com.logicblox.steve.tests;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.After;
@@ -9,6 +8,7 @@ import org.junit.Before;
 import com.logicblox.bloxweb.ConnectBloxExecutor;
 import com.logicblox.bloxweb.ConnectBloxExecutors;
 import com.logicblox.bloxweb.client.AdminClient;
+import com.logicblox.common.Option;
 import com.logicblox.connect.ConnectBlox;
 import com.logicblox.connect.ConnectBlox.CloseNamedBranch;
 import com.logicblox.connect.ConnectBlox.CreateNamedBranch;
@@ -54,8 +54,8 @@ public abstract class PrototypeTest {
    *
    * @return an option that, if set, defines the id of the branch created for test cases.
    */
-  protected Optional<String> getBranchId() {
-    return Optional.<String>empty();
+  protected Option<String> getBranchId() {
+    return Option.<String>none();
   }
 
   /**
@@ -82,8 +82,8 @@ public abstract class PrototypeTest {
     // Compute the branch name, either from a name specified by the subtype, or generating a
     // name based on the class name.
     branchId =
-            getBranchId().isPresent() ?
-                    getBranchId().get() :
+            getBranchId().isSome() ?
+                    getBranchId().unwrap() :
                     getClass().getSimpleName() + "_" + UUID.randomUUID();
 
     prototype = getPrototypeWorkspace();

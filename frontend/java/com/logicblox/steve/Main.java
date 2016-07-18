@@ -3,7 +3,6 @@ package com.logicblox.steve;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -26,6 +25,7 @@ import com.logicblox.bloxweb.config.ConfigValidator;
 import com.logicblox.bloxweb.config.ValidationMessage;
 import com.logicblox.bloxweb.internal.Specification;
 import com.logicblox.bloxweb.service.ServiceContext;
+import com.logicblox.common.Option;
 import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
@@ -54,7 +54,7 @@ public class Main {
         main._ctx.getAuthenticationProvider().addRealm(realm.build());
 
         final BloxWebServer bloxwebServer = new BloxWebServer(
-                Optional.of(main._logDir),
+                Option.some(main._logDir),
                 main._ctx);
 
         // start web server

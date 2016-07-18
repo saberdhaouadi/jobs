@@ -1,8 +1,9 @@
 package com.logicblox.steve.common;
 
+import com.logicblox.common.Option;
+
 import java.net.URI;
 import java.net.URL;
-import java.util.Optional;
 
 /**
  * Combination of a location and optionally a hash for the data.
@@ -10,20 +11,20 @@ import java.util.Optional;
 public final class Data {
 
   private final String _loc;
-  private final Optional<String> _hash;
+  private final Option<String> _hash;
 
-  public Data(String location, Optional<String> hash) {
+  public Data(String location, Option<String> hash) {
     _loc = location;
     _hash = hash;
   }
 
   public Data(String location, String hash) {
     _loc = location;
-    _hash = Optional.of(hash);
+    _hash = Option.wrap(hash);
   }
 
   public Data(String location) {
-    this(location, Optional.<String>empty());
+    this(location, Option.<String>none());
   }
 
   public Data(URL location) {
@@ -39,11 +40,11 @@ public final class Data {
   }
 
   public String getHash() {
-    return _hash.get();
+    return _hash.unwrap();
   }
 
   public boolean hasHash() {
-    return _hash.isPresent();
+    return _hash.isSome();
   }
 
   public String toString() {

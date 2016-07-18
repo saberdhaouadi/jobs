@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -72,6 +71,7 @@ import com.logicblox.bloxweb.config.Config;
 import com.logicblox.bloxweb.config.ConfigLocator;
 import com.logicblox.bloxweb.client.ServiceClientException;
 
+import com.logicblox.common.Option;
 import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
