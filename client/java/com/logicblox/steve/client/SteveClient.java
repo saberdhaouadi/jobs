@@ -2,6 +2,7 @@ package com.logicblox.steve.client;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
@@ -21,7 +22,6 @@ import com.logicblox.concurrent.MoreFutures;
 import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.bloxweb.client.ProtobufServiceClient;
 import com.logicblox.bloxweb.client.ServiceClientException;
-import com.logicblox.common.Option;
 
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.protocol.Frontend;
@@ -373,7 +373,7 @@ public class SteveClient implements SteveClientInterface {
     Frontend.Request.Builder reqB = Frontend.Request.newBuilder();
     Frontend.Response.Builder respB = Frontend.Response.newBuilder();
 
-    ProtoBufExchange exchange = new ProtoBufExchange(reqB, respB, Option.<String>none());
+    ProtoBufExchange exchange = new ProtoBufExchange(reqB, respB, Optional.<String>empty());
     exchange.setRequestMessage(req);
 
     ListenableFuture<ProtoBufExchange> pm = executeWithRetry(new Callable<ListenableFuture<ProtoBufExchange>>() {
