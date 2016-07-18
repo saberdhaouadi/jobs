@@ -73,6 +73,7 @@ public class SteveHandler extends ProtoBufHandler {
   private String _jobLogPrefix;
   private String _defaultQueue;
   private String _dataDir;
+  private String _maintenanceFile;
 
   public SteveHandler() {
     super("Steve");
@@ -87,6 +88,7 @@ public class SteveHandler extends ProtoBufHandler {
     _s3client = S3Utils.createS3Client(handlerConfig);
     _tmpDir = handlerConfig.getFileError("tmpdir");
 
+    _maintenanceFile = handlerConfig.getStringError("logdir")+"/maintenance";
     _dataDir = handlerConfig.getStringError("logdir")+"/status";
 
     Section jobImplConfig = handlerConfig.getParent().getSection("job-implementations");
@@ -189,6 +191,10 @@ public class SteveHandler extends ProtoBufHandler {
     return auth[0];
   }
 
+  private boolean inMaintenance() {
+    return new File(_maintenanceFile).exists();
+  }
+
   @Override
   protected ListenableFuture<ProtoBufExchange> handle(
           HttpServletRequest httpRequest,
@@ -198,6 +204,12 @@ public class SteveHandler extends ProtoBufHandler {
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
 
     ListenableFuture<Frontend.Response> resp;
+
+    if (inMaintenance()) {
+      resp = Futures.immediateFailedFuture(new ServiceException(new SimpleErrorCode("MAINTENANCE", 503, "System is in maintenance mode, please try again in a few minutes")));
+      return MoreFutures.transferResponse(resp, exchange);
+    }
+
     if (request.hasCreate()) {
       resp = handleCreate(httpRequest, httpResponse, request.getCreate());
     } else if (request.hasState()) {

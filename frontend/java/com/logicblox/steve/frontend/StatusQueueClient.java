@@ -100,6 +100,11 @@ public class StatusQueueClient {
   private void loop() {
     while (!_terminate.get()) {
       try {
+        if (new File(_dataDir+"/../maintenance").exists()) {
+          System.out.println("Maintenance in progress, sleeping for 30s...");
+          Thread.sleep(30000);
+          continue;
+        }
         final List<SQSReceivedMessage> messages = _sqs.receive(_queue);
 
         int i = 0;
