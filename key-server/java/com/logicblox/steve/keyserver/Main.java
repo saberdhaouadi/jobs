@@ -47,7 +47,7 @@ public class Main {
         Collection<ValidationMessage> messages = ConfigValidator.validate(main._config);
         ConfigValidator.handleMessages(messages, logger);
 
-        main._ctx = new ServiceContext(main._logger, new ConfigFiles(main._config,Optional.<Config>none(),Optional.<Config>none()));
+        main._ctx = new ServiceContext(main._logger, new ConfigFiles(main._config,Optional.<Config>empty(),Optional.<Config>empty()));
         main._ctx.init();
         // Create job-auth realm for authentication
         // Specification.Realm.Builder realm = Specification.Realm.newBuilder().setName("job-auth").setConfig("default-signature");
