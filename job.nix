@@ -299,7 +299,7 @@ let
 
     benchmark.various =
       builder_config.buildLB {
-        inherit "metrics-various";
+        name = "lb-jobs-metrics-various";
         buildInputs = [ logicblox pkgs.bc pkgs.binutils ];
         requiredSystemFeatures = ["perf"];
         buildCommand = ''
