@@ -319,7 +319,7 @@ let
           mkdir tmp partitioned
           for f in $files; do
             tail -n +2 single/$f.csv > tmp/$f.csv
-            shuf partitioned/$f.csv > tmp/shuf.csv
+            shuf tmp/$f.csv > tmp/shuf.csv
             split -n 10 tmp/shuf.csv tmp/$f
             rm tmp/$f.csv tmp/shuf.csv
             for p in tmp/x$f*; do
