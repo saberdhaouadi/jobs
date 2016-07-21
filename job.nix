@@ -324,7 +324,7 @@ let
             rm tmp/$f.csv tmp/shuf.csv
             for p in tmp/$f*; do
               head -1 single/$f.csv > partitioned/$(basename $p)
-              cat $p > partitioned/$(basename $p)
+              cat $p >> partitioned/$(basename $p)
               rm $p
             done
           done
