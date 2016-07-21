@@ -322,14 +322,14 @@ let
             shuf tmp/$f.csv > tmp/shuf.csv
             split -n 10 tmp/shuf.csv tmp/$f
             rm tmp/$f.csv tmp/shuf.csv
-            for p in tmp/x$f*; do
+            for p in tmp/$f*; do
               head -1 single/$f.csv > partitioned/$(basename $p)
               cat $p > partitioned/$(basename $p)
               rm $p
             done
           done
 
-          for datadir in single partitioned; do
+          for datadir in partitioned single; do
             # always load data with enough memory
             export LB_MEM=32G
             lb server stop
