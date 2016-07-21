@@ -353,7 +353,7 @@ let
               for c in 1 2 3 4 5 10 20; do
                 echo '{}' > post.json
                 local t1="$(date +%s.%N)"
-                ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
+                ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -n 1000 http://localhost:55183/metrics
                 local t2="$(date +%s.%N)"
                 local t3="$(echo "$t2 - $t1" | bc)"
                 echo "$datadir,metrics,$mem,$c,$t3" >> results.csv
