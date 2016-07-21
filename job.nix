@@ -300,7 +300,7 @@ let
     benchmark.load-data =
       bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
 
-    benchmark.get-metrics =
+    benchmark.get-metrics-c20 =
       bench "lb-jobs-metrics-call" ''
         ${jobs.database.build}/install.sh
         echo '{}' > post.json
@@ -308,12 +308,44 @@ let
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
       '' "metrics" {};
 
-    benchmark.get-metrics-2G =
+    benchmark.get-metrics-2G-c20 =
       bench "lb-jobs-metrics-call" ''
         ${jobs.database.build}/install.sh
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
+      '' "metrics" { LB_MEM="2G"; };
+
+    benchmark.get-metrics-c10 =
+      bench "lb-jobs-metrics-call" ''
+        ${jobs.database.build}/install.sh
+        echo '{}' > post.json
+        record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 1000 http://localhost:55183/metrics
+        record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 10000 http://localhost:55183/metrics
+      '' "metrics" {};
+
+    benchmark.get-metrics-2G-c10 =
+      bench "lb-jobs-metrics-call" ''
+        ${jobs.database.build}/install.sh
+        echo '{}' > post.json
+        record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 1000 http://localhost:55183/metrics
+        record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 10000 http://localhost:55183/metrics
+      '' "metrics" { LB_MEM="2G"; };
+
+    benchmark.get-metrics-c1 =
+      bench "lb-jobs-metrics-call" ''
+        ${jobs.database.build}/install.sh
+        echo '{}' > post.json
+        record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 1000 http://localhost:55183/metrics
+        record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 10000 http://localhost:55183/metrics
+      '' "metrics" {};
+
+    benchmark.get-metrics-2G-c1 =
+      bench "lb-jobs-metrics-call" ''
+        ${jobs.database.build}/install.sh
+        echo '{}' > post.json
+        record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 1000 http://localhost:55183/metrics
+        record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 10000 http://localhost:55183/metrics
       '' "metrics" { LB_MEM="2G"; };
   });
 
