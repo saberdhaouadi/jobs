@@ -320,7 +320,7 @@ let
           for f in $files; do
             tail -n +2 single/$f.csv > tmp/$f.csv
             shuf tmp/$f.csv > tmp/shuf.csv
-            split -n 10 tmp/shuf.csv tmp/$f
+            split -n l/10 tmp/shuf.csv tmp/$f
             rm tmp/$f.csv tmp/shuf.csv
             for p in tmp/$f*; do
               head -1 single/$f.csv > partitioned/$(basename $p)
