@@ -330,8 +330,7 @@ let
             done
           done
 
-          mkdir -p $out
-          mkdir -p $out/nix-support
+          mkdir -p disk-space-profiles
 
           for datadir in single; do
             # always load data with enough memory
@@ -362,17 +361,20 @@ let
                 local t2="$(date +%s.%N)"
                 local t3="$(echo "$t2 - $t1" | bc)"
                 pkill -f "profile_disk_bg.sh"
-                cp "profileDisk-$datadir-$mem-$c.txt" $out
+                cp "profileDisk-$datadir-$mem-$c.txt" disk-space-profiles
                 echo "$datadir,metrics,$mem,$c,$t3" >> results.csv
               done
             done
           done
 
+          mkdir -p $out
+          mkdir -p $out/nix-support
+
           cp results.csv $out
           echo "file data $out/results.csv" >> $out/nix-support/hydra-build-products
-          for f in $(find $out -name "*.txt"); do
-            echo "file txt" $f >> $out/nix-support/hydra-build-products
-          done
+          tar czf disk-space-profiles.tgz disk-space-profiles
+          mv disk-space-profiles.tgz $out
+          echo "file tgz $out/disk-space-profiles.tgz" >> $out/nix-support/hydra-build-products
         '';
       };
 
