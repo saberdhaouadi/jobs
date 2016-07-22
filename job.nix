@@ -52,7 +52,7 @@ let
 
   bench = name: command: id: attrs:
     let
-      heap_profiling = false;
+      heap_profiling = true;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB (attrs // {
       inherit name;
@@ -296,7 +296,7 @@ let
     );
 
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
-
+/*
     benchmark.various =
       builder_config.buildLB {
         name = "lb-jobs-metrics-various";
@@ -368,8 +368,8 @@ let
           echo "file data $out/results.csv" >> $out/nix-support/hydra-build-products
         '';
       };
+*/
 
-/*
     benchmark.load-data =
       bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
 
@@ -420,8 +420,6 @@ let
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 10000 http://localhost:55183/metrics
       '' "metrics" { LB_MEM="2G"; };
-*/
-
   });
 
 
