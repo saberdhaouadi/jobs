@@ -356,7 +356,7 @@ let
 
               for c in 1 2 3 4 5 10 20; do
                 echo '{}' > post.json
-                ./profile_disk_bg.sh "profileDisk-$datadir-$mem-$c.txt" &
+                ${jobs.database.build}/profile_disk_bg.sh "profileDisk-$datadir-$mem-$c.txt" &
                 local t1="$(date +%s.%N)"
                 ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -n 1000 http://localhost:55183/metrics
                 local t2="$(date +%s.%N)"
