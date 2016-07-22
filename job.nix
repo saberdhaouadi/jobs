@@ -50,7 +50,7 @@ let
     };
 
 
-  bench = name: command: id: attrs:
+  bench = name: precommand: command: id: attrs:
     let
       heap_profiling = true;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
@@ -124,17 +124,19 @@ let
           fancy_report_finalize $id
         }
 
-            ${pkgs.lib.optionalString heap_profiling ''
-              # Enable heap-profiling for throughput phase
-              lb server stop
-              mkdir hprof
-              echo "Launching lb-server under heap-profiler"
-              LD_LIBRARY_PATH=${pkgs.glibc}/lib \
-              LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
-              HEAPPROFILE=hprof/lb-server.hprof \
-                lb-server --daemonize false &
-              sleep 60
-            ''}
+        ${precommand}
+
+        ${pkgs.lib.optionalString heap_profiling ''
+          # Enable heap-profiling for throughput phase
+          lb server stop
+          mkdir hprof
+          echo "Launching lb-server under heap-profiler"
+          LD_LIBRARY_PATH=${pkgs.glibc}/lib \
+          LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
+          HEAPPROFILE=hprof/lb-server.hprof \
+            lb-server --daemonize false &
+          sleep 60
+        ''}
         ${if heap_profiling
             then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
             else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
@@ -189,6 +191,10 @@ let
         tar -C $out/report -xvzf $out/report/${id}-report.tar.gz
         mv $out/report/report $out/report/${id}-report
         echo "doc ${id}-report $out/report/${id}-report" >> $out/nix-support/hydra-build-products
+
+        for f in $(find $out/report -name "*.pdf"); do
+          echo "file pdf" $f >> $out/nix-support/hydra-build-products
+        done
       '';
     });
 
@@ -371,55 +377,50 @@ let
 */
 
     benchmark.load-data =
-      bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
+      bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "" "load" {};
 
     benchmark.get-metrics-c20 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
+      bench "lb-jobs-metrics-call" "${jobs.database.build}/install.sh" ''
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
       '' "metrics" {};
 
     benchmark.get-metrics-2G-c20 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
+      bench "lb-jobs-metrics-call" "${jobs.database.build}/install.sh" ''
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
       '' "metrics" { LB_MEM="2G"; };
-
+/*
     benchmark.get-metrics-c10 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
+      bench "lb-jobs-metrics-call" "${jobs.database.build}/install.sh" ''
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 10000 http://localhost:55183/metrics
       '' "metrics" {};
 
     benchmark.get-metrics-2G-c10 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
+      bench "lb-jobs-metrics-call" "${jobs.database.build}/install.sh" ''
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 10000 http://localhost:55183/metrics
       '' "metrics" { LB_MEM="2G"; };
 
     benchmark.get-metrics-c1 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
+      bench "lb-jobs-metrics-call" "${jobs.database.build}/install.sh" ''
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 10000 http://localhost:55183/metrics
       '' "metrics" {};
 
     benchmark.get-metrics-2G-c1 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
+      bench "lb-jobs-metrics-call" "${jobs.database.build}/install.sh" ''
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 10000 http://localhost:55183/metrics
       '' "metrics" { LB_MEM="2G"; };
+*/
   });
 
 
