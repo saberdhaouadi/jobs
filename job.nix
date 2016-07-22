@@ -329,7 +329,7 @@ let
             done
           done
 
-          for datadir in partitioned single; do
+          for datadir in single; do
             # always load data with enough memory
             export LB_MEM=32G
             lb server stop
