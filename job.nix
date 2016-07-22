@@ -302,6 +302,7 @@ let
         name = "lb-jobs-metrics-various";
         buildInputs = [ logicblox pkgs.bc pkgs.binutils ];
         requiredSystemFeatures = ["perf"];
+        src = ./.;
         buildCommand = ''
           mkdir -p $LB_DEPLOYMENT_HOME/config
           cat > $LB_DEPLOYMENT_HOME/config/lb-server.config <<EOF
@@ -329,6 +330,9 @@ let
             done
           done
 
+          mkdir -p $out
+          mkdir -p $out/nix-support
+
           for datadir in single; do
             # always load data with enough memory
             export LB_MEM=32G
@@ -352,20 +356,23 @@ let
 
               for c in 1 2 3 4 5 10 20; do
                 echo '{}' > post.json
+                ./profile_disk_bg.sh "profileDisk-$datadir-$mem-$c.txt" &
                 local t1="$(date +%s.%N)"
                 ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -n 1000 http://localhost:55183/metrics
                 local t2="$(date +%s.%N)"
                 local t3="$(echo "$t2 - $t1" | bc)"
+                pkill -f "profile_disk_bg.sh"
+                cp "profileDisk-$datadir-$mem-$c.txt" $out
                 echo "$datadir,metrics,$mem,$c,$t3" >> results.csv
               done
             done
           done
 
-          mkdir -p $out
-          mkdir -p $out/nix-support
-
           cp results.csv $out
           echo "file data $out/results.csv" >> $out/nix-support/hydra-build-products
+          for f in $(find $out -name "*.txt"); do
+            echo "file txt" $f >> $out/nix-support/hydra-build-products
+          done
         '';
       };
 
