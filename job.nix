@@ -52,7 +52,7 @@ let
 
   bench = name: precommand: command: id: attrs:
     let
-      heap_profiling = true;
+      heap_profiling = false;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB (attrs // {
       inherit name;
