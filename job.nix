@@ -368,13 +368,13 @@ let
     benchmark.get-metrics-c2 =
       bench "lb-jobs-metrics-call" "${jobs.database.build}/install.sh" ''
         echo '{}' > post.json
-        record_span "get-metrics-600s" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -s 60 -c 2 -t 3600 http://localhost:55183/metrics
+        record_span "get-metrics-3600s" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -s 60 -c 2 -t 3600 -n 1000000000 http://localhost:55183/metrics
       '' "metrics" {};
 
     benchmark.get-metrics-2G-c2 =
       bench "lb-jobs-metrics-call" "${jobs.database.build}/install.sh" ''
         echo '{}' > post.json
-        record_span "get-metrics-600s" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -s 60 -c 2 -t 3600 http://localhost:55183/metrics
+        record_span "get-metrics-3600s" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -s 60 -c 2 -t 3600 -n 1000000000 http://localhost:55183/metrics
       '' "metrics" { LB_MEM="2G"; };
 
 /*
