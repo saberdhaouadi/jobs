@@ -52,7 +52,7 @@ let
 
   bench = name: precommand: command: id: attrs:
     let
-      heap_profiling = true;
+      heap_checking = true;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB (attrs // {
       inherit name;
@@ -126,18 +126,17 @@ let
 
         ${precommand}
 
-        ${pkgs.lib.optionalString heap_profiling ''
-          # Enable heap-profiling for throughput phase
+        ${pkgs.lib.optionalString heap_checking ''
+          # Enable heap-checker for throughput phase
           lb server stop
-          mkdir hprof
-          echo "Launching lb-server under heap-profiler"
+          echo "Launching lb-server under heap-checker"
           LD_LIBRARY_PATH=${pkgs.glibc}/lib \
           LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
-          HEAPPROFILE=hprof/lb-server.hprof \
+          HEAPCHECK=normal \
             lb-server --daemonize false &
           sleep 60
         ''}
-        ${if heap_profiling
+        ${if heap_checking
             then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
             else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
 
@@ -161,20 +160,7 @@ let
 
         mkdir -p $out/report
 
-        ${pkgs.lib.optionalString heap_profiling ''
-              pushd hprof
-              ls -l
-              t1_prof=$(ls lb-server.hprof.*.heap | head -n 3 | tail -n 1)
-              t2_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
-
-              pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof.pdf
-              pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof.pdf
-              pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof-alloc.pdf
-              pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof-alloc.pdf
-              pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff.pdf || true
-              pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc.pdf || true
-              popd
-
+        ${pkgs.lib.optionalString heap_checking ''
               pkill -f "lb-server --daemonize"
         ''}
 
