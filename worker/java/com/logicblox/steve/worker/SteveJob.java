@@ -61,7 +61,9 @@ public class SteveJob {
 
   private long _diskFreeStart = 0;
   private long _maxDiskUsage = 0;
- 
+  private long _cpuUsage = 0;
+  private long _maxMemory = 0;
+
   private File _keyDir = new File(com.logicblox.s3lib.Utils.getDefaultKeyDirectory());
   private SteveKeyServerHelper _keyHelper;
   private File _cpuacct = new File("/sys/fs/cgroup/cpu,cpuacct/system.slice/nix-daemon.service/cpuacct.usage");
@@ -98,31 +100,33 @@ public class SteveJob {
     System.err.println(String.format("%s: %s", _id, msg));
   }
 
+  private void setCounters() {
+    try {
+      _cpuUsage = Long.parseLong(FileUtils.readFileToString(_cpuacct).trim());
+      _maxMemory = Long.parseLong(FileUtils.readFileToString(_memacct).trim());
+    }
+    catch(NumberFormatException e) {
+      log("Could not parse the resource usage from cgroups: "+ e.getMessage());
+      e.printStackTrace();
+    }
+    catch(IOException e) {
+      log("Could not read resource usage from cgroups: " + e.getMessage());
+      e.printStackTrace();
+    }
+  }
+
   public void run() throws Exception {
     log("Starting..." + _id);
-    long cpuUsage = 0;
-    long maxMemory = 0;
 
     try {
       _outgoing.notifyStart();
       setup();
       runJob();
       log("Successfully executed " + _id);
-      try {
-        cpuUsage = Long.parseLong(FileUtils.readFileToString(_cpuacct).trim());
-        maxMemory = Long.parseLong(FileUtils.readFileToString(_memacct).trim());
-      }
-      catch(NumberFormatException e) {
-        log("Could not parse the resource usage from cgroups: "+ e.getMessage());
-        e.printStackTrace();
-      }
-      catch(IOException e) {
-        log("Could not read resource usage from cgroups: " + e.getMessage());
-        e.printStackTrace();
-      }
+      setCounters();
 
       List<S3File> output = uploadOutput();
-      _outgoing.notifySuccess(output, cpuUsage, maxMemory, _maxDiskUsage);
+      _outgoing.notifySuccess(output, _cpuUsage, _maxMemory, _maxDiskUsage);
       log("Successfully uploaded output files for job " + _id);
       teardown();
     } catch (JobKilledException k) {
@@ -130,7 +134,7 @@ public class SteveJob {
       _killed = true;
     } catch (InternalException e) {
       if(_receiveCount >= 5) {
-        _outgoing.notifyFailure(new InternalException("Retried job multiple time, but keep hitting internal error."), cpuUsage, maxMemory, _maxDiskUsage);
+        _outgoing.notifyFailure(new InternalException("Retried job multiple time, but keep hitting internal error."), _cpuUsage, _maxMemory, _maxDiskUsage);
       } else {
         _outgoing.notifyStatus("There was an internal error while executing the job. It will be restarted on another worker.");
         if(e.getCause() != null) {
@@ -141,7 +145,8 @@ public class SteveJob {
     } catch (Exception e) {
       log("Failure executing " + _id + ": " + e.getMessage());
       e.printStackTrace();
-      _outgoing.notifyFailure(e, cpuUsage, maxMemory, _maxDiskUsage);
+      setCounters();
+      _outgoing.notifyFailure(e, _cpuUsage, _maxMemory, _maxDiskUsage);
       teardown();
     }
   }
