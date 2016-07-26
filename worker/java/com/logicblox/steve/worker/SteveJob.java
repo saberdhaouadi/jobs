@@ -100,7 +100,7 @@ public class SteveJob {
     System.err.println(String.format("%s: %s", _id, msg));
   }
 
-  private void setCounters() {
+  private void readCounters() {
     try {
       _cpuUsage = Long.parseLong(FileUtils.readFileToString(_cpuacct).trim());
       _maxMemory = Long.parseLong(FileUtils.readFileToString(_memacct).trim());
@@ -123,7 +123,7 @@ public class SteveJob {
       setup();
       runJob();
       log("Successfully executed " + _id);
-      setCounters();
+      readCounters();
 
       List<S3File> output = uploadOutput();
       _outgoing.notifySuccess(output, _cpuUsage, _maxMemory, _maxDiskUsage);
@@ -145,7 +145,7 @@ public class SteveJob {
     } catch (Exception e) {
       log("Failure executing " + _id + ": " + e.getMessage());
       e.printStackTrace();
-      setCounters();
+      readCounters();
       _outgoing.notifyFailure(e, _cpuUsage, _maxMemory, _maxDiskUsage);
       teardown();
     }
