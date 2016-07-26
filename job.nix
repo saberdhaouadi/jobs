@@ -349,18 +349,22 @@ let
             done
 
             # for mem in 500M 1G 2G 4G 8G 16G; do
-            for mem in 1G 2G 8G; do
-              export LB_MEM=$mem
+            # for mem in 1G 2G 8G; do
+            for mem in 500 1000 2000 4000 8000 16000; do
+              #export LB_MEM=$mem
+              export LB_MEM="$mem"M
+              echo $LB_MEM
               lb server stop
               lb server start
 
               # for c in 1 2 3 4 5 10 20; do
-              for c in 1 5 10 20; do
+              # for c in 1 5 10 20; do
+              for c in 1 2 3 4 5 6 7 8 9 10 20 30 40 50; do
                 echo '{}' > post.json
                 ${jobs.database.build}/profile_disk_bg.sh "profileDisk-$datadir-$mem-$c.txt" &
                 local t1="$(date +%s.%N)"
                 # ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -n 1000 http://localhost:55183/metrics
-                ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -t 150 http://localhost:55183/metrics > ab.out
+                ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -t 60 http://localhost:55183/metrics > ab.out
                 local t2="$(date +%s.%N)"
                 local t3="$(echo "$t2 - $t1" | bc)"
                 pkill -f "profile_disk_bg.sh"
