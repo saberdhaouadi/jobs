@@ -59,6 +59,8 @@ let
       buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl ];
       requiredSystemFeatures = ["perf"];
       LB_CONFIG = ./config/perf;
+      meta.maxSilent = 12 * 60 * 60;
+      meta.timeout = 12 * 60 * 60;
       buildCommand = ''
         function record_span()
         {
@@ -382,7 +384,7 @@ let
     benchmark.get-metrics-8G-c2 =
       bench "lb-jobs-metrics-call" "${jobs.database.build}/install.sh" ''
         echo '{}' > post.json
-        record_span "get-metrics-36000s" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -s 60 -c 2 -t 36000 -n 1000000000 http://localhost:55183/metrics
+        record_span "get-metrics-21600s" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -s 60 -c 2 -t 21600 -n 1000000000 http://localhost:55183/metrics
       '' "metrics" {};
 
 /*
