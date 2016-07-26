@@ -330,8 +330,6 @@ let
             done
           done
 
-          mkdir -p disk-space-profiles
-
           for datadir in single; do
             # always load data with enough memory
             export LB_MEM=32G
@@ -361,15 +359,12 @@ let
               # for c in 1 5 10 20; do
               for c in 1 2 3 4 5 6 7 8 9 10 20 30 40 50; do
                 echo '{}' > post.json
-                ${jobs.database.build}/profile_disk_bg.sh "profileDisk-$datadir-$mem-$c.txt" &
                 local t1="$(date +%s.%N)"
                 # ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -n 1000 http://localhost:55183/metrics
                 ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -t 60 http://localhost:55183/metrics > ab.out
                 local t2="$(date +%s.%N)"
                 local t3="$(echo "$t2 - $t1" | bc)"
-                pkill -f "profile_disk_bg.sh"
                 rps=$(grep 'Requests per second' ab.out | awk '{ print $4 }')
-                cp "profileDisk-$datadir-$mem-$c.txt" disk-space-profiles
                 echo "$datadir,metrics,$mem,$c,$t3,$rps" >> results.csv
               done
             done
@@ -380,9 +375,6 @@ let
 
           cp results.csv $out
           echo "file data $out/results.csv" >> $out/nix-support/hydra-build-products
-          tar czf disk-space-profiles.tgz disk-space-profiles
-          mv disk-space-profiles.tgz $out
-          echo "file tgz $out/disk-space-profiles.tgz" >> $out/nix-support/hydra-build-products
         '';
       };
 
