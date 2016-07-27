@@ -59,6 +59,8 @@ let
       buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl ];
       requiredSystemFeatures = ["perf"];
       LB_CONFIG = ./config/perf;
+      meta.maxSilent = 12 * 60 * 60;
+      meta.timeout = 12 * 60 * 60;
       buildCommand = ''
         function record_span()
         {
