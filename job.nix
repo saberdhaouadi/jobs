@@ -360,66 +360,24 @@ let
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
       benchmark.loads-single =
-        let
+        pkgs.releaseTools.aggregate {
           name = "lb-jobs-load";
           meta.description = "lb-jobs load tests";
           constituents =
             pkgs.lib.concatLists (map (i:
               [ (load "single" i "${jobs.database.build}/install.sh")
               ]) (pkgs.lib.range 0 9));
-        in
-          pkgs.runCommand name
-            { inherit constituents meta;
-              preferLocalBuild = true;
-              _hydraAggregate = true;
-            }
-            ''
-              mkdir -p $out/nix-support
-              touch $out/nix-support/hydra-build-products
-              echo $constituents > $out/nix-support/hydra-aggregate-constituents
-
-              failed=false;
-              for i in $constituents; do
-                if [ -e $i/nix-support/failed ]; then
-                  failed=true;
-                fi
-              done
-
-              if [ "$failed" = true ] ; then
-                touch $out/nix-support/failed
-              fi
-            '';
+        };
 
       benchmark.loads-partitioned =
-        let
+        pkgs.releaseTools.aggregate {
           name = "lb-jobs-load";
           meta.description = "lb-jobs load tests";
           constituents =
             pkgs.lib.concatLists (map (i:
               [ (load "partitioned" i "${jobs.database.build}/install.sh")
               ]) (pkgs.lib.range 0 9));
-        in
-          pkgs.runCommand name
-            { inherit constituents meta;
-              preferLocalBuild = true;
-              _hydraAggregate = true;
-            }
-            ''
-              mkdir -p $out/nix-support
-              touch $out/nix-support/hydra-build-products
-              echo $constituents > $out/nix-support/hydra-aggregate-constituents
-
-              failed=false;
-              for i in $constituents; do
-                if [ -e $i/nix-support/failed ]; then
-                  failed=true;
-                fi
-              done
-
-              if [ "$failed" = true ] ; then
-                touch $out/nix-support/failed
-              fi
-            '';
+        };
   });
 
 
