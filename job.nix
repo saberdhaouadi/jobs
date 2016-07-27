@@ -383,7 +383,7 @@ let
 
     benchmark.get-metrics-8G-c2 =
       bench "lb-jobs-metrics-call" "${jobs.database.build}/install.sh" ''
-        echo '{}' > post.json
+        echo '{}' > post.json 
         record_span "get-metrics-3600s" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -s 60 -c 2 -t 36000 -n 1000000000 http://localhost:55183/metrics
       '' "metrics" {};
 
