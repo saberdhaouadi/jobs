@@ -192,6 +192,68 @@ let
       '';
     });
 
+  load = kind: i: install_cmd:
+    builder_config.buildLB {
+      name = "lb-jobs-load-${toString kind}-${toString i}";
+      buildInputs = [ logicblox pkgs.bc pkgs.binutils ];
+      requiredSystemFeatures = ["perf"];
+      src = ./.;
+      buildCommand = ''
+        mkdir -p $LB_DEPLOYMENT_HOME/config
+        cat > $LB_DEPLOYMENT_HOME/config/lb-server.config <<EOF
+        [workspace]
+        auto_backup_mode=none
+        EOF
+
+        set -x
+        tar xvf ${data}
+        mv 20160608-083904 single
+
+        files="users jobimpls jobimpl_metadata jobs job_metadata job_inputs job_outputs job_status provision-config platform_versions"
+
+        # shuffle and partition the files
+        mkdir tmp partitioned
+        for f in $files; do
+          tail -n +2 single/$f.csv > tmp/$f.csv
+          shuf tmp/$f.csv > tmp/shuf.csv
+          split -n l/10 tmp/shuf.csv tmp/$f
+          rm tmp/$f.csv tmp/shuf.csv
+          for p in tmp/$f*; do
+            head -1 single/$f.csv > partitioned/$(basename $p)
+            cat $p >> partitioned/$(basename $p)
+            rm $p
+          done
+        done
+
+        for datadir in ${kind}; do
+          # always load data with enough memory
+          export LB_MEM=32G
+          lb server stop
+          lb server start
+
+          lb delete lb-steve || echo "okay"
+          ${install_cmd}
+
+          # load the csv files type by type, and supporting partitioned files.
+          for t in $files; do
+            for f in $datadir/$t*; do
+              local t1="$(date +%s.%N)"
+              lb web-client import --timeout 3600 -n -i file://$PWD/$f http://localhost:8080/tdx/$t
+              local t2="$(date +%s.%N)"
+              local t3="$(echo "$t2 - $t1" | bc)"
+              echo "load,$datadir,$f,$t3" >> results.csv
+            done
+          done
+        done
+
+        mkdir -p $out
+        mkdir -p $out/nix-support
+
+        cp results.csv $out
+        echo "file data $out/results.csv" >> $out/nix-support/hydra-build-products
+      '';
+    };
+
   jobs = rec {
 
   frontend =
@@ -297,140 +359,25 @@ let
 
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
-    benchmark.various =
-      builder_config.buildLB {
-        name = "lb-jobs-metrics-various";
-        buildInputs = [ logicblox pkgs.bc pkgs.binutils ];
-        requiredSystemFeatures = ["perf"];
-        src = ./.;
-        buildCommand = ''
-          mkdir -p $LB_DEPLOYMENT_HOME/config
-          cat > $LB_DEPLOYMENT_HOME/config/lb-server.config <<EOF
-          [workspace]
-          auto_backup_mode=none
-          EOF
+      benchmark.loads-single =
+        pkgs.releaseTools.aggregate {
+          name = "lb-jobs-load";
+          meta.description = "lb-jobs load tests";
+          constituents =
+            pkgs.lib.concatLists (map (i:
+              [ (load "single" i "${jobs.database.build}/install.sh")
+              ]) (pkgs.lib.range 0 9));
+        };
 
-          set -x
-          tar xvf ${data}
-          mv 20160608-083904 single
-
-          files="users jobimpls jobimpl_metadata jobs job_metadata job_inputs job_outputs job_status provision-config platform_versions"
-
-          # shuffle and partition the files
-          mkdir tmp partitioned
-          for f in $files; do
-            tail -n +2 single/$f.csv > tmp/$f.csv
-            shuf tmp/$f.csv > tmp/shuf.csv
-            split -n l/10 tmp/shuf.csv tmp/$f
-            rm tmp/$f.csv tmp/shuf.csv
-            for p in tmp/$f*; do
-              head -1 single/$f.csv > partitioned/$(basename $p)
-              cat $p >> partitioned/$(basename $p)
-              rm $p
-            done
-          done
-
-          for datadir in single; do
-            # always load data with enough memory
-            export LB_MEM=32G
-            lb server stop
-            lb server start
-
-            lb delete lb-steve || echo "okay"
-            ${jobs.database.build}/install.sh
-
-            # load the csv files type by type, and supporting partitioned files.
-            for t in $files; do
-              for f in $datadir/$t*; do
-                lb web-client import --timeout 3600 -n -i file://$PWD/$f http://localhost:8080/tdx/$t
-              done
-            done
-
-            # for mem in 500M 1G 2G 4G 8G 16G; do
-            # for mem in 1G 2G 8G; do
-            for mem in 500 1000 2000 4000 8000 16000; do
-              #export LB_MEM=$mem
-              export LB_MEM="$mem"M
-              echo $LB_MEM
-              lb server stop
-              lb server start
-
-              # for c in 1 2 3 4 5 10 20; do
-              # for c in 1 5 10 20; do
-              for c in 1 2 3 4 5 6 7 8 9 10 20 30 40 50; do
-                echo '{}' > post.json
-                local t1="$(date +%s.%N)"
-                # ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -n 1000 http://localhost:55183/metrics
-                ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -t 60 http://localhost:55183/metrics > ab.out
-                local t2="$(date +%s.%N)"
-                local t3="$(echo "$t2 - $t1" | bc)"
-                rps=$(grep 'Requests per second' ab.out | awk '{ print $4 }')
-                echo "$datadir,metrics,$mem,$c,$t3,$rps" >> results.csv
-              done
-            done
-          done
-
-          mkdir -p $out
-          mkdir -p $out/nix-support
-
-          cp results.csv $out
-          echo "file data $out/results.csv" >> $out/nix-support/hydra-build-products
-        '';
-      };
-
-/*
-    benchmark.load-data =
-      bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
-*/
-    benchmark.get-metrics-8G-c20 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
-        echo '{}' > post.json
-        record_span "get-metrics-t300" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -t 300 http://localhost:55183/metrics
-        # record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
-      '' "metrics" {};
-
-    benchmark.get-metrics-2G-c20 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
-        echo '{}' > post.json
-        record_span "get-metrics-t300" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -t 300 http://localhost:55183/metrics
-        # record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
-      '' "metrics" { LB_MEM="2G"; };
-/*
-    benchmark.get-metrics-c10 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
-        echo '{}' > post.json
-        record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 1000 http://localhost:55183/metrics
-        record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 10000 http://localhost:55183/metrics
-      '' "metrics" {};
-
-    benchmark.get-metrics-2G-c10 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
-        echo '{}' > post.json
-        record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 1000 http://localhost:55183/metrics
-        record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 10 -n 10000 http://localhost:55183/metrics
-      '' "metrics" { LB_MEM="2G"; };
-
-    benchmark.get-metrics-c1 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
-        echo '{}' > post.json
-        record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 1000 http://localhost:55183/metrics
-        record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 10000 http://localhost:55183/metrics
-      '' "metrics" {};
-
-    benchmark.get-metrics-2G-c1 =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
-        echo '{}' > post.json
-        record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 1000 http://localhost:55183/metrics
-        record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -n 10000 http://localhost:55183/metrics
-      '' "metrics" { LB_MEM="2G"; };
-*/
-
+      benchmark.loads-partitioned =
+        pkgs.releaseTools.aggregate {
+          name = "lb-jobs-load";
+          meta.description = "lb-jobs load tests";
+          constituents =
+            pkgs.lib.concatLists (map (i:
+              [ (load "partitioned" i "${jobs.database.build}/install.sh")
+              ]) (pkgs.lib.range 0 9));
+        };
   });
 
 
