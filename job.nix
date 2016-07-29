@@ -297,6 +297,29 @@ let
 
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
+    benchmark.various-fancy =
+      bench "lb-jobs-metrics-call" ''
+        ${jobs.database.build}/install.sh
+
+        mkdir -p $LB_DEPLOYMENT_HOME/config
+        cat > $LB_DEPLOYMENT_HOME/config/lb-server.config <<EOF
+        [workspace]
+        auto_backup_mode=none
+        EOF
+
+        echo '{}' > post.json
+        for mem in 500 1000 2000 4000 8000; do
+          export LB_MEM="$mem"M
+          lb server stop
+          lb server start
+
+          for c in 1 2 3 4 5 6 7 8 9 10 20; do
+            record_span "get-metrics-$LB_MEM-t60-c$c" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -t 60 http://localhost:55183/metrics
+          done
+        done
+      '' "metrics" {};
+
+/*
     benchmark.various =
       builder_config.buildLB {
         name = "lb-jobs-metrics-various";
@@ -386,10 +409,9 @@ let
         '';
       };
 
-/*
     benchmark.load-data =
       bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
-*/
+
     benchmark.get-metrics-8G-c20 =
       bench "lb-jobs-metrics-call" ''
         ${jobs.database.build}/install.sh
@@ -405,7 +427,7 @@ let
         record_span "get-metrics-t300" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -t 300 http://localhost:55183/metrics
         # record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
       '' "metrics" { LB_MEM="2G"; };
-/*
+
     benchmark.get-metrics-c10 =
       bench "lb-jobs-metrics-call" ''
         ${jobs.database.build}/install.sh
