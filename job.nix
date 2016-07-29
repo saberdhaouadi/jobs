@@ -301,12 +301,6 @@ let
       bench "lb-jobs-metrics-call" ''
         ${jobs.database.build}/install.sh
 
-        mkdir -p $LB_DEPLOYMENT_HOME/config
-        cat > $LB_DEPLOYMENT_HOME/config/lb-server.config <<EOF
-        [workspace]
-        auto_backup_mode=none
-        EOF
-
         echo '{}' > post.json
         for mem in 500 1000 2000 4000 8000; do
           export LB_MEM="$mem"M
