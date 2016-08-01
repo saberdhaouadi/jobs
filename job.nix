@@ -384,7 +384,8 @@ let
           ${jobs.database.build}/install.sh
 
           echo '{}' > post.json
-          for mem in 500 1000 2000 4000 8000; do
+          # for mem in 500 1000 2000 4000 8000; do
+          for mem in 1000 2000; do
             export LB_MEM="$mem"M
             lb server stop
             lb server start
@@ -396,8 +397,10 @@ let
             cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
             memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
 
-            for c in 1 2 3 4 5 6 7 8 9 10 20; do
-              record_span "get-metrics-$LB_MEM-t60-c$c" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -t 60 http://localhost:55183/metrics
+            # for c in 1 2 3 4 5 6 7 8 9 10 20; do
+            for c in 1 2 10 20; do
+              # record_span "get-metrics-$LB_MEM-t60-c$c" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -t 60 http://localhost:55183/metrics
+              record_span "get-metrics-$LB_MEM-n2500-c$c" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c $c -n 2500 http://localhost:55183/metrics
             done
 
             pkill -f iousg-monitor
