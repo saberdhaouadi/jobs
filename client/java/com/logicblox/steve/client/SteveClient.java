@@ -378,5 +378,5 @@ public class SteveClient implements SteveClientInterface {
     return f;
   }
 
-  protected int _retryCount = 3;
+  protected int _retryCount = 5;
 }
