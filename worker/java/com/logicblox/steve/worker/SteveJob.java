@@ -125,9 +125,12 @@ public class SteveJob {
       log("Successfully executed " + _id);
       readCounters();
 
-      List<S3File> output = uploadOutput();
-      _outgoing.notifySuccess(output, _cpuUsage, _maxMemory, _maxDiskUsage);
-      log("Successfully uploaded output files for job " + _id);
+      // Do not upload files when previous log already exists.
+      if(!previousLogExists()) {
+        List<S3File> output = uploadOutput();
+        _outgoing.notifySuccess(output, _cpuUsage, _maxMemory, _maxDiskUsage);
+        log("Successfully uploaded output files for job " + _id);
+      }
       teardown();
     } catch (JobKilledException k) {
       _outgoing.notifyStatus("Job was killed. It will be restarted on another worker.");
@@ -306,20 +309,23 @@ public class SteveJob {
     }
   }
 
-  private void teardown() throws InternalException {
-    log("Tearing down...");
-
+  private boolean previousLogExists() throws InternalException {
     ObjectMetadata log = null;
     try {
       log = _client.exists(_s3Bucket, String.format("jobs/%s/log", _id)).get();
+      return (log != null);
     } catch (Exception e) {
       throw new InternalException("Could not determine if log file already exists in S3.", e);
     }
+  }
+
+  private void teardown() throws InternalException {
+    log("Tearing down...");
 
     // TODO rework to make sure we don't overwrite uploaded results
     // from different jobs (moved this out to avoid reporting success
     // before upload)
-    if (log == null) {
+    if (!previousLogExists()) {
       if (_drv != null) {
         File logPath = new File(Utils.nixLogPath(_drv));
 
