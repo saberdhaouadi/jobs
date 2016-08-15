@@ -381,8 +381,10 @@ with pkgs.lib;
         "52.19.49.187"
         "52.17.149.122"
         "54.77.230.190"
+        "54.159.158.25"
         "52.5.80.40" # meijer-dev
         "23.23.52.210" # wfm-staging
+        "54.245.95.45"
       ];
       accountEntry = account:
         {
@@ -620,10 +622,10 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "c3.4xlarge";
+      deployment.ec2.instanceType = "c3.8xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
-      deployment.ec2.ebsOptimized = true;
+      deployment.ec2.ebsOptimized = false;
 
       imports = [
         <lbdevops/logicblox/production.nix>
