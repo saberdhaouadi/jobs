@@ -107,7 +107,7 @@ public class LBDatabase implements Database {
   //
 
   @Override
-  public ListenableFuture<String> createJob(
+  public ListenableFuture<Job> createJob(
           final String userId,
           final String clientId,
           final String jobImplId,
@@ -134,11 +134,11 @@ public class LBDatabase implements Database {
 
     // submit and process the response
     return Futures.transform(_batcher.addRequest(request),
-            new Function<Response, String>() {
-              public String apply(Response response) {
+            new Function<Response, Job>() {
+              public Job apply(Response response) {
 
                 checkError(response);
-                return response.getJobId();
+                return convertFromDatabase(response.getJob());
               }
             });
   }
@@ -185,6 +185,24 @@ public class LBDatabase implements Database {
             });
   }
 
+  private Job convertFromDatabase(com.logicblox.steve.protocol.Database.Job job) {
+    return new Job(job.getId(),
+                   job.getUserId(),
+                   job.getAccountId(),
+                   job.getClientId(),
+                   job.getOutputPrefix(),
+                   job.getOutputEncryptionKey(),
+                   job.getImplId(),
+                   Conversions.convertFromDatabaseParams(job.getMetadataList()),
+                   Conversions.convertFromDatabaseFiles(job.getInputList()),
+                   job.getImplArchive(),
+                   job.hasCpuUsage() ? job.getCpuUsage(): 0,
+                   job.hasMaxMemory() ? job.getMaxMemory() : 0,
+                   job.hasMaxDiskUsage() ? job.getMaxDiskUsage() : 0,
+                   Conversions.convertFromDatabaseFiles(job.getOutputList()),
+                   Conversions.convertFromDatabaseStatus(job.getStatusList())
+                 );
+  }
 
   @Override
   public ListenableFuture<Job> getJob(final String jobId) {
@@ -192,9 +210,6 @@ public class LBDatabase implements Database {
     final Request request = Request.newBuilder()
             .setGetJob(GetJobRequest.newBuilder()
                             .setJobId(jobId)
-                            .setGetInput(true)
-                            .setGetMetadata(true)
-                            .setGetOutput(true)
                             .setGetStatus(true)
             ).build();
 
@@ -204,24 +219,7 @@ public class LBDatabase implements Database {
               public Job apply(Response response) {
 
                 checkError(response);
-                
-                final com.logicblox.steve.protocol.Database.Job job = response.getJob();
-                return new Job(job.getId(),
-                        job.getUserId(),
-                        job.getAccountId(),
-                        job.getClientId(),
-                        job.getOutputPrefix(),
-                        job.getOutputEncryptionKey(),
-                        job.getImplId(),
-                        Conversions.convertFromDatabaseParams(job.getMetadataList()),
-                        Conversions.convertFromDatabaseFiles(job.getInputList()),
-                        job.getImplArchive(),
-                        job.hasCpuUsage() ? job.getCpuUsage(): 0,
-                        job.hasMaxMemory() ? job.getMaxMemory() : 0,
-                        job.hasMaxDiskUsage() ? job.getMaxDiskUsage() : 0,
-                        Conversions.convertFromDatabaseFiles(job.getOutputList()),
-                        Conversions.convertFromDatabaseStatus(job.getStatusList())
-                        );
+                return convertFromDatabase(response.getJob());
               }
             });    
   }

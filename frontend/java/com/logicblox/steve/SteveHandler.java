@@ -265,7 +265,7 @@ public class SteveHandler extends ProtoBufHandler {
       tags.put("job-queue", _defaultQueue);
     }
 
-    ListenableFuture<String> jobId =
+    ListenableFuture<Job> job =
             _db.createJob(
                     user,
                     req.getClientId(),
@@ -274,13 +274,6 @@ public class SteveHandler extends ProtoBufHandler {
                     req.getOutput(),
                     req.hasOutputEncryptionKey() ? req.getOutputEncryptionKey() : null,
                     tags);
-
-    // Once we have the job stored in the database, submit it to the queue
-    ListenableFuture<Job> job = Futures.transform(jobId, new AsyncFunction<String, Job>() {
-      public ListenableFuture<Job> apply(String id) {
-        return _db.getJob(id);
-      }
-    });
 
     job = Futures.transform(job, new AsyncFunction<Job, Job>() {
       public ListenableFuture<Job> apply(Job j) {
@@ -562,10 +555,10 @@ public class SteveHandler extends ProtoBufHandler {
               }
             });
 
-    ListenableFuture<String> jobId = Futures.transform(
+    ListenableFuture<Job> job = Futures.transform(
             jobImplId,
-            new AsyncFunction<String, String>() {
-              public ListenableFuture<String> apply(String impl) {
+            new AsyncFunction<String, Job>() {
+              public ListenableFuture<Job> apply(String impl) {
                 return _db.createJob(
                         user,
                         req.getClientId(),
@@ -578,28 +571,28 @@ public class SteveHandler extends ProtoBufHandler {
               }
             });
 
-    jobId = Futures.transform(
-            jobId,
-            new AsyncFunction<String, String>() {
-              public ListenableFuture<String> apply(String id) {
+    ListenableFuture<String> jobId = Futures.transform(
+            job,
+            new AsyncFunction<Job, String>() {
+              public ListenableFuture<String> apply(Job j) {
                 final StatusBuilder status = new StatusBuilder();
                 status.event = Status.Event.SUCCEEDED;
                 status.machine = "frontend";
                 status.timestamp = System.currentTimeMillis();
 
-                return _db.addStatus(id, status.build());
+                return _db.addStatus(j.id, status.build());
               }
             });
 
     ListenableFuture<Frontend.Response> futureRes = Futures.transform(
             jobId,
             new Function<String, Frontend.Response>() {
-              public Frontend.Response apply(String jobId) {
+              public Frontend.Response apply(String id) {
                 return
                         Frontend.Response.newBuilder()
                                 .setImplAdd(
                                         Frontend.ImplAddResponse.newBuilder()
-                                                .setId(jobId))
+                                                .setId(id))
                                 .build();
               }
             });

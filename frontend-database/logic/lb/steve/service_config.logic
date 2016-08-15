@@ -21,7 +21,8 @@ block(`service_config) {
       protobuf_protocol[] = "lb:steve:database",
       protobuf_request_message[] = "RequestEnvelope",
       protobuf_response_message[] = "ResponseEnvelope",
-      service_parameter["enable_http_control"] = "false"
+      service_parameter["enable_http_control"] = "false",
+      inactive_after_fixpoint_block_name[] = "lb:steve:io:get_job_after"
     }.
 
     // declare readonly service
@@ -31,7 +32,8 @@ block(`service_config) {
       protobuf_protocol[] = "lb:steve:database",
       protobuf_request_message[] = "RequestEnvelope",
       protobuf_response_message[] = "ResponseEnvelope",
-      service_parameter["enable_http_control"] = "false"
+      service_parameter["enable_http_control"] = "false",
+      inactive_after_fixpoint_block_name[] = "lb:steve:io:get_job_after"
     }.
 
   service_by_group["/metrics", "lb:web:internal"] = x,

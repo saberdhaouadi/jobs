@@ -52,9 +52,6 @@ message Response
   // if an error ocurred in the execution (most operations return an empty response on success)
   optional Error error = 1;
 
-  // only used for CreateJobRequest; the id of the newly created job, or a reused one
-  optional string job_id = 2;
-
   // for GetJobRequest
   optional Job job = 3;
 
@@ -69,10 +66,6 @@ message Response
 
   // for ListPlatformsRequest
   repeated string platform = 7 [(blox.options.set) = true];
-
-  // temporary optional field to signal the result is a cached result from previous
-  // request with same client-id
-  optional string client_id = 8;
 
   // for ListMetadataKeysRequest
   repeated string metadata_key = 9 [(blox.options.set) = true];
@@ -151,10 +144,7 @@ message CreateJobRequest
 message GetJobRequest
 {
   required string job_id   = 1;
-  optional bool get_metadata = 2;
   optional bool get_status = 3;
-  optional bool get_input = 4;
-  optional bool get_output = 5;
 }
 
 // response is empty

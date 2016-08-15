@@ -132,7 +132,7 @@ public class LBDatabaseTest extends PrototypeTest {
             new Data("s3://somebucket/foo/input2")
     );
 
-    final String jobId = db.createJob(
+    Job job = db.createJob(
             "martin",
             "1",
             "impl1",
@@ -141,9 +141,6 @@ public class LBDatabaseTest extends PrototypeTest {
             "",
             ImmutableMap.of("k1", "v1")).get();
 
-    final Job job = db.getJob(jobId).get();
-
-    Assert.assertEquals(jobId, job.id);
     Assert.assertEquals("1", job.clientId);
     Assert.assertEquals("impl1", job.jobImplId);
     compareCollections(inputs, job.inputData);
@@ -166,7 +163,7 @@ public class LBDatabaseTest extends PrototypeTest {
             new Data("s3://somebucket/foo/input2")
     );
 
-    final String jobId = db.createJob(
+    Job job = db.createJob(
             "martin",
             "1",
             "impl1",
@@ -177,14 +174,13 @@ public class LBDatabaseTest extends PrototypeTest {
 
     // now add status
     final Status status1 = new Status(12, Event.STARTED, "my machine", "great message", 0, 0, 0);
-    db.addStatus(jobId, status1).get();
+    db.addStatus(job.id, status1).get();
 
     final Status status2 = new Status(32, Event.CANCELLED, "my machine", "great message", 0, 0, 0);
-    db.addStatus(jobId, status2).get();
+    db.addStatus(job.id, status2).get();
 
-    final Job job = db.getJob(jobId).get();
+    job = db.getJob(job.id).get();
 
-    Assert.assertEquals(jobId, job.id);
     Assert.assertEquals("1", job.clientId);
     Assert.assertEquals("impl1", job.jobImplId);
     compareCollections(inputs, job.inputData);
@@ -206,7 +202,7 @@ public class LBDatabaseTest extends PrototypeTest {
             new Data("s3://somebucket/foo/input2")
     );
 
-    final String jobId = db.createJob(
+    Job job = db.createJob(
             "martin",
             "1",
             "impl1",
@@ -220,11 +216,10 @@ public class LBDatabaseTest extends PrototypeTest {
             new Data("/result1", "hash1"),
             new Data("/result2"));
 
-    db.setResult(jobId, output).get();
+    db.setResult(job.id, output).get();
 
-    final Job job = db.getJob(jobId).get();
+    job = db.getJob(job.id).get();
 
-    Assert.assertEquals(jobId, job.id);
     Assert.assertEquals("1", job.clientId);
     Assert.assertEquals("impl1", job.jobImplId);
     compareCollections(inputs, job.inputData);

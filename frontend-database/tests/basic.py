@@ -16,7 +16,6 @@ import lb.web.testcase
 import lb.web.service
 import lb.web.admin
 
-
 def get_tdx_client(path):
     return lb.web.service.DelimClient("localhost", 8080, "/tdx/" + path)
 
@@ -273,7 +272,18 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify response
         expected_response = client.dynamic_response()
-        text_format.Merge('response { job_id: "1" }', expected_response)
+        text_format.Merge('''
+            response { 
+              job {
+                id: "1"
+                client_id: "a"
+                impl_id: "total"
+                output_prefix: "s3://something/something"
+                user_id: "martin"
+                impl_archive: "s3://somebucket/key"
+                account_id: "logicblox.com"
+              }
+            }''', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
 
         # verify data was imported
@@ -282,7 +292,34 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
             1|martin|logicblox.com-total|s3://something/something|a||||
         ''')
 
-
+    PROTOBUF_JOB_1_WITH_DATA = '''
+      response {
+        job {
+          id: "1"
+          client_id: "a"
+          impl_id: "total"
+          output_prefix: "s3://something/something"
+          user_id: "martin"
+          input {
+            url: "s3://somebucket/key without hash"
+          }
+          input {
+            url: "s3://somebucket/key"
+            hash: "the hash"
+          }
+          metadata {
+            key: "the key1"
+            value: "the value1"
+          }
+          metadata {
+            key: "the key2"
+            value: "the value2"
+          }
+          impl_archive: "s3://somebucket/key"
+          account_id: "logicblox.com"
+        }
+      }
+    '''
 
     def test_create_job_with_data(self):
         # make sure there's a jobimpl
@@ -310,8 +347,9 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify response
         expected_response = client.dynamic_response()
-        text_format.Merge('response { job_id: "1" }', expected_response)
-        self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
+        text_format.Merge(self.PROTOBUF_JOB_1_WITH_DATA, expected_response)
+
+        self.compare_jobs(expected_response, client.dynamic_call(envelope))
 
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
@@ -341,40 +379,11 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         envelope = self.client.dynamic_request()
         req = envelope.request.add().get_job
         req.job_id = "1"
-        req.get_metadata = True
         req.get_status = True
-        req.get_input = True
-        req.get_output = True
 
         # verify response
         expected_response = client.dynamic_response()
-        text_format.Merge('''
-            response {
-              job {
-                id: "1"
-                client_id: "a"
-                impl_id: "total"
-                output_prefix: "s3://something/something"
-                user_id: "martin"
-                input {
-                  url: "s3://somebucket/key without hash"
-                }
-                input {
-                  url: "s3://somebucket/key"
-                  hash: "the hash"
-                }
-                metadata {
-                  key: "the key2"
-                  value: "the value2"
-                }
-                metadata {
-                  key: "the key1"
-                  value: "the value1"
-                }
-                impl_archive: "s3://somebucket/key"
-              }
-            }
-            ''', expected_response)
+        text_format.Merge(self.PROTOBUF_JOB_1_WITH_DATA, expected_response)
         self.compare_jobs(expected_response, client.dynamic_call(envelope))
 
 
@@ -402,7 +411,30 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # verify response
         expected_response = client.dynamic_response()
-        text_format.Merge('response { job_id: "2" } response { job_id: "1" }', expected_response)
+        text_format.Merge('''
+        response {
+          job {
+            id: "2"
+            client_id: "a2"
+            impl_id: "total"
+            output_prefix: "s3://something/something2"
+            user_id: "martin"
+            impl_archive: "s3://somebucket/key"
+            account_id: "logicblox.com"
+          }
+        }
+        response {
+          job {
+            id: "1"
+            client_id: "a1"
+            impl_id: "total"
+            output_prefix: "s3://something/something1"
+            user_id: "martin"
+            impl_archive: "s3://somebucket/key"
+            account_id: "logicblox.com"
+          }
+        }
+        ''', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
 
         # verify data was imported
@@ -451,11 +483,41 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify response
         expected_response = client.dynamic_response()
         text_format.Merge('''
-            response { job_id: "2" } 
-            response { error { code: "NO_SUCH_USER" message: "User 'non_existent_user' does not exist." } } 
-            response { job_id: "1" }
-            response { error { code: "NO_SUCH_JOB_IMPL" message: "Job implementation 'total4' does not exist in account 'logicblox.com'." } }
-            ''', expected_response)
+        response {
+          job {
+            id: "2"
+            client_id: "a2"
+            impl_id: "total"
+            output_prefix: "s3://something/something2"
+            user_id: "martin"
+            impl_archive: "s3://somebucket/key"
+            account_id: "logicblox.com"
+          }
+        }
+        response {
+          error {
+            code: "NO_SUCH_USER"
+            message: "User \'non_existent_user\' does not exist."
+          }
+        }
+        response {
+          job {
+            id: "1"
+            client_id: "a1"
+            impl_id: "total"
+            output_prefix: "s3://something/something1"
+            user_id: "martin"
+            impl_archive: "s3://somebucket/key"
+            account_id: "logicblox.com"
+          }
+        }
+        response {
+          error {
+            code: "NO_SUCH_JOB_IMPL"
+            message: "Job implementation \'total4\' does not exist in account \'logicblox.com\'."
+          }
+        }
+        ''', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
 
         # verify data was imported
@@ -591,10 +653,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         envelope = self.client.dynamic_request()
         req = envelope.request.add().get_job
         req.job_id = "1"
-        req.get_output = True
         req = envelope.request.add().get_job
         req.job_id = "5"
-        req.get_output = True
 
         # verify response
         expected_response = client.dynamic_response()
@@ -660,10 +720,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         envelope = self.client.dynamic_request()
         req = envelope.request.add().get_job
         req.job_id = "1"
-        req.get_metadata = True
         req.get_status = True
-        req.get_input = True
-        req.get_output = True
 
         # verify response
         expected_response = client.dynamic_response()

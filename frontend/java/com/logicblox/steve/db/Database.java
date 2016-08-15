@@ -52,7 +52,7 @@ public interface Database {
    * clientId).
    * @see Job
    */
-  public ListenableFuture<String> createJob(
+  public ListenableFuture<Job> createJob(
           String userId,
           String clientId,
           String jobImplId,
