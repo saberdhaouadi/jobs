@@ -352,6 +352,7 @@ with pkgs.lib;
         } ;
       ips = [
         "38.104.0.30" # atlanta office / vpn
+        "38.140.7.194" # atlanta office / vpn
         "54.86.90.139" # ec2 vpn
         "107.20.158.107"
         "54.198.12.247"
@@ -385,6 +386,11 @@ with pkgs.lib;
         "52.5.80.40" # meijer-dev
         "23.23.52.210" # wfm-staging
         "54.245.95.45"
+        "52.208.151.222"
+        "54.245.251.243" # wag-us-west
+        "54.214.251.229" # wag-us-west
+        "52.208.177.170" # kiabi-fred-catchup
+
       ];
       accountEntry = account:
         {
