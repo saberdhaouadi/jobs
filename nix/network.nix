@@ -390,7 +390,7 @@ with pkgs.lib;
         "54.245.251.243" # wag-us-west
         "54.214.251.229" # wag-us-west
         "52.208.177.170" # kiabi-fred-catchup
-
+        "54.82.66.104"
       ];
       accountEntry = account:
         {
