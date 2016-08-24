@@ -235,6 +235,14 @@ public class SteveJob {
       throw new InternalException("Could not write metadata.", e);
     }
 
+    try {
+      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _inputPath.toString());
+      Process p = pb.start();
+      p.waitFor();
+      p.destroy();
+    } catch (Exception e) {
+    }
+
     resetCounters();
   }
 
