@@ -26,6 +26,7 @@ in
       ++ pkgs.lib.optional ((pkgs.lib.substring 0 1 platform_version) == "3") releases.pdxscience."4.0.0".pdxscience
       ++ dependencies;
 
+    LB_CONNECTBLOX_ENABLE_ADMIN="1";
     LB_MONITOR_RULE_TIME="30";
     LB_MEM="50%";
 
