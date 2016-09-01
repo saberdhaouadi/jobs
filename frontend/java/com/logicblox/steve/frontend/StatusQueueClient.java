@@ -105,7 +105,7 @@ public class StatusQueueClient {
           Thread.sleep(30000);
           continue;
         }
-        final List<SQSReceivedMessage> messages = _sqs.receive(_queue);
+        final List<SQSReceivedMessage> messages = _sqs.receive(_queue, 10);
 
         int i = 0;
         for (final SQSReceivedMessage msg : messages) {
@@ -123,9 +123,10 @@ public class StatusQueueClient {
 
         _sqs.delete(messages);
 
-        // wait if there were no messages
         if (messages.size() == 0)
-          Thread.sleep(500);
+          Thread.sleep(1000);
+        else
+          Thread.sleep(200);
 
       } catch (Exception exc) {
         exc.printStackTrace();

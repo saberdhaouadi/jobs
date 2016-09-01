@@ -24,6 +24,15 @@ public interface SQSClientInterface {
   public List<SQSReceivedMessage> receive(SQSQueueHandle handle) throws SQSException;
 
   /**
+   * Receive messages from the queue with this handle.
+   *
+   * @param handle
+   * @return
+   * @throws SQSException
+   */
+  public List<SQSReceivedMessage> receive(SQSQueueHandle handle, int maxMessages) throws SQSException;
+
+  /**
    * Delete message.
    * <p/>
    * Returns original message on successful delete. If deletion
