@@ -60,11 +60,14 @@ import com.logicblox.steve.db.JobImpl;
 import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
+import com.timgroup.statsd.NonBlockingStatsDClient;
+import com.timgroup.statsd.StatsDClient;
 
 public class SteveHandler extends ProtoBufHandler {
   private static final long MAX_IMPL_SIZE = 70;
   private static final long MAX_LOG_SIZE = 50;
 
+  private StatsDClient _statsd;
   private Database _db;
   private Map<String, JobQueueClient> _jobQueues = new HashMap<String, JobQueueClient>();
   private S3Client _s3client;
@@ -82,6 +85,9 @@ public class SteveHandler extends ProtoBufHandler {
   @Override
   public void init(Section handlerConfig, ServiceConfig service) {
     super.init(handlerConfig, service);
+
+    _statsd = new NonBlockingStatsDClient("lb.steve", "127.0.0.1", 8125);
+
     String dbPrefix = handlerConfig.getStringError("database_prefix");
     _db = new LBDatabase(dbPrefix);
 
@@ -249,6 +255,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           Frontend.JobCreateRequest req) {
+    _statsd.incrementCounter("create_job");
+
     final String user = getUser(httpRequest);
     Map<String, String> tags = Conversions.createMap(req.getMetadataList());
     tags.put("date", Conversions.getCurrentISO8601());
@@ -300,6 +308,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           final Frontend.StateRequest req) {
+    _statsd.incrementCounter("set_state");
+
     ListenableFuture<Job> job = _db.getJob(req.getId());
 
     return Futures.transform(
@@ -365,6 +375,7 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           final Frontend.JobResultRequest req) {
+    _statsd.incrementCounter("get_result");
     ListenableFuture<Job> job = _db.getJob(req.getJobId());
 
     return Futures.transform(
@@ -402,6 +413,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletResponse httpResponse,
           final Frontend.JobLogRequest req)
           throws IOException {
+    _statsd.incrementCounter("get_log");
+
     // TODO - if we decide to allow this operation only on jobs that have succeeded (which is
     // what this call to getResult seemed to do), then we need a call to _db.getJob followed by
     // a validateJobDone.
@@ -477,6 +490,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletResponse httpResponse,
           final Frontend.ImplAddRequest req)
           throws IOException {
+    _statsd.incrementCounter("upload_impl");
+
     final File tmpFile = File.createTempFile("jobimpl", null, _tmpDir);
     final String id = UUID.randomUUID().toString();
     final String user = getUser(httpRequest);
@@ -609,6 +624,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           Frontend.ImplGetRequest req) throws IOException {
+    _statsd.incrementCounter("get_impl");
+
     final String user = getUser(httpRequest);
 
     URI tmpUrl;
@@ -666,6 +683,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           Frontend.ImplListRequest req) {
+    _statsd.incrementCounter("list_impl");
+
     final String user = getUser(httpRequest);
     return Futures.transform(
             _db.getJobImpl(user),
@@ -689,6 +708,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           Frontend.ListPlatformsRequest req) {
+    _statsd.incrementCounter("list_platforms");
+
     return Futures.transform(
             _db.getPlatforms(),
             new Function<Iterable<String>, Frontend.Response>() {
@@ -706,6 +727,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           Frontend.ListQueuesRequest req) {
+    _statsd.incrementCounter("list_queues");
+
     return Futures.transform(
             _db.getQueues(),
             new Function<Iterable<String>, Frontend.Response>() {
@@ -723,6 +746,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           Frontend.ListMetadataKeysRequest req) {
+    _statsd.incrementCounter("list_metadata_keys");
+
     final String user = getUser(httpRequest);
     return Futures.transform(
             _db.getMetadataKeys(user),
@@ -741,6 +766,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           Frontend.ListMetadataValuesRequest req) {
+    _statsd.incrementCounter("list_metadata_values");
+
     final String user = getUser(httpRequest);
     return Futures.transform(
             _db.getMetadataValues(user, req.getKey()),

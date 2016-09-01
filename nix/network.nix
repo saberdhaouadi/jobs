@@ -581,10 +581,7 @@ with pkgs.lib;
         };
       };
 
-      environment.etc =
-        let
-          jmx-config =
-            pkgs.writeText "jmx.yaml" ''
+      services.dd-agent.jmxConfig = ''
           instances:
             - host: 127.0.0.1
               name: jmx_instance
@@ -598,7 +595,10 @@ with pkgs.lib;
               - include:
                   domain: java.lang
                   type: GarbageCollector
-            '';
+      '';
+
+      environment.etc =
+        let
           nginx-config =
             pkgs.writeText "nginx.yaml" ''
               init_config:
@@ -606,9 +606,6 @@ with pkgs.lib;
                 -   nginx_status_url: http://127.0.0.1/nginx_status/
           '';
         in [
-          { source = jmx-config;
-            target = "dd-agent/conf.d/jmx.yaml";
-          }
           { source = nginx-config;
             target = "dd-agent/conf.d/nginx.yaml";
           }
@@ -782,10 +779,7 @@ with pkgs.lib;
         };
       };
 
-      environment.etc =
-        let
-          jmx-config =
-            pkgs.writeText "jmx.yaml" ''
+      services.dd-agent.jmxConfig = ''
           instances:
             - host: 127.0.0.1
               name: jmx_instance
@@ -799,7 +793,10 @@ with pkgs.lib;
               - include:
                   domain: java.lang
                   type: GarbageCollector
-            '';
+      '';
+
+      environment.etc =
+        let
           haproxy-config =
             pkgs.writeText "haproxy.yaml" ''
               init_config:
@@ -808,9 +805,6 @@ with pkgs.lib;
                 - url: http://localhost:8889/admin?stats
             '';
         in [
-          { source = jmx-config;
-            target = "dd-agent/conf.d/jmx.yaml";
-          }
           { source = haproxy-config;
             target = "dd-agent/conf.d/haproxy.yaml";
           }

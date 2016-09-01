@@ -40,10 +40,6 @@ check_lb_workspace(
 
 check_program('tests/basic.py', ['lb-steve-frontend-database-test'])
 
-import subprocess
-if subprocess.check_output(["lb", "version"]).strip() != "4.1.7":
-    install_dir('$(protocols)/share/lb-steve-protocols/lb_steve_protocols', 'share/lb-steve-protocols/lb_steve_protocols')
-else:
-    install_dir('$(protocols)/share/lb_steve_protocols', 'share/lb_steve_protocols')
+install_dir('$(protocols)/share/lb-steve-protocols/lb_steve_protocols', 'share/lb-steve-protocols/lb_steve_protocols')
 
 install_dir('workflows', 'workflows')
