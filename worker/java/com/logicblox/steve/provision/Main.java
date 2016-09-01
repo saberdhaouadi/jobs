@@ -234,7 +234,7 @@ public class Main {
     }
 
     if (minInstances > totalNeeded) {
-      totalNeeded = minInstances;
+      totalNeeded = Math.min(totalNeeded, minInstances);
     }
 
     int spotCurrent = getNumberOfCurrentSpotInstances();
