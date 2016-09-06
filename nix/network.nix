@@ -392,7 +392,10 @@ with pkgs.lib;
         "54.214.251.229" # wag-us-west
         "52.208.177.170" # kiabi-fred-catchup
         "54.82.66.104"
-         "54.196.251.61"
+        "54.196.251.61"
+        "52.44.194.238" # tc5 de3
+        "52.200.205.100" # tc5 dev2
+        "50.16.197.121" # pdx-science
       ];
       accountEntry = account:
         {
@@ -444,7 +447,7 @@ with pkgs.lib;
           ExecStart = "${./scripts/terminate-impaired} ${instanceProfileArn resources.iamRoles.worker-role.name}";
         };
         environment.PYTHONPATH = "${pkgs.pythonPackages.boto}/lib/python2.7/site-packages";
-        #startAt = "*:0";
+        startAt = "*:0";
       };
     in
     {
