@@ -93,6 +93,8 @@ in
 
     systemd.services.gurobi-socket =
       { description = "Create Gurobi unix domain socket";
+        wants = [ "network-online.target" ];
+        after = [ "network-online.target" ];
         wantedBy = [ "multi-user.target" ];
         path = [ pkgs.socat ];
         preStart =
