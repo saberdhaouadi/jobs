@@ -144,9 +144,12 @@ in
     systemd.services.lb-steve-worker = {
       description = "LB Steve Worker";
       after = [ "network.target" "fetch-ec2-data.service" "gurobi-socket.service" ];
-      requires = [ "gurobi-socket.service" ];
+      wants = [ "gurobi-socket.service" ];
       wantedBy = [ "multi-user.target" ];
       path = [ builds.worker ];
+      preStart = ''
+        systemctl is-active gurobi-socket.service
+      '';
       serviceConfig = {
         ExecStart = "${workerScript}/bin/worker ${optionalString cfg.shutdownOnIdle "--shutdown-on-idle"}";
         Restart = "always";
