@@ -27,8 +27,8 @@ in
       ++ dependencies;
 
     LB_CONNECTBLOX_ENABLE_ADMIN="1";
-    LB_MONITOR_RULE_TIME="30";
-    LB_MEM="50%";
+    LB_MONITOR_RULE_TIME="${metadata.LB_MONITOR_RULE_TIME or "30"}";
+    LB_MEM="${metadata.LB_MEM or "50%"}";
 
     GRB_LICENSE_FILE = pkgs.writeText "gurobi.lic" "TOKENSERVER=127.0.0.1";
 
