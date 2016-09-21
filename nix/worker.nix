@@ -195,7 +195,7 @@ in
     '';
 
     nixpkgs.config.packageOverrides = pkgs: {
-      nix = pkgs.lib.overrideDerivation pkgs.nix (attrs: {
+      nixUnstable = pkgs.lib.overrideDerivation pkgs.nix (attrs: {
         patches = [ ./nix-dev-shm.patch ];
       });
     };
