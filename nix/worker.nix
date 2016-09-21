@@ -194,7 +194,11 @@ in
       }
     '';
 
-
+    nixpkgs.config.packageOverrides = pkgs: {
+      nix = pkgs.lib.overrideDerivation pkgs.nix (attrs: {
+        patches = [ ./nix-dev-shm.patch ];
+      });
+    };
   };
 
 }

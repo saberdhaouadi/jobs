@@ -3,9 +3,12 @@ set -e
 
 cat $1/metadata.json
 echo
+export
 
 value=$(jq .key $1/metadata.json)
 
 echo PROGRESS: $value
 
 [ "$value" == "\"value\"" ]
+
+[ "$key" == "value" ]
