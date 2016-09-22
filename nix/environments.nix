@@ -5,7 +5,7 @@ rec {
       workers = {
         "c3.xlarge" = { number = 0; price = "0.25"; percentageSpot = "1.0"; };
         "c3.xlarge-online" = { number = 2; price = "0.25"; percentageSpot = "0"; instanceType = "c3.xlarge"; };
-        "c3.4xlarge" = { number = 0; price = "0.84"; percentageSpot = "1.0"; min = "75"; };
+        "c3.4xlarge" = { number = 0; price = "0.84"; percentageSpot = "1.0"; percentageQueue = "1.0"; min = "75"; };
         "hi1.4xlarge" = { number = 0; price = "3.3"; percentageSpot = "1.0"; max = "100"; percentageQueue = "1.0"; min = "50"; };
         "r3.xlarge" = { number = 0; price = "0.40"; percentageSpot = "1.0"; max = "500"; };
         "r3.2xlarge" = { number = 0; price = "0.75"; percentageSpot = "1.0"; max = "500"; };
@@ -13,6 +13,7 @@ rec {
         "i2.xlarge" = { number = 0; price = "0.86"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; };
         "i2.2xlarge" = { number = 0; price = "1.88"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "300"; min = "75"; };
         "i2.4xlarge" = { number = 0; price = "3.72"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "100"; min = "75"; };
+        "i2.8xlarge" = { number = 0; price = "7.44"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "50"; };
       };
     };
 

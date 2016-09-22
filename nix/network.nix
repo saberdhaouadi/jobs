@@ -396,6 +396,8 @@ with pkgs.lib;
         "52.44.194.238" # tc5 de3
         "52.200.205.100" # tc5 dev2
         "50.16.197.121" # pdx-science
+        "52.44.49.250" # tc5-dev1 
+        "52.210.56.134" # kiabi-fred-dist-merge frontend
       ];
       accountEntry = account:
         {
