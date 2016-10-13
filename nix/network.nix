@@ -691,8 +691,6 @@ with pkgs.lib;
       deployment.ec2.elasticIPv4 = env.elasticIPv4 or "";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
-      deployment.keys."haproxy.crt".text = builtins.readFile <global_creds/logicblox/haproxy.crt>;
-
       deployment.ec2.ebsInitialRootDiskSize = 100;
 
       imports = [ <lbdevops/logicblox/production.nix> ];
@@ -723,51 +721,91 @@ with pkgs.lib;
         [ { domain = "*"; item = "nofile"; type = "-"; value = "32768"; }
         ];
 
-      services.haproxy.enable = true;
-      services.haproxy.config = ''
-        global
-                maxconn 4096
-                user haproxy
-                group haproxy
-                daemon
-                log 127.0.0.1 local0 debug
+      services.nginx.enable = true;
+      services.nginx.config = ''
+        worker_processes 4;
+        worker_rlimit_nofile 30000;
+        events {
+            worker_connections 9000;
+            use epoll;
+            multi_accept on;
+        }
+      '';
+      services.nginx.httpConfig = ''
+        log_format timed_combined '$remote_addr - $remote_user [$time_local]  "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
+        server {
+            listen               80;
+            server_name   localhost;
+            location /nginx_status {
+                stub_status         on;
+                access_log         off;
+                allow        127.0.0.1;
+                deny               all;
+            }
+        }
+        server {
+          server_name ${env.hostName};
+          server_tokens off;
 
-                ssl-default-bind-options no-sslv3
-                ssl-default-bind-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
+          listen [::]:443 default_server ssl spdy ipv6only=off;
 
-                ssl-default-server-options no-sslv3
-                ssl-default-server-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
+          ssl_certificate         /run/keys/server.crt;
+          ssl_trusted_certificate /run/keys/server.crt;
+          ssl_certificate_key     /run/keys/server.key;
 
-        defaults
-                log     global
-                mode    http
-                option  httplog
-                option  dontlognull
-                retries 3
-                option redispatch
-                option http-server-close
-                option forwardfor
-                maxconn 2000
-                timeout connect 5s
-                timeout client  15min
-                timeout server  15min
+          resolver 8.8.8.8;
+          ssl_stapling on;
+          ssl_stapling_verify on;
+          ssl_session_cache shared:SSL:10m;
+          ssl_session_timeout 5m;
+          ssl_protocols TLSv1.2 TLSv1.1 TLSv1;
+          ssl_prefer_server_ciphers on;
 
-        frontend public
-                bind *:443 ssl crt /run/keys/haproxy.crt
-                default_backend lb-steve-frontend
+          ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK;
 
-        backend lb-steve-frontend
-                option forwardfor
-                server lb-steve-frontend 127.0.0.1:8081
 
-        listen stats :8889 #Listen on localhost port 9000
-            mode http
-            stats enable
-            stats hide-version
-            stats uri /admin
+          access_log /var/spool/nginx/logs/access.log timed_combined buffer=16k;
+          error_log /var/spool/nginx/logs/error.log error;
+
+          location = / {
+              try_files $uri /index.html;
+              break;
+          }
+          location = /index.html {
+              alias ${../www/index.html};
+              break;
+          }
+          location = /lb-steve-client.tgz {
+              alias ${builds.client.binary_tarball}/lb-steve-client.tgz;
+              break;
+          }
+          location / {
+              proxy_pass         http://localhost:8081/;
+              proxy_redirect     off;
+              proxy_set_header   Host             $host;
+              proxy_set_header   X-Real-IP        $remote_addr;
+              proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+              proxy_set_header   X-Forwarded-Proto https;
+
+              proxy_connect_timeout      180;
+              proxy_send_timeout         600;
+              proxy_read_timeout         600;
+
+              client_max_body_size 0;
+
+              break;
+          }
+
+        }
+
       '';
 
+      nixpkgs.config.packageOverrides = pkgs: {
+        nginx = pkgs.lib.overrideDerivation pkgs.nginx (a: { configureFlags = a.configureFlags ++ ["--with-http_stub_status_module"]; } );
+      };
+
       systemd.services = {
+        nginx.serviceConfig.LimitNOFILE = 32768;
 
         lb-steve-frontend = {
           description = "LB Steve Frontend";
@@ -800,22 +838,13 @@ with pkgs.lib;
               - include:
                   domain: java.lang
                   type: GarbageCollector
+          '';
+ 
+      service.dd-agent.nginxConfig = ''
+        init_config:
+        instances:
+          -   nginx_status_url: http://127.0.0.1/nginx_status/
       '';
-
-      environment.etc =
-        let
-          haproxy-config =
-            pkgs.writeText "haproxy.yaml" ''
-              init_config:
-
-              instances:
-                - url: http://localhost:8889/admin?stats
-            '';
-        in [
-          { source = haproxy-config;
-            target = "dd-agent/conf.d/haproxy.yaml";
-          }
-        ];
     };
 
 
