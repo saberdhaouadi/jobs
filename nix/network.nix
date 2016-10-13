@@ -4,6 +4,7 @@
 , accountId ? "826045886586"
 , name
 , logToken ? ""
+, catchRequests ? false
 }:
 let
   environments = import ./environments.nix;
@@ -107,7 +108,7 @@ let
       http_server_threads = 500
 
       [handler:steve]
-      database_prefix = http://database-${name}:8080/db
+      database_prefix = http://database-${name}:${if catchRequests then "80" else "8080"}/db
 
       ${pkgs.lib.concatMapStrings (t: ''
       [job-queue:${workerName t}]
@@ -622,7 +623,7 @@ with pkgs.lib;
 
 
   "database-${name}" =
-    { config, pkgs, resources, nodes, ... }:
+    { config, pkgs, lib, resources, nodes, ... }:
     let
       logicblox = builder-config.getLB (import ../lb-version.nix);
     in
@@ -660,7 +661,18 @@ with pkgs.lib;
       '';
 
       logicblox.application.installer = builds.database.build;
-      networking.firewall.allowedTCPPorts = [ 8080 55183 ];
+      services.nginx.enable = lib.mkOverride 0 false;
+
+      systemd.services.mitmproxy =
+        { description = "mitmproxy";
+          enable = catchRequests;
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            ExecStart = "${pkgs.pythonPackages.mitmproxy}/bin/mitmdump --port 80 -R http://localhost:8080 -w /tmp/requests.txt -q --cadir /tmp/mitmproxy";
+          };
+        };
+
+      networking.firewall.allowedTCPPorts = [ 8080 55183 80 ];
 
       fileSystems."/data" =
         { autoFormat = true;
@@ -733,6 +745,7 @@ with pkgs.lib;
       '';
       services.nginx.httpConfig = ''
         log_format timed_combined '$remote_addr - $remote_user [$time_local]  "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
+        log_format capture_requests '$request|$request_body';
         server {
             listen               80;
             server_name   localhost;
@@ -840,7 +853,7 @@ with pkgs.lib;
                   type: GarbageCollector
           '';
  
-      service.dd-agent.nginxConfig = ''
+      services.dd-agent.nginxConfig = ''
         init_config:
         instances:
           -   nginx_status_url: http://127.0.0.1/nginx_status/
