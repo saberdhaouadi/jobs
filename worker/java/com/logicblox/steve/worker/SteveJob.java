@@ -45,11 +45,14 @@ public class SteveJob {
 
   private String _s3Bucket;
   private URI _outputLog;
+  private URI _outputLbLogs;
 
   private S3Client _client;
 
   private File _inputPath = new File("/tmp/job/in");
   private File _outputPath = new File("/tmp/job/out");
+  private File _logOutputPath = new File("/tmp/job/log");
+  private File _lbLogsPath = new File("/tmp/job/log/lb-logs.tgz");
   private File _jobPath = new File("/tmp/job/job.tar.gz");
   private File _metadataPath = new File("/tmp/job/in/metadata.json");
 
@@ -91,6 +94,7 @@ public class SteveJob {
     }
     try {
       _outputLog = new URI(String.format("s3://%s/jobs/%s/log", _s3Bucket, _id));
+      _outputLbLogs = new URI(String.format("s3://%s/jobs/%s/lb-logs.tgz", _s3Bucket, _id));
     } catch (URISyntaxException e) {
       throw new InternalException("Invalid output log URI", e);
     }
@@ -193,9 +197,18 @@ public class SteveJob {
 
     _inputPath.mkdirs();
     _outputPath.mkdirs();
+    _logOutputPath.mkdirs();
 
     try {
       ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _outputPath.toString());
+      Process p = pb.start();
+      p.waitFor();
+      p.destroy();
+    } catch (Exception e) {
+    }
+
+    try {
+      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _logOutputPath.toString());
       Process p = pb.start();
       p.waitFor();
       p.destroy();
@@ -346,6 +359,10 @@ public class SteveJob {
           try {
             log("Uploading log...[%s/%s]".format(logPath.toString(), _outputLog));
             _client.upload(logPath, _outputLog).get();
+            if(_lbLogsPath.exists()) {
+              log("Uploading LB logs...[%s/%s]".format(_lbLogsPath.toString(), _outputLbLogs));
+              _client.upload(_lbLogsPath, _outputLbLogs).get();
+            }
           } catch (Exception e) {
             throw new InternalException("Error uploading log to " + _outputLog, e);
           }

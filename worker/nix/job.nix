@@ -101,5 +101,6 @@ in
       chmod -R 777 . /tmp/job/out/*
       rm -f /tmp/LB_default_DaemonLock* || true
       rm -rf /dev/shm/LB_* || true
+      tar -C $HOME/lb_deployment -cvzf /tmp/job/log/lb-logs.tgz logs || true
     '';
   })
