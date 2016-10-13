@@ -55,7 +55,7 @@ block(`set_impl) {
       +proto:Param_value[p] = value.
 
     // cleanup old metadata if it's not updated
-    -schema:JobImpl:metadata[impl, key] = value <-
+    -schema:JobImpl:metadata[impl, key] = _ <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_set_impl[union] = _,
       +impl_by_index[index] = impl,
