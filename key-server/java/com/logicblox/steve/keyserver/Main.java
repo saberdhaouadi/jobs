@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.Optional;
 
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
@@ -25,7 +26,6 @@ import com.logicblox.bloxweb.config.ConfigValidator;
 import com.logicblox.bloxweb.config.ValidationMessage;
 import com.logicblox.bloxweb.internal.Specification;
 import com.logicblox.bloxweb.service.ServiceContext;
-import com.logicblox.common.Option;
 import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
@@ -47,14 +47,14 @@ public class Main {
         Collection<ValidationMessage> messages = ConfigValidator.validate(main._config);
         ConfigValidator.handleMessages(messages, logger);
 
-        main._ctx = new ServiceContext(main._logger, new ConfigFiles(main._config,Option.<Config>none(),Option.<Config>none()));
+        main._ctx = new ServiceContext(main._logger, new ConfigFiles(main._config,Optional.<Config>empty(),Optional.<Config>empty()));
         main._ctx.init();
         // Create job-auth realm for authentication
         // Specification.Realm.Builder realm = Specification.Realm.newBuilder().setName("job-auth").setConfig("default-signature");
         // main._ctx.getAuthenticationProvider().addRealm(realm.build());
 
         final BloxWebServer bloxwebServer = new BloxWebServer(
-                Option.some(main._logDir),
+                Optional.of(main._logDir),
                 main._ctx);
 
         ExecutorService webServerExecutor = Executors.newSingleThreadExecutor();
