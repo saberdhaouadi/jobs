@@ -246,7 +246,10 @@ with pkgs.lib;
               "Action": [
                 "s3:Get*",
                 "s3:Put*",
-                "s3:List*"
+                "s3:List*",
+                "s3:CreateMultipartUploadParts",
+                "s3:ListMultipartUploadParts",
+                "s3:AbortMultipartUpload"
               ],
               "Effect": "Allow",
               "Resource": [
@@ -394,11 +397,18 @@ with pkgs.lib;
         "52.208.177.170" # kiabi-fred-catchup
         "54.82.66.104"
         "54.196.251.61"
-        "52.44.194.238" # tc5 de3
+        "52.44.194.238" # tc5 dev3
         "52.200.205.100" # tc5 dev2
         "50.16.197.121" # pdx-science
         "52.44.49.250" # tc5-dev1 
         "52.210.56.134" # kiabi-fred-dist-merge frontend
+        "52.31.72.251" # kiabi-fred-dist-merge frontend
+        "52.212.85.195" # kiabi-fred-forecast-assesment
+        "52.54.251.130" # meijer
+        "54.214.148.70" # wag-24-small
+        "50.17.204.250"
+        "50.17.197.52"
+        "52.45.120.108" #argos-dev-1
       ];
       accountEntry = account:
         {
