@@ -1,0 +1,105 @@
+commit 18b7363a699c0b5a4bf59d2b320dfc2b84dc4e67
+Author: Eelco Dolstra <edolstra@gmail.com>
+Date:   Mon Oct 31 17:09:52 2016 +0100
+
+    Support optional sandbox paths
+    
+    For example, you can now set
+    
+      build-sandbox-paths = /dev/nvidiactl?
+    
+    to specify that /dev/nvidiactl should only be mounted in the sandbox
+    if it exists in the host filesystem. This is useful e.g. for EC2
+    images that should support both CUDA and non-CUDA instances.
+
+diff --git a/doc/manual/command-ref/conf-file.xml b/doc/manual/command-ref/conf-file.xml
+index 69295fa..d2c9145 100644
+--- a/doc/manual/command-ref/conf-file.xml
++++ b/doc/manual/command-ref/conf-file.xml
+@@ -268,7 +268,12 @@ flag, e.g. <literal>--option gc-keep-outputs false</literal>.</para>
+     to mount a path in a different location in the sandbox; for
+     instance, <literal>/bin=/nix-bin</literal> will mount the path
+     <literal>/nix-bin</literal> as <literal>/bin</literal> inside the
+-    sandbox.</para>
++    sandbox. If <replaceable>source</replaceable> is followed by
++    <literal>?</literal>, then it is not an error if
++    <replaceable>source</replaceable> does not exist; for example,
++    <literal>/dev/nvidiactl?</literal> specifies that
++    <filename>/dev/nvidiactl</filename> will only be mounted in the
++    sandbox if it exists in the host filesystem.</para>
+ 
+     <para>Depending on how Nix was built, the default value for this option
+     may be empty or provide <filename>/bin/sh</filename> as a
+diff --git a/src/libstore/build.cc b/src/libstore/build.cc
+index efd6c07..b682a80 100644
+--- a/src/libstore/build.cc
++++ b/src/libstore/build.cc
+@@ -768,7 +768,14 @@ private:
+     GoalState state;
+ 
+     /* Stuff we need to pass to initChild(). */
+-    typedef map<Path, Path> DirsInChroot; // maps target path to source path
++    struct ChrootPath {
++        Path source;
++        bool optional;
++        ChrootPath(Path source = "", bool optional = false)
++            : source(source), optional(optional)
++        { }
++    };
++    typedef map<Path, ChrootPath> DirsInChroot; // maps target path to source path
+     DirsInChroot dirsInChroot;
+     typedef map<string, string> Environment;
+     Environment env;
+@@ -1865,12 +1872,18 @@ void DerivationGoal::startBuilder()
+ 
+         dirsInChroot.clear();
+ 
+-        for (auto & i : dirs) {
++        for (auto i : dirs) {
++            if (i.empty()) continue;
++            bool optional = false;
++            if (i[i.size() - 1] == '?') {
++                optional = true;
++                i.pop_back();
++            }
+             size_t p = i.find('=');
+             if (p == string::npos)
+-                dirsInChroot[i] = i;
++                dirsInChroot[i] = {i, optional};
+             else
+-                dirsInChroot[string(i, 0, p)] = string(i, p + 1);
++                dirsInChroot[string(i, 0, p)] = {string(i, p + 1), optional};
+         }
+         dirsInChroot[tmpDirInSandbox] = tmpDir;
+ 
+@@ -1878,8 +1891,8 @@ void DerivationGoal::startBuilder()
+         PathSet closure;
+         for (auto & i : dirsInChroot)
+             try {
+-                if (worker.store.isInStore(i.second))
+-                    worker.store.computeFSClosure(worker.store.toStorePath(i.second), closure);
++                if (worker.store.isInStore(i.second.source))
++                    worker.store.computeFSClosure(worker.store.toStorePath(i.second.source), closure);
+             } catch (Error & e) {
+                 throw Error(format("while processing ‘build-sandbox-paths’: %s") % e.what());
+             }
+@@ -2325,12 +2338,16 @@ void DerivationGoal::runChild()
+                environment. */
+             for (auto & i : dirsInChroot) {
+                 struct stat st;
+-                Path source = i.second;
++                Path source = i.second.source;
+                 Path target = chrootRootDir + i.first;
+                 if (source == "/proc") continue; // backwards compatibility
+                 debug(format("bind mounting ‘%1%’ to ‘%2%’") % source % target);
+-                if (stat(source.c_str(), &st) == -1)
+-                    throw SysError(format("getting attributes of path ‘%1%’") % source);
++                if (stat(source.c_str(), &st) == -1) {
++                    if (i.second.optional && errno == ENOENT)
++                        continue;
++                    else
++                        throw SysError(format("getting attributes of path ‘%1%’") % source);
++                }
+                 if (S_ISDIR(st.st_mode))
+                     createDirs(target);
+                 else {
