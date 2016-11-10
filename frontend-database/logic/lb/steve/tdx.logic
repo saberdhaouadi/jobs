@@ -179,6 +179,10 @@ block(`tdx) {
     file_binding_by_name["job_outputs"] = fb,
     file_binding(fb) {
       file_binding_definition_name[] = "job_outputs",
+      predicate_binding_by_name["lb:steve:schema:Job:output"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "ID, OUTPUT"
+        },
       predicate_binding_by_name["lb:steve:schema:Job:output_hash"] =
         predicate_binding(_) {
           predicate_binding_columns[] = "ID, OUTPUT, HASH"
