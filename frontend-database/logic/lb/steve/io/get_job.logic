@@ -10,13 +10,15 @@ block(`get_job) {
     +service_support:ensure_job(index, jobId) <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_get_job[union] = req,
-      +proto:GetJobRequest_job_id[req] = jobId.
+      +proto:GetJobRequest_job_id[req] = jobUuid,
+      jobId = int128:from_uuid_string[jobUuid].
 
     // create the job message
     +service_support:export_job(index, jobId) <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_get_job[union] = req,
-      +proto:GetJobRequest_job_id[req] = jobId,
+      +proto:GetJobRequest_job_id[req] = jobUuid,
+      jobId = int128:from_uuid_string[jobUuid],
       schema:Job_id@prev[_] = jobId.
 
   })

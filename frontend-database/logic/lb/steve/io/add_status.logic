@@ -10,7 +10,8 @@ block(`add_status) {
     +service_support:ensure_job(index, jobId) <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_add_status[union] = req,
-      +proto:AddStatusRequest_job_id[req] = jobId.
+      +proto:AddStatusRequest_job_id[req] = jobUuid,
+      jobId = int128:from_uuid_string[jobUuid].
 
     /**
      * Add status
@@ -20,7 +21,8 @@ block(`add_status) {
     ^schema:Job:status_message[job, ts] = message <-
       +proto:RequestEnvelope_request[_, _] = union,
       +proto:Request_add_status[union] = req,
-      +proto:AddStatusRequest_job_id[req] = jobId,
+      +proto:AddStatusRequest_job_id[req] = jobUuid,
+      jobId = int128:from_uuid_string[jobUuid],
       +proto:AddStatusRequest_status[req] = status,
       +proto:Status_timestamp[status] = ts,
       +proto:Status_event[status] = event,
@@ -37,7 +39,8 @@ block(`add_status) {
       +proto:Status_cpu_usage[status]=u,
       +proto:Status_max_memory[status]=m,
       +proto:Status_max_disk_usage[status]=d,
-      +proto:AddStatusRequest_job_id[req] = jobId,
+      +proto:AddStatusRequest_job_id[req] = jobUuid,
+      jobId = int128:from_uuid_string[jobUuid],
       schema:Job_id[job] = jobId.
 
   })

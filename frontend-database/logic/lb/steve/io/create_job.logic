@@ -61,7 +61,8 @@ block(`create_job) {
       +create_new_job(req),
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
-      +proto:CreateJobRequest_job_id[req] = id,
+      +proto:CreateJobRequest_job_id[req] = uuid,
+      id = int128:from_uuid_string[uuid],
       +proto:CreateJobRequest_client_id[req] = clientId,
       +proto:CreateJobRequest_impl_id[req] = implId,
       +proto:CreateJobRequest_output_prefix[req] = prefix,
@@ -74,14 +75,16 @@ block(`create_job) {
     // wire input
     +schema:Job:input(job, url) <-
       +create_new_job(req),
-      +proto:CreateJobRequest_job_id[req] = id,
+      +proto:CreateJobRequest_job_id[req] = uuid,
+      id = int128:from_uuid_string[uuid],
       +schema:Job_id[job] = id,
       +proto:CreateJobRequest_input(req, f), 
       +proto:File_url[f] = url.
 
     +schema:Job:input_hash[job, url] = hash <-
       +create_new_job(req),
-      +proto:CreateJobRequest_job_id[req] = id,
+      +proto:CreateJobRequest_job_id[req] = uuid,
+      id = int128:from_uuid_string[uuid],
       +schema:Job_id[job] = id,
       +proto:CreateJobRequest_input(req, f),
       +proto:File_url[f] = url,
@@ -90,7 +93,8 @@ block(`create_job) {
     // wire metadata
     +schema:Job:metadata[job, key] = value <-
       +create_new_job(req),
-      +proto:CreateJobRequest_job_id[req] = id,
+      +proto:CreateJobRequest_job_id[req] = uuid,
+      id = int128:from_uuid_string[uuid],
       +schema:Job_id[job] = id,
       +proto:CreateJobRequest_metadata(req, p), 
       +proto:Param_key[p] = key,
@@ -100,7 +104,8 @@ block(`create_job) {
     +schema:Job:output_encryption_key[job] = key <-
       +create_new_job(req),
       +proto:CreateJobRequest_job_id[req] = id,
-      +schema:Job_id[job] = id,
+      +schema:Job_id[job] = uuid,
+      id = int128:from_uuid_string[uuid],
       +proto:CreateJobRequest_output_encryption_key[req] = key.
 
     +service_support:export_error(index, "INVALID_INPUT", "Input '" + url + "' is invalid. Should be a S3 URL.") <-

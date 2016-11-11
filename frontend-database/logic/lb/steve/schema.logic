@@ -5,7 +5,7 @@ block(`schema) {
     /**
      * A job with a unique id.
      */
-    Job(job), Job_id(job:id) -> string(id).
+    Job(job), Job_id(job:id) -> int128(id).
 
     /**
      * An account is a group of users with a unique id.

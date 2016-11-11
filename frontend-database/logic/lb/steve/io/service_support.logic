@@ -20,7 +20,7 @@ block(`service_support) {
     /**
      * Constructor for a Job message in this index (encapsulated by the response in the same index).
      */
-    job[index, jobId] = job -> int(index), string(jobId), proto:Job(job).
+    job[index, jobId] = job -> int(index), int128(jobId), proto:Job(job).
 
     /**
      * Constructor for a JobImpl message in this index (encapsulated by the response in the same index).
@@ -78,7 +78,7 @@ block(`service_support) {
     /**
      * If a job with this id does not exist, generate an error in this index.
      */
-    ensure_job(index, jobId) -> int(index), string(jobId).
+    ensure_job(index, jobId) -> int(index), int128(jobId).
 
     /**
      * If a job impl with this id does not exist, or if it does not belong to this user,
@@ -141,7 +141,7 @@ block(`service_support) {
     // JOB: add a job to the response
     +job[i, jobId] = protoJob,
     +proto:Job(protoJob),
-    +proto:Job_id[protoJob] = jobId,
+    +proto:Job_id[protoJob] = int128:to_uuid_string[jobId],
     +proto:Response_job[resp] = protoJob <-
       +response[i] = resp,
       +export_job(i, jobId),
@@ -183,7 +183,7 @@ block(`service_support) {
       +ensure_user(index, userId),
       ! system:app:User:name(_:userId).
 
-    +export_error(index, "NO_SUCH_JOB", "Job '" + jobId + "' does not exist.") <-
+    +export_error(index, "NO_SUCH_JOB", "Job '" + int128:to_uuid_string[jobId] + "' does not exist.") <-
       +ensure_job(index, jobId),
       !schema:Job_id@prev[_] = jobId.
 

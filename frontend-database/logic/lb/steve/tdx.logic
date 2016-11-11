@@ -65,7 +65,7 @@ block(`tdx) {
     file_definition(fd) {
       file_delimiter[] = "|",
       column_headers[] = "ID,     USER,   JOBIMPL, OUTPUT_PREFIX, CLIENTID, OUTPUT_ENCRYPTION_KEY, CPU_USAGE, MAX_MEMORY, MAX_DISK_USAGE",
-      column_formats[] = "string, string, string,  string*,       string,   string,                int,       int,        int",
+      column_formats[] = "uuid, string, string,  string*,       string,   string,                int,       int,        int",
       file_columns_can_be_absent[] = "OUTPUT_ENCRYPTION_KEY, CPU_USAGE, MAX_MEMORY, MAX_DISK_USAGE"
     }.
 
@@ -122,7 +122,7 @@ block(`tdx) {
     file_definition(fd) {
       file_delimiter[] = "|",
       column_headers[] = "ID,     KEY,    VALUE",
-      column_formats[] = "string, string, string"
+      column_formats[] = "uuid, string, string"
     }.
 
     file_binding_by_name["job_metadata"] = fb,
@@ -145,7 +145,7 @@ block(`tdx) {
     file_definition(fd) {
       file_delimiter[] = "|",
       column_headers[] = "ID,     INPUT,  HASH",
-      column_formats[] = "string, string, string",
+      column_formats[] = "uuid, string, string",
       file_columns_can_be_absent[] = "HASH"
     }.
 
@@ -173,7 +173,7 @@ block(`tdx) {
     file_definition(fd) {
       file_delimiter[] = "|",
       column_headers[] = "ID,     OUTPUT, HASH",
-      column_formats[] = "string, string, string"
+      column_formats[] = "uuid, string, string"
     }.
 
     file_binding_by_name["job_outputs"] = fb,
@@ -200,7 +200,7 @@ block(`tdx) {
     file_definition(fd) {
       file_delimiter[] = "|",
       column_headers[] = "ID,     TIMESTAMP, EVENT,  MACHINE, MESSAGE",
-      column_formats[] = "string, int,       string, string,  string*"
+      column_formats[] = "uuid, int,       string, string,  string*"
     }.
 
     file_binding_by_name["job_status"] = fb,

@@ -10,7 +10,8 @@ block(`set_result) {
     +service_support:ensure_job(index, jobId) <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_set_result[union] = req,
-      +proto:SetResultRequest_job_id[req] = jobId.
+      +proto:SetResultRequest_job_id[req] = jobUuid,
+      jobId = int128:from_uuid_string[jobUuid].
 
 
     /**
@@ -20,7 +21,8 @@ block(`set_result) {
     +schema:Job:output(job, url) <-
       +proto:RequestEnvelope_request[_, _] = union,
       +proto:Request_set_result[union] = req,
-      +proto:SetResultRequest_job_id[req] = jobId,
+      +proto:SetResultRequest_job_id[req] = jobUuid,
+      jobId = int128:from_uuid_string[jobUuid],
       +proto:SetResultRequest_output(req, f),
       +proto:File_url[f] = url,
       schema:Job_id[job] = jobId.
@@ -29,7 +31,8 @@ block(`set_result) {
     ^schema:Job:output_hash[job, url] = hash <-
       +proto:RequestEnvelope_request[_, _] = union,
       +proto:Request_set_result[union] = req,
-      +proto:SetResultRequest_job_id[req] = jobId,
+      +proto:SetResultRequest_job_id[req] = jobUuid,
+      jobId = int128:from_uuid_string[jobUuid],
       +proto:SetResultRequest_output(req, f),
       +proto:File_url[f] = url,
       +proto:File_hash[f] = hash,
