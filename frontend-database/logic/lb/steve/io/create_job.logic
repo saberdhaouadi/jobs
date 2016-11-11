@@ -103,8 +103,8 @@ block(`create_job) {
     // wire output encryption key
     +schema:Job:output_encryption_key[job] = key <-
       +create_new_job(req),
-      +proto:CreateJobRequest_job_id[req] = id,
-      +schema:Job_id[job] = uuid,
+      +proto:CreateJobRequest_job_id[req] = uuid,
+      +schema:Job_id[job] = id,
       id = int128:from_uuid_string[uuid],
       +proto:CreateJobRequest_output_encryption_key[req] = key.
 
