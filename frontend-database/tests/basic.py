@@ -264,7 +264,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         client = self.client
         envelope = self.client.dynamic_request()
         req = envelope.request.add().create_job
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req.client_id = "a"
         req.impl_id = "total"
         req.output_prefix = "s3://something/something"
@@ -275,7 +275,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         text_format.Merge('''
             response { 
               job {
-                id: "1"
+                id: "00000000-0000-0000-0000-000000000001"
                 client_id: "a"
                 impl_id: "total"
                 output_prefix: "s3://something/something"
@@ -289,13 +289,13 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
             ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY|CPU_USAGE|MAX_MEMORY|MAX_DISK_USAGE
-            1|martin|logicblox.com-total|s3://something/something|a||||
+            00000000-0000-0000-0000-000000000001|martin|logicblox.com-total|s3://something/something|a||||
         ''')
 
     PROTOBUF_JOB_1_WITH_DATA = '''
       response {
         job {
-          id: "1"
+          id: "00000000-0000-0000-0000-000000000001"
           client_id: "a"
           impl_id: "total"
           output_prefix: "s3://something/something"
@@ -328,7 +328,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         client = self.client
         envelope = self.client.dynamic_request()
         req = envelope.request.add().create_job
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req.client_id = "a"
         req.impl_id = "total"
         req.output_prefix = "s3://something/something"
@@ -354,19 +354,19 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
             ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY|CPU_USAGE|MAX_MEMORY|MAX_DISK_USAGE
-            1|martin|logicblox.com-total|s3://something/something|a||||
+            00000000-0000-0000-0000-000000000001|martin|logicblox.com-total|s3://something/something|a||||
         ''')
 
         self.assertDelimEqual(get_tdx_client("job_inputs").get(), '''
             ID|INPUT|HASH
-            1|s3://somebucket/key|the hash
-            1|s3://somebucket/key without hash|
+            00000000-0000-0000-0000-000000000001|s3://somebucket/key|the hash
+            00000000-0000-0000-0000-000000000001|s3://somebucket/key without hash|
         ''')
 
         self.assertDelimEqual(get_tdx_client("job_metadata").get(), '''
             ID|KEY|VALUE
-            1|the key1|the value1
-            1|the key2|the value2
+            00000000-0000-0000-0000-000000000001|the key1|the value1
+            00000000-0000-0000-0000-000000000001|the key2|the value2
         ''')
 
 
@@ -378,7 +378,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         envelope = self.client.dynamic_request()
         req = envelope.request.add().get_job
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req.get_status = True
 
         # verify response
@@ -397,13 +397,13 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # note that we send job_id 2 and then 1
         req = envelope.request.add().create_job
-        req.job_id = "2"
+        req.job_id = "00000000-0000-0000-0000-000000000002"
         req.client_id = "a2"
         req.impl_id = "total"
         req.output_prefix = "s3://something/something2"
         req.user_id = "martin"
         req = envelope.request.add().create_job
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req.client_id = "a1"
         req.impl_id = "total"
         req.output_prefix = "s3://something/something1"
@@ -414,7 +414,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         text_format.Merge('''
         response {
           job {
-            id: "2"
+            id: "00000000-0000-0000-0000-000000000002"
             client_id: "a2"
             impl_id: "total"
             output_prefix: "s3://something/something2"
@@ -425,7 +425,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         }
         response {
           job {
-            id: "1"
+            id: "00000000-0000-0000-0000-000000000001"
             client_id: "a1"
             impl_id: "total"
             output_prefix: "s3://something/something1"
@@ -440,8 +440,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
             ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY|CPU_USAGE|MAX_MEMORY|MAX_DISK_USAGE
-            1|martin|logicblox.com-total|s3://something/something1|a1||||
-            2|martin|logicblox.com-total|s3://something/something2|a2||||
+            00000000-0000-0000-0000-000000000001|martin|logicblox.com-total|s3://something/something1|a1||||
+            00000000-0000-0000-0000-000000000002|martin|logicblox.com-total|s3://something/something2|a2||||
         ''')
 
     def test_create_job_with_errors(self):
@@ -453,28 +453,28 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
 
         # note that we send job_id 2 and then 1
         req = envelope.request.add().create_job
-        req.job_id = "2"
+        req.job_id = "00000000-0000-0000-0000-000000000002"
         req.client_id = "a2"
         req.impl_id = "total"
         req.output_prefix = "s3://something/something2"
         req.user_id = "martin"
         
         req = envelope.request.add().create_job
-        req.job_id = "3"
+        req.job_id = "00000000-0000-0000-0000-000000000003"
         req.client_id = "a3"
         req.impl_id = "total"
         req.output_prefix = "s3://something/something3"
         req.user_id = "non_existent_user"
 
         req = envelope.request.add().create_job
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req.client_id = "a1"
         req.impl_id = "total"
         req.output_prefix = "s3://something/something1"
         req.user_id = "martin"
 
         req = envelope.request.add().create_job
-        req.job_id = "4"
+        req.job_id = "00000000-0000-0000-0000-000000000004"
         req.client_id = "a4"
         req.impl_id = "total4"
         req.output_prefix = "s3://something/something4"
@@ -485,7 +485,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         text_format.Merge('''
         response {
           job {
-            id: "2"
+            id: "00000000-0000-0000-0000-000000000002"
             client_id: "a2"
             impl_id: "total"
             output_prefix: "s3://something/something2"
@@ -502,7 +502,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         }
         response {
           job {
-            id: "1"
+            id: "00000000-0000-0000-0000-000000000001"
             client_id: "a1"
             impl_id: "total"
             output_prefix: "s3://something/something1"
@@ -523,8 +523,8 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("jobs").get(), '''
             ID|USER|JOBIMPL|OUTPUT_PREFIX|CLIENTID|OUTPUT_ENCRYPTION_KEY|CPU_USAGE|MAX_MEMORY|MAX_DISK_USAGE
-            1|martin|logicblox.com-total|s3://something/something1|a1||||
-            2|martin|logicblox.com-total|s3://something/something2|a2||||
+            00000000-0000-0000-0000-000000000001|martin|logicblox.com-total|s3://something/something1|a1||||
+            00000000-0000-0000-0000-000000000002|martin|logicblox.com-total|s3://something/something2|a2||||
         ''')
 
  
@@ -539,7 +539,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         client = self.client
         envelope = self.client.dynamic_request()
         req = envelope.request.add().add_status
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req.status.timestamp = 1
         req.status.event = "the event"
         req.status.machine = "the machine"
@@ -553,7 +553,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req.status.message = "status message2"
 
         req = envelope.request.add().add_status
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req.status.timestamp = 3
         req.status.event = "the event3"
         req.status.machine = "the machine3"
@@ -571,17 +571,17 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("job_status").get(), '''
             ID|TIMESTAMP|EVENT|MACHINE|MESSAGE
-            1|1|the event|the machine|status message
-            1|3|the event3|the machine3|status message3
+            00000000-0000-0000-0000-000000000001|1|the event|the machine|status message
+            00000000-0000-0000-0000-000000000001|3|the event3|the machine3|status message3
         ''')
 
         # now use get status
         envelope = self.client.dynamic_request()
         req = envelope.request.add().get_job
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req.get_status = True
         req = envelope.request.add().get_job
-        req.job_id = "5"
+        req.job_id = "00000000-0000-0000-0000-000000000005"
         req.get_status = True
 
         # verify response
@@ -589,7 +589,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         text_format.Merge('''
             response { 
               job { 
-                id: "1"
+                id: "00000000-0000-0000-0000-0000000000001"
                 client_id: "a"
                 impl_id: "total"
                 output_prefix: "s3://something/something"
@@ -599,7 +599,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
                 status { timestamp: 1 event: "the event" machine: "the machine" message: "status message" } 
               }
             }
-            response { error { code: "NO_SUCH_JOB" message: "Job '5' does not exist." } }
+            response { error { code: "NO_SUCH_JOB" message: "Job '00000000-0000-0000-0000-000000000005' does not exist." } }
             ''', expected_response)
         self.compare_jobs(expected_response, client.dynamic_call(envelope))
         
@@ -615,7 +615,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         client = self.client
         envelope = self.client.dynamic_request()
         req = envelope.request.add().set_result
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         f = req.output.add()
         f.url = "s3://somebucket/key 1"
         f.hash = "the hash 1"
@@ -645,23 +645,23 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # verify data was imported
         self.assertDelimEqual(get_tdx_client("job_outputs").get(), '''
             ID|OUTPUT|HASH
-            1|s3://somebucket/key 1|the hash 1
-            1|s3://somebucket/key 2|the hash 2
+            00000000-0000-0000-0000-000000000001|s3://somebucket/key 1|the hash 1
+            00000000-0000-0000-0000-000000000001|s3://somebucket/key 2|the hash 2
         ''')
 
         # now use get result
         envelope = self.client.dynamic_request()
         req = envelope.request.add().get_job
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req = envelope.request.add().get_job
-        req.job_id = "5"
+        req.job_id = "00000000-0000-0000-0000-000000000005"
 
         # verify response
         expected_response = client.dynamic_response()
         text_format.Merge('''
             response { 
               job { 
-                id: "1"    
+                id: "00000000-0000-0000-0000-000000000001"    
                 client_id: "a"
                 impl_id: "total"
                 output_prefix: "s3://something/something"
@@ -671,7 +671,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
                 output { url: "s3://somebucket/key 2" hash: "the hash 2" }
               }
             }
-            response { error { code: "NO_SUCH_JOB" message: "Job '5' does not exist." } }
+            response { error { code: "NO_SUCH_JOB" message: "Job '00000000-0000-0000-0000-000000000005' does not exist." } }
             ''', expected_response)
         self.compare_jobs(expected_response, client.dynamic_call(envelope))
 
@@ -685,14 +685,14 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         client = self.client
         envelope = self.client.dynamic_request()
         req = envelope.request.add().add_status
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req.status.timestamp = 1
         req.status.event = "the event1"
         req.status.machine = "the machine1"
         req.status.message = "status message1"
 
         req = envelope.request.add().add_status
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req.status.timestamp = 3
         req.status.event = "the event3"
         req.status.machine = "the machine3"
@@ -706,7 +706,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # add a result
         envelope = self.client.dynamic_request()
         req = envelope.request.add().set_result
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         f = req.output.add()
         f.url = "s3://somebucket/key 1"
         f.hash = "the hash 1"
@@ -719,7 +719,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         # now use get statuses and results
         envelope = self.client.dynamic_request()
         req = envelope.request.add().get_job
-        req.job_id = "1"
+        req.job_id = "00000000-0000-0000-0000-000000000001"
         req.get_status = True
 
         # verify response
@@ -727,7 +727,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         text_format.Merge('''
             response { 
               job { 
-                id: "1"
+                id: "00000000-0000-0000-0000-000000000001"
                 client_id: "a"
                 impl_id: "total"
                 output_prefix: "s3://something/something"
