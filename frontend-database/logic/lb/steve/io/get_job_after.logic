@@ -48,7 +48,7 @@ block(`get_job_after) {
 
 
     // populate input with file messages
-    input_cons[jobId, url] = file -> string(jobId), string(url), proto:File(file).
+    input_cons[jobId, url] = file -> int128(jobId), string(url), proto:File(file).
     lang:constructor(`input_cons).
     lang:pulse(`input_cons).
 
@@ -66,7 +66,7 @@ block(`get_job_after) {
       schema:Job:input_hash[job, url] = hash.
 
     // populate metadata with Param messages
-    metadata[jobId, k] = param -> string(jobId), string(k), proto:Param(param).
+    metadata[jobId, k] = param -> int128(jobId), string(k), proto:Param(param).
     lang:constructor(`metadata).
     lang:pulse(`metadata).
 
@@ -81,7 +81,7 @@ block(`get_job_after) {
 
 
     // populate status messages  
-    status_cons[jobId, ts] = status -> string(jobId), int(ts), proto:Status(status).
+    status_cons[jobId, ts] = status -> int128(jobId), int(ts), proto:Status(status).
     lang:constructor(`status_cons).
     lang:pulse(`status_cons).
     
@@ -102,7 +102,7 @@ block(`get_job_after) {
       schema:Job:status_message@prev[job, ts] = message.
 
     // populate output with file messages
-    output_cons[jobId, url] = file -> string(jobId), string(url), proto:File(file).
+    output_cons[jobId, url] = file -> int128(jobId), string(url), proto:File(file).
     lang:constructor(`output_cons).
     lang:pulse(`output_cons).
 
