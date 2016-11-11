@@ -546,7 +546,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         req.status.message = "status message"
 
         req = envelope.request.add().add_status
-        req.job_id = "wrong id"
+        req.job_id = "00000000-0000-0000-0000-000000000666"
         req.status.timestamp = 2
         req.status.event = "the event2"
         req.status.machine = "the machine2"
@@ -563,7 +563,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         expected_response = client.dynamic_response()
         text_format.Merge('''
             response { }
-            response { error { code: "NO_SUCH_JOB" message: "Job \'wrong id\' does not exist." } }
+            response { error { code: "NO_SUCH_JOB" message: "Job \'00000000-0000-0000-0000-000000000666\' does not exist." } }
             response { }
             ''', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
@@ -624,7 +624,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         f.hash = "the hash 2"
 
         req = envelope.request.add().set_result
-        req.job_id = "wrong id"
+        req.job_id = "00000000-0000-0000-0000-000000000666"
         f = req.output.add()
         f.url = "s3://somebucket/key 3"
         f.hash = "the hash 3"
@@ -638,7 +638,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         expected_response = client.dynamic_response()
         text_format.Merge('''
             response { }
-            response { error { code: "NO_SUCH_JOB" message: "Job \'wrong id\' does not exist." } }
+            response { error { code: "NO_SUCH_JOB" message: "Job \'00000000-0000-0000-0000-000000000666\' does not exist." } }
             ''', expected_response)
         self.assertMessageStringEqual(expected_response, client.dynamic_call(envelope))
 
