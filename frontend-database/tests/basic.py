@@ -589,7 +589,7 @@ class TestFrontendDatabase(lb.web.testcase.PrototypeWorkspaceTestCase):
         text_format.Merge('''
             response { 
               job { 
-                id: "00000000-0000-0000-0000-0000000000001"
+                id: "00000000-0000-0000-0000-000000000001"
                 client_id: "a"
                 impl_id: "total"
                 output_prefix: "s3://something/something"
