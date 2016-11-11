@@ -38,7 +38,7 @@ block(`service_support) {
     /**
      * Export a job in the response with this index.
      */
-    export_job(index, jobIb) -> int(index), string(jobIb).
+    export_job(index, jobId) -> int(index), int128(jobId).
 
     /**
      * Export a jobImpl in the response with this index.
