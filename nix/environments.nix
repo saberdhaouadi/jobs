@@ -1,3 +1,6 @@
+let
+  lib = (import <nixpkgs> {}).lib;
+in
 rec {
   prod =
     { hostName = "steve.logicblox.com";
@@ -27,12 +30,6 @@ rec {
     { hostName = "steve-dev.logicblox.com";
       elasticIPv4 = "54.163.249.223";
       inherit (prod) workers;
-    };
-
-  martin =
-    { hostName = "steve-martin.logicblox.com";
-      elasticIPv4 = "54.163.249.223";
-      workers = { "c3.xlarge" = { number = 1; price = "0.25"; }; };
     };
 
 }
