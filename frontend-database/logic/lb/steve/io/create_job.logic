@@ -146,7 +146,8 @@ block(`create_job) {
       string:int:convert[t] = timeout,
       (timeout < 0 ; timeout > 40000),
       // For Walgreens, we allow timeouts > 40000s for the time being.
-      q != "i2-2xlarge".
+      q != "i2-2xlarge",
+      q != "i2-2xlarge-ondemand".
   })
 
 } <-- .
