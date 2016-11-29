@@ -204,6 +204,11 @@ public class StatusQueueClient {
       }
       case FAILED: {
         status.event = Status.Event.FAILED;
+        if(protoStatus.hasResourceUsage()) {
+          status.cpuUsage = protoStatus.getResourceUsage().getCpuUsage();
+          status.maxMemory = protoStatus.getResourceUsage().getMaxMemory();
+          status.maxDiskUsage = protoStatus.getResourceUsage().getMaxDiskUsage();
+        }
         if (protoStatus.hasFailedDetails()) {
           final Backend.FailedDetails d = protoStatus.getFailedDetails();
           status.message =
