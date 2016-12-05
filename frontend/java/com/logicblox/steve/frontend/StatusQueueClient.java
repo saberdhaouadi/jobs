@@ -115,6 +115,7 @@ public class StatusQueueClient {
             i++;
           } catch (Exception exc) {
             exc.printStackTrace();
+            writeFailedMessage(msg.getBody());
           }
         }
         if(messages.size() != 0) { 
@@ -144,6 +145,18 @@ public class StatusQueueClient {
       FileUtils.writeStringToFile(new File(dir,new SimpleDateFormat("HHmmssSSS").format(date)), statusString);
     } catch (IOException e) {
       System.err.println("WARNING: Could not write status message to disk.");
+      e.printStackTrace();
+    }
+  }
+
+  private void writeFailedMessage(String statusString) {
+    try {
+      Date date = new Date();
+      File dir = new File(_dataDir+"/failed");
+      dir.mkdirs();
+      FileUtils.writeStringToFile(new File(dir,new SimpleDateFormat("yyyyMMddHHmmssSSS").format(date)), statusString);
+    } catch (IOException e) {
+      System.err.println("WARNING: Could not write failed status message to disk.");
       e.printStackTrace();
     }
   }
