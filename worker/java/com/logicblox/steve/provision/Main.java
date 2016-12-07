@@ -38,6 +38,8 @@ public class Main {
   private static int minInstances = 0;
   private static boolean dryRun = true;
 
+  private static Regions[] regions = new Regions[]{ Regions.US_EAST_1, Regions.US_WEST_1, Regions.US_WEST_2 };
+
   public Main() {
     setupAmazon();
   }
@@ -267,21 +269,23 @@ public class Main {
   private int getNumberOfCurrentSpotInstances() {
     int result = 0;
 
-    DescribeSpotInstanceRequestsRequest spreq = new DescribeSpotInstanceRequestsRequest()
-            .withFilters(
-                    new Filter().withName("tag:S3Bucket").withValues(s3Bucket),
-                    new Filter().withName("tag:IncomingQueue").withValues(incoming_url),
-                    new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url),
-                    new Filter().withName("state").withValues("open", "active")
-            );
-    DescribeSpotInstanceRequestsResult spres = ec2.describeSpotInstanceRequests(spreq);
-    for (SpotInstanceRequest r : spres.getSpotInstanceRequests()) {
-      if (r.getState() == "open" || r.getState() == "active") {
+    for(Regions region: regions) {
+      AmazonEC2Client _ec2 = new AmazonEC2Client();
+      _ec2.setRegion(Region.getRegion(region));
+
+      DescribeSpotInstanceRequestsRequest spreq = new DescribeSpotInstanceRequestsRequest()
+              .withFilters(
+                      new Filter().withName("tag:S3Bucket").withValues(s3Bucket),
+                      new Filter().withName("tag:IncomingQueue").withValues(incoming_url),
+                      new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url),
+                      new Filter().withName("state").withValues("open", "active")
+              );
+      DescribeSpotInstanceRequestsResult spres = _ec2.describeSpotInstanceRequests(spreq);
+      for (SpotInstanceRequest r : spres.getSpotInstanceRequests()) {
         result++;
       }
     }
-
-    return spres.getSpotInstanceRequests().size();
+    return result;
   }
 
   // get number of on-demand instances that are not yet terminated
