@@ -68,6 +68,7 @@ public class SteveJob {
   private long _maxMemory = 0;
 
   private File _keyDir = new File(com.logicblox.s3lib.Utils.getDefaultKeyDirectory());
+  private File _shellDir = new File("/tmp/shell");
   private SteveKeyServerHelper _keyHelper;
   private File _cpuacct = new File("/sys/fs/cgroup/cpu,cpuacct/system.slice/nix-daemon.service/cpuacct.usage");
   private File _memacct = new File("/sys/fs/cgroup/memory/system.slice/nix-daemon.service/memory.memsw.max_usage_in_bytes");
@@ -413,8 +414,11 @@ public class SteveJob {
     // determine .drv
     _drv = readFromStdout(args.toArray(new String[args.size()]));
 
+    // build deps
+    nixShell(_drv);
+
     // build .drv
-    nixStoreRealise(_drv, _id);
+    nixStoreRealise(_drv);
   }
 
   public String readFromStdout(String... args) throws Exception {
@@ -432,7 +436,30 @@ public class SteveJob {
     return res;
   }
 
-  public void nixStoreRealise(String file, String job) throws Exception {
+  public void nixShell(String file) throws Exception {
+    CommandLine commandLine = new CommandLine("nix-shell");
+    commandLine.addArgument(file);
+    commandLine.addArgument("--command");
+    commandLine.addArgument("return");
+
+    Executor executor = new DefaultExecutor();
+    executor.setExitValues(null);
+    _shellDir.mkdirs();
+    executor.setWorkingDirectory(_shellDir);
+
+    int exit;
+    try {
+      exit = executor.execute(commandLine);
+    } catch (Exception ex) {
+      throw new InternalException("Execute exception: " + ex.getMessage(), ex);
+    }
+
+    if (exit != 0) {
+      throw new JobFailedException("Could not build one of the dependencies." + exit);
+    }
+  }
+
+  public void nixStoreRealise(String file) throws Exception {
     // build up the command line to using a 'java.io.File'
     CommandLine commandLine = new CommandLine("nix-store");
     commandLine.addArgument("-r");
