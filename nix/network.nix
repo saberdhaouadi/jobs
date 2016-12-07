@@ -1,5 +1,4 @@
-{ 
-  region ? "us-east-1"
+{ region ? "us-east-1"
 , account ? "lb-jobs"
 , accountId ? "826045886586"
 , name
@@ -11,6 +10,8 @@ let
   env = environments."${name}";
 
   instanceTypes = builtins.attrNames env.workers;
+
+  amis = import ./amis.nix;
 
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
@@ -73,7 +74,7 @@ let
     };
 
   worker = queue: type:
-    { config, pkgs, resources, nodes, ... }:
+    { config, pkgs, resources, nodes, lib, ... }:
     {
       imports = [ ./worker.nix ];
 
@@ -435,16 +436,30 @@ with pkgs.lib;
       };
 
   "provisioner-${name}" =
-    { config, resources, nodes, ...}:
+    { config, resources, nodes, lib, ...}:
     let
-      script = t: pkgs.writeScriptBin "run-provisioner-${workerName t}"
+      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != "us-east-1") "-${r}"}"
         ''
           #! /bin/sh
           source /etc/profile
-          exec lb-steve-provisioner $@ --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys --queue ${workerName t} --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --role ${resources.iamRoles.worker-role.name} --instance-type ${env.workers."${t}".instanceType or t} --spot-price ${env.workers."${t}".price} --percentage-spot ${env.workers."${t}".percentageSpot} --percentage-queue ${env.workers."${t}".percentageQueue or "0.6"} --max ${env.workers."${t}".max or "300"} --min ${env.workers."${t}".min or "0"}
+          exec lb-steve-provisioner $@ \
+                 --region ${r} \
+                 --ami ${amis."${r}"} \
+                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys \
+                 --queue ${workerName t} \
+                 --bucket ${s3Name} \
+                 --incoming ${sqsURL t} \
+                 --outgoing ${sqsStatusURL} \
+                 --role ${resources.iamRoles.worker-role.name} \
+                 --instance-type ${env.workers."${t}".instanceType or t} \
+                 --spot-price ${env.workers."${t}".price} \
+                 --percentage-spot ${env.workers."${t}".percentageSpot} \
+                 --percentage-queue ${env.workers."${t}".percentageQueue or "0.6"} \
+                 --max ${env.workers."${t}".max or "300"} \
+                 --min ${env.workers."${t}".min or "0"}
         '';
-      provisionScripts = map script instanceTypes;
-      run-provisioner = t: "${script t}/bin/run-provisioner-${workerName t}";
+      provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
+      run-provisioner = t: "${script t "us-east-1"}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
         path = [ pkgs.jdk ];
@@ -869,7 +884,6 @@ with pkgs.lib;
           -   nginx_status_url: http://127.0.0.1/nginx_status/
       '';
     };
-
 
   defaults =
     { lib, ... }:
