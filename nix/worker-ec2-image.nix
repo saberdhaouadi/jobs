@@ -19,7 +19,13 @@
       wantedBy = [ "multi-user.target" ];
       path = [ pkgs.wget pkgs.coreutils pkgs.nettools ];
       script = ''
-        hostname $(wget -q --retry-connrefused -t 6 --waitretry=10 -O -  http://169.254.169.254/latest/meta-data/instance-id)
+        hostname=$(wget -q --retry-connrefused -t 6 --waitretry=10 -O -  http://169.254.169.254/latest/meta-data/instance-id)
+        hostname $hostname
+        cat > /tmp/hosts <<EOF
+        127.0.0.1 localhost $hostname
+        ::1 localhost
+        EOF
+        mv /tmp/hosts /etc/hosts
       '';
       serviceConfig =
         { Type = "oneshot";
