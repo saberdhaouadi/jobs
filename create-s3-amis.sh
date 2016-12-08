@@ -37,7 +37,7 @@ echo "{" > nix/amis.nix
 echo "  us-east-1 = \"$ami\"" >> nix/amis.nix
 for region in us-west-1 us-west-2; do
   aws ec2 copy-image --region $region --source-region us-east-1 --source-image-id $ami --name "$name $TIMESTAMP build $build" | tee $region.json
-  echo "  $region = \"$(cat $region.json | json ImageId)\"" >> nix/amis.nix
+  echo "  $region = \"$(cat $region.json | json ImageId)\";" >> nix/amis.nix
 done
 
 echo "}" >> nix/amis.nix
