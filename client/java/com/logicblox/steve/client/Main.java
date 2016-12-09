@@ -324,7 +324,6 @@ public class Main {
 
     @Override
     public void invoke() throws Exception {
-      System.out.println(_metadata);
       // Collect inputs, uploading local files to S3 if needed.
       List<ListenableFuture<List<Frontend.File>>> inputFutures =
               new ArrayList<ListenableFuture<List<Frontend.File>>>();
