@@ -295,6 +295,8 @@ let
       }
     );
 
+    used-dependencies = import ./used-deps.nix { inherit pkgs; };
+
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
     benchmark.load-data =
