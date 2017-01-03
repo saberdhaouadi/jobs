@@ -302,7 +302,7 @@ let
     benchmark.increading-get-job =
       bench "lb-jobs-get-job" ''
         ${jobs.database.build}/install.sh
-        for i in $(seq 1 50); do
+        for i in $(seq 1 100); do
           record_span "get-job-$i" python ${./frontend-database/scripts/test-get-job.py} $i
         done
       '' "metrics" {};
