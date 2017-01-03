@@ -304,7 +304,7 @@ let
         for i in $(seq 1 50); do
           record_span "get-job-$i" python ${./frontend-database/scripts/test-get-job.py}
         done
-      '';
+      '' "metrics" {};
 
     benchmark.load-data =
       bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
