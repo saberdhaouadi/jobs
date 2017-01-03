@@ -56,7 +56,7 @@ let
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB (attrs // {
       inherit name;
-      buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl ];
+      buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl pythonPackages.requests2 ];
       requiredSystemFeatures = ["perf"];
       LB_CONFIG = ./config/perf;
       buildCommand = ''
@@ -298,6 +298,13 @@ let
     used-dependencies = import ./used-deps.nix { inherit pkgs; };
 
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
+
+    benchmark.increading-get-job =
+      bench "lb-jobs-get-job" ''
+        for i in $(seq 1 50); do
+          record_span "get-job-$i" python ${./frontend-database/scripts/test-get-job.py}
+        done
+      '';
 
     benchmark.load-data =
       bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
