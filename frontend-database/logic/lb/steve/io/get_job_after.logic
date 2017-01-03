@@ -5,15 +5,9 @@ block(`get_job_after) {
 
   clauses(`{
 
-    pragma_force_key_ordering(jobId,job,user,account,account_id,impl_id,impl,user_id)
+    pragma_force_key_ordering(jobId,job)
       -> string(jobId),
-         string(account_id),
-         string(impl_id),
-         string(user_id),
-         schema:Job(job),
-         schema:JobImpl(impl),
-         schema:Account(account),
-         system:app:User(user).
+         schema:Job(job).
 
     // populate basic required parameters    
     +proto:Job_client_id[protoJob] = client_id,
@@ -22,7 +16,7 @@ block(`get_job_after) {
     +proto:Job_user_id[protoJob] = user_id,
     +proto:Job_account_id[protoJob] = account_id,
     +proto:Job_impl_archive[protoJob] = impl_archive <-
-      pragma_force_key_ordering(jobId,job,user,account,account_id,impl_id,impl,user_id),
+      pragma_force_key_ordering(jobId,job),
       +service_support:job[_, jobId] = protoJob,
       schema:Job_id[job] = jobId,
       schema:Job:client_id[job] = client_id,
