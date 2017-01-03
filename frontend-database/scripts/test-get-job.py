@@ -3,7 +3,7 @@ import json
 import time
 import sys
 
-req_payload = { 'get_job': { 'job_id': '0034253f-d958-4580-9986-77432837ea6f', 'get_status': True } }
+req_payload = { 'get_job': { 'job_id': '0005afdf-f871-46d9-9037-7ab68dd6e31f', 'get_status': True } }
 payload = { 'request': [ ] }
 
 def post():
