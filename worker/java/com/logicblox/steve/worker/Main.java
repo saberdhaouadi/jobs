@@ -37,6 +37,7 @@ import java.util.Map;
 public class Main {
   class EC2DynamicMetadata {
     String pendingTime;
+    String instanceId;
   }
 
   private class ResetMessageVisibilityTimeout implements Runnable {
