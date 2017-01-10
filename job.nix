@@ -62,7 +62,7 @@ let
     };
 
 
-  bench = name: data: command: id: attrs:
+  bench = data: name: command: id: attrs:
     let
       heap_profiling = false;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
@@ -311,7 +311,7 @@ let
 
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
-    benchmark.increading-get-job =
+    benchmark.increasing-get-job =
       bench data "lb-jobs-get-job" ''
         ${jobs.database.build}/install.sh
         for i in $(seq 1 100); do
