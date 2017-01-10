@@ -49,8 +49,20 @@ let
       sha256 = "1ql3zazlk4k8v72x2s8zl0519nmzcxh8qyg4m6c846j03jvlgrj2";
     };
 
+  data_dev =
+    builder_config.fetchs3 {
+      url = "s3://logicblox-private/data/lb-jobs-dev-20170110-145534.tgz";
+      sha256 = "108n038x80w26n4qz4sszkwfhj97qp09m0ihkfypn4yx05nd2vnm";
+    };
 
-  bench = name: command: id: attrs:
+  requests_dev =
+    builder_config.fetchs3 {
+      url = "s3://logicblox-private/data/lb-jobs-dev-20170110-145534.requests";
+      sha256 = "1b94knii6xs7lvd9zs3kn9d6hkilc8xvqrfn947da0bala809six";
+    };
+
+
+  bench = name: data: command: id: attrs:
     let
       heap_profiling = false;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
@@ -300,7 +312,7 @@ let
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
     benchmark.increading-get-job =
-      bench "lb-jobs-get-job" ''
+      bench data "lb-jobs-get-job" ''
         ${jobs.database.build}/install.sh
         for i in $(seq 1 100); do
           record_span "get-job-$i" python ${./frontend-database/scripts/test-get-job.py} $i
@@ -308,10 +320,10 @@ let
       '' "metrics" {};
 
     benchmark.load-data =
-      bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
+      bench data "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
 
     benchmark.get-metrics =
-      bench "lb-jobs-metrics-call" ''
+      bench data "lb-jobs-metrics-call" ''
         ${jobs.database.build}/install.sh
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
@@ -319,12 +331,18 @@ let
       '' "metrics" {};
 
     benchmark.get-metrics-2G =
-      bench "lb-jobs-metrics-call" ''
+      bench data "lb-jobs-metrics-call" ''
         ${jobs.database.build}/install.sh
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
       '' "metrics" { LB_MEM="2G"; };
+
+    benchmark.dev-1000-jobs-run =
+      bench data "lb-jobs-1000-jobs-run" ''
+        ${jobs.database.build}/install.sh
+        record_span "lb-jobs-1000-jobs" mitmdump -nc ${requests_dev}
+      '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
   });
 
 in jobs
