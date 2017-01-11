@@ -49,14 +49,26 @@ let
       sha256 = "1ql3zazlk4k8v72x2s8zl0519nmzcxh8qyg4m6c846j03jvlgrj2";
     };
 
+  data_dev =
+    builder_config.fetchs3 {
+      url = "s3://logicblox-private/data/lb-jobs-dev-20170110-145534.tgz";
+      sha256 = "108n038x80w26n4qz4sszkwfhj97qp09m0ihkfypn4yx05nd2vnm";
+    };
 
-  bench = name: command: id: attrs:
+  requests_dev =
+    builder_config.fetchs3 {
+      url = "s3://logicblox-private/data/lb-jobs-dev-20170110-145534.requests";
+      sha256 = "1b94knii6xs7lvd9zs3kn9d6hkilc8xvqrfn947da0bala809six";
+    };
+
+
+  bench = data: name: command: id: attrs:
     let
       heap_profiling = false;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB (attrs // {
       inherit name;
-      buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl ];
+      buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl pkgs.pythonPackages.requests2 ] ++ (attrs.buildInputs or []);
       requiredSystemFeatures = ["perf"];
       LB_CONFIG = ./config/perf;
       buildCommand = ''
@@ -295,26 +307,42 @@ let
       }
     );
 
+    used-dependencies = import ./used-deps.nix { inherit pkgs; };
+
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
+    benchmark.increasing-get-job =
+      bench data "lb-jobs-get-job" ''
+        record_span "run-installer" ${jobs.database.build}/install.sh
+        for i in $(seq 1 100); do
+          record_span "get-job-$i" python ${./frontend-database/scripts/test-get-job.py} $i
+        done
+      '' "metrics" {};
+
     benchmark.load-data =
-      bench "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
+      bench data "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
 
     benchmark.get-metrics =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
+      bench data "lb-jobs-metrics-call" ''
+        record_span "run-installer" ${jobs.database.build}/install.sh
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
       '' "metrics" {};
 
     benchmark.get-metrics-2G =
-      bench "lb-jobs-metrics-call" ''
-        ${jobs.database.build}/install.sh
+      bench data "lb-jobs-metrics-call" ''
+        record_span "run-installer" ${jobs.database.build}/install.sh
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
       '' "metrics" { LB_MEM="2G"; };
+
+    benchmark.dev-1000-jobs-run =
+      bench data "lb-jobs-1000-jobs-run" ''
+        record_span "run-installer" ${jobs.database.build}/install.sh
+        record_span "lb-jobs-1000-jobs" mitmdump -nc ${requests_dev}
+      '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
   });
 
 in jobs
