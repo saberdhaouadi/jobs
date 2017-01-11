@@ -6,7 +6,7 @@ block(`get_job_after) {
   clauses(`{
 
     pragma_force_key_ordering(jobId,job)
-      -> string(jobId),
+      -> int128(jobId),
          schema:Job(job).
 
     // populate basic required parameters    
