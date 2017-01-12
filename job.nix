@@ -159,7 +159,7 @@ let
         mkdir exports
         pushd exports
         tar xvf ${data}
-        ln -s 20160608-083904 latest
+        ln -s 201* latest
         popd
         popd
 
@@ -339,7 +339,7 @@ let
       '' "metrics" { LB_MEM="2G"; };
 
     benchmark.dev-1000-jobs-run =
-      bench data "lb-jobs-1000-jobs-run" ''
+      bench data_dev "lb-jobs-1000-jobs-run" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
         record_span "lb-jobs-1000-jobs" mitmdump -nc ${requests_dev}
       '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
