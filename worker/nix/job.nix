@@ -21,6 +21,7 @@ in
       pkgs.curl
       pkgs.perl
       pkgs.fio
+      pkgs.time
     ] ++ pkgs.lib.optional isFullPlatform releases.platforms."${platform_version}"
       ++ pkgs.lib.optionals (! isFullPlatform) [ platform.logicblox platform.bloxweb ]
       ++ pkgs.lib.optional ((pkgs.lib.substring 0 1 platform_version) == "3") releases.pdxscience."4.0.0".pdxscience
