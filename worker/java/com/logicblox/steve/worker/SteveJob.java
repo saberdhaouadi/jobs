@@ -411,14 +411,23 @@ public class SteveJob {
       args.add("platform-releases=/tmp/platform-releases.nix");
     }
 
-    // determine .drv
-    _drv = readFromStdout(args.toArray(new String[args.size()]));
+    try {
+      // determine .drv
+      _drv = readFromStdout(args.toArray(new String[args.size()]));
 
-    // build deps
-    nixShell(_drv);
+      // build deps
+      nixShell(_drv);
 
-    // build .drv
-    nixStoreRealise(_drv);
+      // build .drv
+      nixStoreRealise(_drv);
+    } catch (Exception ex) {
+      if ( !_metadata.containsKey("dependencies") ) {
+        throw ex;
+      }
+      else {
+        throw new JobFailedException("Unknown problem with one of the dependencies.");
+      }
+    }
   }
 
   public String readFromStdout(String... args) throws Exception {
@@ -440,7 +449,7 @@ public class SteveJob {
     CommandLine commandLine = new CommandLine("nix-shell");
     commandLine.addArgument(file);
     commandLine.addArgument("--command");
-    commandLine.addArgument("return");
+    commandLine.addArgument("echo");
 
     Executor executor = new DefaultExecutor();
     executor.setExitValues(null);
