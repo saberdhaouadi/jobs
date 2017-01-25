@@ -73,7 +73,7 @@ in
 
     # The jobs and their data cannot reasonably be passed in a pure
     # way, as the input and output data can be very big.
-    nix.chrootDirs = [
+    nix.sandboxPaths = [
       "/tmp/job"
       "/sockets=/run/sockets"
       "/usr/bin/env=${pkgs.coreutils}/bin/env"
@@ -83,7 +83,7 @@ in
     nix.extraOptions = ''
       build-compress-log = false
     '';
-    nix.useChroot = true;
+    nix.useSandbox = true;
     nix.package = pkgs.nixUnstable;
 
     systemd.extraConfig = ''
