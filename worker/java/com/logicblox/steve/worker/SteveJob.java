@@ -418,8 +418,6 @@ public class SteveJob {
       // build deps
       nixShell(_drv);
 
-      // build .drv
-      nixStoreRealise(_drv);
     } catch (Exception ex) {
       if ( !_metadata.containsKey("dependencies") ) {
         throw ex;
@@ -428,6 +426,9 @@ public class SteveJob {
         throw new JobFailedException("Unknown problem with one of the dependencies.");
       }
     }
+
+    // build .drv
+    nixStoreRealise(_drv);
   }
 
   public String readFromStdout(String... args) throws Exception {
