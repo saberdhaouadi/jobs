@@ -106,4 +106,6 @@ in
         tar -C $HOME/lb_deployment -czf /tmp/job/log/lb-logs.tgz logs || true
       fi
     '';
+
+    __noChroot = false;
   })
