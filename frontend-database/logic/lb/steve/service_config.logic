@@ -7,26 +7,38 @@ block(`service_config) {
 
   clauses(`{
 
-    // constant to prefix the services
-    prefix[] = s -> string(s).
-    prefix[] = "/db".
+    // services (write)
+    write_service(s) -> string(s).
+    // backwards compatibility
+    write_service("/db").
+    write_service("/db/createJob").
+    write_service("/db/addStatus").
+    write_service("/db/setResult").
+    write_service("/db/setJobImpl").
 
-    // constant to prefix the readonly services
-    prefix_ro[] = s -> string(s).
-    prefix_ro[] = "/db_ro".
+    // readonly services
+    readonly_service(s) -> string(s).
+    readonly_service("/db_ro").
+    readonly_service("/db/getUser").
+    readonly_service("/db/getJob").
+    readonly_service("/db/getJobImpl").
+    readonly_service("/db/getQueues").
+    readonly_service("/db/getPlatforms").
+    readonly_service("/db/getMetadataKeys").
+    readonly_service("/db/getMetadataValues").
 
     // declare service
-    service_by_prefix[prefix[]] = x,
+    service_by_prefix[s] = x,
     default_protobuf_service(x) {
       protobuf_protocol[] = "lb:steve:database",
       protobuf_request_message[] = "RequestEnvelope",
       protobuf_response_message[] = "ResponseEnvelope",
       service_parameter["enable_http_control"] = "false",
       inactive_after_fixpoint_block_name[] = "lb:steve:io:get_job_after"
-    }.
+    } <- write_service(s).
 
     // declare readonly service
-    service_by_prefix[prefix_ro[]] = x,
+    service_by_prefix[s] = x,
     default_protobuf_service(x) {
       readonly(),
       protobuf_protocol[] = "lb:steve:database",
@@ -34,7 +46,7 @@ block(`service_config) {
       protobuf_response_message[] = "ResponseEnvelope",
       service_parameter["enable_http_control"] = "false",
       inactive_after_fixpoint_block_name[] = "lb:steve:io:get_job_after"
-    }.
+    } <- readonly_service(s).
 
   service_by_group["/metrics", "lb:web:internal"] = x,
     default_protobuf_service(x) {
