@@ -110,6 +110,14 @@ block(`create_job) {
       +proto:File_url[f] = url,
       ! string:like(url, "s3://%").
 
+    +service_support:export_error(index, "INVALID_INPUT", "Input '" + url + "' is invalid. You cannot use a complete bucket as input.") <-
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_create_job[union] = req,
+      +proto:CreateJobRequest_input(req, f),
+      +proto:File_url[f] = url,
+      string:like(url, "s3://%"),
+      ! string:like(url, "s3://%/%").
+
     +service_support:export_error(index, "INVALID_OUTPUT", "Output '" + prefix + "' is invalid. Should be a S3 URL.") <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
