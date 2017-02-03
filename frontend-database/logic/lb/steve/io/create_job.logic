@@ -116,7 +116,7 @@ block(`create_job) {
       +proto:CreateJobRequest_input(req, f),
       +proto:File_url[f] = url,
       string:like(url, "s3://%"),
-      ! string:like(url, "s3://%/%").
+      ! string:like(url, "s3://%/_%").
 
     +service_support:export_error(index, "INVALID_OUTPUT", "Output '" + prefix + "' is invalid. Should be a S3 URL.") <-
       +proto:RequestEnvelope_request[_, index] = union,
