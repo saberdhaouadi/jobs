@@ -87,6 +87,7 @@ let
       deployment.ec2.region = region;
       deployment.ec2.instanceType = type;
       deployment.ec2.instanceProfile = resources.iamRoles.worker-role.name;
+      deployment.ec2.ebsInitialRootDiskSize = 100;
 
       # Tags are needed, so provisioner sees running worker instances for this
       # deployments, and does not start new instances if not necessary.
@@ -160,6 +161,7 @@ with pkgs.lib;
 
   resources.sqsQueues = sqsQueues // { "${sqsStatusName}" = sqsStatusQueue;  };
   resources.s3Buckets."${s3Name}-bucket" = { inherit region ; accessKeyId = account; name = s3Name; };
+  resources.s3Buckets."${s3Name}-logs-bucket" = { inherit region ; accessKeyId = account; name = "${s3Name}-logs"; };
 
   resources.iamRoles.worker-role =
     { resources, ... }:
