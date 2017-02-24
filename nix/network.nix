@@ -412,6 +412,33 @@ with pkgs.lib;
         "50.17.204.250"
         "50.17.197.52"
         "52.45.120.108" #argos-dev-1
+        "52.18.1.112" # kiabi-fred-ort
+        "34.195.5.247" # meijer-dev-0003
+        "52.51.118.151" # kiabi prod/shadow
+        "52.18.28.162" # kiabi prod/shadow
+        "34.195.16.107" # meijer-dev-0004
+        "34.195.7.25" # meijer-dev-0005
+        "54.81.242.182" # meijer-dev-0006
+        "52.214.42.231" # meijer
+        "107.21.228.211" # walgreens
+        "54.165.10.162" # meijer-dev-perf
+        "34.196.97.4" # walgreens shadow
+        "54.189.193.37" # walgreens 24 full
+        "34.196.115.208" # meijer-dev
+        "34.195.166.182" # meijer
+        "34.196.208.23" # meijer
+        "52.52.25.197" # walgreens
+        "34.196.200.191" # meijer
+        "34.197.14.228" # meijer
+        "34.192.157.86" # meijer
+        "34.196.156.148" # meijer
+        "34.194.128.102" # meijer
+        "54.212.248.122" # walgreens
+        "34.194.189.120" # walgreens
+        "54.185.1.50" # waglreens
+        "54.208.67.238" # walgreens
+        "34.197.246.21" # lululemon
+        "54.89.119.15" # walgreens
       ];
       accountEntry = account:
         {
