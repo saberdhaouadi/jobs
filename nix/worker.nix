@@ -107,7 +107,7 @@ in
             chmod go+w-x /run/sockets/gurobi
           '';
         serviceConfig = {
-          ExecStart = "${pkgs.socat}/bin/socat unix-listen:/run/sockets/gurobi,fork tcp-connect:ec2-23-23-190-69.compute-1.amazonaws.com:41954";
+          ExecStart = "${pkgs.socat}/bin/socat unix-listen:/run/sockets/gurobi,fork tcp-connect:gurobi.predictix.com:41954";
           Restart = "always";
           RestartSec = "10";
         };
