@@ -61,7 +61,8 @@ let
 
       services.haproxy.enable = true;
       services.haproxy.config = ''
-        listen l1 0.0.0.0:443
+        listen l1
+            bind 0.0.0.0:443
             mode tcp
             clitimeout 180000
             srvtimeout 180000
@@ -554,7 +555,7 @@ with pkgs.lib;
 
       networking.firewall.allowedTCPPorts = [ 443 ];
       services.nginx.enable = true;
-      services.nginx.config = ''
+      services.nginx.appendConfig = ''
         worker_processes 4;
         worker_rlimit_nofile 30000;
         events {
@@ -788,7 +789,7 @@ with pkgs.lib;
         ];
 
       services.nginx.enable = true;
-      services.nginx.config = ''
+      services.nginx.appendConfig = ''
         worker_processes 4;
         worker_rlimit_nofile 30000;
         events {
