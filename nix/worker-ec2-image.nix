@@ -26,6 +26,7 @@
         ::1 localhost
         EOF
         mv /tmp/hosts /etc/hosts
+        ${pkgs.coreutils}/bin/kill -HUP `${pkgs.coreutils}/bin/cat /var/run/rsyslogd.pid` || true
       '';
       serviceConfig =
         { Type = "oneshot";
