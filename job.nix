@@ -356,11 +356,13 @@ let
         record_span "lb-jobs-1000-jobs" mitmdump -nc ${requests_dev}
       '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
 
+/*
     benchmark.dev-walgreens-jobs-run =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
       '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
+*/
   });
 
 in jobs
