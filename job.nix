@@ -61,6 +61,18 @@ let
       sha256 = "1b94knii6xs7lvd9zs3kn9d6hkilc8xvqrfn947da0bala809six";
     };
 
+  data_dev_20170303-101311 =
+    builder_config.fetchs3 {
+      url = "s3://logicblox-private/data/lb-jobs-dev-20170303-101311.tgz";
+      sha256 = "0pblw430hiv97w2y8dpfzjbgvdzc0w3h6pa15rwngbwzxq5683yc";
+    };
+
+  requests_dev_20170303-101311 =
+    builder_config.fetchs3 {
+      url = "s3://logicblox-private/data/lb-jobs-dev-20170303-101311.requests";
+      sha256 = "0yksgfkzg1w02m5xpp26qzawbwbmhr4iymfy4fvsv9vd3ljcpwm5";
+    };
+
 
   bench = data: name: command: id: attrs:
     let
@@ -342,6 +354,12 @@ let
       bench data_dev "lb-jobs-1000-jobs-run" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
         record_span "lb-jobs-1000-jobs" mitmdump -nc ${requests_dev}
+      '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
+
+    benchmark.dev-walgreens-jobs-run =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" ''
+        record_span "run-installer" ${jobs.database.build}/install.sh
+        record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
       '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
   });
 
