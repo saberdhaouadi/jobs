@@ -49,7 +49,6 @@ public class S3Utils {
             (AWSCredentialsProvider)null,
             getHttpExecutor(config),
             getInternalExecutor(config),
-            chunkSize,
             getKeyProvider(config));
 
     result.setRetryCount(retryCount);
