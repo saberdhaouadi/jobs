@@ -8,6 +8,7 @@
 , runCommand
 , python
 , benchmarks
+, heap_profiling ? false
 }:
 let
   inherit (builder_config) pkgs;
@@ -76,7 +77,6 @@ let
 
   bench = data: name: precommand: command: id: attrs:
     let
-      heap_profiling = true;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB (attrs // {
       inherit name;
