@@ -74,9 +74,9 @@ let
     };
 
 
-  bench = data: name: command: id: attrs:
+  bench = data: name: precommand: command: id: attrs:
     let
-      heap_profiling = false;
+      heap_profiling = true;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB (attrs // {
       inherit name;
@@ -90,7 +90,7 @@ let
           shift
 
           local t1="$(date +%s.%N)"
-          "$@"
+          $@
           local t2="$(date +%s.%N)"
 
           if ! type -P bc &> /dev/null; then
@@ -148,25 +148,6 @@ let
           fancy_report_finalize $id
         }
 
-            ${pkgs.lib.optionalString heap_profiling ''
-              # Enable heap-profiling for throughput phase
-              lb server stop
-              mkdir hprof
-              echo "Launching lb-server under heap-profiler"
-              LD_LIBRARY_PATH=${pkgs.glibc}/lib \
-              LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
-              HEAPPROFILE=hprof/lb-server.hprof \
-                lb-server --daemonize false &
-              sleep 60
-            ''}
-        ${if heap_profiling
-            then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
-            else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
-
-        iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
-        cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
-        memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
-
         pushd $LB_DEPLOYMENT_HOME
         mkdir exports
         pushd exports
@@ -174,6 +155,27 @@ let
         ln -s 201* latest
         popd
         popd
+
+        ${precommand}
+
+        ${pkgs.lib.optionalString heap_profiling ''
+          # Enable heap-profiling for throughput phase
+          lb server stop
+          mkdir hprof
+          echo "Launching lb-server under heap-profiler"
+          LD_LIBRARY_PATH=${pkgs.glibc}/lib \
+          LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
+          HEAPPROFILE=hprof/lb-server.hprof \
+            lb-server --daemonize false &
+          sleep 60
+        ''}
+        ${if heap_profiling
+            then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
+            else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
+
+        iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
+        cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
+        memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
 
         ${command}
 
@@ -184,20 +186,20 @@ let
         mkdir -p $out/report
 
         ${pkgs.lib.optionalString heap_profiling ''
-              pushd hprof
-              ls -l
-              t1_prof=$(ls lb-server.hprof.*.heap | head -n 3 | tail -n 1)
-              t2_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
+          pushd hprof
+          ls -l
+          t1_prof=$(ls lb-server.hprof.*.heap | head -n 3 | tail -n 1)
+          t2_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
 
-              pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof.pdf
-              pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof.pdf
-              pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof-alloc.pdf
-              pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof-alloc.pdf
-              pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff.pdf || true
-              pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc.pdf || true
-              popd
+          pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof.pdf
+          pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof.pdf
+          pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof-alloc.pdf
+          pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof-alloc.pdf
+          pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff.pdf || true
+          pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc.pdf || true
+          popd
 
-              pkill -f "lb-server --daemonize"
+          pkill -f "lb-server --daemonize"
         ''}
 
 
@@ -322,7 +324,7 @@ let
     used-dependencies = import ./used-deps.nix { inherit pkgs; };
 
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
-
+/*
     benchmark.increasing-get-job =
       bench data "lb-jobs-get-job" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
@@ -355,14 +357,11 @@ let
         record_span "run-installer" ${jobs.database.build}/install.sh
         record_span "lb-jobs-1000-jobs" mitmdump -nc ${requests_dev}
       '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
-
-/*
-    benchmark.dev-walgreens-jobs-run =
-      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" ''
-        record_span "run-installer" ${jobs.database.build}/install.sh
-        record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
-      '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
 */
+    benchmark.dev-walgreens-jobs-run-1h =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
+        record_span "lb-walgreens-jobs-1h" "timeout -k 60 1h mitmdump -nc ${requests_dev_20170303-101311} || true"
+      '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
   });
 
 in jobs
