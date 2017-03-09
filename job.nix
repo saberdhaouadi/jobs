@@ -279,7 +279,7 @@ let
         done
       '';
     };
-
+/*
   worker_image.ec2 =
     let
       image = (import <nixpkgs/nixos> { system = "x86_64-linux"; configuration = ./nix/worker-ec2-image.nix; }).config.system.build.amazonImage;
@@ -289,6 +289,7 @@ let
         xz -z -c ${image}/nixos.img  > $out/worker.img.xz
         echo "file img $out/worker.img.xz" > $out/nix-support/hydra-build-products
       '';
+*/
 
   database =
     builder_config.genericAppJobset {
@@ -315,7 +316,7 @@ let
         "--with-commons-cli=${deps.commons-cli}"
       ];
     };
-
+/*
   closures.worker =
     makeClosure (
       {config, pkgs, ...}:
@@ -324,7 +325,7 @@ let
     );
 
     used-dependencies = import ./used-deps.nix { inherit pkgs; };
-
+*/
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 /*
     benchmark.increasing-get-job =
