@@ -8,6 +8,7 @@
 , runCommand
 , python
 , benchmarks
+, mitmproxy
 , heap_profiling ? false
 }:
 let
