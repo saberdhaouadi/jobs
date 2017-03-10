@@ -217,7 +217,7 @@ let
         tar -C $out/report -xvzf $out/report/${id}-report.tar.gz
         mv $out/report/report $out/report/${id}-report
         echo "doc ${id}-report $out/report/${id}-report" >> $out/nix-support/hydra-build-products
-        echo "tgz ${id}-report.tar.gz $out/report/${id}-report.tar.gz" >> $out/nix-support/hydra-build-products
+        echo "file tgz $out/report/${id}-report.tar.gz" >> $out/nix-support/hydra-build-products
       '';
     });
 
