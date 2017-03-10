@@ -214,9 +214,10 @@ let
         mkdir -p $out/nix-support
         echo "file data $out/report/stats.csv" >> $out/nix-support/hydra-build-products
 
-        tar -C $out/report -xvzf $out/report/${id}-report.tar.gz
+        tar -C $out/report -xvzf $out/${id}-report.tar.gz
         mv $out/report/report $out/report/${id}-report
         echo "doc ${id}-report $out/report/${id}-report" >> $out/nix-support/hydra-build-products
+        echo "tgz ${id}-report.tar.gz $out/${id}-report.tar.gz" >> $out/nix-support/hydra-build-products
       '';
     });
 
