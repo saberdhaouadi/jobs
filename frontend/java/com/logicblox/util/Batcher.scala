@@ -143,7 +143,7 @@ abstract class Batcher[INPUT, OUTPUT] extends Runnable {
 
           // synchronously wait for the execution of the batch: 
           // we don't want concurrent calls to execute.
-          val result = Await.result(execute(workList), Duration.Inf)
+          val result = Await.result(execute(workList), scala.concurrent.duration.Duration.Inf)
 
           // the execution was successful, so complete all promisses.
           for ((record, index) <- records.zipWithIndex)
