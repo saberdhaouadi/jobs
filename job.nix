@@ -11,6 +11,7 @@
 , mitmproxy
 , heap_profiling ? false
 , features ? ["perf"]
+, bench_duration ? "1h"
 }:
 let
   inherit (builder_config) pkgs;
@@ -368,9 +369,9 @@ let
         record_span "lb-jobs-1000-jobs" mitmdump -nc ${requests_dev}
       '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
 */
-    benchmark.dev-walgreens-jobs-run-1h =
+    benchmark.dev-walgreens-jobs-run =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
-        record_span "lb-walgreens-jobs-1h" timeout -k 60 10m mitmdump -nc ${requests_dev_20170303-101311}
+        record_span "lb-walgreens-jobs-1h" timeout -k 60 ${bench_duration} mitmdump -nc ${requests_dev_20170303-101311}
       '' "metrics" { buildInputs = [ mitmproxy ]; };
   });
 
