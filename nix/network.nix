@@ -456,6 +456,7 @@ with pkgs.lib;
         "34.200.70.211" # walgreens
         "34.199.162.74" # science
         "52.45.96.75" # wfm-staging-test
+        "52.86.187.109" # wfm-ordering-
       ];
       accountEntry = account:
         {
