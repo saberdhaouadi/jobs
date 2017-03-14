@@ -10,6 +10,7 @@
 , benchmarks
 , mitmproxy
 , heap_profiling ? false
+, features ? ["perf"]
 }:
 let
   inherit (builder_config) pkgs;
@@ -82,7 +83,7 @@ let
     in builder_config.buildLB (attrs // {
       inherit name;
       buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl pkgs.pythonPackages.requests2 ] ++ (attrs.buildInputs or []);
-      requiredSystemFeatures = ["perf"];
+      requiredSystemFeatures = features;
       LB_CONFIG = ./config/perf;
       buildCommand = ''
         function record_span()
