@@ -461,6 +461,7 @@ with pkgs.lib;
         "52.72.221.162" # wfm ordering
         "34.197.254.115" # wfm ordering
         "54.174.86.4" # wfm-staging-dev
+        "54.204.125.114"
       ];
       accountEntry = account:
         {
