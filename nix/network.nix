@@ -895,6 +895,15 @@ with pkgs.lib;
       };
 
       systemd.services = {
+        clean-status-messages =
+          { description = "Clean status messages";
+            path = [ pkgs.findutils ];
+            script = ''
+              find /var/log/lb-steve-worker/status -type f -mtime +5 -delete
+            '';
+            startAt = "03:00";
+          };
+
         nginx.serviceConfig.LimitNOFILE = 32768;
 
         lb-steve-frontend = {
