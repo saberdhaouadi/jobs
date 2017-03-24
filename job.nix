@@ -371,8 +371,8 @@ let
 */
     benchmark.dev-walgreens-jobs-run =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
-        record_span "lb-walgreens-jobs-1h" timeout -k 60 ${bench_duration} mitmdump -nc ${requests_dev_20170303-101311}
-      '' "metrics" { buildInputs = [ mitmproxy ]; };
+        record_span "lb-walgreens-jobs" timeout -k 60 ${bench_duration} mitmdump -nc ${requests_dev_20170303-101311}
+      '' "metrics" { buildInputs = [ mitmproxy ]; meta.timeout = 12 * 60 * 60; meta.maxSilent = 12 * 60 * 60; };
   });
 
 in jobs
