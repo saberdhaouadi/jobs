@@ -131,11 +131,15 @@ let
           local id=$1
 
           pushd $id-report
-          lb-fancy-report logs report measure
+          # lb-fancy-report logs report measure
+          mkdir report
           tar czf $out/report/$id-report.tar.gz report
           popd
 
           cp $id-report/logs/results.csv $out/report/$id-results.csv
+          cp $id-report/logs/iousg-monitor.csv  $out/report/$id-iousg-monitor.csv
+          cp $id-report/logs/cpuusg-monitor.csv $out/report/$id-cpuusg-monitor.csv
+          cp $id-report/logs/memusg-monitor.csv $out/report/$id-memusg-monitor.csv
           rm -rf $id-report
         }
 
