@@ -386,7 +386,7 @@ with pkgs.lib;
   "provisioner-${name}" =
     { config, resources, nodes, lib, ...}:
     let
-      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != "us-east-1") "-${r}"}"
+      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != (env.workers."${t}".defaultRegion or "us-east-1")) "-${r}"}"
         ''
           #! /bin/sh
           source /etc/profile
@@ -407,7 +407,7 @@ with pkgs.lib;
                  --min ${env.workers."${t}".min or "0"}
         '';
       provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
-      run-provisioner = t: "${script t "us-east-1"}/bin/run-provisioner-${workerName t}";
+      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or "us-east-1")}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
         path = [ pkgs.jdk ];
