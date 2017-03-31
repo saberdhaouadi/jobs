@@ -257,7 +257,8 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [
-                "arn:aws:s3:::${s3Name}/backups/*"
+                "arn:aws:s3:::${s3Name}/backups/*",
+                "arn:aws:s3:::${s3Name}/reports/*"
               ]
             }
           ]
