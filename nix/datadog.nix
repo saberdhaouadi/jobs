@@ -1,4 +1,5 @@
 { name
+, queuedThreshold ? 3600
 , ...
 }:
 let
@@ -115,19 +116,21 @@ in
         }
       ];
     } // creds;
-}
 
-/*
-        { title = "";
-          definition = builtins.toJSON {
-            viz = "timeseries";
-            requests = [
-              {
-                q = "";
-                type = "line";
-              }
-            ];
-            autoscale = true;
+
+  resources.datadogMonitors =
+    lib.listToAttrs (map (q: 
+      lib.nameValuePair
+        "queued-builds-${q}-monitor" 
+        ({
+          name = "Queued builds (${q}/${name}) longer than ${toString queuedThreshold}s";
+          type = "metric alert";
+          message = "@lb-jobs@logicblox.com @opsgenie-lb_internal";
+          query = "avg(last_5m):max:lb.steve.queued_time.${dash-to-underscore q}.max{host:database-${name}} > ${toString queuedThreshold}";
+          monitorOptions = builtins.toJSON {
+            no_data_timeframe = 10;
+            thresholds.critical = queuedThreshold;
           };
-        }
-*/
+        } // creds)) queues);
+
+}
