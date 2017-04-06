@@ -11,10 +11,22 @@ block(`tdx) {
 
   export(`{
     exported_job(j) -> lb:steve:schema:Job(j).
+
+    exported_job_metadata_value0[j] = v -> lb:steve:schema:Job(j), string(v).
+    exported_job_metadata_value1[j] = v -> lb:steve:schema:Job(j), string(v).
+    exported_job_metadata_value2[j] = v -> lb:steve:schema:Job(j), string(v).
+    exported_job_metadata_value3[j] = v -> lb:steve:schema:Job(j), string(v).
+    exported_job_metadata_value4[j] = v -> lb:steve:schema:Job(j), string(v).
   }),
 
   clauses(`{
     lang:pulse(`exported_job).
+
+    lang:pulse(`exported_job_metadata_value0).
+    lang:pulse(`exported_job_metadata_value1).
+    lang:pulse(`exported_job_metadata_value2).
+    lang:pulse(`exported_job_metadata_value3).
+    lang:pulse(`exported_job_metadata_value4).
 
     service_by_prefix["/tdx/jobdata"] = x,
     readonly(x),
