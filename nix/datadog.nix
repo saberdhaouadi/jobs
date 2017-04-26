@@ -19,7 +19,7 @@ let
         viz = "timeseries";
         requests = with lib;
           (map (q: { q = toMetric (dash-to-underscore q); type = "line"; }) queues)
-          ++ optional agg { q = concatStrings (intersperse "+" (map (q: "(${dash-to-underscore q})") queues)); type = "line"; };
+          ++ optional agg { q = concatStrings (intersperse "+" (map (q: "(${toMetrics (dash-to-underscore q)})") queues)); type = "line"; };
         autoscale = true;
       };
     };
