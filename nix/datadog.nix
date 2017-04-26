@@ -13,11 +13,13 @@ let
     apiKey = builtins.readFile <global_creds/datadog-api-key>;
   };
 
-  perQueueGraph = title: toMetric:
+  perQueueGraph = title: toMetric: agg:
     { inherit title;
       definition = builtins.toJSON {
         viz = "timeseries";
-        requests = map (q: { q = toMetric (dash-to-underscore q); type = "line"; }) queues;
+        requests = with lib;
+          (map (q: { q = toMetric (dash-to-underscore q); type = "line"; }) queues)
+          ++ optional agg { q = concatStrings (intersperse "+" (map (q: "(${dash-to-underscore q})") queues)); type = "line"; };
         autoscale = true;
       };
     };
@@ -29,10 +31,10 @@ in
     { title = "LB Jobs (${name})";
       description = "";
       graphs = [
-        (perQueueGraph "Queued jobs" (q: "max:lb.steve.queued.${q}{host:database-${name}}"))
-        (perQueueGraph "Running jobs" (q: "max:lb.steve.running.${q}{host:database-${name}}"))
-        (perQueueGraph "Maximum queued time" (q: "max:lb.steve.queued_time.${q}.max{host:database-${name}}"))
-        (perQueueGraph "Queued jobs (hourly delta)" (q: "max:lb.steve.queued.${q}{host:database-${name}} - hour_before(max:lb.steve.queued.${q}{host:database-${name}})"))
+        (perQueueGraph "Queued jobs" (q: "max:lb.steve.queued.${q}{host:database-${name}}") true)
+        (perQueueGraph "Running jobs" (q: "max:lb.steve.running.${q}{host:database-${name}}") true)
+        (perQueueGraph "Maximum queued time" (q: "max:lb.steve.queued_time.${q}.max{host:database-${name}}") false)
+        (perQueueGraph "Queued jobs (hourly delta)" (q: "max:lb.steve.queued.${q}{host:database-${name}} - hour_before(max:lb.steve.queued.${q}{host:database-${name}})") true)
 
         { title = "Estimated Charges";
           definition = builtins.toJSON {
