@@ -47,6 +47,23 @@ in
           };
         }
 
+        { title = "Response times";
+          definition = builtins.toJSON {
+            viz = "timeseries";
+            requests = [
+              {
+                q = "avg:lb.web.responses.time.avg{host:steve-${name}}";
+                type = "line";
+              }
+              {
+                q = "avg:lb.web.responses.time.avg{host:database-${name}}";
+                type = "line";
+              }
+            ];
+            autoscale = true;
+          };
+        }
+
         { title = "Requests / s";
           definition = builtins.toJSON {
             viz = "timeseries";
@@ -125,7 +142,7 @@ in
         ({
           name = "Queued builds (${q}/${name}) longer than ${toString queuedThreshold}s";
           type = "metric alert";
-          message = "@lb-jobs@logicblox.com @opsgenie-lb_internal";
+          message = "@lb-jobs@logicblox.com @opsgenie-lb_jobs";
           query = "avg(last_5m):max:lb.steve.queued_time.${dash-to-underscore q}.max{host:database-${name}} > ${toString queuedThreshold}";
           monitorOptions = builtins.toJSON {
             no_data_timeframe = 10;
