@@ -10,7 +10,7 @@ let
       #! /bin/sh
       set -e
       source /etc/profile
-      export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${builds.worker}"
+      export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${builds.worker}:nixpkgs-unstable=${<nixpkgs-unstable>}"
       ${optionalString (config.deployment.targetEnv or "" == "") ''
         if [[ -f /root/user-data ]] ; then
           source /root/user-data
