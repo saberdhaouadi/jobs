@@ -117,6 +117,35 @@ in
           };
         }
 
+        { title = "Status queue handling";
+          definition = builtins.toJSON {
+            viz = "timeseries";
+            requests = [
+              {
+                q = "avg:lb.steve.status.started{host:steve-${name}}.as_count()";
+                type = "bars";
+              }
+              {
+                q = "avg:lb.steve.status.progress{host:steve-${name}}.as_count()";
+                type = "bars";
+              }
+              {
+                q = "avg:lb.steve.status.failed{host:steve-${name}}.as_count()";
+                type = "bars";
+              }
+              {
+                q = "avg:lb.steve.status.succeeded{host:steve-${name}}.as_count()";
+                type = "bars";
+              }
+              {
+                q = "avg:lb.steve.status.unknown{host:steve-${name}}.as_count()";
+                type = "bars";
+              }
+            ];
+            autoscale = true;
+          };
+        }
+
         { title = "Memory usage lb-server / system";
           definition = builtins.toJSON {
             viz = "timeseries";

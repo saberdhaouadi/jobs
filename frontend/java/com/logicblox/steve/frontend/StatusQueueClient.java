@@ -22,11 +22,16 @@ import com.logicblox.steve.protocol.Backend;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
+import com.timgroup.statsd.NonBlockingStatsDClient;
+import com.timgroup.statsd.StatsDClient;
+
 /**
  * Monitors a queue for status responses posted by workers about jobs, and then informs the updates
  * to a Database.
  */
 public class StatusQueueClient {
+
+  private StatsDClient _statsd;
 
   /**
    * Client to query the SQS queue.
@@ -73,6 +78,7 @@ public class StatusQueueClient {
     _queue = queue;
     _db = db;
     _dataDir = dataDir;
+    _statsd = new NonBlockingStatsDClient("lb.steve.status", "127.0.0.1", 8125);
   }
 
   /**
@@ -138,10 +144,8 @@ public class StatusQueueClient {
   private void writeStatusMessage(String jobid, String statusString) {
     try {
       Date date = new Date();
-      //System.out.println(date);
       File dir = new File(_dataDir+"/"+new SimpleDateFormat("yyyyMMdd").format(date)+"/"+jobid);
       dir.mkdirs();
-      //System.out.println(dir);
       FileUtils.writeStringToFile(new File(dir,new SimpleDateFormat("HHmmssSSS").format(date)), statusString);
     } catch (IOException e) {
       System.err.println("WARNING: Could not write status message to disk.");
@@ -193,16 +197,19 @@ public class StatusQueueClient {
 
       case STARTED: {
         status.event = Status.Event.STARTED;
+        _statsd.incrementCounter("started");
         break;
       }
       case PROGRESS: {
         status.event = Status.Event.PROGRESS;
+        _statsd.incrementCounter("progress");
         if (protoStatus.hasProgressDetails())
           status.message = protoStatus.getProgressDetails().getMessage();
         break;
       }
       case SUCCEEDED: {
         status.event = Status.Event.SUCCEEDED;
+        _statsd.incrementCounter("succeeded");
         if(protoStatus.hasResourceUsage()) {
           status.cpuUsage = protoStatus.getResourceUsage().getCpuUsage();
           status.maxMemory = protoStatus.getResourceUsage().getMaxMemory();
@@ -217,6 +224,7 @@ public class StatusQueueClient {
       }
       case FAILED: {
         status.event = Status.Event.FAILED;
+        _statsd.incrementCounter("failed");
         if(protoStatus.hasResourceUsage()) {
           status.cpuUsage = protoStatus.getResourceUsage().getCpuUsage();
           status.maxMemory = protoStatus.getResourceUsage().getMaxMemory();
@@ -230,8 +238,10 @@ public class StatusQueueClient {
         }
         break;
       }
-      default:
+      default: {
+        _statsd.incrementCounter("unknown");
         System.err.println("error: status not yet supported: " + statusString);
+      }
     }
 
     // inform database of this new status message
