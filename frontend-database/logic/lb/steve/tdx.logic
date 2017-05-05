@@ -71,6 +71,36 @@ block(`tdx) {
     }.
   }),
 
+  export(`{
+    exported_billing_data[y,m,a,q]=d -> int(y), int(m), string(a), string(q), int(d).
+  }),
+
+  clauses(`{
+    lang:pulse(`exported_billing_data).
+
+    file_definition_by_name["billing_data"] = fd,
+    file_definition(fd) {
+      file_delimiter[] = ",",
+      column_headers[] = "BILLING_YEAR,BILLING_MONTH,ACCOUNT,JOB_QUEUE,BILLING_DURATION",
+      column_formats[] = "int,int,string,string,int"
+    }.
+
+    file_binding_by_name["billing_data"] = fb,
+    file_binding(fb) {
+      file_binding_definition_name[] = "billing_data",
+      predicate_binding_by_name["lb:steve:tdx:exported_billing_data"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "BILLING_YEAR,BILLING_MONTH,ACCOUNT,JOB_QUEUE,BILLING_DURATION"
+        }
+    }.
+
+    service_by_prefix["/tdx/billing_data"] = x,
+    readonly(x),
+    inactive_block_name[x] = "lb:steve:export_billing_data",
+    delim_service(x) {
+      delim_file_binding[] = "billing_data"
+    }.
+  }),
 
   clauses(`{
     file_definition_by_name["jobs"] = fd,
