@@ -637,6 +637,15 @@ with pkgs.lib;
       logicblox.application.installer = builds.database.build;
       services.nginx.enable = lib.mkOverride 0 false;
 
+      systemd.services.export-billing = {
+        description = "Export billing data";
+        script = ''
+          source /etc/profile
+          lb web-client export -n -o s3://${s3Name}/reports/billing_data.csv http://localhost:8080/tdx/billing_data
+        '';
+        startAt = "*:15";
+      };
+
       systemd.services.mitmproxy =
         { description = "mitmproxy";
           enable = catchRequests;
