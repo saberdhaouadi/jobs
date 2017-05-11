@@ -3,6 +3,7 @@ package com.logicblox.steve.keyserver;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Optional;

@@ -2,6 +2,7 @@ package com.logicblox.steve.client;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -454,5 +455,5 @@ public class SteveClient implements SteveClientInterface {
     return f;
   }
 
-  protected int _retryCount = 3;
+  protected int _retryCount = 5;
 }

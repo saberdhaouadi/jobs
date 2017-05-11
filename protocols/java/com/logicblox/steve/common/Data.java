@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import java.net.URI;
 import java.net.URL;
+import java.util.Optional;
 
 /**
  * Combination of a location and optionally a hash for the data.

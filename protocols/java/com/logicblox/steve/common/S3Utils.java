@@ -40,8 +40,6 @@ public class S3Utils {
    * Create an S3Client from a configuration
    */
   public static S3Client createS3Client(ConfigMap config) {
-    long chunkSize = Utils.getDefaultChunkSize();
-
     // TODO make retry count configurable
     int retryCount = 7;
 
@@ -49,7 +47,6 @@ public class S3Utils {
             (AWSCredentialsProvider)null,
             getHttpExecutor(config),
             getInternalExecutor(config),
-            chunkSize,
             getKeyProvider(config));
 
     result.setRetryCount(retryCount);
