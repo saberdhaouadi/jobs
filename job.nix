@@ -216,13 +216,23 @@ let
       '';
     });
 
+  scala =
+    pkgs.scala_2_12 or (pkgs.lib.overrideDerivation pkgs.scala (a: rec {
+      name = "scala-2.12.2";
+
+      src = fetchurl {
+        url = "http://www.scala-lang.org/files/archive/${name}.tgz";
+        sha256 = "1xd68q9h0vzqndar3r4mvabbd7naa25fbiciahkhxwgw8sr6hq8r";
+      };
+    }));
+
   jobs = rec {
 
   frontend =
      builder_config.buildLBConfig {
       name = "jobs-frontend";
       src = ./frontend;
-      buildInputs = [ logicblox makeWrapper client.build worker pkgs.jq pkgs.scala_2_10 ];
+      buildInputs = [ logicblox makeWrapper client.build worker pkgs.jq scala ];
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-frontend-database=${database.build}"
@@ -304,7 +314,7 @@ let
      builder_config.buildLBConfig {
       name = "lb-steve-key-server";
       src = ./key-server;
-      buildInputs = [ logicblox makeWrapper pkgs.jq pkgs.scala_2_10 ];
+      buildInputs = [ logicblox makeWrapper pkgs.jq scala ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
