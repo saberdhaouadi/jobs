@@ -82,6 +82,7 @@ in
     ];
     nix.extraOptions = ''
       build-compress-log = false
+      user-agent-suffix = lb-jobs
     '';
     nix.useSandbox = true;
     nix.package = pkgs.nixUnstable;
