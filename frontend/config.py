@@ -50,6 +50,7 @@ classpath = [
   '$(lb_web)/lib/java/jetty-servlet-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-util-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-websocket-7.6.7.v20120910.jar',
+  '$(lb_web)/lib/java/netty-all-4.1.8.Final.jar',
   '$(lb_web)/lib/java/joda-time-2.8.1.jar',
   '$(lb_web)/lib/java/lb-common.jar',
   '$(lb_web)/lib/java/lb-common-protocol.jar',
