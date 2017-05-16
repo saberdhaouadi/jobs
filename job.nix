@@ -7,7 +7,7 @@
 , makeWrapper
 , runCommand
 , python
-, benchmarks
+, benchmarks ? null
 }:
 let
   inherit (builder_config) pkgs;
