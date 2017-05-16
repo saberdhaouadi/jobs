@@ -1,6 +1,7 @@
 { stdenv
 , fetchurl
 , logicblox
+, lb_web ? null
 , jdk
 , unzip
 , builder_config
@@ -245,7 +246,7 @@ let
     builder_config.buildLBConfig {
       name = "lb-steve-client";
       src = ./client;
-      buildInputs = [ logicblox ];
+      buildInputs = [ logicblox lb_web ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
@@ -263,7 +264,7 @@ let
     builder_config.buildLBConfig {
       name = "jobs-protocols";
       src = ./protocols;
-      buildInputs = [ logicblox ];
+      buildInputs = [ logicblox lb_web ];
       enableLBservices = false;
     };
 
