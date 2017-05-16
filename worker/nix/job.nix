@@ -1,28 +1,40 @@
 { platform_version
+, dependencies ? []
 }:
 let
   inherit (import <config/lib> {}) releases pkgs;
   platform = builtins.getAttr platform_version releases.platform;
+  isFullPlatform = pkgs.lib.versionAtLeast platform_version "4.3.7";
+  metadata = builtins.fromJSON (builtins.readFile /tmp/job/in/metadata.json);
 in
-  pkgs.stdenv.mkDerivation rec {
+  pkgs.stdenv.mkDerivation (metadata // rec {
     name = "job-${toString builtins.currentTime}";
     buildInputs = [
       pkgs.pythonFull
       pkgs.pythonPackages.pandas
-      platform.logicblox
-      platform.bloxweb
+      pkgs.pythonPackages.scikitlearn
+      pkgs.pythonPackages.matplotlib
+      pkgs.pythonPackages.plotly
+      pkgs.pythonPackages.statsmodels
       pkgs.socat
       pkgs.jq
       pkgs.curl
       pkgs.perl
-    ] ++ pkgs.lib.optional ((pkgs.lib.substring 0 1 platform_version) == "3") releases.pdxscience."4.0.0".pdxscience;
+      pkgs.fio
+      pkgs.time
+    ] ++ pkgs.lib.optional isFullPlatform releases.platforms."${platform_version}"
+      ++ pkgs.lib.optionals (! isFullPlatform) [ platform.logicblox platform.bloxweb ]
+      ++ pkgs.lib.optional ((pkgs.lib.substring 0 1 platform_version) == "3") releases.pdxscience."4.0.0".pdxscience
+      ++ dependencies;
 
-    LB_MONITOR_RULE_TIME="30";
-    LB_MEM="50%";
+    LB_CONNECTBLOX_ENABLE_ADMIN="1";
+    LB_MONITOR_RULE_TIME=metadata.LB_MONITOR_RULE_TIME or "30";
+    LB_MEM=metadata.LB_MEM or "50%";
 
     GRB_LICENSE_FILE = pkgs.writeText "gurobi.lic" "TOKENSERVER=127.0.0.1";
 
     buildCommand = ''
+      export HOME=$TMPDIR
       function start_lb() 
       {
         export LB_BLOXCOMPILER_SERVER=1;
@@ -34,7 +46,7 @@ in
 
         set +e
         cmd=start
-        for i in $(seq 1 5); do
+        for i in $(seq 1 7); do
           echo "starting LogicBlox services [$i]"
           timeout -k 10 60 $lbservices $cmd &> /dev/null
           if [[ "$?" == "0" ]]; then
@@ -42,6 +54,7 @@ in
             return
           else
             cmd=restart
+            sleep 5
           fi
         done
         echo "INTERNAL_ERROR: Could not start LB services."
@@ -69,7 +82,9 @@ in
 
       echo ""
       echo "running job"
-      if [[ -f ./run ]]; then
+      if [[ -x ./run ]]; then
+        ./run /tmp/job/in /tmp/job/out
+      elif [[ -f ./run ]]; then
         bash run /tmp/job/in /tmp/job/out
       else
         echo "ERROR: 'run' script not found in job!"
@@ -87,5 +102,10 @@ in
       chmod -R 777 . /tmp/job/out/*
       rm -f /tmp/LB_default_DaemonLock* || true
       rm -rf /dev/shm/LB_* || true
+      if [[ -d $HOME/lb_deployment/logs ]]; then
+        tar -C $HOME/lb_deployment -czf /tmp/job/log/lb-logs.tgz logs || true
+      fi
     '';
-  }
+
+    __noChroot = false;
+  })

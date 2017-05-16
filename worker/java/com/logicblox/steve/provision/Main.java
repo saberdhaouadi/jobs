@@ -11,6 +11,7 @@ import org.apache.commons.cli.*;
 import org.apache.commons.codec.binary.Base64;
 
 import java.util.*;
+import java.lang.InterruptedException;
 
 public class Main {
   private AmazonSQS sqs;
@@ -20,7 +21,7 @@ public class Main {
   private static String queue = "c3-xlarge";
   private static String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
-  private static String ami = "ami-12052078";
+  private static String ami = "ami-47c3a151";
   private static String key = "rob";
   private static String region = "us-east-1";
   private static String s3Bucket = "steve-jobs";
@@ -36,6 +37,8 @@ public class Main {
   private static int maxInstances = 300;
   private static int minInstances = 0;
   private static boolean dryRun = true;
+
+  private static Regions[] regions = new Regions[]{ Regions.US_EAST_1, Regions.US_WEST_1, Regions.US_WEST_2 };
 
   public Main() {
     setupAmazon();
@@ -233,7 +236,7 @@ public class Main {
     }
 
     if (minInstances > totalNeeded) {
-      totalNeeded = minInstances;
+      totalNeeded = Math.min(totalNeeded, minInstances);
     }
 
     int spotCurrent = getNumberOfCurrentSpotInstances();
@@ -266,21 +269,23 @@ public class Main {
   private int getNumberOfCurrentSpotInstances() {
     int result = 0;
 
-    DescribeSpotInstanceRequestsRequest spreq = new DescribeSpotInstanceRequestsRequest()
-            .withFilters(
-                    new Filter().withName("tag:S3Bucket").withValues(s3Bucket),
-                    new Filter().withName("tag:IncomingQueue").withValues(incoming_url),
-                    new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url),
-                    new Filter().withName("state").withValues("open", "active")
-            );
-    DescribeSpotInstanceRequestsResult spres = ec2.describeSpotInstanceRequests(spreq);
-    for (SpotInstanceRequest r : spres.getSpotInstanceRequests()) {
-      if (r.getState() == "open" || r.getState() == "active") {
+    for(Regions region: regions) {
+      AmazonEC2Client _ec2 = new AmazonEC2Client();
+      _ec2.setRegion(Region.getRegion(region));
+
+      DescribeSpotInstanceRequestsRequest spreq = new DescribeSpotInstanceRequestsRequest()
+              .withFilters(
+                      new Filter().withName("tag:S3Bucket").withValues(s3Bucket),
+                      new Filter().withName("tag:IncomingQueue").withValues(incoming_url),
+                      new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url),
+                      new Filter().withName("state").withValues("open", "active")
+              );
+      DescribeSpotInstanceRequestsResult spres = _ec2.describeSpotInstanceRequests(spreq);
+      for (SpotInstanceRequest r : spres.getSpotInstanceRequests()) {
         result++;
       }
     }
-
-    return spres.getSpotInstanceRequests().size();
+    return result;
   }
 
   // get number of on-demand instances that are not yet terminated
@@ -346,7 +351,23 @@ public class Main {
             .withTags(new Tag("OutgoingQueue", outgoing_url))
     ;
 
-    ec2.createTags(createTagsRequest);
+    int retryCount = 0;
+    while(retryCount < 10) {
+      retryCount++;
+      try {
+        ec2.createTags(createTagsRequest);
+        return;
+      }
+      catch(Exception e) {
+        System.err.println("Error creating tags for "+id+" :"+e.getMessage());
+        e.printStackTrace();
+        try {
+          Thread.sleep(10000);
+        } catch (InterruptedException ie) {
+        }
+      }
+    }
+    System.err.println("Could not tag instance "+id);
   }
 
   public void createSpotInstances(int nr) {

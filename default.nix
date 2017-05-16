@@ -1,15 +1,13 @@
 { platform_release ? import ./lb-version.nix
+, benchmarks ? null
 }:
 let
   builder_config = import <config> {};
-  inherit (builder_config) pkgs getPlatform;
-  platform = getPlatform platform_release;
-
-  s3lib = platform.s3lib;
+  inherit (builder_config) pkgs getLB;
+  platform = getLB platform_release;
 in
   import ./job.nix {
-    logicblox = platform.logicblox;
-    lb_web = platform.bloxweb;
-    inherit s3lib builder_config;
+    logicblox = platform;
+    inherit builder_config benchmarks;
     inherit (pkgs) python stdenv fetchurl unzip makeWrapper runCommand jdk;
   }

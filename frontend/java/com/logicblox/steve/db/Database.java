@@ -52,7 +52,7 @@ public interface Database {
    * clientId).
    * @see Job
    */
-  public ListenableFuture<String> createJob(
+  public ListenableFuture<Job> createJob(
           String userId,
           String clientId,
           String jobImplId,
@@ -125,6 +125,26 @@ public interface Database {
    * @param userId the user requesting the information.
    */
   public ListenableFuture<Iterable<JobImpl>> getJobImpl(String userId);
+
+  /**
+   * Get supported platforms
+   */
+  public ListenableFuture<Iterable<String>> getPlatforms();
+
+  /**
+   * Get queues
+   */
+  public ListenableFuture<Iterable<String>> getQueues();
+
+  /**
+   * Get metadata keys 
+   */
+  public ListenableFuture<Iterable<String>> getMetadataKeys(String user);
+
+  /**
+   * Get metadata values
+   */
+  public ListenableFuture<Iterable<String>> getMetadataValues(String user, String key);
 
   /**
    * Allow the database implementation to cleanup resources.

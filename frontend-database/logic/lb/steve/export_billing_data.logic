@@ -1,0 +1,18 @@
+block(`export_billing_data) {
+
+  inactive(),
+  alias_all(`lb:steve),
+  clauses(`{
+    +tdx:exported_billing_data[y,m,a,q]=d <-
+      agg<<d = total(bd)>>
+        lb:steve:schema:Job:impl[j]=i,
+        lb:steve:schema:JobImpl:account[i]=acc,
+        lb:steve:schema:Account_id[acc]=a,
+        lb:steve:schema:Job:metadata[j,"job-queue"]=q,
+        bd = lb:steve:schema:Job:billing_duration[j],
+        bd > 0,
+        dt = datetime:add[datetime:create[1970, 1, 1, 0, 0, 0], lb:steve:schema:Job:finish_time[j]/1000, "seconds"],
+        datetime:month[dt]=m, datetime:year[dt]=y.
+  })
+} <-- .
+

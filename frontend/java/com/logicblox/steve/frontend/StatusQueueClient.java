@@ -3,7 +3,10 @@ package com.logicblox.steve.frontend;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Date;
+import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.text.SimpleDateFormat;
 
 import com.googlecode.protobuf.format.JsonFormat;
 import com.logicblox.sqs.SQSClientInterface;
@@ -16,11 +19,19 @@ import com.logicblox.steve.common.Status.StatusBuilder;
 import com.logicblox.steve.db.Database;
 import com.logicblox.steve.protocol.Backend;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+
+import com.timgroup.statsd.NonBlockingStatsDClient;
+import com.timgroup.statsd.StatsDClient;
+
 /**
  * Monitors a queue for status responses posted by workers about jobs, and then informs the updates
  * to a Database.
  */
 public class StatusQueueClient {
+
+  private StatsDClient _statsd;
 
   /**
    * Client to query the SQS queue.
@@ -43,6 +54,11 @@ public class StatusQueueClient {
   private final AtomicBoolean _terminate = new AtomicBoolean(false);
 
   /**
+   * Location to store processed status messages
+   */
+  private final String _dataDir;
+
+  /**
    * Create a client for checking status responses using the sqs client, monitoring this queue, and
    * informing updates to this database.
    *
@@ -50,7 +66,7 @@ public class StatusQueueClient {
    * @param queue
    * @param db
    */
-  public StatusQueueClient(SQSClientInterface sqs, SQSQueueHandle queue, Database db) {
+  public StatusQueueClient(SQSClientInterface sqs, SQSQueueHandle queue, Database db, String dataDir) {
     if (sqs == null)
       throw new IllegalArgumentException("queue client must be non-null");
     if (queue == null)
@@ -61,6 +77,8 @@ public class StatusQueueClient {
     _sqs = sqs;
     _queue = queue;
     _db = db;
+    _dataDir = dataDir;
+    _statsd = new NonBlockingStatsDClient("lb.steve.status", "127.0.0.1", 8125);
   }
 
   /**
@@ -88,25 +106,62 @@ public class StatusQueueClient {
   private void loop() {
     while (!_terminate.get()) {
       try {
-        final List<SQSReceivedMessage> messages = _sqs.receive(_queue);
+        if (new File(_dataDir+"/../maintenance").exists() || new File(_dataDir+"/maintenance").exists()) {
+          System.out.println("Maintenance in progress, sleeping for 30s...");
+          Thread.sleep(30000);
+          continue;
+        }
+        final List<SQSReceivedMessage> messages = _sqs.receive(_queue, 10);
 
+        int i = 0;
         for (final SQSReceivedMessage msg : messages) {
           try {
-            processStatus(msg.getBody());
+            String body = msg.getBody();
+            processStatus(body);
+            i++;
           } catch (Exception exc) {
             exc.printStackTrace();
+            writeFailedMessage(msg.getBody());
           }
+        }
+        if(messages.size() != 0) { 
+          System.out.println("Processed "+ i +" out of "+ messages.size() +" received status messages");
         }
 
         _sqs.delete(messages);
 
-        // wait if there were no messages
         if (messages.size() == 0)
-          Thread.sleep(500);
+          Thread.sleep(1000);
+        else
+          Thread.sleep(200);
 
       } catch (Exception exc) {
         exc.printStackTrace();
       }
+    }
+  }
+
+  private void writeStatusMessage(String jobid, String statusString) {
+    try {
+      Date date = new Date();
+      File dir = new File(_dataDir+"/"+new SimpleDateFormat("yyyyMMdd").format(date)+"/"+jobid);
+      dir.mkdirs();
+      FileUtils.writeStringToFile(new File(dir,new SimpleDateFormat("HHmmssSSS").format(date)), statusString);
+    } catch (IOException e) {
+      System.err.println("WARNING: Could not write status message to disk.");
+      e.printStackTrace();
+    }
+  }
+
+  private void writeFailedMessage(String statusString) {
+    try {
+      Date date = new Date();
+      File dir = new File(_dataDir+"/failed");
+      dir.mkdirs();
+      FileUtils.writeStringToFile(new File(dir,new SimpleDateFormat("yyyyMMddHHmmssSSS").format(date)), statusString);
+    } catch (IOException e) {
+      System.err.println("WARNING: Could not write failed status message to disk.");
+      e.printStackTrace();
     }
   }
 
@@ -131,6 +186,8 @@ public class StatusQueueClient {
 
     final Backend.JobStatus protoStatus = builder.build();
 
+    writeStatusMessage(protoStatus.getJob(), statusString);
+
     // start building a status object
     final StatusBuilder status = new StatusBuilder();
     status.machine = protoStatus.getMachine();
@@ -140,16 +197,19 @@ public class StatusQueueClient {
 
       case STARTED: {
         status.event = Status.Event.STARTED;
+        _statsd.incrementCounter("started");
         break;
       }
       case PROGRESS: {
         status.event = Status.Event.PROGRESS;
+        _statsd.incrementCounter("progress");
         if (protoStatus.hasProgressDetails())
           status.message = protoStatus.getProgressDetails().getMessage();
         break;
       }
       case SUCCEEDED: {
         status.event = Status.Event.SUCCEEDED;
+        _statsd.incrementCounter("succeeded");
         if(protoStatus.hasResourceUsage()) {
           status.cpuUsage = protoStatus.getResourceUsage().getCpuUsage();
           status.maxMemory = protoStatus.getResourceUsage().getMaxMemory();
@@ -164,6 +224,12 @@ public class StatusQueueClient {
       }
       case FAILED: {
         status.event = Status.Event.FAILED;
+        _statsd.incrementCounter("failed");
+        if(protoStatus.hasResourceUsage()) {
+          status.cpuUsage = protoStatus.getResourceUsage().getCpuUsage();
+          status.maxMemory = protoStatus.getResourceUsage().getMaxMemory();
+          status.maxDiskUsage = protoStatus.getResourceUsage().getMaxDiskUsage();
+        }
         if (protoStatus.hasFailedDetails()) {
           final Backend.FailedDetails d = protoStatus.getFailedDetails();
           status.message =
@@ -172,8 +238,10 @@ public class StatusQueueClient {
         }
         break;
       }
-      default:
+      default: {
+        _statsd.incrementCounter("unknown");
         System.err.println("error: status not yet supported: " + statusString);
+      }
     }
 
     // inform database of this new status message

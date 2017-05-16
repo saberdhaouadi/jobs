@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
@@ -90,7 +91,7 @@ public class Conversions {
   }
 
   public static Data convertFileToData(Frontend.File file) {
-    return new Data(file.getUrl(), Optional.of(file.hasHash() ? file.getHash() : null));
+    return new Data(file.getUrl(), Optional.ofNullable(file.hasHash() ? file.getHash() : null));
   }
 
   public static Frontend.File convertToFrontendFile(S3File file) {
@@ -158,7 +159,7 @@ public class Conversions {
   }
 
   public static Data convertFileToData(Backend.File file) {
-    return new Data(file.getUrl(), Optional.of(file.hasHash() ? file.getHash() : null));
+    return new Data(file.getUrl(), Optional.ofNullable(file.hasHash() ? file.getHash() : null));
   }
 
   public static Backend.File convertDataToBackendFile(Data d) {
@@ -186,7 +187,7 @@ public class Conversions {
   }
 
   public static Data convertFromDatabaseFile(Database.File d) {
-    return new Data(d.getUrl(), d.hasHash() ? Optional.of(d.getHash()) : Optional.<String>empty());
+    return new Data(d.getUrl(), d.hasHash() ? Optional.ofNullable(d.getHash()) : Optional.<String>empty());
   }
 
   public static Collection<Database.Param> convertToDatabaseParams(Map<String, String> input) {

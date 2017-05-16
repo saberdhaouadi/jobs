@@ -29,7 +29,7 @@ block(`create_job) {
     lang:pulse(`create_new_job).
 
     // job with this client id already exists, export success
-    +service_support:export_job_id(index, jobId) <-
+    +service_support:export_job(index, jobId) <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_client_id[req] = clientId,
@@ -51,7 +51,7 @@ block(`create_job) {
     /**
      * Construct new job and export success.
      */
-    +service_support:export_job_id(index, id),
+    +service_support:export_job(index, id),
     +schema:Job(j),
     +schema:Job_id[j] = id,
     +schema:Job:impl[j] = impl,
@@ -110,6 +110,14 @@ block(`create_job) {
       +proto:File_url[f] = url,
       ! string:like(url, "s3://%").
 
+    +service_support:export_error(index, "INVALID_INPUT", "Input '" + url + "' is invalid. You cannot use a complete bucket as input.") <-
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_create_job[union] = req,
+      +proto:CreateJobRequest_input(req, f),
+      +proto:File_url[f] = url,
+      string:like(url, "s3://%"),
+      ! string:like(url, "s3://%/_%").
+
     +service_support:export_error(index, "INVALID_OUTPUT", "Output '" + prefix + "' is invalid. Should be a S3 URL.") <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
@@ -146,7 +154,8 @@ block(`create_job) {
       string:int:convert[t] = timeout,
       (timeout < 0 ; timeout > 40000),
       // For Walgreens, we allow timeouts > 40000s for the time being.
-      q != "i2-2xlarge".
+      q != "i2-2xlarge",
+      q != "i2-2xlarge-ondemand".
   })
 
 } <-- .

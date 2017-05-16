@@ -33,7 +33,7 @@ block(`metrics) {
     }
       <- +ensure_int_metric[k] = v, +cons[_] = resp.
 
-    // RUNNING
+    // RUNNING PER QUEUE
     +ensure_int_metric[key] = 0
       <- !running_queue(q), +cons[_] = _,
          lb:steve:provision:jobqueue_id[_]=q,
@@ -46,7 +46,18 @@ block(`metrics) {
       lb:steve:schema:Job:metadata[j, "job-queue"]=q,
       key="lb.steve.running."+q.
 
-    // QUEUED
+    // RUNNING TOTAL
+    +ensure_int_metric[key] = 0
+      <- !lb:steve:schema:Job:running(_), +cons[_] = _,
+         key="lb.steve.running.total".
+
+    +ensure_int_metric[key] = r
+      <-
+      agg<<r = count()>> schema:Job:running(_),
+      +cons[_] = _,
+      key="lb.steve.running.total".
+
+    // QUEUED PER QUEUE
     +ensure_int_metric[key] = 0
       <- !queued_queue(q), +cons[_] = _,
          lb:steve:provision:jobqueue_id[_]=q,
@@ -59,14 +70,16 @@ block(`metrics) {
       lb:steve:schema:Job:metadata[j, "job-queue"]=q,
       key="lb.steve.queued."+q.
 
-     // TOTAL IMPL
-    +ensure_int_metric["lb.steve.impl.total"] = 0
-      <- !schema:Job(_), +cons[_] = _.
+    // QUEUED TOTAL
+    +ensure_int_metric[key] = 0
+      <- !lb:steve:schema:Job:running(_), +cons[_] = _,
+         key="lb.steve.queued.total".
 
-    +ensure_int_metric["lb.steve.impl.total"] = t
+    +ensure_int_metric[key] = r
       <-
-      agg<<t = count()>> schema:JobImpl(_),
-      +cons[_] = _.
+      agg<<r = count()>> schema:Job:running(_),
+      +cons[_] = _,
+      key="lb.steve.queued.total".
 
     // LONGEST QUEUED
     +ensure_int_metric[key] = 0
@@ -81,21 +94,6 @@ block(`metrics) {
       lb:steve:schema:Job:metadata[j, "job-queue"]=q,
       key="lb.steve.queued_time."+q+".max",
       w=datetime:offset[lb:steve:schema:Job:created[j],datetime:now[],"seconds"].
-
-    // SHORTEST QUEUED
-    +ensure_int_metric[key] = 0
-      <- !queued_queue(q), +cons[_] = _,
-         lb:steve:provision:jobqueue_id[_]=q,
-         key="lb.steve.queued_time."+q+".min".
-
-    +ensure_int_metric[key] = n
-      <-
-      agg<<n = min(w)>> schema:Job(j), schema:Job:queued(j),
-      +cons[_] = _,
-      lb:steve:schema:Job:metadata[j, "job-queue"]=q,
-      key="lb.steve.queued_time."+q+".min",
-      w=datetime:offset[lb:steve:schema:Job:created[j],datetime:now[],"seconds"].
-
 })
 
 } <-- .

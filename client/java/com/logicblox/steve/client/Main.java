@@ -34,6 +34,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
+import com.beust.jcommander.converters.IParameterSplitter;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -120,6 +121,10 @@ public class Main {
     _commander.addCommand("upload-impl", new UploadJobImplCommand());
     _commander.addCommand("download-impl", new DownloadJobImplCommand());
     _commander.addCommand("list-impl", new ListJobImplCommand());
+    _commander.addCommand("list-queues", new ListQueuesCommand());
+    _commander.addCommand("list-platforms", new ListPlatformsCommand());
+    _commander.addCommand("list-metadata-keys", new ListMetadataKeysCommand());
+    _commander.addCommand("list-metadata-values", new ListMetadataValuesCommand());
     _commander.addCommand("help", new HelpCommand());
 
     File file1 = ConfigLocator.getDefaultConfigFile("lb-steve-client.config");
@@ -281,7 +286,8 @@ public class Main {
     @Parameter(
             names = {"-m", "--metadata"},
             description = "Metadata of the form key=value ",
-            variableArity = true)
+            variableArity = true,
+            splitter = NoSplitter.class)
     List<String> _metadata = new ArrayList<String>();
 
     @Parameter(
@@ -548,7 +554,8 @@ public class Main {
     @Parameter(
             names = {"-m", "--metadata"},
             description = "Metadata of the form key=value ",
-            variableArity = true)
+            variableArity = true, 
+            splitter = NoSplitter.class)
     List<String> _metadata;
 
     @Parameter(
@@ -681,6 +688,100 @@ public class Main {
   }
 
   /**
+   * List queues
+   */
+  @Parameters(commandDescription = "List queues")
+  class ListQueuesCommand extends Command {
+    @Override
+    public void invoke() throws Exception {
+      SteveClientInterface client = getSteveClient();
+      Futures.transform(
+              client.getQueues(),
+              new Function<List<String>, Object>() {
+                @Override
+                public Object apply(List<String> queues) {
+                  for (String queue : queues)
+                    System.out.println(queue);
+
+                  return queues;
+                }
+              }).get();
+    }
+  }
+
+  /**
+   * List platforms
+   */
+  @Parameters(commandDescription = "List platforms")
+  class ListPlatformsCommand extends Command {
+    @Override
+    public void invoke() throws Exception {
+      SteveClientInterface client = getSteveClient();
+      Futures.transform(
+              client.getPlatforms(),
+              new Function<List<String>, Object>() {
+                @Override
+                public Object apply(List<String> platforms) {
+                  for (String platform : platforms)
+                    System.out.println(platform);
+
+                  return platforms;
+                }
+              }).get();
+    }
+  }
+
+  /**
+   * List metadata keys
+   */
+  @Parameters(commandDescription = "List metadata keys")
+  class ListMetadataKeysCommand extends Command {
+    @Override
+    public void invoke() throws Exception {
+      SteveClientInterface client = getSteveClient();
+      Futures.transform(
+              client.getMetadataKeys(),
+              new Function<List<String>, Object>() {
+                @Override
+                public Object apply(List<String> keys) {
+                  for (String key : keys)
+                    System.out.println(key);
+
+                  return keys;
+                }
+              }).get();
+    }
+  }
+
+  /**
+   * List metadata values
+   */
+  @Parameters(commandDescription = "List metadata values")
+  class ListMetadataValuesCommand extends Command {
+    @Parameter(
+            names = {"--metadata-key"},
+            description = "Metadata key",
+            required = true)
+    String _key;
+
+    @Override
+    public void invoke() throws Exception {
+      SteveClientInterface client = getSteveClient();
+      Futures.transform(
+              client.getMetadataValues(_key),
+              new Function<List<String>, Object>() {
+                @Override
+                public Object apply(List<String> values) {
+                  for (String value : values)
+                    System.out.println(value);
+
+                  return values;
+                }
+              }).get();
+    }
+  }
+
+  /**
    * Help
    */
   @Parameters(commandDescription = "Print usage")
@@ -793,5 +894,12 @@ public class Main {
     StringBuilder builder = new StringBuilder();
     _commander.usage(command, builder);
     System.err.println(builder.toString());
+  }
+
+  public static class NoSplitter implements IParameterSplitter {
+    @Override
+    public List<String> split(String value) {
+      return Collections.singletonList(value);
+    }
   }
 }

@@ -1,0 +1,49 @@
+block(`export_jobdata) {
+
+  inactive(),
+  alias_all(`lb:steve),
+  clauses(`{
+    +tdx:exported_job(j) <-
+      lb:steve:schema:Job:user@prev[j]=u,
+      lb:steve:schema:User_account@prev[u]=account,
+      lb:steve:schema:Account_id@prev[account]=accountId,
+      string:like(lb:steve:schema:Job:metadata@prev[j,key], value),
+      +lb:web:http:Request_uri[_] = uri,
+      +lb:web:http:RequestURI_service_prefix[uri] = "/tdx/jobdata",
+      +lb:web:http:RequestURI_parameter[uri,_] = kf,
+      +lb:web:http:Field_name[af] = "account",
+      +lb:web:http:Field_value[af,_] = accountId,
+      +lb:web:http:Field_name[kf] = "filter_key",
+      +lb:web:http:Field_value[kf,_] = key,
+      +lb:web:http:RequestURI_parameter[uri,_] = vf,
+      +lb:web:http:Field_name[vf] = "filter_value",
+      +lb:web:http:Field_value[vf,_] = value.
+
+    tdx:exported_job_metadata_value0[j] = v
+      <- lb:web:http:Field_name[kf] = "column",
+         lb:web:http:Field_value[kf,0] = key,
+         lb:steve:schema:Job:metadata[j, key]= v.
+
+    tdx:exported_job_metadata_value1[j] = v
+      <- lb:web:http:Field_name[kf] = "column",
+         lb:web:http:Field_value[kf,1] = key,
+         lb:steve:schema:Job:metadata[j, key]= v.
+
+    tdx:exported_job_metadata_value2[j] = v
+      <- lb:web:http:Field_name[kf] = "column",
+         lb:web:http:Field_value[kf,2] = key,
+         lb:steve:schema:Job:metadata[j, key]= v.
+
+    tdx:exported_job_metadata_value3[j] = v
+      <- lb:web:http:Field_name[kf] = "column",
+         lb:web:http:Field_value[kf,3] = key,
+         lb:steve:schema:Job:metadata[j, key]= v.
+
+    tdx:exported_job_metadata_value4[j] = v
+      <- lb:web:http:Field_name[kf] = "column",
+         lb:web:http:Field_value[kf,4] = key,
+         lb:steve:schema:Job:metadata[j, key]= v.
+
+  })
+} <-- .
+

@@ -1,15 +1,17 @@
-{ 
-  region ? "us-east-1"
+{ region ? "us-east-1"
 , account ? "lb-jobs"
 , accountId ? "826045886586"
 , name
 , logToken ? ""
+, catchRequests ? false
 }:
 let
   environments = import ./environments.nix;
   env = environments."${name}";
 
   instanceTypes = builtins.attrNames env.workers;
+
+  amis = import ./amis.nix;
 
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
@@ -23,6 +25,8 @@ let
   pkgs = import <nixpkgs> { config.allowUnfree = true; config.allowBroken = true; };
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
+
+  instanceProfileArn = name: "arn:aws:iam::${accountId}:instance-profile/${name}";
 
   profiler = with pkgs; stdenv.mkDerivation {
     name = "lightweight-java-profiler";
@@ -57,7 +61,8 @@ let
 
       services.haproxy.enable = true;
       services.haproxy.config = ''
-        listen l1 0.0.0.0:443
+        listen l1
+            bind 0.0.0.0:443
             mode tcp
             clitimeout 180000
             srvtimeout 180000
@@ -70,7 +75,7 @@ let
     };
 
   worker = queue: type:
-    { config, pkgs, resources, nodes, ... }:
+    { config, pkgs, resources, nodes, lib, ... }:
     {
       imports = [ ./worker.nix ];
 
@@ -83,6 +88,7 @@ let
       deployment.ec2.region = region;
       deployment.ec2.instanceType = type;
       deployment.ec2.instanceProfile = resources.iamRoles.worker-role.name;
+      deployment.ec2.ebsInitialRootDiskSize = 100;
 
       # Tags are needed, so provisioner sees running worker instances for this
       # deployments, and does not start new instances if not necessary.
@@ -90,10 +96,9 @@ let
       deployment.ec2.tags.IncomingQueue = sqsURL queue;
       deployment.ec2.tags.OutgoingQueue = sqsStatusURL;
 
-      ec2.metadata = true;
     };
 
-  builds = import ../. { platform_release = builder-config.getPlatform (import ../lb-version.nix); };
+  builds = import ../. { platform_release = builder-config.getLB (import ../lb-version.nix); };
   s3Name = "steve-jobs-${name}";
   frontendConfig = pkgs.writeText "lb-steve-frontend.config" 
     ''
@@ -103,9 +108,10 @@ let
       logdir = /var/log/lb-steve-worker
       authentication_cache = $(LB_DEPLOYMENT_HOME)/authentication_cache
       tmpdir = /tmp
+      http_server_threads = 500
 
       [handler:steve]
-      database_prefix = http://database-${name}:8080/db
+      database_prefix = http://database-${name}:${if catchRequests then "80" else "8080"}/db
 
       ${pkgs.lib.concatMapStrings (t: ''
       [job-queue:${workerName t}]
@@ -156,6 +162,7 @@ with pkgs.lib;
 
   resources.sqsQueues = sqsQueues // { "${sqsStatusName}" = sqsStatusQueue;  };
   resources.s3Buckets."${s3Name}-bucket" = { inherit region ; accessKeyId = account; name = s3Name; };
+  resources.s3Buckets."${s3Name}-logs-bucket" = { inherit region ; accessKeyId = account; name = "${s3Name}-logs"; };
 
   resources.iamRoles.worker-role =
     { resources, ... }:
@@ -243,11 +250,15 @@ with pkgs.lib;
               "Action": [
                 "s3:Get*",
                 "s3:Put*",
-                "s3:List*"
+                "s3:List*",
+                "s3:CreateMultipartUploadParts",
+                "s3:ListMultipartUploadParts",
+                "s3:AbortMultipartUpload"
               ],
               "Effect": "Allow",
               "Resource": [
-                "arn:aws:s3:::${s3Name}/backups/*"
+                "arn:aws:s3:::${s3Name}/backups/*",
+                "arn:aws:s3:::${s3Name}/reports/*"
               ]
             }
           ]
@@ -279,6 +290,7 @@ with pkgs.lib;
               "Action": [
                 "ec2:Describe*",
                 "ec2:RunInstances",
+                "ec2:TerminateInstances",
                 "ec2:RequestSpotInstances",
                 "ec2:CreateTags",
                 "iam:PassRole"
@@ -347,38 +359,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         } ;
-      ips = [
-        "38.104.0.30" # atlanta office / vpn
-        "54.86.90.139" # ec2 vpn
-        "107.20.158.107"
-        "54.198.12.247"
-        "83.87.147.147"
-        "41.228.10.75"
-        "41.228.10.115"
-        "41.224.243.6"
-        "196.203.15.130"
-        "54.174.171.234"
-        "54.77.137.60" # kiabi-dev
-        "54.154.69.157" # kiabi-dev
-        "52.17.16.150" # kiabi-dev
-        "52.16.133.24" # kiabi-dev
-        "54.76.162.121" # kiabi-dev
-        "54.77.94.210" # kiabi-dev
-        "52.18.157.51" # kiabi-dev
-        "52.48.50.108"
-        "52.19.77.61"
-        "52.18.133.44" # kiabi-ort
-        "52.0.109.86" # pdf-wfm-dev
-        "54.173.20.211" # pdf-wfm-dev
-        "52.5.128.41" # pdf-wfm-dev
-        "54.208.53.160"
-        "52.30.20.249"
-        "52.30.186.33"
-        "52.30.104.244"
-        "52.19.49.187"
-        "52.17.149.122"
-        "54.77.230.190"
-      ];
+      ips = builtins.fromJSON (builtins.readFile ./ips.json);
       accountEntry = account:
         {
           fromPort = 443;
@@ -404,16 +385,30 @@ with pkgs.lib;
       };
 
   "provisioner-${name}" =
-    { config, resources, nodes, ...}:
+    { config, resources, nodes, lib, ...}:
     let
-      script = t: pkgs.writeScriptBin "run-provisioner-${workerName t}"
+      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != (env.workers."${t}".defaultRegion or "us-east-1")) "-${r}"}"
         ''
           #! /bin/sh
           source /etc/profile
-          exec lb-steve-provisioner $@ --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys --queue ${workerName t} --bucket ${s3Name} --incoming ${sqsURL t} --outgoing ${sqsStatusURL} --role ${resources.iamRoles.worker-role.name} --instance-type ${env.workers."${t}".instanceType or t} --spot-price ${env.workers."${t}".price} --percentage-spot ${env.workers."${t}".percentageSpot} --percentage-queue ${env.workers."${t}".percentageQueue or "0.6"} --max ${env.workers."${t}".max or "300"} --min ${env.workers."${t}".min or "0"}
+          exec lb-steve-provisioner $@ \
+                 --region ${r} \
+                 --ami ${amis."${r}"} \
+                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys \
+                 --queue ${workerName t} \
+                 --bucket ${s3Name} \
+                 --incoming ${sqsURL t} \
+                 --outgoing ${sqsStatusURL} \
+                 --role ${resources.iamRoles.worker-role.name} \
+                 --instance-type ${env.workers."${t}".instanceType or t} \
+                 --spot-price ${env.workers."${t}".price} \
+                 --percentage-spot ${env.workers."${t}".percentageSpot} \
+                 --percentage-queue ${env.workers."${t}".percentageQueue or "0.6"} \
+                 --max ${env.workers."${t}".max or "300"} \
+                 --min ${env.workers."${t}".min or "0"}
         '';
-      provisionScripts = map script instanceTypes;
-      run-provisioner = t: "${script t}/bin/run-provisioner-${workerName t}";
+      provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
+      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or "us-east-1")}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
         path = [ pkgs.jdk ];
@@ -421,6 +416,15 @@ with pkgs.lib;
           ExecStart = "${run-provisioner t}";
         };
         startAt = "*:0/5";
+      };
+      terminate-impaired = {
+        description = "Terminating impaired workers";
+        path = [ pkgs.pythonFull ];
+        serviceConfig = {
+          ExecStart = "${./scripts/terminate-impaired} ${instanceProfileArn resources.iamRoles.worker-role.name}";
+        };
+        environment.PYTHONPATH = "${pkgs.pythonPackages.boto}/lib/python2.7/site-packages";
+        startAt = "*:0";
       };
     in
     {
@@ -431,7 +435,6 @@ with pkgs.lib;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
-      ec2.metadata = true;
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -439,7 +442,7 @@ with pkgs.lib;
       ] ;
 
       environment.systemPackages = [ builds.worker pkgs.linuxPackages.sysdig ] ++ provisionScripts;
-      systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes);
+      systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes) // { inherit terminate-impaired; };
       boot.extraModulePackages = [ pkgs.linuxPackages.sysdig ];
       boot.kernelModules = [ "sysdig-probe" ] ;
     };
@@ -453,7 +456,6 @@ with pkgs.lib;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
       deployment.ec2.instanceType = "r3.large";
-      ec2.metadata = true;
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
 
@@ -465,17 +467,20 @@ with pkgs.lib;
         { autoFormat = true;
           fsType = "xfs";
           device = "/dev/xvdf";
-          options = "noatime";
+          options = [ "noatime" ];
           ec2.size = 20;
           ec2.encrypt = true;
         };
 
       networking.firewall.allowedTCPPorts = [ 443 ];
       services.nginx.enable = true;
-      services.nginx.config = ''
+      services.nginx.appendConfig = ''
         worker_processes 4;
+        worker_rlimit_nofile 30000;
         events {
             worker_connections 9000;
+            use epoll;
+            multi_accept on;
         }
       '';
       services.nginx.httpConfig = ''
@@ -508,10 +513,10 @@ with pkgs.lib;
           ssl_protocols TLSv1.2 TLSv1.1 TLSv1;
           ssl_prefer_server_ciphers on;
 
-          ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK;
+          ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK:!SHA1;
 
 
-          access_log /var/spool/nginx/logs/access.log timed_combined;
+          access_log /var/spool/nginx/logs/access.log timed_combined buffer=16k;
 
           location / {
               proxy_pass         http://localhost:8082/;
@@ -558,10 +563,7 @@ with pkgs.lib;
         };
       };
 
-      environment.etc =
-        let
-          jmx-config =
-            pkgs.writeText "jmx.yaml" ''
+      services.dd-agent.jmxConfig = ''
           instances:
             - host: 127.0.0.1
               name: jmx_instance
@@ -575,7 +577,10 @@ with pkgs.lib;
               - include:
                   domain: java.lang
                   type: GarbageCollector
-            '';
+      '';
+
+      environment.etc =
+        let
           nginx-config =
             pkgs.writeText "nginx.yaml" ''
               init_config:
@@ -583,9 +588,6 @@ with pkgs.lib;
                 -   nginx_status_url: http://127.0.0.1/nginx_status/
           '';
         in [
-          { source = jmx-config;
-            target = "dd-agent/conf.d/jmx.yaml";
-          }
           { source = nginx-config;
             target = "dd-agent/conf.d/nginx.yaml";
           }
@@ -595,9 +597,9 @@ with pkgs.lib;
 
 
   "database-${name}" =
-    { config, pkgs, resources, nodes, ... }:
+    { config, pkgs, lib, resources, nodes, ... }:
     let
-      platform = builder-config.getPlatform (import ../lb-version.nix);
+      logicblox = builder-config.getLB (import ../lb-version.nix);
     in
     {
       deployment.targetEnv = "ec2";
@@ -605,11 +607,10 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "c3.4xlarge";
+      deployment.ec2.instanceType = "c3.8xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
-      deployment.ec2.ebsOptimized = true;
-      ec2.metadata = true;
+      deployment.ec2.ebsOptimized = false;
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -620,9 +621,7 @@ with pkgs.lib;
       ] ;
 
       services.logicblox.enable = true;
-      services.logicblox.logicblox = platform.logicblox;
-      services.logicblox.lbWeb = platform.bloxweb;
-      services.logicblox.lbWorkflow = platform.lb-workflow;
+      services.logicblox.logicblox = logicblox;
       services.logicblox.config.lb-server = ''
         [workspace]
         auto_backup_mode=none
@@ -636,20 +635,46 @@ with pkgs.lib;
       '';
 
       logicblox.application.installer = builds.database.build;
-      networking.firewall.allowedTCPPorts = [ 8080 55183 ];
+      services.nginx.enable = lib.mkOverride 0 false;
+
+      systemd.services.export-billing = {
+        description = "Export billing data";
+        script = ''
+          source /etc/profile
+          lb web-client export -n -o s3://${s3Name}/reports/billing_data.csv http://localhost:8080/tdx/billing_data
+        '';
+        startAt = "*:15";
+      };
+
+      systemd.services.mitmproxy =
+        { description = "mitmproxy";
+          enable = catchRequests;
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            ExecStart = "${pkgs.pythonPackages.mitmproxy}/bin/mitmdump --port 80 -R http://localhost:8080 -w /tmp/requests.txt -q --cadir /tmp/mitmproxy";
+          };
+        };
+
+      networking.firewall.allowedTCPPorts = [ 8080 55183 80 ];
 
       fileSystems."/data" =
         { autoFormat = true;
           fsType = "xfs";
           device = "/dev/xvdf";
-          options = "noatime";
+          options = [ "noatime" ];
           ec2.size = 1000;
           ec2.volumeType = "gp2";
         };
     };
 
   "steve-${name}" =
-    { config, pkgs, resources, ... }:
+    { config, pkgs, resources, lib, ... }:
+    let
+      block-ip = pkgs.writeScriptBin "block-ip" ''
+        #! /usr/bin/env bash
+        exec iptables -I INPUT 1 -s $1 -j DROP
+      '';
+    in
     {
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -662,27 +687,48 @@ with pkgs.lib;
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
       deployment.ec2.ebsInitialRootDiskSize = 100;
-      ec2.metadata = true;
 
       imports = [ <lbdevops/logicblox/production.nix> ];
 
+      boot.kernel.sysctl = {
+        "net.ipv4.ip_local_port_range" = "1024 65000";
+        "net.ipv4.tcp_tw_reuse" = "1";
+        "net.ipv4.tcp_fin_timeout" = "15";
+        "net.core.netdev_max_backlog" = "4096";
+        "net.core.rmem_max" = "16777216";
+        "net.core.somaxconn" = "4096";
+        "net.core.wmem_max" = "16777216";
+        "net.ipv4.tcp_max_syn_backlog" = "20480";
+        "net.ipv4.tcp_max_tw_buckets" = "400000";
+        "net.ipv4.tcp_no_metrics_save" = "1";
+        "net.ipv4.tcp_rmem" = "4096 87380 16777216";
+        "net.ipv4.tcp_syn_retries" = "2";
+        "net.ipv4.tcp_synack_retries" = "2";
+        "net.ipv4.tcp_wmem" = "4096 65536 16777216";
+        "vm.min_free_kbytes" = "65536";
+      };
+
       networking.firewall.allowedTCPPorts = [ 443 ];
 
-      environment.systemPackages = [ builds.frontend builds.client.build pkgs.jdk pkgs.awscli pkgs.nodejs];
+      environment.systemPackages = [ builds.frontend builds.client.build pkgs.jdk pkgs.awscli pkgs.nodejs block-ip];
 
       security.pam.loginLimits =
         [ { domain = "*"; item = "nofile"; type = "-"; value = "32768"; }
         ];
 
       services.nginx.enable = true;
-      services.nginx.config = ''
+      services.nginx.appendConfig = ''
         worker_processes 4;
+        worker_rlimit_nofile 30000;
         events {
             worker_connections 9000;
+            use epoll;
+            multi_accept on;
         }
       '';
       services.nginx.httpConfig = ''
         log_format timed_combined '$remote_addr - $remote_user [$time_local]  "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
+        log_format capture_requests '$request|$request_body';
         server {
             listen               80;
             server_name   localhost;
@@ -714,7 +760,7 @@ with pkgs.lib;
           ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:AES128:AES256:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK;
 
 
-          access_log /var/spool/nginx/logs/access.log timed_combined;
+          access_log /var/spool/nginx/logs/access.log timed_combined buffer=16k;
           error_log /var/spool/nginx/logs/error.log error;
 
           location = / {
@@ -755,6 +801,15 @@ with pkgs.lib;
       };
 
       systemd.services = {
+        clean-status-messages =
+          { description = "Clean status messages";
+            path = [ pkgs.findutils ];
+            script = ''
+              find /var/log/lb-steve-worker/status -type f -mtime +5 -delete
+            '';
+            startAt = "03:00";
+          };
+
         nginx.serviceConfig.LimitNOFILE = 32768;
 
         lb-steve-frontend = {
@@ -765,7 +820,7 @@ with pkgs.lib;
           preStart = ''
             mkdir -p /var/log/lb-steve-worker
           '';
-          environment.JAVA_ARGS = "-Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -XX:+PreserveFramePointer";
+          environment.JAVA_ARGS = "-server -Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -XX:+PreserveFramePointer";
           serviceConfig = {
             ExecStart = "${builds.frontend}/bin/lb-steve-frontend --config ${frontendConfig}";
             Restart = "always";
@@ -774,10 +829,7 @@ with pkgs.lib;
         };
       };
 
-      environment.etc =
-        let
-          jmx-config =
-            pkgs.writeText "jmx.yaml" ''
+      services.dd-agent.jmxConfig = ''
           instances:
             - host: 127.0.0.1
               name: jmx_instance
@@ -791,28 +843,19 @@ with pkgs.lib;
               - include:
                   domain: java.lang
                   type: GarbageCollector
-            '';
-          nginx-config =
-            pkgs.writeText "nginx.yaml" ''
-              init_config:
-              instances:
-                -   nginx_status_url: http://127.0.0.1/nginx_status/
           '';
-        in [
-          { source = jmx-config;
-            target = "dd-agent/conf.d/jmx.yaml";
-          }
-          { source = nginx-config;
-            target = "dd-agent/conf.d/nginx.yaml";
-          }
-        ];
-
+ 
+      services.dd-agent.nginxConfig = ''
+        init_config:
+        instances:
+          -   nginx_status_url: http://127.0.0.1/nginx_status/
+      '';
     };
 
-
   defaults =
+    { lib, ... }:
     { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> ];
-      logging.logentries.logToken = logToken;
+      logging.logentries.logToken = lib.mkOverride 0 logToken;
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )

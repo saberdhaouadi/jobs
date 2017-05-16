@@ -20,7 +20,7 @@ block(`service_support) {
     /**
      * Constructor for a Job message in this index (encapsulated by the response in the same index).
      */
-    job[index] = job -> int(index), proto:Job(job).
+    job[index, jobId] = job -> int(index), string(jobId), proto:Job(job).
 
     /**
      * Constructor for a JobImpl message in this index (encapsulated by the response in the same index).
@@ -36,11 +36,6 @@ block(`service_support) {
     // pulse helpers
 
     /**
-     * Export a job id in the response with this index.
-     */
-    export_job_id(index, jobId) -> int(index), string(jobId).
-
-    /**
      * Export a job in the response with this index.
      */
     export_job(index, jobIb) -> int(index), string(jobIb).
@@ -49,6 +44,26 @@ block(`service_support) {
      * Export a jobImpl in the response with this index.
      */
     export_impl(index, implCode) -> int(index), string(implCode).
+
+    /**
+     * Export a queue in the response with this index.
+     */
+    export_queue(index, queue) -> int(index), string(queue).
+
+    /**
+     * Export a platform in the response with this index.
+     */
+    export_platform(index, platform) -> int(index), string(platform).
+
+    /**
+     * Export a metadata key in the response with this index.
+     */
+    export_metadata_key(index, key) -> int(index), string(key).
+
+    /**
+     * Export a metadata value in the response with this index.
+     */
+    export_metadata_value(index, value) -> int(index), string(value).
 
     /**
      * Export an error with this content in the response with this index.
@@ -89,9 +104,12 @@ block(`service_support) {
     lang:pulse(`response).
 
     lang:pulse(`export_error).
-    lang:pulse(`export_job_id).
     lang:pulse(`export_job).
     lang:pulse(`export_impl).
+    lang:pulse(`export_platform).
+    lang:pulse(`export_queue).
+    lang:pulse(`export_metadata_key).
+    lang:pulse(`export_metadata_value).
 
     lang:pulse(`ensure_user).
     lang:pulse(`ensure_job).
@@ -120,20 +138,14 @@ block(`service_support) {
       +response[i] = resp.
     
 
-    // JOB ID: add a job id to the response
-    +proto:Response_job_id[resp] = id <-
-      +export_job_id(i, id),
-      +response[i] = resp.
-
-
     // JOB: add a job to the response
-    +job[i] = protoJob,
+    +job[i, jobId] = protoJob,
     +proto:Job(protoJob),
-    +proto:Job_id[protoJob] = jobIb,
+    +proto:Job_id[protoJob] = jobId,
     +proto:Response_job[resp] = protoJob <-
       +response[i] = resp,
-      +export_job(i, jobIb),
-      schema:Job_id@prev[_] = jobIb.
+      +export_job(i, jobId),
+      schema:Job_id[_] = jobId.
 
 
     // JOB IMPL: add a job impl to the response
@@ -146,7 +158,25 @@ block(`service_support) {
       schema:JobImpl_code@prev[impl] = implCode,
       schema:JobImpl:id@prev[impl] = implId.
 
+    // QUEUE: add queue to response
+    +proto:Response_queue(resp, queue) <-
+      +response[i] = resp,
+      +export_queue(i,queue).
 
+    // PLATFORM: add platform to response
+    +proto:Response_platform(resp, platform) <-
+      +response[i] = resp,
+      +export_platform(i, platform).
+
+    // METADATA KEY: add metadata key to response
+    +proto:Response_metadata_key(resp, key) <-
+      +response[i] = resp,
+      +export_metadata_key(i, key).
+
+    // METADATA VALUE: add metadata value to response
+    +proto:Response_metadata_value(resp, value) <-
+      +response[i] = resp,
+      +export_metadata_value(i, value).
 
     // error checking rules
     +export_error(index, "NO_SUCH_USER", "User '" + userId + "' does not exist.") <-

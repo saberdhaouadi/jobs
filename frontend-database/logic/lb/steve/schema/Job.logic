@@ -13,6 +13,11 @@
     impl[j] = impl -> Job(j), JobImpl(impl).
 
     /**
+     * The queue of this job.
+     */
+    queue[j] = q -> Job(j), lb:steve:provision:jobqueue(q).
+
+    /**
      * An id provided by the client that created this job. This id should be unique.
      */
     client_id[j] = id -> Job(j), string(id).
@@ -105,6 +110,8 @@
     finished_status(s) -> string(s).
     finish_time[job] = t -> Job(job), int(t).
     start_time[job] = t -> Job(job), int(t).
+    finish[job] = t -> Job(job), datetime(t).
+    start[job] = t -> Job(job), datetime(t).
 
 
    /**
@@ -113,6 +120,10 @@
     cpu_usage[job] = u -> Job(job), int(u).
     max_memory[job] = m -> Job(job), int(m).
     max_disk_usage[job] = m -> Job(job), int(m).
+
+    cpu_util[job] = u -> Job(job), decimal(u).
+    max_memory_util[job] = u -> Job(job), decimal(u).
+    max_disk_util[job] = u -> Job(job), decimal(u).
   }),
 
   sealed(`{
@@ -165,7 +176,25 @@
     start_time[job] = t <- agg<<t = min(ts)>> status_event[job, ts] = "STARTED".
     finish_time[job] = t <- agg<<t = max(ts)>> status_event[job, ts] = s, finished_status(s).
 
+    start[job] = s <- s = datetime:add[datetime:create[1970, 1, 1, 0, 0, 0], lb:steve:schema:Job:start_time[job]/1000, "seconds"].
+    finish[job] = s <- s = datetime:add[datetime:create[1970, 1, 1, 0, 0, 0], lb:steve:schema:Job:finish_time[job]/1000, "seconds"].
+
     created[job] = t <- metadata[job, "date"] = d, t = datetime:parse[d, "%Y-%m-%d %H:%M:%S"].
+
+    queue[job] = q <- metadata[job, "job-queue"] = lb:steve:provision:jobqueue_id[q].
+
+    cpu_util[job] = u <-
+      u = int:decimal:convert[c]/(int:decimal:convert[qc]*int:decimal:convert[d]),
+      d = duration[job], d > 0, c = cpu_usage[job]/1000000000, qc = lb:steve:provision:jobqueue_cpu[queue[job]].
+
+    max_memory_util[job] = u <-
+      u = int:decimal:convert[m]/int:decimal:convert[qm],
+      m = max_memory[job], qm = lb:steve:provision:jobqueue_memory[queue[job]].
+
+    max_disk_util[job] = u <-
+      u = int:decimal:convert[d]/int:decimal:convert[qd],
+      d = max_disk_usage[job], qd = lb:steve:provision:jobqueue_disk[queue[job]].
+
   })
 
 } <-- .

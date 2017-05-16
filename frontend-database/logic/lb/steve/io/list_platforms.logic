@@ -1,0 +1,13 @@
+block(`list_platforms) {
+
+  alias(`lb:steve:database, `proto),
+
+  clauses(`{
+    +service_support:export_platform(index, p)
+      <-
+      +proto:RequestEnvelope_request[_, index] = union,
+      +proto:Request_list_platforms[union] = _,
+      lb:steve:schema:supported_platform_version(p).
+})
+
+} <-- .

@@ -55,7 +55,6 @@ public class JobQueueClient {
       throw new IllegalArgumentException("job must be non-null");
 
     final Backend.RunJob.Builder request = Backend.RunJob.newBuilder()
-            // TODO include ETag of implementation
             .setJobImpl(job.jobImplArchive)
             .setJob(job.id)
             .setOutput(job.outputPrefix)

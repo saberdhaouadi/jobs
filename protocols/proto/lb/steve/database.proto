@@ -34,6 +34,12 @@ message Request
   optional GetJobImplRequest get_impl = 6;
 
   optional GetUserRequest get_user = 7;
+
+  optional ListQueuesRequest list_queues = 8;
+  optional ListPlatformsRequest list_platforms = 9;
+
+  optional ListMetadataKeysRequest list_metadata_keys = 10;
+  optional ListMetadataValuesRequest list_metadata_values = 11;
 }
 
 //
@@ -46,9 +52,6 @@ message Response
   // if an error ocurred in the execution (most operations return an empty response on success)
   optional Error error = 1;
 
-  // only used for CreateJobRequest; the id of the newly created job, or a reused one
-  optional string job_id = 2;
-
   // for GetJobRequest
   optional Job job = 3;
 
@@ -57,7 +60,19 @@ message Response
 
   // for GetUserRequest
   optional User user = 5;
-}  
+
+  // for ListQueuesRequest
+  repeated string queue = 6 [(blox.options.set) = true];
+
+  // for ListPlatformsRequest
+  repeated string platform = 7 [(blox.options.set) = true];
+
+  // for ListMetadataKeysRequest
+  repeated string metadata_key = 9 [(blox.options.set) = true];
+
+  // for ListMetadataValuesRequest
+  repeated string metadata_value = 10 [(blox.options.set) = true];
+}
 
 //
 // RESPONSE MESSAGES
@@ -129,10 +144,7 @@ message CreateJobRequest
 message GetJobRequest
 {
   required string job_id   = 1;
-  optional bool get_metadata = 2;
   optional bool get_status = 3;
-  optional bool get_input = 4;
-  optional bool get_output = 5;
 }
 
 // response is empty
@@ -170,6 +182,24 @@ message GetJobImplRequest
   optional string impl_id = 2;
 }
 
+message ListPlatformsRequest
+{
+}
+
+message ListQueuesRequest
+{
+}
+
+message ListMetadataKeysRequest
+{
+  required string user_id = 1;
+}
+
+message ListMetadataValuesRequest
+{
+  required string user_id = 1;
+  required string key = 2;
+}
 
 //
 // REQUESTS ON USERS

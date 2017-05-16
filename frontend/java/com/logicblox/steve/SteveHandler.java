@@ -60,11 +60,14 @@ import com.logicblox.steve.db.JobImpl;
 import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
+import com.timgroup.statsd.NonBlockingStatsDClient;
+import com.timgroup.statsd.StatsDClient;
 
 public class SteveHandler extends ProtoBufHandler {
   private static final long MAX_IMPL_SIZE = 70;
   private static final long MAX_LOG_SIZE = 50;
 
+  private StatsDClient _statsd;
   private Database _db;
   private Map<String, JobQueueClient> _jobQueues = new HashMap<String, JobQueueClient>();
   private S3Client _s3client;
@@ -72,6 +75,8 @@ public class SteveHandler extends ProtoBufHandler {
   private String _jobImplPrefix;
   private String _jobLogPrefix;
   private String _defaultQueue;
+  private String _dataDir;
+  private String _maintenanceFile;
 
   public SteveHandler() {
     super("Steve");
@@ -80,11 +85,17 @@ public class SteveHandler extends ProtoBufHandler {
   @Override
   public void init(Section handlerConfig, ServiceConfig service) {
     super.init(handlerConfig, service);
+
+    _statsd = new NonBlockingStatsDClient("lb.steve", "127.0.0.1", 8125);
+
     String dbPrefix = handlerConfig.getStringError("database_prefix");
     _db = new LBDatabase(dbPrefix);
 
     _s3client = S3Utils.createS3Client(handlerConfig);
     _tmpDir = handlerConfig.getFileError("tmpdir");
+
+    _maintenanceFile = handlerConfig.getStringError("logdir")+"/maintenance";
+    _dataDir = handlerConfig.getStringError("logdir")+"/status";
 
     Section jobImplConfig = handlerConfig.getParent().getSection("job-implementations");
     _jobImplPrefix = jobImplConfig.getStringError("prefix");
@@ -127,7 +138,7 @@ public class SteveHandler extends ProtoBufHandler {
       SQSClient statusClient = sqsClients.getSQSClient(statusQueueConfig);
 
       SQSQueueHandle statusQueue = getQueueFromConfig(statusClient, statusQueueConfig);
-      StatusQueueClient status = new StatusQueueClient(statusClient, statusQueue, _db);
+      StatusQueueClient status = new StatusQueueClient(statusClient, statusQueue, _db, _dataDir);
       status.start();
     } catch (SQSException exc) {
       throw new HandlerValidationException(exc);
@@ -186,6 +197,10 @@ public class SteveHandler extends ProtoBufHandler {
     return auth[0];
   }
 
+  private boolean inMaintenance() {
+    return new File(_maintenanceFile).exists();
+  }
+
   @Override
   protected ListenableFuture<ProtoBufExchange> handle(
           HttpServletRequest httpRequest,
@@ -195,6 +210,12 @@ public class SteveHandler extends ProtoBufHandler {
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
 
     ListenableFuture<Frontend.Response> resp;
+
+    if (inMaintenance()) {
+      resp = Futures.immediateFailedFuture(new ServiceException(new SimpleErrorCode("MAINTENANCE", 503, "System is in maintenance mode, please try again in a few minutes")));
+      return MoreFutures.transferResponse(resp, exchange);
+    }
+
     if (request.hasCreate()) {
       resp = handleCreate(httpRequest, httpResponse, request.getCreate());
     } else if (request.hasState()) {
@@ -212,6 +233,14 @@ public class SteveHandler extends ProtoBufHandler {
       resp = handleImplGet(httpRequest, httpResponse, request.getImplGet());
     } else if (request.hasImplList()) {
       resp = handleImplList(httpRequest, httpResponse, request.getImplList());
+    } else if (request.hasListPlatforms()) {
+      resp = handleListPlatforms(httpRequest, httpResponse, request.getListPlatforms());
+    } else if (request.hasListQueues()) {
+      resp = handleListQueues(httpRequest, httpResponse, request.getListQueues());
+    } else if (request.hasListMetadataKeys()) {
+      resp = handleListMetadataKeys(httpRequest, httpResponse, request.getListMetadataKeys());
+    } else if (request.hasListMetadataValues()) {
+      resp = handleListMetadataValues(httpRequest, httpResponse, request.getListMetadataValues());
     } else {
       resp = Futures.immediateFailedFuture(
               new ServiceException(
@@ -226,6 +255,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           Frontend.JobCreateRequest req) {
+    _statsd.incrementCounter("create_job");
+
     final String user = getUser(httpRequest);
     Map<String, String> tags = Conversions.createMap(req.getMetadataList());
     tags.put("date", Conversions.getCurrentISO8601());
@@ -242,7 +273,7 @@ public class SteveHandler extends ProtoBufHandler {
       tags.put("job-queue", _defaultQueue);
     }
 
-    ListenableFuture<String> jobId =
+    ListenableFuture<Job> job =
             _db.createJob(
                     user,
                     req.getClientId(),
@@ -251,13 +282,6 @@ public class SteveHandler extends ProtoBufHandler {
                     req.getOutput(),
                     req.hasOutputEncryptionKey() ? req.getOutputEncryptionKey() : null,
                     tags);
-
-    // Once we have the job stored in the database, submit it to the queue
-    ListenableFuture<Job> job = Futures.transform(jobId, new AsyncFunction<String, Job>() {
-      public ListenableFuture<Job> apply(String id) {
-        return _db.getJob(id);
-      }
-    });
 
     job = Futures.transform(job, new AsyncFunction<Job, Job>() {
       public ListenableFuture<Job> apply(Job j) {
@@ -284,6 +308,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           final Frontend.StateRequest req) {
+    _statsd.incrementCounter("set_state");
+
     ListenableFuture<Job> job = _db.getJob(req.getId());
 
     return Futures.transform(
@@ -349,6 +375,7 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           final Frontend.JobResultRequest req) {
+    _statsd.incrementCounter("get_result");
     ListenableFuture<Job> job = _db.getJob(req.getJobId());
 
     return Futures.transform(
@@ -386,6 +413,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletResponse httpResponse,
           final Frontend.JobLogRequest req)
           throws IOException {
+    _statsd.incrementCounter("get_log");
+
     // TODO - if we decide to allow this operation only on jobs that have succeeded (which is
     // what this call to getResult seemed to do), then we need a call to _db.getJob followed by
     // a validateJobDone.
@@ -461,6 +490,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletResponse httpResponse,
           final Frontend.ImplAddRequest req)
           throws IOException {
+    _statsd.incrementCounter("upload_impl");
+
     final File tmpFile = File.createTempFile("jobimpl", null, _tmpDir);
     final String id = UUID.randomUUID().toString();
     final String user = getUser(httpRequest);
@@ -539,10 +570,10 @@ public class SteveHandler extends ProtoBufHandler {
               }
             });
 
-    ListenableFuture<String> jobId = Futures.transform(
+    ListenableFuture<Job> job = Futures.transform(
             jobImplId,
-            new AsyncFunction<String, String>() {
-              public ListenableFuture<String> apply(String impl) {
+            new AsyncFunction<String, Job>() {
+              public ListenableFuture<Job> apply(String impl) {
                 return _db.createJob(
                         user,
                         req.getClientId(),
@@ -555,28 +586,28 @@ public class SteveHandler extends ProtoBufHandler {
               }
             });
 
-    jobId = Futures.transform(
-            jobId,
-            new AsyncFunction<String, String>() {
-              public ListenableFuture<String> apply(String id) {
+    ListenableFuture<String> jobId = Futures.transform(
+            job,
+            new AsyncFunction<Job, String>() {
+              public ListenableFuture<String> apply(Job j) {
                 final StatusBuilder status = new StatusBuilder();
                 status.event = Status.Event.SUCCEEDED;
                 status.machine = "frontend";
                 status.timestamp = System.currentTimeMillis();
 
-                return _db.addStatus(id, status.build());
+                return _db.addStatus(j.id, status.build());
               }
             });
 
     ListenableFuture<Frontend.Response> futureRes = Futures.transform(
             jobId,
             new Function<String, Frontend.Response>() {
-              public Frontend.Response apply(String jobId) {
+              public Frontend.Response apply(String id) {
                 return
                         Frontend.Response.newBuilder()
                                 .setImplAdd(
                                         Frontend.ImplAddResponse.newBuilder()
-                                                .setId(jobId))
+                                                .setId(id))
                                 .build();
               }
             });
@@ -593,6 +624,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           Frontend.ImplGetRequest req) throws IOException {
+    _statsd.incrementCounter("get_impl");
+
     final String user = getUser(httpRequest);
 
     URI tmpUrl;
@@ -650,6 +683,8 @@ public class SteveHandler extends ProtoBufHandler {
           HttpServletRequest httpRequest,
           HttpServletResponse httpResponse,
           Frontend.ImplListRequest req) {
+    _statsd.incrementCounter("list_impl");
+
     final String user = getUser(httpRequest);
     return Futures.transform(
             _db.getJobImpl(user),
@@ -665,6 +700,84 @@ public class SteveHandler extends ProtoBufHandler {
                         Frontend.Response.newBuilder()
                                 .setImplList(resp)
                                 .build();
+              }
+            });
+  }
+
+  private ListenableFuture<Frontend.Response> handleListPlatforms(
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          Frontend.ListPlatformsRequest req) {
+    _statsd.incrementCounter("list_platforms");
+
+    return Futures.transform(
+            _db.getPlatforms(),
+            new Function<Iterable<String>, Frontend.Response>() {
+              public Frontend.Response apply(Iterable<String> platforms) {
+                Frontend.ListPlatformsResponse.Builder resp = Frontend.ListPlatformsResponse.newBuilder();
+                for (String platform: platforms) {
+                  resp.addPlatform(platform);
+                }
+                return Frontend.Response.newBuilder().setListPlatforms(resp).build();
+              }
+            });
+  }
+
+  private ListenableFuture<Frontend.Response> handleListQueues(
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          Frontend.ListQueuesRequest req) {
+    _statsd.incrementCounter("list_queues");
+
+    return Futures.transform(
+            _db.getQueues(),
+            new Function<Iterable<String>, Frontend.Response>() {
+              public Frontend.Response apply(Iterable<String> queues) {
+                Frontend.ListQueuesResponse.Builder resp = Frontend.ListQueuesResponse.newBuilder();
+                for (String queue: queues) {
+                  resp.addQueue(queue);
+                }
+                return Frontend.Response.newBuilder().setListQueues(resp).build();
+              }
+            });
+  }
+
+  private ListenableFuture<Frontend.Response> handleListMetadataKeys(
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          Frontend.ListMetadataKeysRequest req) {
+    _statsd.incrementCounter("list_metadata_keys");
+
+    final String user = getUser(httpRequest);
+    return Futures.transform(
+            _db.getMetadataKeys(user),
+            new Function<Iterable<String>, Frontend.Response>() {
+              public Frontend.Response apply(Iterable<String> keys) {
+                Frontend.ListMetadataKeysResponse.Builder resp = Frontend.ListMetadataKeysResponse.newBuilder();
+                for (String key: keys) {
+                  resp.addKey(key);
+                }
+                return Frontend.Response.newBuilder().setListMetadataKeys(resp).build();
+              }
+            });
+  }
+
+  private ListenableFuture<Frontend.Response> handleListMetadataValues(
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          Frontend.ListMetadataValuesRequest req) {
+    _statsd.incrementCounter("list_metadata_values");
+
+    final String user = getUser(httpRequest);
+    return Futures.transform(
+            _db.getMetadataValues(user, req.getKey()),
+            new Function<Iterable<String>, Frontend.Response>() {
+              public Frontend.Response apply(Iterable<String> values) {
+                Frontend.ListMetadataValuesResponse.Builder resp = Frontend.ListMetadataValuesResponse.newBuilder();
+                for (String value: values) {
+                  resp.addValue(value);
+                }
+                return Frontend.Response.newBuilder().setListMetadataValues(resp).build();
               }
             });
   }

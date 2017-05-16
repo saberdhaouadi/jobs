@@ -1,5 +1,7 @@
 package com.logicblox.steve.common;
 
+import java.util.Optional;
+
 import java.net.URI;
 import java.net.URL;
 import java.util.Optional;
@@ -19,7 +21,7 @@ public final class Data {
 
   public Data(String location, String hash) {
     _loc = location;
-    _hash = Optional.of(hash);
+    _hash = Optional.ofNullable(hash);
   }
 
   public Data(String location) {

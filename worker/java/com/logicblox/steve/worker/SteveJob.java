@@ -45,11 +45,14 @@ public class SteveJob {
 
   private String _s3Bucket;
   private URI _outputLog;
+  private URI _outputLbLogs;
 
   private S3Client _client;
 
   private File _inputPath = new File("/tmp/job/in");
   private File _outputPath = new File("/tmp/job/out");
+  private File _logOutputPath = new File("/tmp/job/log");
+  private File _lbLogsPath = new File("/tmp/job/log/lb-logs.tgz");
   private File _jobPath = new File("/tmp/job/job.tar.gz");
   private File _metadataPath = new File("/tmp/job/in/metadata.json");
 
@@ -61,8 +64,11 @@ public class SteveJob {
 
   private long _diskFreeStart = 0;
   private long _maxDiskUsage = 0;
- 
+  private long _cpuUsage = 0;
+  private long _maxMemory = 0;
+
   private File _keyDir = new File(com.logicblox.s3lib.Utils.getDefaultKeyDirectory());
+  private File _shellDir = new File("/tmp/shell");
   private SteveKeyServerHelper _keyHelper;
   private File _cpuacct = new File("/sys/fs/cgroup/cpu,cpuacct/system.slice/nix-daemon.service/cpuacct.usage");
   private File _memacct = new File("/sys/fs/cgroup/memory/system.slice/nix-daemon.service/memory.memsw.max_usage_in_bytes");
@@ -89,6 +95,7 @@ public class SteveJob {
     }
     try {
       _outputLog = new URI(String.format("s3://%s/jobs/%s/log", _s3Bucket, _id));
+      _outputLbLogs = new URI(String.format("s3://%s/jobs/%s/lb-logs.tgz", _s3Bucket, _id));
     } catch (URISyntaxException e) {
       throw new InternalException("Invalid output log URI", e);
     }
@@ -98,39 +105,44 @@ public class SteveJob {
     System.err.println(String.format("%s: %s", _id, msg));
   }
 
+  private void readCounters() {
+    try {
+      _cpuUsage = Long.parseLong(FileUtils.readFileToString(_cpuacct).trim());
+      _maxMemory = Long.parseLong(FileUtils.readFileToString(_memacct).trim());
+    }
+    catch(NumberFormatException e) {
+      log("Could not parse the resource usage from cgroups: "+ e.getMessage());
+      e.printStackTrace();
+    }
+    catch(IOException e) {
+      log("Could not read resource usage from cgroups: " + e.getMessage());
+      e.printStackTrace();
+    }
+  }
+
   public void run() throws Exception {
     log("Starting..." + _id);
-    long cpuUsage = 0;
-    long maxMemory = 0;
 
     try {
       _outgoing.notifyStart();
       setup();
       runJob();
       log("Successfully executed " + _id);
-      try {
-        cpuUsage = Long.parseLong(FileUtils.readFileToString(_cpuacct).trim());
-        maxMemory = Long.parseLong(FileUtils.readFileToString(_memacct).trim());
-      }
-      catch(NumberFormatException e) {
-        log("Could not parse the resource usage from cgroups: "+ e.getMessage());
-        e.printStackTrace();
-      }
-      catch(IOException e) {
-        log("Could not read resource usage from cgroups: " + e.getMessage());
-        e.printStackTrace();
-      }
+      readCounters();
 
-      List<S3File> output = uploadOutput();
-      _outgoing.notifySuccess(output, cpuUsage, maxMemory, _maxDiskUsage);
-      log("Successfully uploaded output files for job " + _id);
+      // Do not upload files when previous log already exists.
+      if(!previousLogExists()) {
+        List<S3File> output = uploadOutput();
+        _outgoing.notifySuccess(output, _cpuUsage, _maxMemory, _maxDiskUsage);
+        log("Successfully uploaded output files for job " + _id);
+      }
       teardown();
     } catch (JobKilledException k) {
       _outgoing.notifyStatus("Job was killed. It will be restarted on another worker.");
       _killed = true;
     } catch (InternalException e) {
-      if(_receiveCount >= 2) {
-        _outgoing.notifyFailure(new InternalException("Retried job multiple time, but keep hitting internal error."), cpuUsage, maxMemory, _maxDiskUsage);
+      if(_receiveCount >= 5) {
+        _outgoing.notifyFailure(new InternalException("Retried job multiple time, but keep hitting internal error."), _cpuUsage, _maxMemory, _maxDiskUsage);
       } else {
         _outgoing.notifyStatus("There was an internal error while executing the job. It will be restarted on another worker.");
         if(e.getCause() != null) {
@@ -141,7 +153,8 @@ public class SteveJob {
     } catch (Exception e) {
       log("Failure executing " + _id + ": " + e.getMessage());
       e.printStackTrace();
-      _outgoing.notifyFailure(e, cpuUsage, maxMemory, _maxDiskUsage);
+      readCounters();
+      _outgoing.notifyFailure(e, _cpuUsage, _maxMemory, _maxDiskUsage);
       teardown();
     }
   }
@@ -185,9 +198,18 @@ public class SteveJob {
 
     _inputPath.mkdirs();
     _outputPath.mkdirs();
+    _logOutputPath.mkdirs();
 
     try {
       ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _outputPath.toString());
+      Process p = pb.start();
+      p.waitFor();
+      p.destroy();
+    } catch (Exception e) {
+    }
+
+    try {
+      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _logOutputPath.toString());
       Process p = pb.start();
       p.waitFor();
       p.destroy();
@@ -225,6 +247,14 @@ public class SteveJob {
       FileUtils.writeStringToFile(_metadataPath, data);
     } catch (IOException e) {
       throw new InternalException("Could not write metadata.", e);
+    }
+
+    try {
+      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _inputPath.toString());
+      Process p = pb.start();
+      p.waitFor();
+      p.destroy();
+    } catch (Exception e) {
     }
 
     resetCounters();
@@ -301,20 +331,23 @@ public class SteveJob {
     }
   }
 
-  private void teardown() throws InternalException {
-    log("Tearing down...");
-
+  private boolean previousLogExists() throws InternalException {
     ObjectMetadata log = null;
     try {
       log = _client.exists(_s3Bucket, String.format("jobs/%s/log", _id)).get();
+      return (log != null);
     } catch (Exception e) {
       throw new InternalException("Could not determine if log file already exists in S3.", e);
     }
+  }
+
+  private void teardown() throws InternalException {
+    log("Tearing down...");
 
     // TODO rework to make sure we don't overwrite uploaded results
     // from different jobs (moved this out to avoid reporting success
     // before upload)
-    if (log == null) {
+    if (!previousLogExists()) {
       if (_drv != null) {
         File logPath = new File(Utils.nixLogPath(_drv));
 
@@ -327,6 +360,10 @@ public class SteveJob {
           try {
             log("Uploading log...[%s/%s]".format(logPath.toString(), _outputLog));
             _client.upload(logPath, _outputLog).get();
+            if(_lbLogsPath.exists()) {
+              log("Uploading LB logs...[%s/%s]".format(_lbLogsPath.toString(), _outputLbLogs));
+              _client.upload(_lbLogsPath, _outputLbLogs).get();
+            }
           } catch (Exception e) {
             throw new InternalException("Error uploading log to " + _outputLog, e);
           }
@@ -343,13 +380,55 @@ public class SteveJob {
   }
 
   private void runJob() throws Exception {
-    log("Running the actual job...");
+    log("Checking for platform-releases.nix override.");
 
-    // determine .drv
-    _drv = readFromStdout("nix-instantiate", "<worker/nix/job.nix>", "--argstr", "platform_version", _metadata.containsKey("platform") ? _metadata.get("platform") : "3.10.15" );
+    ObjectMetadata platformOverride;
+    try {
+      String key = "override/platform-releases.nix";
+      platformOverride = _client.exists(_s3Bucket, key).get();
+      if (platformOverride != null) {
+        _client.download(new File("/tmp/platform-releases.nix"), new URI(String.format("s3://%s/%s", _s3Bucket, key))).get();
+        log("Downloaded override for platform-releases.nix.");
+      }
+    } catch (Exception e) {
+      platformOverride = null;
+      log("Could not check for platform-releases.nix override, skipping.");
+    }
+
+    log("Running the actual job.");
+
+    ArrayList<String> args = new ArrayList<String>();
+    args.add("nix-instantiate");
+    args.add("<worker/nix/job.nix>");
+    args.add("--argstr");
+    args.add("platform_version");
+    args.add(_metadata.containsKey("platform") ? _metadata.get("platform") : "3.10.15");
+    args.add("--arg");
+    args.add("dependencies");
+    args.add(_metadata.containsKey("dependencies") ? "with (import <config/lib> {}).pkgs; ["+_metadata.get("dependencies").replace(",", " ")+"]" : "[]");
+    if (platformOverride != null) {
+      args.add("-I");
+      args.add("platform-releases=/tmp/platform-releases.nix");
+    }
+
+    try {
+      // determine .drv
+      _drv = readFromStdout(args.toArray(new String[args.size()]));
+
+      // build deps
+      nixShell(_drv);
+
+    } catch (Exception ex) {
+      if ( !_metadata.containsKey("dependencies") ) {
+        throw ex;
+      }
+      else {
+        throw new JobFailedException("Unknown problem with one of the dependencies.");
+      }
+    }
 
     // build .drv
-    nixStoreRealise(_drv, _id);
+    nixStoreRealise(_drv);
   }
 
   public String readFromStdout(String... args) throws Exception {
@@ -367,7 +446,30 @@ public class SteveJob {
     return res;
   }
 
-  public void nixStoreRealise(String file, String job) throws Exception {
+  public void nixShell(String file) throws Exception {
+    CommandLine commandLine = new CommandLine("nix-shell");
+    commandLine.addArgument(file);
+    commandLine.addArgument("--command");
+    commandLine.addArgument("echo");
+
+    Executor executor = new DefaultExecutor();
+    executor.setExitValues(null);
+    _shellDir.mkdirs();
+    executor.setWorkingDirectory(_shellDir);
+
+    int exit;
+    try {
+      exit = executor.execute(commandLine);
+    } catch (Exception ex) {
+      throw new InternalException("Execute exception: " + ex.getMessage(), ex);
+    }
+
+    if (exit != 0) {
+      throw new JobFailedException("Could not build one of the dependencies." + exit);
+    }
+  }
+
+  public void nixStoreRealise(String file) throws Exception {
     // build up the command line to using a 'java.io.File'
     CommandLine commandLine = new CommandLine("nix-store");
     commandLine.addArgument("-r");

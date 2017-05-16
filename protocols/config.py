@@ -6,12 +6,9 @@ lbconfig_package(
   default_prefix='/opt/logicblox/lb-steve-protocols',
   default_targets=['jars', 'lb-libraries', 'java_protobufs'])
 
-s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
-
 depends_on(
   logicblox_dep,
-  lb_web_dep,
-  s3lib_dep
+  lb_web_dep
 )
 
 protobuf_protocol(
@@ -58,8 +55,8 @@ classpath = [
   '$(logicblox)/lib/java/protobuf-2.6.1.jar',
   '$(logicblox)/lib/java/guava-15.0.jar',
   '$(logicblox)/lib/java/lb-common.jar',
-  '$(s3lib)/lib/java/s3lib-0.2.jar',
-  '$(s3lib)/lib/java/aws-java-sdk-1.10.20.jar',
+  '$(lb_web)/lib/java/s3lib-0.2.jar',
+  '$(lb_web)/lib/java/aws-java-sdk-1.10.20.jar',
   '$(lb_web)/lib/java/lb-web-client.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar'
 ]

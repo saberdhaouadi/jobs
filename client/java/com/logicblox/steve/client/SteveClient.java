@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -262,6 +263,82 @@ public class SteveClient implements SteveClientInterface {
               @Override
               public List<Frontend.JobImplInfo> apply(Frontend.Response response) {
                 return response.getImplList().getJobImplList();
+              }
+            });
+  }
+
+  /**
+   * List Queues
+   */
+  public ListenableFuture<List<String>> getQueues()
+          throws ServiceClientException {
+    Frontend.Request.Builder req =
+            Frontend.Request.newBuilder()
+                    .setListQueues(Frontend.ListQueuesRequest.newBuilder());
+
+    return Futures.transform(
+            post(req.build()),
+            new Function<Frontend.Response, List<String>>() {
+              @Override
+              public List<String> apply(Frontend.Response response) {
+                return response.getListQueues().getQueueList();
+              }
+            });
+  }
+
+  /**
+   * List platforms
+   */
+  public ListenableFuture<List<String>> getPlatforms()
+          throws ServiceClientException {
+    Frontend.Request.Builder req =
+            Frontend.Request.newBuilder()
+                    .setListPlatforms(Frontend.ListPlatformsRequest.newBuilder());
+
+    return Futures.transform(
+            post(req.build()),
+            new Function<Frontend.Response, List<String>>() {
+              @Override
+              public List<String> apply(Frontend.Response response) {
+                return response.getListPlatforms().getPlatformList();
+              }
+            });
+  }
+
+  /**
+   * List metadata keys
+   */
+  public ListenableFuture<List<String>> getMetadataKeys()
+          throws ServiceClientException {
+    Frontend.Request.Builder req =
+            Frontend.Request.newBuilder()
+                    .setListMetadataKeys(Frontend.ListMetadataKeysRequest.newBuilder());
+
+    return Futures.transform(
+            post(req.build()),
+            new Function<Frontend.Response, List<String>>() {
+              @Override
+              public List<String> apply(Frontend.Response response) {
+                return response.getListMetadataKeys().getKeyList();
+              }
+            });
+  }
+
+  /**
+   * List metadata values
+   */
+  public ListenableFuture<List<String>> getMetadataValues(String key)
+          throws ServiceClientException {
+    Frontend.Request.Builder req =
+            Frontend.Request.newBuilder()
+                    .setListMetadataValues(Frontend.ListMetadataValuesRequest.newBuilder().setKey(key));
+
+    return Futures.transform(
+            post(req.build()),
+            new Function<Frontend.Response, List<String>>() {
+              @Override
+              public List<String> apply(Frontend.Response response) {
+                return response.getListMetadataValues().getValueList();
               }
             });
   }

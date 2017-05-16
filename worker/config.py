@@ -7,8 +7,6 @@ lbconfig_package(
   default_targets=['jars'])
 
 
-s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
-
 commons_exec_dep = (
   "commons_exec", {'default_path': "/opt/logicblox/deps/commons-exec-1.2"}
 )
@@ -24,7 +22,6 @@ aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
 depends_on(
     logicblox_dep,
     lb_web_dep,
-    s3lib_dep,
     commons_exec_dep,
     protocols_dep,
     aws_java_sdk_dep,
@@ -36,25 +33,26 @@ bin_program('lb-steve-provisioner')
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
 
-  '$(s3lib)/lib/java/joda-time-2.8.1.jar',
-  '$(s3lib)/lib/java/jcommander-1.29.jar',
-  '$(s3lib)/lib/java/commons-io-2.4.jar',
-  '$(s3lib)/lib/java/guava-15.0.jar',
-  '$(s3lib)/lib/java/s3lib-0.2.jar',
-  '$(s3lib)/lib/java/jackson-annotations-2.5.3.jar',
-  '$(s3lib)/lib/java/jackson-core-2.5.3.jar',
-  '$(s3lib)/lib/java/jackson-databind-2.5.3.jar',
-  '$(s3lib)/lib/java/httpclient-4.3.6.jar',
-  '$(s3lib)/lib/java/httpcore-4.3.3.jar',
-  '$(s3lib)/lib/java/commons-logging-1.1.3.jar',
+  '$(lb_web)/lib/java/joda-time-2.8.1.jar',
+  '$(lb_web)/lib/java/jcommander-1.29.jar',
+  '$(lb_web)/lib/java/commons-io-2.4.jar',
+  '$(lb_web)/lib/java/guava-15.0.jar',
+  '$(lb_web)/lib/java/google-http-client-1.19.0.jar',
+  '$(lb_web)/lib/java/s3lib-0.2.jar',
+  '$(lb_web)/lib/java/jackson-annotations-2.5.3.jar',
+  '$(lb_web)/lib/java/jackson-core-2.5.3.jar',
+  '$(lb_web)/lib/java/jackson-databind-2.5.3.jar',
+  '$(lb_web)/lib/java/httpclient-4.3.6.jar',
+  '$(lb_web)/lib/java/httpcore-4.3.3.jar',
+  '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
 
   '$(aws_java_sdk)/lib/java/aws-java-sdk-1.10.37.jar',
 
   '$(commons_exec)/lib/java/commons-exec.jar',
   '$(commons_cli)/lib/java/commons-cli.jar',
-
+  
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
-  '$(lb_web)/lib/java/gson-2.2.4.jar',
+  '$(lb_web)/lib/java/gson-2.2.4.jar',  
   '$(lb_web)/lib/java/lb-web-client.jar',
   '$(lb_web)/lib/java/lb-web-server.jar',
   '$(lb_web)/lib/java/log4j-1.2.13.jar',

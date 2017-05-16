@@ -27,6 +27,9 @@ message RunJob {
 
   // Account to which job belongs, needed to retrieve keys. Optional to keep compatible with older version of worker.
   optional string account = 8;
+
+  // IAM role to assume
+  optional string iam_role = 9;
 }
 
 // TODO add timeout etc

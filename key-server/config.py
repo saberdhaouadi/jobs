@@ -8,13 +8,11 @@ lbconfig_package(
 
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
 commons_cli_dep = ( "commons_cli", {'default_path': "/opt/logicblox/deps/commons-cli-1.2"})
-s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib"})
 
 depends_on(
   logicblox_dep,
   lb_web_dep,
   protocols_dep,
-  s3lib_dep,
   commons_cli_dep)
 
 bin_program('lb-steve-key-server')
@@ -68,9 +66,9 @@ classpath = [
   '$(lb_web)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
   '$(lb_web)/lib/java/google-oauth-client-1.19.0.jar',
 
-  '$(s3lib)/lib/java/s3lib-0.2.jar',
-  '$(s3lib)/lib/java/commons-io-2.4.jar',
-  '$(s3lib)/lib/java/aws-java-sdk-1.10.20.jar',
+  '$(lb_web)/lib/java/s3lib-0.2.jar',
+  '$(lb_web)/lib/java/commons-io-2.4.jar',
+  '$(lb_web)/lib/java/aws-java-sdk-1.10.20.jar',
 
   '$(logicblox)/lib/java/lb-connectblox.jar',
 
@@ -85,3 +83,4 @@ jar(
 link_libs(classpath)
 
 install_files(classpath, 'lib/java')
+

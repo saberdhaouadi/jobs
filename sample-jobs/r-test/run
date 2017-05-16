@@ -1,0 +1,4 @@
+#! /bin/sh
+set -e
+gunzip sales_for_0008147569241_MA_USA.dat.gz
+Rscript R_code_for_computing_elasticity_for_nat_upc_region.R 2>&1 | tee $2/output.txt

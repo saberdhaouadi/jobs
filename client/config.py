@@ -6,14 +6,12 @@ lbconfig_package(
   default_prefix='/opt/logicblox/lb-steve-client',
   default_targets=['jars'])
 
-s3lib_dep = ("s3lib", {'default_path': "/opt/logicblox/s3lib", 'help': "S3lib to use for this build."})
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
 aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
 
 depends_on(
   logicblox_dep,
   lb_web_dep,
-  s3lib_dep,
   aws_java_sdk_dep,
   protocols_dep)
 
@@ -23,14 +21,14 @@ config_file('config/lb-steve-client.config')
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
 
-  '$(s3lib)/lib/java/s3lib-0.2.jar',
-  '$(s3lib)/lib/java/commons-io-2.4.jar',
-  '$(s3lib)/lib/java/httpclient-4.3.6.jar',
-  '$(s3lib)/lib/java/httpcore-4.3.3.jar',
-  '$(s3lib)/lib/java/jackson-annotations-2.5.3.jar',
-  '$(s3lib)/lib/java/jackson-core-2.5.3.jar',
-  '$(s3lib)/lib/java/jackson-databind-2.5.3.jar',
-  '$(s3lib)/lib/java/commons-logging-1.1.3.jar',
+  '$(lb_web)/lib/java/s3lib-0.2.jar',
+  '$(lb_web)/lib/java/commons-io-2.4.jar',
+  '$(lb_web)/lib/java/httpclient-4.3.6.jar',
+  '$(lb_web)/lib/java/httpcore-4.3.3.jar',
+  '$(lb_web)/lib/java/jackson-annotations-2.5.3.jar',
+  '$(lb_web)/lib/java/jackson-core-2.5.3.jar',
+  '$(lb_web)/lib/java/jackson-databind-2.5.3.jar',
+  '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
 
   '$(aws_java_sdk)/lib/java/aws-java-sdk-1.10.37.jar',
 
@@ -40,6 +38,7 @@ classpath = [
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
   '$(lb_web)/lib/java/commons-configuration-1.8.jar',
   '$(lb_web)/lib/java/commons-lang-2.6.jar',
+  '$(lb_web)/lib/java/google-http-client-1.19.0.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar',
   '$(lb_web)/lib/java/guava-15.0.jar',
   '$(lb_web)/lib/java/java-statsd-client-2.0.0.jar',

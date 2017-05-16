@@ -29,6 +29,11 @@ import com.logicblox.steve.protocol.Database.Request;
 import com.logicblox.steve.protocol.Database.Response;
 import com.logicblox.steve.protocol.Database.SetJobImplRequest;
 import com.logicblox.steve.protocol.Database.SetResultRequest;
+import com.logicblox.steve.protocol.Database.ListPlatformsRequest;
+import com.logicblox.steve.protocol.Database.ListQueuesRequest;
+import com.logicblox.steve.protocol.Database.ListMetadataKeysRequest;
+import com.logicblox.steve.protocol.Database.ListMetadataValuesRequest;
+
 
 /**
  * An implementation of Database backed by a LogicBlox workspace. This implementation does not cache
@@ -38,10 +43,18 @@ public class LBDatabase implements Database {
 
   final Logger _logger = SystemDLogger.getLogger("LBDatabase");
   final String _dbServicesPrefix;
-  final ProtobufServiceClient _client;
-  final ProtobufServiceClient _roClient;
-  final LBDatabaseBatcher _batcher;
-  final LBDatabaseBatcher _readOnlyBatcher;
+
+  final LBDatabaseBatcher _getUserBatcher;
+  final LBDatabaseBatcher _createJobBatcher;
+  final LBDatabaseBatcher _addStatusBatcher;
+  final LBDatabaseBatcher _setResultBatcher;
+  final LBDatabaseBatcher _getJobBatcher;
+  final LBDatabaseBatcher _setJobImplBatcher;
+  final LBDatabaseBatcher _getJobImplBatcher;
+  final LBDatabaseBatcher _getQueuesBatcher;
+  final LBDatabaseBatcher _getPlatformsBatcher;
+  final LBDatabaseBatcher _getMetadataKeysBatcher;
+  final LBDatabaseBatcher _getMetadataValuesBatcher;
 
   public LBDatabase() {
     this("http://localhost:8080/db");
@@ -49,22 +62,56 @@ public class LBDatabase implements Database {
 
   public LBDatabase(String dbServicesPrefix) {
     _dbServicesPrefix = dbServicesPrefix;
-    _client = ServiceConnector.create(_dbServicesPrefix).createProtobufClient();
-    _roClient = ServiceConnector.create(_dbServicesPrefix+"_ro").createProtobufClient();
 
-    _batcher = new LBDatabaseBatcher(_client, false);
-    _batcher.start();
+    _createJobBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/createJob").createProtobufClient(), false);
+    _createJobBatcher.start();
 
-    _readOnlyBatcher = new LBDatabaseBatcher(_roClient, true);
-    _readOnlyBatcher.start();
+    _addStatusBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/addStatus").createProtobufClient(), false);
+    _addStatusBatcher.start();
+
+    _setResultBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/setResult").createProtobufClient(), false);
+    _setResultBatcher.start();
+
+    _setJobImplBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/setJobImpl").createProtobufClient(), false);
+    _setJobImplBatcher.start();
+
+    _getJobBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getJob").createProtobufClient(), true);
+    _getJobBatcher.start();
+
+    _getUserBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getUser").createProtobufClient(), true);
+    _getUserBatcher.start();
+
+    _getJobImplBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getJobImpl").createProtobufClient(), true);
+    _getJobImplBatcher.start();
+
+    _getQueuesBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getQueues").createProtobufClient(), true);
+    _getQueuesBatcher.start();
+
+    _getPlatformsBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getPlatforms").createProtobufClient(), true);
+    _getPlatformsBatcher.start();
+
+    _getMetadataKeysBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getMetadataKeys").createProtobufClient(), true);
+    _getMetadataKeysBatcher.start();
+
+    _getMetadataValuesBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getMetadataValues").createProtobufClient(), true);
+    _getMetadataValuesBatcher.start();
   }
   
   /**
    * Allow the database implementation to cleanup resources.
    */
   public void shutdown() {
-    _batcher.shutdown();
-    _readOnlyBatcher.shutdown();
+    _getUserBatcher.shutdown();
+    _createJobBatcher.shutdown();
+    _addStatusBatcher.shutdown();
+    _setResultBatcher.shutdown();
+    _getJobBatcher.shutdown();
+    _setJobImplBatcher.shutdown();
+    _getJobImplBatcher.shutdown();
+    _getQueuesBatcher.shutdown();
+    _getPlatformsBatcher.shutdown();
+    _getMetadataKeysBatcher.shutdown();
+    _getMetadataValuesBatcher.shutdown();
   }
 
   @Override
@@ -75,7 +122,7 @@ public class LBDatabase implements Database {
                             .setUserId(userId)
             ).build();    
     
-    return Futures.transform(_readOnlyBatcher.addRequest(request),
+    return Futures.transform(_getUserBatcher.addRequest(request),
             new Function<Response, User>() {
               public User apply(Response response) {
 
@@ -102,7 +149,7 @@ public class LBDatabase implements Database {
   //
 
   @Override
-  public ListenableFuture<String> createJob(
+  public ListenableFuture<Job> createJob(
           final String userId,
           final String clientId,
           final String jobImplId,
@@ -128,12 +175,12 @@ public class LBDatabase implements Database {
     final Request request = Request.newBuilder().setCreateJob(builder).build();
 
     // submit and process the response
-    return Futures.transform(_batcher.addRequest(request),
-            new Function<Response, String>() {
-              public String apply(Response response) {
+    return Futures.transform(_createJobBatcher.addRequest(request),
+            new Function<Response, Job>() {
+              public Job apply(Response response) {
 
                 checkError(response);
-                return response.getJobId();
+                return convertFromDatabase(response.getJob());
               }
             });
   }
@@ -149,7 +196,7 @@ public class LBDatabase implements Database {
             ).build();
     
     // submit and process the response
-    return Futures.transform(_batcher.addRequest(request),
+    return Futures.transform(_addStatusBatcher.addRequest(request),
             new Function<Response, String>() {
               public String apply(Response response) {
 
@@ -170,7 +217,7 @@ public class LBDatabase implements Database {
             ).build();
     
     // submit and process the response
-    return Futures.transform(_batcher.addRequest(request),
+    return Futures.transform(_setResultBatcher.addRequest(request),
             new Function<Response, String>() {
               public String apply(Response response) {
 
@@ -180,6 +227,24 @@ public class LBDatabase implements Database {
             });
   }
 
+  private Job convertFromDatabase(com.logicblox.steve.protocol.Database.Job job) {
+    return new Job(job.getId(),
+                   job.getUserId(),
+                   job.getAccountId(),
+                   job.getClientId(),
+                   job.getOutputPrefix(),
+                   job.getOutputEncryptionKey(),
+                   job.getImplId(),
+                   Conversions.convertFromDatabaseParams(job.getMetadataList()),
+                   Conversions.convertFromDatabaseFiles(job.getInputList()),
+                   job.getImplArchive(),
+                   job.hasCpuUsage() ? job.getCpuUsage(): 0,
+                   job.hasMaxMemory() ? job.getMaxMemory() : 0,
+                   job.hasMaxDiskUsage() ? job.getMaxDiskUsage() : 0,
+                   Conversions.convertFromDatabaseFiles(job.getOutputList()),
+                   Conversions.convertFromDatabaseStatus(job.getStatusList())
+                 );
+  }
 
   @Override
   public ListenableFuture<Job> getJob(final String jobId) {
@@ -187,36 +252,16 @@ public class LBDatabase implements Database {
     final Request request = Request.newBuilder()
             .setGetJob(GetJobRequest.newBuilder()
                             .setJobId(jobId)
-                            .setGetInput(true)
-                            .setGetMetadata(true)
-                            .setGetOutput(true)
                             .setGetStatus(true)
             ).build();
 
     // submit and process the response
-    return Futures.transform(_readOnlyBatcher.addRequest(request),
+    return Futures.transform(_getJobBatcher.addRequest(request),
             new Function<Response, Job>() {
               public Job apply(Response response) {
 
                 checkError(response);
-                
-                final com.logicblox.steve.protocol.Database.Job job = response.getJob();
-                return new Job(job.getId(),
-                        job.getUserId(),
-                        job.getAccountId(),
-                        job.getClientId(),
-                        job.getOutputPrefix(),
-                        job.getOutputEncryptionKey(),
-                        job.getImplId(),
-                        Conversions.convertFromDatabaseParams(job.getMetadataList()),
-                        Conversions.convertFromDatabaseFiles(job.getInputList()),
-                        job.getImplArchive(),
-                        job.hasCpuUsage() ? job.getCpuUsage(): 0,
-                        job.hasMaxMemory() ? job.getMaxMemory() : 0,
-                        job.hasMaxDiskUsage() ? job.getMaxDiskUsage() : 0,
-                        Conversions.convertFromDatabaseFiles(job.getOutputList()),
-                        Conversions.convertFromDatabaseStatus(job.getStatusList())
-                        );
+                return convertFromDatabase(response.getJob());
               }
             });    
   }
@@ -243,7 +288,7 @@ public class LBDatabase implements Database {
             ).build();
 
     // submit and process the response
-    return Futures.transform(_batcher.addRequest(request),
+    return Futures.transform(_setJobImplBatcher.addRequest(request),
             new Function<Response, String>() {
               public String apply(Response response) {
 
@@ -263,7 +308,7 @@ public class LBDatabase implements Database {
             ).build();
 
     // submit and process the response
-    return Futures.transform(_readOnlyBatcher.addRequest(request),
+    return Futures.transform(_getJobImplBatcher.addRequest(request),
             new Function<Response, JobImpl>() {
               public JobImpl apply(Response response) {
 
@@ -288,7 +333,7 @@ public class LBDatabase implements Database {
             ).build();
     
     // submit and process the response
-    return Futures.transform(_readOnlyBatcher.addRequest(request),
+    return Futures.transform(_getJobImplBatcher.addRequest(request),
             new Function<Response, Iterable<JobImpl>>() {
               public Iterable<JobImpl> apply(Response response) {
 
@@ -304,6 +349,50 @@ public class LBDatabase implements Database {
                 return builder.build();
               }
             });
+  }
+
+  @Override
+  public ListenableFuture<Iterable<String>> getQueues() {
+    final Request request = Request.newBuilder().setListQueues(ListQueuesRequest.newBuilder().build()).build();
+    return Futures.transform(_getQueuesBatcher.addRequest(request),
+            new Function<Response, Iterable<String>>() {
+               public Iterable<String> apply(Response response) {
+                   return response.getQueueList();
+               }
+           });
+  }
+
+  @Override
+  public ListenableFuture<Iterable<String>> getPlatforms() {
+    final Request request = Request.newBuilder().setListPlatforms(ListPlatformsRequest.newBuilder().build()).build();
+    return Futures.transform(_getPlatformsBatcher.addRequest(request),
+            new Function<Response, Iterable<String>>() {
+               public Iterable<String> apply(Response response) {
+                   return response.getPlatformList();
+               }
+           });
+  }
+
+  @Override
+  public ListenableFuture<Iterable<String>> getMetadataKeys(String user) {
+    final Request request = Request.newBuilder().setListMetadataKeys(ListMetadataKeysRequest.newBuilder().setUserId(user).build()).build();
+    return Futures.transform(_getMetadataKeysBatcher.addRequest(request),
+            new Function<Response, Iterable<String>>() {
+               public Iterable<String> apply(Response response) {
+                   return response.getMetadataKeyList();
+               }
+           });
+  }
+
+  @Override
+  public ListenableFuture<Iterable<String>> getMetadataValues(String user, String key) {
+    final Request request = Request.newBuilder().setListMetadataValues(ListMetadataValuesRequest.newBuilder().setUserId(user).setKey(key).build()).build();
+    return Futures.transform(_getMetadataValuesBatcher.addRequest(request),
+            new Function<Response, Iterable<String>>() {
+               public Iterable<String> apply(Response response) {
+                   return response.getMetadataValueList();
+               }
+           });
   }
 
   //

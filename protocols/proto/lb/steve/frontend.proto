@@ -27,6 +27,12 @@ message Request {
   optional ImplGetRequest impl_get = 22;
 
   optional RegisterKeyRequest register_key = 30;
+
+  optional ListPlatformsRequest list_platforms = 31;
+  optional ListQueuesRequest list_queues = 32;
+
+  optional ListMetadataKeysRequest list_metadata_keys = 33;
+  optional ListMetadataValuesRequest list_metadata_values = 34;
 }
 
 message Response {
@@ -48,6 +54,12 @@ message Response {
   optional ImplGetResponse impl_get = 22;
 
   optional RegisterKeyResponse register_key = 30;
+
+  optional ListPlatformsResponse list_platforms = 31;
+  optional ListQueuesResponse list_queues = 32;
+
+  optional ListMetadataKeysResponse list_metadata_keys = 33;
+  optional ListMetadataValuesResponse list_metadata_values = 34;
 }
 
 /**
@@ -200,6 +212,50 @@ message ImplGetResponse {
 }
 
 /**
+ * Get platforms
+ */
+message ListPlatformsRequest {
+}
+
+message ListPlatformsResponse {
+  repeated string platform = 1;
+}
+
+/**
+ * Get queues
+ */
+message ListQueuesRequest {
+}
+
+message ListQueuesResponse {
+  repeated string queue = 1;
+}
+
+
+/**
+ * Get metadata keys
+ */
+message ListMetadataKeysRequest {
+}
+
+message ListMetadataKeysResponse {
+  repeated string key = 1;
+}
+
+
+/**
+ * Get metadata values
+ */
+message ListMetadataValuesRequest {
+  required string key = 1;
+}
+
+message ListMetadataValuesResponse {
+  repeated string value = 1;
+}
+
+
+/**
  * General
  */
 message Param {
@@ -246,9 +302,8 @@ message Key {
 }
 
 message RegisterKeyRequest {
-  required string account = 1;
-  required string name = 2;
-  required string contents = 3;
+  required string name = 1;
+  required string contents = 2;
 }
 
 message RegisterKeyResponse {

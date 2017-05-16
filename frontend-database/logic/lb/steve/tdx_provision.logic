@@ -14,8 +14,9 @@ block(`tdx_provision) {
     file_definition_by_name["provision-config"] = fd,
     file_definition(fd) {
       file_delimiter[] = "|",
-      column_headers[] = "JOBQUEUE, PERCENTAGE_QUEUE, PERCENTAGE_SPOT, SPOT_PRICE, MAX, TOTAL",
-      column_formats[] = "string,   decimal,          decimal,         decimal,    int, int"
+      column_headers[] = "JOBQUEUE, PERCENTAGE_QUEUE, PERCENTAGE_SPOT, SPOT_PRICE, MAX, TOTAL, CPU, MEM, DISK",
+      column_formats[] = "string,   decimal,          decimal,         decimal,    int, int  , int, int, int",
+      file_columns_can_be_absent[] = "CPU, MEM, DISK"
     }.
 
     file_binding_by_name["provision-config"] = fb,
@@ -50,6 +51,21 @@ block(`tdx_provision) {
      predicate_binding_by_name["lb:steve:provision:jobqueue_total_instances"] =
         predicate_binding(_) {
           predicate_binding_columns[] = "JOBQUEUE, TOTAL"
+        },
+
+     predicate_binding_by_name["lb:steve:provision:jobqueue_cpu"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "JOBQUEUE, CPU"
+        },
+
+     predicate_binding_by_name["lb:steve:provision:jobqueue_memory"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "JOBQUEUE, MEM"
+        },
+
+     predicate_binding_by_name["lb:steve:provision:jobqueue_disk"] =
+        predicate_binding(_) {
+          predicate_binding_columns[] = "JOBQUEUE, DISK"
         }
     }.
 

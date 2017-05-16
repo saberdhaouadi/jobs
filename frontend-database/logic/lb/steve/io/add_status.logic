@@ -15,9 +15,9 @@ block(`add_status) {
     /**
      * Add status
      */
-    +schema:Job:status_event[job, ts] = event,
-    +schema:Job:status_machine[job, ts] = machine,
-    +schema:Job:status_message[job, ts] = message <-
+    ^schema:Job:status_event[job, ts] = event,
+    ^schema:Job:status_machine[job, ts] = machine,
+    ^schema:Job:status_message[job, ts] = message <-
       +proto:RequestEnvelope_request[_, _] = union,
       +proto:Request_add_status[union] = req,
       +proto:AddStatusRequest_job_id[req] = jobId,

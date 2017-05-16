@@ -1,13 +1,8 @@
 { config, pkgs, ... }:
 with pkgs.lib;
 let
-  papertrail-crt = pkgs.fetchurl {
-    url = https://papertrailapp.com/tools/papertrail-bundle.pem;
-    sha256 = "1jxap6ilkfx15dn8ar0b5aykqy9947qdny7r0pyb8ifwjx1m0fn0";
-  };
-
   builder-config = import <config> {};
-  builds = import ../. { platform_release = builder-config.getPlatform (import ../lb-version.nix ); };
+  builds = import ../. { platform_release = builder-config.getLB (import ../lb-version.nix ); };
   
   cfg = config.lb-steve-worker;
   workerScript =
@@ -15,10 +10,12 @@ let
       #! /bin/sh
       set -e
       source /etc/profile
-      export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${builds.worker}"
+      export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${builds.worker}:nixpkgs-unstable=${<nixpkgs-unstable>}"
       ${optionalString (config.deployment.targetEnv or "" == "") ''
         if [[ -f /root/user-data ]] ; then
           source /root/user-data
+        elif [[ -f /etc/ec2-metadata/user-data ]]; then
+          source /etc/ec2-metadata/user-data
         else
           exit 1
         fi
@@ -65,6 +62,7 @@ in
       platform3.logicblox
       platform3.bloxweb
       pkgs.protobuf2_5
+      pkgs.fio
 
       # actual packages
       builds.worker
@@ -75,7 +73,7 @@ in
 
     # The jobs and their data cannot reasonably be passed in a pure
     # way, as the input and output data can be very big.
-    nix.chrootDirs = [
+    nix.sandboxPaths = [
       "/tmp/job"
       "/sockets=/run/sockets"
       "/usr/bin/env=${pkgs.coreutils}/bin/env"
@@ -84,8 +82,9 @@ in
     ];
     nix.extraOptions = ''
       build-compress-log = false
+      user-agent-suffix = lb-jobs
     '';
-    nix.useChroot = true;
+    nix.useSandbox = true;
     nix.package = pkgs.nixUnstable;
 
     systemd.extraConfig = ''
@@ -95,6 +94,8 @@ in
 
     systemd.services.gurobi-socket =
       { description = "Create Gurobi unix domain socket";
+        wants = [ "network-online.target" ];
+        after = [ "network-online.target" ];
         wantedBy = [ "multi-user.target" ];
         path = [ pkgs.socat ];
         preStart =
@@ -107,7 +108,7 @@ in
             chmod go+w-x /run/sockets/gurobi
           '';
         serviceConfig = {
-          ExecStart = "${pkgs.socat}/bin/socat unix-listen:/run/sockets/gurobi,fork tcp-connect:ec2-23-23-190-69.compute-1.amazonaws.com:41954";
+          ExecStart = "${pkgs.socat}/bin/socat unix-listen:/run/sockets/gurobi,fork tcp-connect:gurobi.predictix.com:41954";
           Restart = "always";
           RestartSec = "10";
         };
@@ -144,9 +145,12 @@ in
     systemd.services.lb-steve-worker = {
       description = "LB Steve Worker";
       after = [ "network.target" "fetch-ec2-data.service" "gurobi-socket.service" ];
-      requires = [ "gurobi-socket.service" ];
+      wants = [ "gurobi-socket.service" ];
       wantedBy = [ "multi-user.target" ];
       path = [ builds.worker ];
+      preStart = ''
+        systemctl is-active gurobi-socket.service
+      '';
       serviceConfig = {
         ExecStart = "${workerScript}/bin/worker ${optionalString cfg.shutdownOnIdle "--shutdown-on-idle"}";
         Restart = "always";
@@ -177,36 +181,6 @@ in
     nixpkgs.config.allowUnfree = true;
     nixpkgs.config.allowBroken = true;
 
-    services.rsyslogd.enable = true;
-    services.rsyslogd.extraConfig = ''
-      $ModLoad imjournal
-
-      $ModLoad immark  # provides --MARK-- message capability
-      $MarkMessagePeriod 240 # log a MARK message every 8 minutes
-
-      $DefaultNetstreamDriverCAFile ${papertrail-crt}
-      $ActionSendStreamDriverPermittedPeer *.papertrailapp.com
-
-      $ActionSendStreamDriver gtls
-      $ActionSendStreamDriverMode 1
-      $ActionSendStreamDriverAuthMode x509/name
-
-      $ActionResumeInterval 10
-      $ActionQueueSize 100000
-      $ActionQueueDiscardMark 97500
-      $ActionQueueHighWaterMark 80000
-      $ActionQueueType LinkedList
-      $ActionQueueFileName papertrailqueue
-      $ActionQueueCheckpointInterval 100
-      $ActionQueueMaxDiskSpace 2g
-      $ActionResumeRetryCount -1
-      $ActionQueueSaveOnShutdown on
-      $ActionQueueTimeoutEnqueue 10
-      $ActionQueueDiscardSeverity 0
-
-      *.* @@logs.papertrailapp.com:24237
-    '';
-
     services.logrotate.enable = true;
     services.logrotate.config = ''
       /var/log/messages {
@@ -221,7 +195,11 @@ in
       }
     '';
 
-
+    nixpkgs.config.packageOverrides = pkgs: {
+      nixUnstable = pkgs.lib.overrideDerivation pkgs.nix (attrs: {
+        patches = [ ./nix-dev-shm.patch ];
+      });
+    };
   };
 
 }
