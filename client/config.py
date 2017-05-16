@@ -22,7 +22,7 @@ classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
 
   '$(lb_web)/lib/java/s3lib-0.2.jar',
-  '$(lb_web)/lib/java/commons-io-2.4.jar',
+  '$(logicblox)/lib/java/commons-io-2.4.jar',
   '$(lb_web)/lib/java/httpclient-4.3.6.jar',
   '$(lb_web)/lib/java/httpcore-4.3.3.jar',
   '$(lb_web)/lib/java/jackson-annotations-2.5.3.jar',
