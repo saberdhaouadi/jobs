@@ -404,6 +404,7 @@ with pkgs.lib;
                  --spot-price ${env.workers."${t}".price} \
                  --percentage-spot ${env.workers."${t}".percentageSpot} \
                  --percentage-queue ${env.workers."${t}".percentageQueue or "0.6"} \
+                 --max-delta ${env.workers."${t}".maxDelta or env.workers."${t}".max or "300"} \
                  --max ${env.workers."${t}".max or "300"} \
                  --min ${env.workers."${t}".min or "0"}
         '';
