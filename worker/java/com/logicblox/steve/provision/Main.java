@@ -249,15 +249,16 @@ public class Main {
       totalNeeded = Math.min(totalNeeded, minInstances);
     }
 
-    if (maxDelta != -1) {
-      totalNeeded = Math.min(totalNeeded, maxDelta);
-    }
-
     int spotCurrent = getNumberOfCurrentSpotInstances();
     int odCurrent = getNumberOfCurrentOnDemandInstances();
 
-    int spotNeeded = (int) Math.ceil(pctSpot * totalNeeded) - spotCurrent;
-    int odNeeded = totalNeeded - spotNeeded - odCurrent - spotCurrent;
+    int newNeeded = totalNeeded - spotCurrent - odCurrent;
+    if (maxDelta != -1) {
+      newNeeded = Math.min(newNeeded, maxDelta);
+    }
+
+    int spotNeeded = (int) Math.ceil(pctSpot * newNeeded);
+    int odNeeded = newNeeded - spotNeeded;
 
     System.err.println(String.format("%s: Number of current spot instances      : %d", queue, spotCurrent));
     System.err.println(String.format("%s: Number of current on-demand instances : %d", queue, odCurrent));
