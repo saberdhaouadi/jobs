@@ -34,6 +34,7 @@ public class Main {
   private static double pctQueue = 0.6;
   private static double spotPrice = 0.6;
   private static int totalNeeded = 0;
+  private static int maxDelta = -1;
   private static int maxInstances = 300;
   private static int minInstances = 0;
   private static boolean dryRun = true;
@@ -135,6 +136,13 @@ public class Main {
             .withType(Number.class)
             .create());
 
+    options.addOption(OptionBuilder.withLongOpt("max-delta")
+            .withDescription("Maximum number of instances to be newly created")
+            .hasArg()
+            .withArgName("number")
+            .withType(Number.class)
+            .create());
+
     options.addOption(OptionBuilder.withLongOpt("min")
             .withDescription("Minimum number of instances (only applies if any instances are needed)")
             .hasArg()
@@ -181,6 +189,8 @@ public class Main {
         totalNeeded = ((Number) _cmdline.getParsedOptionValue("total")).intValue();
       if (_cmdline.hasOption("max"))
         maxInstances = ((Number) _cmdline.getParsedOptionValue("max")).intValue();
+      if (_cmdline.hasOption("max-delta"))
+        maxDelta = ((Number) _cmdline.getParsedOptionValue("max-delta")).intValue();
       if (_cmdline.hasOption("min"))
         minInstances = ((Number) _cmdline.getParsedOptionValue("min")).intValue();
 
@@ -237,6 +247,10 @@ public class Main {
 
     if (minInstances > totalNeeded) {
       totalNeeded = Math.min(totalNeeded, minInstances);
+    }
+
+    if (maxDelta != -1) {
+      totalNeeded = Math.min(totalNeeded, maxDelta);
     }
 
     int spotCurrent = getNumberOfCurrentSpotInstances();
