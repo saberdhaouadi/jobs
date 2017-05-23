@@ -426,7 +426,7 @@ public class SteveHandler extends ProtoBufHandler {
       tmpUrl = new URI(_jobLogPrefix + "/" + req.getJobId() + "/log");
     } catch (URISyntaxException exc) {
       throw new ServiceException(
-              new SimpleErrorCode("INVALID_URL_SYNTAX", 500, "Invalid URL syntax"));
+              new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax"));
     }
     final URI inputUrl = tmpUrl;
 
@@ -538,7 +538,7 @@ public class SteveHandler extends ProtoBufHandler {
           return Futures.immediateFailedFuture(t);
         } else {
           return Futures.immediateFailedFuture(new ServiceException(
-                  new SimpleErrorCode("ERROR_FETCHING", 500, "Could not fetch job implementation")));
+                  new SimpleErrorCode("ERROR_FETCHING", 400, "Could not fetch job implementation")));
         }
       }
     });
