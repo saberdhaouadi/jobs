@@ -31,7 +31,7 @@ block(`service_support) {
     /**
      * Constructor for an Error message in this index (encapsulated by the response in the same index).
      */
-    error[index] = error -> int(index), proto:Error(error).
+    error[index, code, message] = error -> int(index), proto:Error(error), string(code), string(message).
 
     // pulse helpers
 
@@ -129,11 +129,11 @@ block(`service_support) {
 
 
     // ERROR: add an error to the response
-    +error[i] = error,
+    +error[i, code, message] = error,
     +proto:Error(error),
     +proto:Error_code[error] = code,
     +proto:Error_message[error] = message,
-    +proto:Response_error[resp] = error <-
+    +proto:Response_error(resp, error) <-
       +export_error(i, code, message),
       +response[i] = resp.
     

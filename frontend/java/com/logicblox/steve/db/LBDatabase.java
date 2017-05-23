@@ -406,12 +406,12 @@ public class LBDatabase implements Database {
    * @return the response, if it does not contain errors.
    */
   private Response checkError(Response response) {
-    if (response.hasError()) {
+    if (response.getErrorList().size() > 0) {
       throw new ServiceException(
               new SimpleErrorCode(
-                      response.getError().getCode(),
+                      response.getErrorList().get(0).getCode(),
                       400,
-                      response.getError().getMessage()));
+                      response.getErrorList().get(0).getMessage()));
     }
     return response;
   }

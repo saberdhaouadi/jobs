@@ -50,7 +50,7 @@ message Response
   // XOR
 
   // if an error ocurred in the execution (most operations return an empty response on success)
-  optional Error error = 1;
+  repeated Error error = 1 [(blox.options.set) = true];
 
   // for GetJobRequest
   optional Job job = 3;
