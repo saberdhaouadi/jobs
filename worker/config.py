@@ -1,10 +1,11 @@
 from lbconfig.api import *
+from lbconfig import core
 
 lbconfig_package(
   'lb-steve-worker',
   version='1.0',
   default_prefix='/opt/logicblox/lb-steve-worker',
-  default_targets=['jars'])
+  default_targets=['jars', 'findbugs'])
 
 
 commons_exec_dep = (
@@ -72,7 +73,9 @@ classpath = [
 jar(
    name = 'lb-steve-worker',
    srcdir = 'java',
+   findbugs = True,
    classpath = classpath)
+core.g_rules['findbugs'].input = set()
 
 install_dir('nix','nix')
 
