@@ -343,7 +343,7 @@ let
   used-dependencies = import ./used-deps.nix { inherit pkgs; };
 
   findbugs = pkgs.runCommand "findbugs-combine" {} ''
-    mkdir $out/nix-support
+    mkdir -p $out/nix-support
     cp ${worker}/findbugs/*.html $out
     cp ${client.build}/findbugs/*.html $out
     cp ${key-server}/findbugs/*.html $out
