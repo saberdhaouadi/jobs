@@ -1,5 +1,5 @@
 {
-  us-east-1 = "ami-47c3a151";
-  us-west-1 = "ami-91d2f5f1";
-  us-west-2 = "ami-adba22cd";
+  us-east-1 = "ami-9586c683";
+  us-west-1 = "ami-e93d1d89";
+  us-west-2 = "ami-1285e572";
 }
