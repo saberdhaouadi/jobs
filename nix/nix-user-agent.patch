@@ -1,3 +1,23 @@
+diff -rc nix/scripts/download-from-binary-cache.pl.in nix-new/scripts/download-from-binary-cache.pl.in
+*** nix/scripts/download-from-binary-cache.pl.in	2017-05-23 14:02:55.316035850 +0000
+--- nix-new/scripts/download-from-binary-cache.pl.in	2017-05-26 10:11:04.739950679 +0000
+***************
+*** 44,50 ****
+  
+  my $userName = getpwuid($<) || $ENV{"USER"} or die "cannot figure out user name";
+  
+! my $userAgent = "Nix/$Nix::Config::version";
+  
+  sub isTrue {
+      my ($x) = @_;
+--- 44,50 ----
+  
+  my $userName = getpwuid($<) || $ENV{"USER"} or die "cannot figure out user name";
+  
+! my $userAgent = "Nix/$Nix::Config::version lb-jobs";
+  
+  sub isTrue {
+      my ($x) = @_;
 diff -rc nix/src/libstore/download.cc nix-new/src/libstore/download.cc
 *** nix/src/libstore/download.cc	2017-05-23 14:02:55.317035834 +0000
 --- nix-new/src/libstore/download.cc	2017-05-23 14:03:39.036341711 +0000
