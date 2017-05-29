@@ -26,6 +26,11 @@ config_file('config/lb-steve-frontend.config')
 config_file('config/steve_service_config.json')
 config_file('$(lb_web)/config/lb-web-server.config')
 
+if subprocess.check_output(["lb", "version"]).strip() != "4.4.4":
+    netty = '$(lb_web)/lib/java/netty-all-4.1.8.Final.jar'
+else:
+    netty = '$(lb_web)/lib/java/netty-all-4.1.10.Final.jar'
+
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
 
@@ -51,7 +56,7 @@ classpath = [
   '$(lb_web)/lib/java/jetty-servlet-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-util-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/jetty-websocket-7.6.7.v20120910.jar',
-  '$(lb_web)/lib/java/netty-all-4.1.8.Final.jar',
+  netty,
   '$(lb_web)/lib/java/joda-time-2.8.1.jar',
   '$(lb_web)/lib/java/lb-common.jar',
   '$(lb_web)/lib/java/lb-common-protocol.jar',
