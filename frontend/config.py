@@ -26,7 +26,7 @@ config_file('config/lb-steve-frontend.config')
 config_file('config/steve_service_config.json')
 config_file('$(lb_web)/config/lb-web-server.config')
 
-if subprocess.check_output(["lb", "version"]).strip() != "4.4.4":
+if subprocess.check_output(["lb", "version"]).strip() == "4.4.4":
     netty = '$(lb_web)/lib/java/netty-all-4.1.8.Final.jar'
 else:
     netty = '$(lb_web)/lib/java/netty-all-4.1.10.Final.jar'
