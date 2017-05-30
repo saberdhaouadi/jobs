@@ -150,6 +150,19 @@ let
           fancy_report_finalize $id
         }
 
+        function tracing_json_publish()
+        {
+          name=$1
+          cat $LB_DEPLOYMENT_HOME/logs/current/lb-web-server.log | tr -s ' ' | cut -d ' ' -f6- > lb-web-server-tr.log
+          trace2json.py \
+            lb-web-server-tr.log \
+            $LB_DEPLOYMENT_HOME/logs/current/lb-server.log \
+            > $1.json
+          mkdir -p $out/nix-support $out/report
+          cp $1.json $out/report
+          echo "file json $out/report/$1.json" >> $out/nix-support/hydra-build-products
+        }
+
             ${pkgs.lib.optionalString heap_profiling ''
               # Enable heap-profiling for throughput phase
               lb server stop
@@ -363,16 +376,21 @@ let
         for i in $(seq 1 100); do
           record_span "get-job-$i" python ${./frontend-database/scripts/test-get-job.py} $i
         done
+        tracing_json_publish "increasing-get-job"
       '' "metrics" {};
 
     benchmark.load-data =
-      bench data "lb-jobs-install-with-data" "${jobs.database.build}/install.sh" "load" {};
+      bench data "lb-jobs-install-with-data" ''
+        ${jobs.database.build}/install.sh
+        tracing_json_publish "load-data"
+      '' "load" {};
 
     benchmark.get-metrics =
       bench data "lb-jobs-metrics-call" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
+        tracing_json_publish "get-metrics-1000"
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
       '' "metrics" {};
 
