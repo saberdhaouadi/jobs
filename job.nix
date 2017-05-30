@@ -78,7 +78,6 @@ let
 
   bench = data: name: command: id: attrs:
     let
-      heap_profiling = false;
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB (attrs // {
       inherit name;
@@ -163,22 +162,8 @@ let
           echo "file json $out/report/$1.json" >> $out/nix-support/hydra-build-products
         }
 
-            ${pkgs.lib.optionalString heap_profiling ''
-              # Enable heap-profiling for throughput phase
-              lb server stop
-              mkdir hprof
-              echo "Launching lb-server under heap-profiler"
-              LD_LIBRARY_PATH=${pkgs.glibc}/lib \
-              LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
-              HEAPPROFILE=hprof/lb-server.hprof \
-                lb-server --daemonize false &
-              sleep 60
-            ''}
-        ${if heap_profiling
-            then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
-            else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
-
         function start_monitors() {
+          lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)
           iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
           cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
           memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
@@ -212,24 +197,6 @@ let
         stop_monitors
 
         mkdir -p $out/report
-
-        ${pkgs.lib.optionalString heap_profiling ''
-              pushd hprof
-              ls -l
-              t1_prof=$(ls lb-server.hprof.*.heap | head -n 3 | tail -n 1)
-              t2_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
-
-              pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof.pdf
-              pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof.pdf
-              pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof-alloc.pdf
-              pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof-alloc.pdf
-              pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff.pdf || true
-              pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc.pdf || true
-              popd
-
-              pkill -f "lb-server --daemonize"
-        ''}
-
 
         fancy_report ${id}
 
