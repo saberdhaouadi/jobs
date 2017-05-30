@@ -373,6 +373,7 @@ let
     benchmark.increasing-get-job =
       bench data "lb-jobs-get-job" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
+        lb services restart
         for i in $(seq 1 100); do
           record_span "get-job-$i" python ${./frontend-database/scripts/test-get-job.py} $i
         done
@@ -388,6 +389,7 @@ let
     benchmark.get-metrics =
       bench data "lb-jobs-metrics-call" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
+        lb services restart
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
         tracing_json_publish "get-metrics-1000"
@@ -397,6 +399,7 @@ let
     benchmark.get-metrics-2G =
       bench data "lb-jobs-metrics-call" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
+        lb services restart
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
@@ -405,7 +408,9 @@ let
     benchmark.dev-1000-jobs-run =
       bench data_dev "lb-jobs-1000-jobs-run" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
+        lb services restart
         record_span "lb-jobs-1000-jobs" mitmdump -nc ${requests_dev}
+        tracing_json_publish "dev-1000-jobs-run"
       '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
 
 /*
