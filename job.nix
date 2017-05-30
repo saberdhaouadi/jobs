@@ -178,9 +178,26 @@ let
             then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
             else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
 
-        iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
-        cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
-        memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
+        function start_monitors() {
+          iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
+          cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
+          memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
+        }
+
+        function stop_monitors() {
+          pkill -f iousg-monitor
+          pkill -f cpuusg-monitor
+          pkill -f memusg-monitor
+        }
+
+        function restart_services() {
+          stop_monitors
+          sleep 2
+          lb services restart
+          start_monitors
+        }
+
+        start_monitors
 
         pushd $LB_DEPLOYMENT_HOME
         mkdir exports
@@ -192,9 +209,7 @@ let
 
         ${command}
 
-        pkill -f iousg-monitor
-        pkill -f cpuusg-monitor
-        pkill -f memusg-monitor
+        stop_monitors
 
         mkdir -p $out/report
 
@@ -373,7 +388,7 @@ let
     benchmark.increasing-get-job =
       bench data "lb-jobs-get-job" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
-        lb services restart
+        restart_services
         for i in $(seq 1 100); do
           record_span "get-job-$i" python ${./frontend-database/scripts/test-get-job.py} $i
         done
@@ -389,7 +404,7 @@ let
     benchmark.get-metrics =
       bench data "lb-jobs-metrics-call" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
-        lb services restart
+        restart_services
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
         tracing_json_publish "get-metrics-1000"
@@ -399,7 +414,7 @@ let
     benchmark.get-metrics-2G =
       bench data "lb-jobs-metrics-call" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
-        lb services restart
+        restart_services
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
         record_span "get-metrics-10000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 10000 http://localhost:55183/metrics
@@ -408,7 +423,7 @@ let
     benchmark.dev-1000-jobs-run =
       bench data_dev "lb-jobs-1000-jobs-run" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
-        lb services restart
+        restart_services
         record_span "lb-jobs-1000-jobs" mitmdump -nc ${requests_dev}
         tracing_json_publish "dev-1000-jobs-run"
       '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
