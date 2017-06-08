@@ -91,7 +91,7 @@ let
           shift
 
           local t1="$(date +%s.%N)"
-          "$@"
+          ${lib.optionalString (attrs ? timeout) "timeout ${toString attrs.timeout}"} "$@" ${lib.optionalString (attrs ? timeout) "|| true"}
           local t2="$(date +%s.%N)"
 
           if ! type -P bc &> /dev/null; then
@@ -395,13 +395,11 @@ let
         tracing_json_publish "dev-1000-jobs-run"
       '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
 
-/*
     benchmark.dev-walgreens-jobs-run =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
-      '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
-*/
+      '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; timeout = 7200 ; meta.timeout = 7500; };
   });
 
 in jobs
