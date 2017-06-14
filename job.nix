@@ -11,10 +11,13 @@
 , python
 , benchmarks ? null
 , heap_profiling ? false
+, nixpkgs_1703 ? null
 }:
 let
   inherit (builder_config) pkgs;
   version = builder_config.version;
+
+  mitmproxy = (import (if nixpkgs_1703 != null then nixpkgs_1703 else <nixpkgs>) {}).pythonPackages.mitmproxy; 
 
   deps =
     import ./deps.nix {
@@ -424,13 +427,13 @@ let
         record_span "lb-jobs-1000-jobs-2" mitmdump -nc ${requests_dev}
         record_span "lb-jobs-1000-jobs-3" mitmdump -nc ${requests_dev}
         tracing_json_publish "dev-1000-jobs-run"
-      '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; };
+      '' "metrics" { buildInputs = [ mitmproxy ]; };
 
     benchmark.dev-walgreens-jobs-run =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
-      '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; timeout = 3600 ; meta.timeout = 10800; };
+      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 3600 ; meta.timeout = 10800; };
   });
 
 in jobs
