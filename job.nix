@@ -430,7 +430,7 @@ let
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
-      '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; timeout = 1800 ; meta.timeout = 3600; };
+      '' "metrics" { buildInputs = [ pkgs.pythonPackages.mitmproxy ]; timeout = 3600 ; meta.timeout = 7200; };
   });
 
 in jobs
