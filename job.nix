@@ -249,8 +249,14 @@ let
         echo "file data $out/report/stats.csv" >> $out/nix-support/hydra-build-products
 
         tar -C $out/report -xvzf $out/report/${id}-report.tar.gz
-        mv $out/report/report $out/report/${id}-report
-        echo "doc ${id}-report $out/report/${id}-report" >> $out/nix-support/hydra-build-products
+        mv $out/report/report $out/${id}-report
+        rm $out/report/${id}-report.tar.gz
+        echo "doc ${id}-report $out/${id}-report" >> $out/nix-support/hydra-build-products
+
+        pushd $out
+        tar czf ${id}-report-all.tar.gz report
+        popd
+        echo "file tgz $out/${id}-report-all.tar.gz" >> $out/nix-support/hydra-build-products
       '';
     });
 
