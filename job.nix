@@ -80,7 +80,7 @@ let
     };
 
 
-  bench = data: name: command: id: attrs:
+  bench = data: name: precommand: command: id: attrs:
     let
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB (attrs // {
@@ -137,6 +137,9 @@ let
           popd
 
           cp $id-report/logs/results.csv $out/report/$id-results.csv
+          cp $id-report/logs/iousg-monitor.csv  $out/report/$id-iousg-monitor.csv
+          cp $id-report/logs/cpuusg-monitor.csv $out/report/$id-cpuusg-monitor.csv
+          cp $id-report/logs/memusg-monitor.csv $out/report/$id-memusg-monitor.csv
           rm -rf $id-report
         }
 
@@ -166,17 +169,27 @@ let
           echo "file json $out/report/$1.json" >> $out/nix-support/hydra-build-products
         }
 
-            ${pkgs.lib.optionalString heap_profiling ''
-              # Enable heap-profiling for throughput phase
-              lb server stop
-              mkdir hprof
-              echo "Launching lb-server under heap-profiler"
-              LD_LIBRARY_PATH=${pkgs.glibc}/lib \
-              LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
-              HEAPPROFILE=hprof/lb-server.hprof \
-                lb-server --daemonize false &
-              sleep 60
-            ''}
+        pushd $LB_DEPLOYMENT_HOME
+        mkdir exports
+        pushd exports
+        tar xvf ${data}
+        ln -s 201* latest
+        popd
+        popd
+
+        ${precommand}
+
+        ${pkgs.lib.optionalString heap_profiling ''
+          # Enable heap-profiling for throughput phase
+          lb server stop
+          mkdir hprof
+          echo "Launching lb-server under heap-profiler"
+          LD_LIBRARY_PATH=${pkgs.glibc}/lib \
+          LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
+          HEAPPROFILE=hprof/lb-server.hprof \
+            lb-server --daemonize false &
+          sleep 60
+        ''}
         ${if heap_profiling
             then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
             else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
@@ -202,14 +215,6 @@ let
 
         start_monitors
 
-        pushd $LB_DEPLOYMENT_HOME
-        mkdir exports
-        pushd exports
-        tar xvf ${data}
-        ln -s 201* latest
-        popd
-        popd
-
         ${command}
 
         stop_monitors
@@ -217,20 +222,20 @@ let
         mkdir -p $out/report
 
         ${pkgs.lib.optionalString heap_profiling ''
-              pushd hprof
-              ls -l
-              t1_prof=$(ls lb-server.hprof.*.heap | head -n 3 | tail -n 1)
-              t2_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
+          pushd hprof
+          ls -l
+          t1_prof=$(ls lb-server.hprof.*.heap | head -n 3 | tail -n 1)
+          t2_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
 
-              pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof.pdf
-              pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof.pdf
-              pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof-alloc.pdf
-              pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof-alloc.pdf
-              pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff.pdf || true
-              pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc.pdf || true
-              popd
+          pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof.pdf
+          pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof.pdf
+          pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof-alloc.pdf
+          pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof-alloc.pdf
+          pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff.pdf || true
+          pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc.pdf || true
+          popd
 
-              pkill -f "lb-server --daemonize"
+          pkill -f "lb-server --daemonize"
         ''}
 
 
@@ -389,7 +394,7 @@ let
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
     benchmark.increasing-get-job =
-      bench data "lb-jobs-get-job" ''
+      bench data "lb-jobs-get-job" "" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
         for i in $(seq 1 100); do
           record_span "get-job-$i" python ${./frontend-database/scripts/test-get-job.py} $i
@@ -398,13 +403,13 @@ let
       '' "metrics" {};
 
     benchmark.load-data =
-      bench data "lb-jobs-install-with-data" ''
+      bench data "lb-jobs-install-with-data" "" ''
         ${jobs.database.build}/install.sh
         tracing_json_publish "load-data"
       '' "load" {};
 
     benchmark.get-metrics =
-      bench data "lb-jobs-metrics-call" ''
+      bench data "lb-jobs-metrics-call" "" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
@@ -413,7 +418,7 @@ let
       '' "metrics" {};
 
     benchmark.get-metrics-2G =
-      bench data "lb-jobs-metrics-call" ''
+      bench data "lb-jobs-metrics-call" "" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
         echo '{}' > post.json
         record_span "get-metrics-1000" ${pkgs.apacheHttpd}/bin/ab -T application/json -p post.json -c 20 -n 1000 http://localhost:55183/metrics
@@ -421,7 +426,7 @@ let
       '' "metrics" { LB_MEM="2G"; };
 
     benchmark.dev-1000-jobs-run =
-      bench data_dev "lb-jobs-1000-jobs-run" ''
+      bench data_dev "lb-jobs-1000-jobs-run" "" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
         record_span "lb-jobs-1000-jobs-1" mitmdump -nc ${requests_dev}
         record_span "lb-jobs-1000-jobs-2" mitmdump -nc ${requests_dev}
@@ -430,8 +435,7 @@ let
       '' "metrics" { buildInputs = [ mitmproxy ]; };
 
     benchmark.dev-walgreens-jobs-run =
-      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" ''
-        record_span "run-installer" ${jobs.database.build}/install.sh
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 7200 ; meta.timeout = 18000; };
   });
