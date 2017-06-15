@@ -169,6 +169,8 @@ let
           echo "file json $out/report/$1.json" >> $out/nix-support/hydra-build-products
         }
 
+        set -x
+
         pushd $LB_DEPLOYMENT_HOME
         mkdir exports
         pushd exports
@@ -224,7 +226,7 @@ let
         ${pkgs.lib.optionalString heap_profiling ''
           pushd hprof
           ls -l
-          t1_prof=$(ls lb-server.hprof.*.heap | head -n 3 | tail -n 1)
+          t1_prof=$(ls lb-server.hprof.*.heap | head -n 6 | tail -n 1)
           t2_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
 
           pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof.pdf
@@ -440,10 +442,22 @@ let
         tracing_json_publish "dev-1000-jobs-run"
       '' "metrics" { buildInputs = [ mitmproxy ]; };
 
+    benchmark.dev-walgreens-jobs =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
+        record_span "run-installer" ${jobs.database.build}/install.sh
+        record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
+      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 7200 ; meta.timeout = 18000; };
+ 
     benchmark.dev-walgreens-jobs-run =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 7200 ; meta.timeout = 18000; };
+
+    benchmark.dev-walgreens-jobs-install =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
+        record_span "run-installer" ${jobs.database.build}/install.sh
+      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 7200 ; meta.timeout = 18000; };
+ 
   });
 
 in jobs
