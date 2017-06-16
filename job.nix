@@ -360,7 +360,7 @@ let
         configureFlags = [
           "--with-protocols=${protocols}"
         ];
-        doCheck = true;
+        doCheck = false;
       };
     };
 
