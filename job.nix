@@ -176,6 +176,19 @@ let
         pushd exports
         tar xvf ${data}
         ln -s 201* latest
+        ${pkgs.lib.optionalString ((attrs ? dataset_multiplier) && (attrs.dataset_multiplier > 1)) ''
+          # Scale dataset
+          cd 201*
+          job_csvs="jobs job_metadata job_inputs job_outputs job_status"
+          for c in $job_csvs; do
+            for i in $(seq $dataset_multiplier); do
+              tail -n +2 $c.csv | sed "s/^\"\([^\"]*\)\"|/\"\1-$i\"|/" > $c-$i.csv
+            done
+            head -1 $c.csv > tmp-$c.csv
+            cat $c-*.csv >> tmp-$c.csv
+            mv tmp-$c.csv $c.csv
+          done
+        ''}
         popd
         popd
 
@@ -457,6 +470,11 @@ let
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 7200 ; meta.timeout = 18000; };
+ 
+    benchmark.dev-walgreens-jobs-install-data2x =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
+        record_span "run-installer" ${jobs.database.build}/install.sh
+      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 7200 ; dataset_multiplier = 2; meta.timeout = 18000; };
  
   });
 
