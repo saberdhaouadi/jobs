@@ -95,7 +95,7 @@ let
           shift
 
           local t1="$(date +%s.%N)"
-          ${pkgs.lib.optionalString (attrs ? timeout) "timeout ${toString attrs.timeout}"} "$@"
+          ${pkgs.lib.optionalString (attrs ? timeout) "timeout ${toString attrs.timeout}"} "$@" ${pkgs.lib.optionalString (attrs ? timeout) "|| true"}
           local t2="$(date +%s.%N)"
 
           if ! type -P bc &> /dev/null; then
