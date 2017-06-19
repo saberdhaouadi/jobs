@@ -184,8 +184,10 @@ let
             for i in $(seq $dataset_multiplier); do
               # Update job ID (1st column)
               tail -n +2 $c.csv | sed "s/^\"\([^\"]*\)\"|/\"\1-$i\"|/" > $c-$i.csv
-              # CLIENTID (5th column) should be unique too
-              sed -i "s/\"\([^\"]*\)\"/\"\1-$i\"/5" $c-$i.csv
+              if [ "$c" = "jobs" ]; then
+                # CLIENTID (5th column) should be unique too
+                sed -i "s/\"\([^\"]*\)\"/\"\1-$i\"/5" $c-$i.csv
+              fi
             done
             head -1 $c.csv > tmp-$c.csv
             cat $c-*.csv >> tmp-$c.csv
