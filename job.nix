@@ -181,6 +181,7 @@ let
           cd 201*
           job_csvs="jobs job_metadata job_inputs job_outputs job_status"
           for c in $job_csvs; do
+            head -1 $c.csv > tmp-$c.csv
             for i in $(seq $dataset_multiplier); do
               # Update job ID (1st column)
               tail -n +2 $c.csv | sed "s/^\"\([^\"]*\)\"|/\"\1-$i\"|/" > $c-$i.csv
@@ -188,9 +189,9 @@ let
                 # CLIENTID (5th column) should be unique too
                 sed -i "s/\"\([^\"]*\)\"/\"\1-$i\"/5" $c-$i.csv
               fi
+              cat $c-$i.csv >> tmp-$c.csv
+              rm $c-$i.csv
             done
-            head -1 $c.csv > tmp-$c.csv
-            cat $c-*.csv >> tmp-$c.csv
             mv tmp-$c.csv $c.csv
           done
         ''}
