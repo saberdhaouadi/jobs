@@ -419,7 +419,7 @@ let
   '';
 
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
-
+/*
     benchmark.increasing-get-job =
       bench data "lb-jobs-get-job" "" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
@@ -460,7 +460,7 @@ let
         record_span "lb-jobs-1000-jobs-3" mitmdump -nc ${requests_dev}
         tracing_json_publish "dev-1000-jobs-run"
       '' "metrics" { buildInputs = [ mitmproxy ]; };
-
+*/
     benchmark.dev-walgreens-jobs =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
@@ -477,6 +477,11 @@ let
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 7200; meta.timeout = 18000; };
+
+    benchmark.dev-walgreens-jobs-run-data2x-4h =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
+        record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
+      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 14400; dataset_multiplier = 2; meta.timeout = 36000; };
 
     benchmark.dev-walgreens-jobs-install =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
