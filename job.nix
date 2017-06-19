@@ -492,6 +492,15 @@ let
         record_span "run-installer" ${jobs.database.build}/install.sh
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 43200; dataset_multiplier = 8; meta.timeout = 43200; };
  
+    benchmark.dev-walgreens-jobs-install-data32x =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
+        record_span "run-installer" ${jobs.database.build}/install.sh
+      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 43200; dataset_multiplier = 32; meta.timeout = 43200; };
+
+    benchmark.dev-walgreens-jobs-install-data64x =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
+        record_span "run-installer" ${jobs.database.build}/install.sh
+      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 43200; dataset_multiplier = 64; meta.timeout = 43200; };
  
   });
 
