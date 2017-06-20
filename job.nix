@@ -281,16 +281,6 @@ let
       '';
     });
 
-  scala =
-    pkgs.scala_2_12 or (pkgs.lib.overrideDerivation pkgs.scala (a: rec {
-      name = "scala-2.12.2";
-
-      src = fetchurl {
-        url = "http://www.scala-lang.org/files/archive/${name}.tgz";
-        sha256 = "1xd68q9h0vzqndar3r4mvabbd7naa25fbiciahkhxwgw8sr6hq8r";
-      };
-    }));
-
   postInstall = ''
     mkdir $out/findbugs
     cp build/*-findbugs.html $out/findbugs
@@ -302,7 +292,7 @@ let
      builder_config.buildLBConfig {
       name = "jobs-frontend";
       src = ./frontend;
-      buildInputs = [ logicblox makeWrapper client.build worker pkgs.jq scala pkgs.findbugs ];
+      buildInputs = [ logicblox makeWrapper client.build worker pkgs.jq pkgs.scala_2_10 pkgs.findbugs ];
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-frontend-database=${database.build}"
@@ -387,7 +377,7 @@ let
      builder_config.buildLBConfig {
       name = "lb-steve-key-server";
       src = ./key-server;
-      buildInputs = [ logicblox makeWrapper pkgs.jq scala pkgs.findbugs ];
+      buildInputs = [ logicblox makeWrapper pkgs.jq pkgs.scala_2_10 pkgs.findbugs ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
