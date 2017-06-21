@@ -244,9 +244,11 @@ let
 
         ${pkgs.lib.optionalString heap_profiling ''
           pushd hprof
+          set +o pipefail
           ls -l
           t1_prof=$(ls lb-server.hprof.*.heap | head -n 6 | tail -n 1)
           t2_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
+          set -o pipefail
 
           pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof.pdf
           pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof.pdf
