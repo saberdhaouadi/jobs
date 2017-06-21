@@ -205,8 +205,6 @@ let
           lb server stop
           mkdir hprof
           echo "Launching lb-server under heap-profiler"
-          LD_LIBRARY_PATH=${pkgs.glibc}/lib \
-          LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
           HEAPPROFILE=hprof/lb-server.hprof \
             lb-server --daemonize false &
           sleep 60
