@@ -200,8 +200,6 @@ in
         patches = [ ./nix-dev-shm.patch ./nix-user-agent.patch ];
       });
     };
-
-    services.journald.rateLimitBurst = 0;
   };
 
 }
