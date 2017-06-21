@@ -483,10 +483,10 @@ let
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 14400; dataset_multiplier = 2; meta.timeout = 36000; meta.maxSilent = 36000; };
 */
-    benchmark.dev-walgreens-jobs-run-data2x-12h =
+    benchmark.dev-walgreens-jobs-run-30m =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
-      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 12*60*60; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 30*60; dataset_multiplier = 1; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 /*
     benchmark.dev-walgreens-jobs-install =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
