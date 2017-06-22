@@ -257,7 +257,7 @@ let
           do
             fn="lb-server.hprof.$(printf %04d $i).heap"
             pprof --pdf $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.pdf
-            pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/${fn}-alloc.pdf
+            pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn-alloc.pdf
           done
 
           prev=1
@@ -266,8 +266,8 @@ let
             fn_prev="lb-server.hprof.$(printf %04d $prev).heap"
             fn="lb-server.hprof.$(printf %04d $i).heap"
 
-            pprof --pdf --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-${prev}-$i.pdf || true
-            pprof --pdf --alloc_space --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-alloc-${prev}-$i.pdf || true
+            pprof --pdf --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-$prev-$i.pdf || true
+            pprof --pdf --alloc_space --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-alloc-$prev-$i.pdf || true
             
             prev=$i
           done
