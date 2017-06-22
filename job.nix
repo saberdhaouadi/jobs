@@ -244,18 +244,39 @@ let
 
         ${pkgs.lib.optionalString heap_profiling ''
           pushd hprof
+
           set +o pipefail
           ls -l
+          hprofs=$(find . -maxdepth 1 -name "lb-server.hprof.*.heap" | wc -l)
           t1_prof=$(ls lb-server.hprof.*.heap | head -n 6 | tail -n 1)
-          t2_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
+          t2_prof=$(ls lb-server.hprof.*.heap | head -n $((hprofs / 2)) | tail -n 1)
+          t3_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
           set -o pipefail
 
-          pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof.pdf
-          pprof --pdf $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof.pdf
-          pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t1_prof > $out/report/$t1_prof-alloc.pdf
-          pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$t2_prof-alloc.pdf
-          pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff.pdf || true
-          pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc.pdf || true
+          for i in $(seq 1 $((hprofs / 50)) $hprofs)
+          do
+            fn="lb-server.hprof.$(printf %04d $i).heap"
+            pprof --pdf $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.pdf
+            pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/${fn}-alloc.pdf
+          done
+
+          prev=1
+          for i in $(seq 10 $((hprofs / 10)) $hprofs)
+          do
+            fn_prev="lb-server.hprof.$(printf %04d $prev).heap"
+            fn="lb-server.hprof.$(printf %04d $i).heap"
+
+            pprof --pdf --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-${prev}-$i.pdf || true
+            pprof --pdf --alloc_space --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-alloc-${prev}-$i.pdf || true
+            
+            prev=$i
+          done
+
+          pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-1.pdf || true
+          pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc-1.pdf || true
+          pprof --pdf --base=$t2_prof $LOGICBLOX_HOME/bin/lb-server $t3_prof > $out/report/hprof-diff-2.pdf || true
+          pprof --pdf --alloc_space --base=$t2_prof $LOGICBLOX_HOME/bin/lb-server $t3_prof > $out/report/hprof-diff-alloc-2.pdf || true
+
           popd
 
           pkill -f "lb-server --daemonize"
