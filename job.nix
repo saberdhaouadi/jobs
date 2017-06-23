@@ -207,6 +207,10 @@ let
           echo "Launching lb-server under heap-profiler"
           LD_LIBRARY_PATH=${pkgs.glibc}/lib \
           LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
+          HEAP_PROFILE_ALLOCATION_INTERVAL=0 \
+          HEAP_PROFILE_DEALLOCATION_INTERVAL=0 \
+          HEAP_PROFILE_INUSE_INTERVAL=0 \
+          HEAP_PROFILE_TIME_INTERVAL=150 \
           HEAPPROFILE=hprof/lb-server.hprof \
             lb-server --daemonize false &
           sleep 60
