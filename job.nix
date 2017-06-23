@@ -120,6 +120,7 @@ let
           cat iousg-monitor.csv >> $id-report/logs/iousg-monitor.csv
           cat cpuusg-monitor.csv >> $id-report/logs/cpuusg-monitor.csv
           cat memusg-monitor.csv >> $id-report/logs/memusg-monitor.csv
+          cat wssize-monitor.csv >> $id-report/logs/wssize-monitor.csv
 
           if test -e $id-wf-logs; then
             set -x
@@ -140,6 +141,7 @@ let
           cp $id-report/logs/iousg-monitor.csv  $out/report/$id-iousg-monitor.csv
           cp $id-report/logs/cpuusg-monitor.csv $out/report/$id-cpuusg-monitor.csv
           cp $id-report/logs/memusg-monitor.csv $out/report/$id-memusg-monitor.csv
+          cp $id-report/logs/wssize-monitor.csv $out/report/$id-wssize-monitor.csv
           rm -rf $id-report
         }
 
@@ -200,6 +202,7 @@ let
 
         ${precommand}
 
+        profile_interval=150 # sec.
         ${pkgs.lib.optionalString heap_profiling ''
           # Enable heap-profiling for throughput phase
           lb server stop
@@ -210,7 +213,7 @@ let
           HEAP_PROFILE_ALLOCATION_INTERVAL=0 \
           HEAP_PROFILE_DEALLOCATION_INTERVAL=0 \
           HEAP_PROFILE_INUSE_INTERVAL=0 \
-          HEAP_PROFILE_TIME_INTERVAL=150 \
+          HEAP_PROFILE_TIME_INTERVAL=$profile_interval \
           HEAPPROFILE=hprof/lb-server.hprof \
             lb-server --daemonize false &
           sleep 60
@@ -223,12 +226,15 @@ let
           iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
           cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
           memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
+          # inverval == HEAP_PROFILE_TIME_INTERVAL
+          wssize-monitor --interval $profile_interval --out wssize-monitor.csv &
         }
 
         function stop_monitors() {
           pkill -f iousg-monitor
           pkill -f cpuusg-monitor
           pkill -f memusg-monitor
+          pkill -f wssize-monitor
         }
 
         function restart_services() {
