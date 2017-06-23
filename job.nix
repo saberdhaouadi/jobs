@@ -12,6 +12,7 @@
 , benchmarks ? null
 , heap_profiling ? false
 , nixpkgs_1703 ? null
+, duration ? 60*60
 }:
 let
   inherit (builder_config) pkgs;
@@ -273,6 +274,7 @@ let
             fn="lb-server.hprof.$(printf %04d $i).heap"
             pprof --pdf  $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.pdf
             pprof --text $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.txt
+            gzip $out/report/$fn.txt
             pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn-alloc.pdf
           done
 
@@ -532,10 +534,10 @@ let
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 12*60*60; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 */
-    benchmark.dev-walgreens-jobs-run-data2x-15m =
+    benchmark.dev-walgreens-jobs-run-data2x =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
-      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 15*60; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = duration; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 /*
     benchmark.dev-walgreens-jobs-install =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
