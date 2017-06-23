@@ -266,6 +266,7 @@ let
           do
             fn="lb-server.hprof.$(printf %04d $i).heap"
             pprof --pdf  $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.pdf
+            pprof --text $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.txt
             pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn-alloc.pdf
           done
 
