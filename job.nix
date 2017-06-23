@@ -12,7 +12,7 @@
 , benchmarks ? null
 , heap_profiling ? false
 , nixpkgs_1703 ? null
-, duration ? 60*60
+, bench_duration ? 30*60
 }:
 let
   inherit (builder_config) pkgs;
@@ -538,7 +538,7 @@ let
     benchmark.dev-walgreens-jobs-run-data2x =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
-      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = duration; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = bench_duration; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 /*
     benchmark.dev-walgreens-jobs-install =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''

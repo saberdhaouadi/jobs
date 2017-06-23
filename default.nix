@@ -2,6 +2,7 @@
 , benchmarks ? null
 , heap_profiling ? false
 , nixpkgs_1703 ? null
+, bench_duration ? 30*60
 }:
 let
   builder_config = import <config> {};
@@ -10,6 +11,6 @@ let
 in
   import ./job.nix {
     logicblox = platform;
-    inherit builder_config benchmarks heap_profiling nixpkgs_1703;
+    inherit builder_config benchmarks heap_profiling nixpkgs_1703 bench_duration;
     inherit (pkgs) python stdenv fetchurl unzip makeWrapper runCommand jdk;
   }
