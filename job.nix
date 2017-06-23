@@ -269,7 +269,8 @@ let
           else
             step=1
           fi
-          for i in $(seq 1 $step $nhprofs)
+          # for i in $(seq 1 $step $nhprofs)
+          for i in $(seq 1 1 $nhprofs)
           do
             fn="lb-server.hprof.$(printf %04d $i).heap"
             pprof --pdf  $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.pdf
