@@ -251,21 +251,31 @@ let
 
           set +o pipefail
           ls -l
-          hprofs=$(find . -maxdepth 1 -name "lb-server.hprof.*.heap" | wc -l)
+          nhprofs=$(find . -maxdepth 1 -name "lb-server.hprof.*.heap" | wc -l)
           t1_prof=$(ls lb-server.hprof.*.heap | head -n 6 | tail -n 1)
-          t2_prof=$(ls lb-server.hprof.*.heap | head -n $((hprofs / 2)) | tail -n 1)
+          t2_prof=$(ls lb-server.hprof.*.heap | head -n $((nhprofs / 2)) | tail -n 1)
           t3_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
           set -o pipefail
 
-          for i in $(seq 1 $((hprofs / 50)) $hprofs)
+          if [ $nhprofs -gt 5 ]; then
+            step=5
+          else
+            step=1
+          fi
+          for i in $(seq 1 $step $nhprofs)
           do
             fn="lb-server.hprof.$(printf %04d $i).heap"
-            pprof --pdf $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.pdf
+            pprof --pdf  $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.pdf
             pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn-alloc.pdf
           done
 
+          if [ $nhprofs -gt 25 ]; then
+            step=25
+          else
+            step=2
+          fi
           prev=1
-          for i in $(seq 10 $((hprofs / 10)) $hprofs)
+          for i in $(seq $step $step $nhprofs)
           do
             fn_prev="lb-server.hprof.$(printf %04d $prev).heap"
             fn="lb-server.hprof.$(printf %04d $i).heap"
