@@ -27,6 +27,7 @@ in
       ++ pkgs.lib.optional ((pkgs.lib.substring 0 1 platform_version) == "3") releases.pdxscience."4.0.0".pdxscience
       ++ dependencies;
 
+    LB_DEPLOYMENT_HOME = "/tmp/job/lb_deployment";
     LB_CONNECTBLOX_ENABLE_ADMIN="1";
     LB_MONITOR_RULE_TIME=metadata.LB_MONITOR_RULE_TIME or "30";
     LB_MEM=metadata.LB_MEM or "50%";
@@ -102,9 +103,6 @@ in
       chmod -R 777 . /tmp/job/out/*
       rm -f /tmp/LB_default_DaemonLock* || true
       rm -rf /dev/shm/LB_* || true
-      if [[ -d $HOME/lb_deployment/logs ]]; then
-        tar -C $HOME/lb_deployment -czf /tmp/job/log/lb-logs.tgz logs || true
-      fi
     '';
 
     __noChroot = false;

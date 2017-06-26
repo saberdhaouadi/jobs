@@ -52,6 +52,8 @@ public class SteveJob {
   private File _inputPath = new File("/tmp/job/in");
   private File _outputPath = new File("/tmp/job/out");
   private File _logOutputPath = new File("/tmp/job/log");
+  private File _lbDeploymentHomePath = new File("/tmp/job/lb_deployment");
+  private File _lbDeploymentLogsPath = new File(_lbDeploymentHomePath,"logs");
   private File _lbLogsPath = new File("/tmp/job/log/lb-logs.tgz");
   private File _jobPath = new File("/tmp/job/job.tar.gz");
   private File _metadataPath = new File("/tmp/job/in/metadata.json");
@@ -199,6 +201,7 @@ public class SteveJob {
     _inputPath.mkdirs();
     _outputPath.mkdirs();
     _logOutputPath.mkdirs();
+    _lbDeploymentHomePath.mkdirs();
 
     try {
       ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _outputPath.toString());
@@ -210,6 +213,14 @@ public class SteveJob {
 
     try {
       ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _logOutputPath.toString());
+      Process p = pb.start();
+      p.waitFor();
+      p.destroy();
+    } catch (Exception e) {
+    }
+
+    try {
+      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _lbDeploymentHomePath.toString());
       Process p = pb.start();
       p.waitFor();
       p.destroy();
@@ -360,9 +371,15 @@ public class SteveJob {
           try {
             log("Uploading log...[%s/%s]".format(logPath.toString(), _outputLog));
             _client.upload(logPath, _outputLog).get();
-            if(_lbLogsPath.exists()) {
-              log("Uploading LB logs...[%s/%s]".format(_lbLogsPath.toString(), _outputLbLogs));
-              _client.upload(_lbLogsPath, _outputLbLogs).get();
+            if(_lbDeploymentLogsPath.exists()) {
+              ProcessBuilder pb = new ProcessBuilder("tar", "-C", _lbDeploymentHomePath.toString(), "-czf", _lbLogsPath.toString(), "logs");
+              Process p = pb.start();
+              p.waitFor();
+              p.destroy();
+              if(_lbLogsPath.exists()) {
+                log("Uploading LB logs...[%s/%s]".format(_lbLogsPath.toString(), _outputLbLogs));
+                _client.upload(_lbLogsPath, _outputLbLogs).get();
+              }
             }
           } catch (Exception e) {
             throw new InternalException("Error uploading log to " + _outputLog, e);
