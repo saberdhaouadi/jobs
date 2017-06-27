@@ -126,6 +126,11 @@ public class SteveJob {
     log("Starting..." + _id);
 
     try {
+      if(previousLogExists()) {
+        log("Skipping job, because previous log was found.");
+        _completed = true;
+        return;
+      }
       _outgoing.notifyStart();
       setup();
       runJob();
