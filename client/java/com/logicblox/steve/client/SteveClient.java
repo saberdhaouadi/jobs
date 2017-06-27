@@ -440,7 +440,7 @@ public class SteveClient implements SteveClientInterface {
       initialDelay, maxDelay, _retryCount, TimeUnit.MILLISECONDS) {
       @Override
       public boolean retryOnThrowable(Throwable t) {
-        return ! (t instanceof SteveClientException);
+        return ! (t instanceof SteveClientException || t instanceof ServiceClientException);
       }
     };
 
