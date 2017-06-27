@@ -285,7 +285,7 @@ public class Main {
         }
       } finally {
         resetTimeout.interrupt();
-        if (steve.hasCompleted()) removeIncoming(job);
+        if (steve.hasCompleted() || steve.hasBeenCancelled()) removeIncoming(job);
       }
     }
   }

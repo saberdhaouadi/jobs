@@ -62,6 +62,7 @@ public class SteveJob {
   private boolean _killed = false;
   private boolean _diskFull = false;
   private boolean _completed = false;
+  private boolean _cancelled = false;
   private String _internalError = null;
 
   private long _diskFreeStart = 0;
@@ -131,6 +132,13 @@ public class SteveJob {
         _completed = true;
         return;
       }
+
+      if(jobCancelled()) {
+        log("Skipping job, because it was cancelled.");
+        _cancelled = true;
+        return;
+      }
+
       _outgoing.notifyStart();
       setup();
       runJob();
@@ -357,6 +365,16 @@ public class SteveJob {
     }
   }
 
+  private boolean jobCancelled() throws InternalException {
+    ObjectMetadata cancelled = null;
+    try {
+      cancelled = _client.exists(_s3Bucket, String.format("jobs/%s/cancelled", _id)).get();
+      return (cancelled != null);
+    } catch (Exception e) {
+      throw new InternalException("Could not determine if job was cancelled.", e);
+    }
+  }
+
   private void teardown() throws InternalException {
     log("Tearing down...");
 
@@ -554,6 +572,10 @@ public class SteveJob {
 
   public boolean hasCompleted() {
     return _completed;
+  }
+
+  public boolean hasBeenCancelled() {
+    return _cancelled;
   }
 
   public void updateMaxDiskUsage() {
