@@ -545,7 +545,10 @@ let
     benchmark.dev-walgreens-jobs-run-data2x-restarts =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         mitmdump --version
-        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 2000"
+        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 35000"
+
+        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.0
+        restart_services
 
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.1
         restart_services
@@ -554,7 +557,7 @@ let
         restart_services
 
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.3
-      '' "metrics" { buildInputs = [ mitmproxy ]; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+      '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 
 /*
     benchmark.dev-walgreens-jobs-install =
