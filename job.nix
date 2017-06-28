@@ -224,9 +224,9 @@ let
             else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
 
         function start_monitors() {
-          iousg-monitor  --iousg-pid  $lb_server_pid --iousg-out  iousg-monitor.csv  &
-          cpuusg-monitor --cpuusg-pid $lb_server_pid --cpuusg-out cpuusg-monitor.csv &
-          memusg-monitor --memusg-pid $lb_server_pid --memusg-out memusg-monitor.csv &
+          iousg-monitor  --iousg-pid  $lb_server_pid >> iousg-monitor.csv  2>&1 &
+          cpuusg-monitor --cpuusg-pid $lb_server_pid >> cpuusg-monitor.csv 2>&1 &
+          memusg-monitor --memusg-pid $lb_server_pid >> memusg-monitor.csv 2>&1 &
           # inverval == HEAP_PROFILE_TIME_INTERVAL
           wssize-monitor --interval $profile_interval --out wssize-monitor.csv &
         }
