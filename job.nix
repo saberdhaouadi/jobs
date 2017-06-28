@@ -219,11 +219,12 @@ let
             lb-server --daemonize false &
           sleep 60
         ''}
-        ${if heap_profiling
-            then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
-            else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
 
         function start_monitors() {
+          ${if heap_profiling
+              then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
+              else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
+
           iousg-monitor  --iousg-pid  $lb_server_pid >> iousg-monitor.csv  2>&1 &
           cpuusg-monitor --cpuusg-pid $lb_server_pid >> cpuusg-monitor.csv 2>&1 &
           memusg-monitor --memusg-pid $lb_server_pid >> memusg-monitor.csv 2>&1 &
