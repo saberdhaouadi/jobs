@@ -553,7 +553,7 @@ let
         restart_services
 
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.3
-      '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+      '' "metrics" { buildInputs = [ mitmproxy ]; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 
 /*
     benchmark.dev-walgreens-jobs-install =
