@@ -544,7 +544,7 @@ let
     benchmark.dev-walgreens-jobs-run-data2x-restarts =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         mitmdump --version
-        mitmdump -nr ${requests_dev_20170303-101311} -s "./split.py requests.part 2000"
+        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 2000"
 
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.1
         restart_services
