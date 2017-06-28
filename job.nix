@@ -232,10 +232,10 @@ let
         }
 
         function stop_monitors() {
-          pkill -f iousg-monitor
-          pkill -f cpuusg-monitor
-          pkill -f memusg-monitor
-          pkill -f wssize-monitor
+          pkill -f iousg-monitor  || true
+          pkill -f cpuusg-monitor || true
+          pkill -f memusg-monitor || true
+          pkill -f wssize-monitor || true
         }
 
         function restart_services() {
@@ -534,11 +534,27 @@ let
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 12*60*60; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
-*/
+
     benchmark.dev-walgreens-jobs-run-data2x =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = bench_duration; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+*/
+
+    benchmark.dev-walgreens-jobs-run-data2x-restarts =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
+        mitmdump --version
+        mitmdump -nr ${requests_dev_20170303-101311} -s "./split.py requests.part 2000"
+
+        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.1
+        restart_services
+
+        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.2
+        restart_services
+
+        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.3
+      '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+
 /*
     benchmark.dev-walgreens-jobs-install =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
