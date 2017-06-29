@@ -1,2 +1,3 @@
 #! /usr/bin/env bash
 gcc -o a a.c
+./a
