@@ -203,8 +203,8 @@ let
 
         ${precommand}
 
-        # profile_interval=150 # sec.
-        profile_interval=30 # sec.
+        profile_interval=150 # sec.
+        # profile_interval=30 # sec.
 
         function start_lb_server() {
           local hp_prefix="$1"
@@ -560,7 +560,7 @@ let
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         mitmdump --version
         # mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 47000"
-        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 40"
+        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 2400"
 
         restart_services "hprof/lb-server.hprof.0"
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.0
@@ -573,7 +573,7 @@ let
         restart_services "hprof/lb-server.hprof.2"
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.2
         generate_heap_profiles "hprof/lb-server.hprof.2"
-      '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 1; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+      '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 
 /*
     benchmark.dev-walgreens-jobs-install =
