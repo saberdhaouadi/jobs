@@ -246,6 +246,7 @@ let
           lb services restart
           stop_lb_server
           start_lb_server $hp_prefix
+          sleep 5
           start_monitors
         }
 
