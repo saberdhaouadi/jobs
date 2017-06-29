@@ -229,13 +229,8 @@ let
         }
 
         function stop_lb_server() {
-          ${if heap_profiling
-            then ''
-              pkill -f 'lb-server --daemonize' || true
-            ''
-            else ''
-              lb server stop || true
-            ''}
+          lb server stop || true
+          pkill -f 'lb-server' || true
           sleep 5
         }
 
@@ -255,11 +250,11 @@ let
             then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
             else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
 
-          iousg-monitor  --iousg-pid  $lb_server_pid >> iousg-monitor.csv  2>&1 &
-          cpuusg-monitor --cpuusg-pid $lb_server_pid >> cpuusg-monitor.csv 2>&1 &
-          memusg-monitor --memusg-pid $lb_server_pid >> memusg-monitor.csv 2>&1 &
+          iousg-monitor  --iousg-pid  $lb_server_pid  >> iousg-monitor.csv  2>&1 &
+          cpuusg-monitor --cpuusg-pid $lb_server_pid  >> cpuusg-monitor.csv 2>&1 &
+          memusg-monitor --memusg-pid $lb_server_pid  >> memusg-monitor.csv 2>&1 &
           # inverval == HEAP_PROFILE_TIME_INTERVAL
-          wssize-monitor --interval $profile_interval --out wssize-monitor.csv &
+          wssize-monitor --interval $profile_interval >> wssize-monitor.csv 2>&1 &
         }
 
         function stop_monitors() {
@@ -578,7 +573,7 @@ let
         restart_services "hprof/lb-server.hprof.2"
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.2
         generate_heap_profiles "hprof/lb-server.hprof.2"
-      '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+      '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 1; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 
 /*
     benchmark.dev-walgreens-jobs-install =
