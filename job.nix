@@ -221,6 +221,8 @@ let
               HEAP_PROFILE_TIME_INTERVAL=$profile_interval \
               HEAPPROFILE=$hp_prefix \
                 lb-server --daemonize false &
+
+              echo "Launched lb-server under heap-profiler"
               sleep 60
             ''
             else ''
