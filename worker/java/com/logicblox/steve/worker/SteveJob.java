@@ -65,6 +65,8 @@ public class SteveJob {
   private boolean _cancelled = false;
   private String _internalError = null;
 
+  private int _jobExitCode = 0;
+
   private long _diskFreeStart = 0;
   private long _maxDiskUsage = 0;
   private long _cpuUsage = 0;
@@ -543,7 +545,11 @@ public class SteveJob {
       } else if (exit == 1) {
         throw new JobKilledException();
       } else if (logPath.exists()) {
-        throw new JobFailedException("nix-store failed with exit code " + exit);
+        if(_jobExitCode == 137) {
+          throw new JobFailedException("Job was killed, most likely, due to memory shortage");
+        } else {
+          throw new JobFailedException("Job failed" + ( _jobExitCode != 0 ? " with exit code " + _jobExitCode : ""));
+        }
       } else {
         throw new InternalException("One of the dependencies of the job likely failed, as no log was found.");
       }
@@ -564,6 +570,10 @@ public class SteveJob {
 
   public void setInternalError(String msg) {
     _internalError = msg;
+  }
+
+  public void setJobExitCode(int exit) {
+    _jobExitCode = exit;
   }
 
   public boolean wasKilled() {

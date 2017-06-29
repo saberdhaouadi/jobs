@@ -32,6 +32,16 @@ public class SteveJobLogHandler extends LogOutputStream {
       _job.setDiskFull();
     }
 
+    if (line.contains("failed with exit code")) {
+      int i = line.lastIndexOf(' ');
+      try {
+        _job.setJobExitCode(Integer.parseInt(line.substring(i+1)));
+      }
+      catch(NumberFormatException e) {
+        _job.log("Could not parse exit code of job execution: "+line);
+      }
+    }
+
     // update max disk usage
     _job.updateMaxDiskUsage();
   }
