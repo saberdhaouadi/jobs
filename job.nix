@@ -268,10 +268,6 @@ let
           pkill -f wssize-monitor || true
         }
 
-        ${command}
-
-        mkdir -p $out/report
-
         function generate_heap_profiles() {
           local hp_prefix="$1"
           ${pkgs.lib.optionalString heap_profiling ''
@@ -326,6 +322,9 @@ let
           ''}
         }
 
+        ${command}
+
+        mkdir -p $out/report
 
         fancy_report ${id}
 
