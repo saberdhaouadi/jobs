@@ -546,7 +546,7 @@ public class SteveJob {
         throw new JobKilledException();
       } else if (logPath.exists()) {
         if(_jobExitCode == 137) {
-          throw new JobFailedException("Job was killed, most likely, due to memory shortage");
+          throw new JobFailedException("Job was killed, most likely due to memory shortage");
         } else {
           throw new JobFailedException("Job failed" + ( _jobExitCode != 0 ? " with exit code " + _jobExitCode : ""));
         }
