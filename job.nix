@@ -203,27 +203,56 @@ let
 
         ${precommand}
 
-        profile_interval=150 # sec.
-        ${pkgs.lib.optionalString heap_profiling ''
-          # Enable heap-profiling for throughput phase
-          lb server stop
-          mkdir hprof
-          echo "Launching lb-server under heap-profiler"
-          LD_LIBRARY_PATH=${pkgs.glibc}/lib \
-          LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
-          HEAP_PROFILE_ALLOCATION_INTERVAL=0 \
-          HEAP_PROFILE_DEALLOCATION_INTERVAL=0 \
-          HEAP_PROFILE_INUSE_INTERVAL=0 \
-          HEAP_PROFILE_TIME_INTERVAL=$profile_interval \
-          HEAPPROFILE=hprof/lb-server.hprof \
-            lb-server --daemonize false &
-          sleep 60
-        ''}
+        # profile_interval=150 # sec.
+        profile_interval=30 # sec.
+
+        function start_lb_server() {
+          local hp_prefix="${1:-hprof/lb-server.hprof}"
+          ${if heap_profiling
+            then ''
+              # Enable heap-profiling for throughput phase
+              mkdir -p hprof
+              echo "Launching lb-server under heap-profiler"
+              LD_LIBRARY_PATH=${pkgs.glibc}/lib \
+              LD_PRELOAD=${pkgs.gperftools}/lib/libtcmalloc.so \
+              HEAP_PROFILE_ALLOCATION_INTERVAL=0 \
+              HEAP_PROFILE_DEALLOCATION_INTERVAL=0 \
+              HEAP_PROFILE_INUSE_INTERVAL=0 \
+              HEAP_PROFILE_TIME_INTERVAL=$profile_interval \
+              HEAPPROFILE=$hp_prefix \
+                lb-server --daemonize false &
+              sleep 60
+            ''
+            else ''
+              lb server start
+            ''}
+        }
+
+        function stop_lb_server() {
+          ${if heap_profiling
+            then ''
+              pkill -f 'lb-server --daemonize' || true
+            ''
+            else ''
+              lb server stop || true
+            ''}
+          sleep 5
+        }
+
+        function restart_services() {
+          local hp_prefix="${1:-hprof/lb-server.hprof}"
+          stop_monitors
+          sleep 2
+          lb services restart
+          stop_lb_server
+          start_lb_server $hp_prefix
+          start_monitors
+        }
 
         function start_monitors() {
           ${if heap_profiling
-              then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
-              else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
+            then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
+            else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
 
           iousg-monitor  --iousg-pid  $lb_server_pid >> iousg-monitor.csv  2>&1 &
           cpuusg-monitor --cpuusg-pid $lb_server_pid >> cpuusg-monitor.csv 2>&1 &
@@ -239,73 +268,63 @@ let
           pkill -f wssize-monitor || true
         }
 
-        function restart_services() {
-          stop_monitors
-          sleep 2
-          lb services restart
-          start_monitors
-        }
-
-        start_monitors
-
         ${command}
-
-        stop_monitors
 
         mkdir -p $out/report
 
-        ${pkgs.lib.optionalString heap_profiling ''
-          pushd hprof
+        function generate_heap_profiles() {
+          local hp_prefix="${1:-hprof/lb-server.hprof}"
+          ${pkgs.lib.optionalString heap_profiling ''
+            pushd hprof
 
-          set +o pipefail
-          ls -l
-          nhprofs=$(find . -maxdepth 1 -name "lb-server.hprof.*.heap" | wc -l)
-          t1_prof=$(ls lb-server.hprof.*.heap | head -n 6 | tail -n 1)
-          t2_prof=$(ls lb-server.hprof.*.heap | head -n $((nhprofs / 2)) | tail -n 1)
-          t3_prof=$(ls lb-server.hprof.*.heap | tail -n 2 | head -n 1)
-          set -o pipefail
+            set +o pipefail
+            ls -l
+            nhprofs=$(find . -maxdepth 1 -name "$hp_prefix.*.heap" | wc -l)
+            t1_prof=$(ls $hp_prefix.*.heap | head -n 6 | tail -n 1)
+            t2_prof=$(ls $hp_prefix.*.heap | head -n $((nhprofs / 2)) | tail -n 1)
+            t3_prof=$(ls $hp_prefix.*.heap | tail -n 2 | head -n 1)
+            set -o pipefail
 
-          if [ $nhprofs -gt 5 ]; then
-            step=5
-          else
-            step=1
-          fi
-          # for i in $(seq 1 $step $nhprofs)
-          for i in $(seq 1 1 $nhprofs)
-          do
-            fn="lb-server.hprof.$(printf %04d $i).heap"
-            pprof --pdf  $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.pdf
-            pprof --text $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.txt
-            gzip $out/report/$fn.txt
-            pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn-alloc.pdf
-          done
+            if [ $nhprofs -gt 5 ]; then
+              step=5
+            else
+              step=1
+            fi
+            # for i in $(seq 1 $step $nhprofs)
+            for i in $(seq 1 1 $nhprofs)
+            do
+              fn="$hp_prefix.$(printf %04d $i).heap"
+              pprof --pdf  $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.pdf
+              pprof --text $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn.txt
+              gzip $out/report/$fn.txt
+              pprof --pdf --alloc_space $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$fn-alloc.pdf
+            done
 
-          if [ $nhprofs -gt 25 ]; then
-            step=25
-          else
-            step=2
-          fi
-          prev=1
-          for i in $(seq $step $step $nhprofs)
-          do
-            fn_prev="lb-server.hprof.$(printf %04d $prev).heap"
-            fn="lb-server.hprof.$(printf %04d $i).heap"
+            if [ $nhprofs -gt 25 ]; then
+              step=25
+            else
+              step=2
+            fi
+            prev=1
+            for i in $(seq $step $step $nhprofs)
+            do
+              fn_prev="$hp_prefix.$(printf %04d $prev).heap"
+              fn="$hp_prefix.$(printf %04d $i).heap"
 
-            pprof --pdf --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-$prev-$i.pdf || true
-            pprof --pdf --alloc_space --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-alloc-$prev-$i.pdf || true
+              pprof --pdf --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-$prev-$i.pdf || true
+              pprof --pdf --alloc_space --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-alloc-$prev-$i.pdf || true
             
-            prev=$i
-          done
+              prev=$i
+            done
 
-          pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-1.pdf || true
-          pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc-1.pdf || true
-          pprof --pdf --base=$t2_prof $LOGICBLOX_HOME/bin/lb-server $t3_prof > $out/report/hprof-diff-2.pdf || true
-          pprof --pdf --alloc_space --base=$t2_prof $LOGICBLOX_HOME/bin/lb-server $t3_prof > $out/report/hprof-diff-alloc-2.pdf || true
+            pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-1.pdf || true
+            pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc-1.pdf || true
+            pprof --pdf --base=$t2_prof $LOGICBLOX_HOME/bin/lb-server $t3_prof > $out/report/hprof-diff-2.pdf || true
+            pprof --pdf --alloc_space --base=$t2_prof $LOGICBLOX_HOME/bin/lb-server $t3_prof > $out/report/hprof-diff-alloc-2.pdf || true
 
-          popd
-
-          pkill -f "lb-server --daemonize"
-        ''}
+            popd
+          ''}
+        }
 
 
         fancy_report ${id}
@@ -545,18 +564,20 @@ let
     benchmark.dev-walgreens-jobs-run-data2x-restarts =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         mitmdump --version
-        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 35000"
+        # mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 47000"
+        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 2000"
 
+        restart_services "hprof/lb-server.hprof.0"
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.0
-        restart_services
+        generate_heap_profiles "hprof/lb-server.hprof.0"
 
+        restart_services "hprof/lb-server.hprof.1"
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.1
-        restart_services
+        generate_heap_profiles "hprof/lb-server.hprof.1"
 
+        restart_services "hprof/lb-server.hprof.2"
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.2
-        restart_services
-
-        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.3
+        generate_heap_profiles "hprof/lb-server.hprof.2"
       '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 
 /*
