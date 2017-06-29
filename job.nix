@@ -207,7 +207,7 @@ let
         profile_interval=30 # sec.
 
         function start_lb_server() {
-          local hp_prefix="${1:-hprof/lb-server.hprof}"
+          local hp_prefix="$1"
           ${if heap_profiling
             then ''
               # Enable heap-profiling for throughput phase
@@ -240,7 +240,7 @@ let
         }
 
         function restart_services() {
-          local hp_prefix="${1:-hprof/lb-server.hprof}"
+          local hp_prefix="$1"
           stop_monitors
           sleep 2
           lb services restart
@@ -273,7 +273,7 @@ let
         mkdir -p $out/report
 
         function generate_heap_profiles() {
-          local hp_prefix="${1:-hprof/lb-server.hprof}"
+          local hp_prefix="$1"
           ${pkgs.lib.optionalString heap_profiling ''
             pushd hprof
 
