@@ -203,8 +203,8 @@ let
 
         ${precommand}
 
-        profile_interval=150 # sec.
-        # profile_interval=30 # sec.
+        # profile_interval=150 # sec.
+        profile_interval=30 # sec.
 
         function start_lb_server() {
           local hp_prefix="$1"
@@ -238,8 +238,9 @@ let
           local hp_prefix="$1"
           stop_monitors
           sleep 2
-          lb services restart
           stop_lb_server
+          lb services restart
+          lb server stop
           start_lb_server $hp_prefix
           sleep 5
           start_monitors
@@ -267,7 +268,7 @@ let
         function generate_heap_profiles() {
           local hp_prefix="$1"
           ${pkgs.lib.optionalString heap_profiling ''
-            pushd hprof
+            # pushd hprof
 
             set +o pipefail
             ls -l
@@ -303,24 +304,24 @@ let
               fn_prev="$hp_prefix.$(printf %04d $prev).heap"
               fn="$hp_prefix.$(printf %04d $i).heap"
 
-              pprof --pdf --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-$prev-$i.pdf || true
-              pprof --pdf --alloc_space --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/hprof-diff-alloc-$prev-$i.pdf || true
+              pprof --pdf --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$hp_prefix-diff-$prev-$i.pdf || true
+              pprof --pdf --alloc_space --base=$fn_prev $LOGICBLOX_HOME/bin/lb-server $fn > $out/report/$hp_prefix-diff-alloc-$prev-$i.pdf || true
             
               prev=$i
             done
 
-            pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-1.pdf || true
-            pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/hprof-diff-alloc-1.pdf || true
-            pprof --pdf --base=$t2_prof $LOGICBLOX_HOME/bin/lb-server $t3_prof > $out/report/hprof-diff-2.pdf || true
-            pprof --pdf --alloc_space --base=$t2_prof $LOGICBLOX_HOME/bin/lb-server $t3_prof > $out/report/hprof-diff-alloc-2.pdf || true
+            pprof --pdf --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$hp_prefix-diff-1.pdf || true
+            pprof --pdf --alloc_space --base=$t1_prof $LOGICBLOX_HOME/bin/lb-server $t2_prof > $out/report/$hp_prefix-diff-alloc-1.pdf || true
+            pprof --pdf --base=$t2_prof $LOGICBLOX_HOME/bin/lb-server $t3_prof > $out/report/$hp_prefix-diff-2.pdf || true
+            pprof --pdf --alloc_space --base=$t2_prof $LOGICBLOX_HOME/bin/lb-server $t3_prof > $out/report/$hp_prefix-diff-alloc-2.pdf || true
 
-            popd
+            # popd
           ''}
         }
 
-        ${command}
-
         mkdir -p $out/report
+
+        ${command}
 
         fancy_report ${id}
 
@@ -559,21 +560,23 @@ let
     benchmark.dev-walgreens-jobs-run-data2x-restarts =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         mitmdump --version
-        # mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 47000"
-        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 2400"
+        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 47000"
+        # mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 2400"
+        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part.0 40"
 
         restart_services "hprof/lb-server.hprof.0"
-        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.0
+        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.0.0
         generate_heap_profiles "hprof/lb-server.hprof.0"
 
         restart_services "hprof/lb-server.hprof.1"
-        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.1
+        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.0.1
         generate_heap_profiles "hprof/lb-server.hprof.1"
 
         restart_services "hprof/lb-server.hprof.2"
-        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.2
+        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.0.2
         generate_heap_profiles "hprof/lb-server.hprof.2"
-      '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+      '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 1; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+      # '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 
 /*
     benchmark.dev-walgreens-jobs-install =
