@@ -9,11 +9,19 @@ class Split:
         self.current_file_num = 1
         self.lines_per_file = lines_per_file
         self.flow_writers = {}
+        self._last_fn = None
 
     def add(self, flow):
         self.req_num += 1
         fn_suffix = str(int(self.req_num // self.lines_per_file))
         fn = self.fn_prefix + '.' + fn_suffix
+        if self.req_num == 1:
+            self._last_fn = fn
+        if self._last_fn is not None and fn != self._last_fn:
+            # New part. Close previous part's file object.
+            fprev = self.get_flow_writer(self._last_fn)
+            fprev.fo.close()
+            self._last_fn = fn
         f = self.get_flow_writer(fn)
         f.add(flow)
 
@@ -23,7 +31,7 @@ class Split:
         self.flow_writers.clear()
 
     def get_flow_writer(self, fn):
-        if fn not in self.flow_writers:
+        if fn not in self.flow_writers or self.flow_writers[fn].fo.closed:
             self.flow_writers[fn] = FlowWriter(open(fn, 'ab'))
         return self.flow_writers[fn]
 
