@@ -63,6 +63,11 @@ in
       platform3.bloxweb
       pkgs.protobuf2_5
       pkgs.fio
+      pkgs.wireshark
+      pkgs.mtr
+      pkgs.inetutils
+      pkgs.jdk
+      builder-config.releases.s3lib "4.3.3"
 
       # actual packages
       builds.worker
