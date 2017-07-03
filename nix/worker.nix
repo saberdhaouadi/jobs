@@ -67,7 +67,7 @@ in
       pkgs.mtr
       pkgs.inetutils
       pkgs.jdk
-      builder-config.releases.s3lib "4.3.3"
+      (builder-config.releases.s3lib "4.3.3")
 
       # actual packages
       builds.worker
