@@ -35,7 +35,7 @@ in
     GRB_LICENSE_FILE = pkgs.writeText "gurobi.lic" "TOKENSERVER=127.0.0.1";
 
     buildCommand = ''
-      export HOME=$TMPDIR
+      export HOME=/tmp/job
       function start_lb() 
       {
         export LB_BLOXCOMPILER_SERVER=1;
