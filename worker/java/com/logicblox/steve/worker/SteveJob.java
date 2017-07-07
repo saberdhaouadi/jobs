@@ -56,7 +56,6 @@ public class SteveJob {
   private File _lbDeploymentHomePath = new File("/tmp/job/lb_deployment");
   private File _lbDeploymentLogsPath = new File(_lbDeploymentHomePath,"logs");
   private File _lbLogsPath = new File("/tmp/job/log/lb-logs.tgz");
-  private File _jobPath = new File("/tmp/job/job.tar.gz");
   private File _metadataPath = new File("/tmp/job/in/metadata.json");
 
   private boolean _timedOut = false;
