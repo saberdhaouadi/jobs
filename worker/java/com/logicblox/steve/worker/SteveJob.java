@@ -49,6 +49,7 @@ public class SteveJob {
 
   private S3Client _client;
 
+  private File _jobPath = new File("/tmp/job");
   private File _inputPath = new File("/tmp/job/in");
   private File _outputPath = new File("/tmp/job/out");
   private File _logOutputPath = new File("/tmp/job/log");
@@ -213,34 +214,11 @@ public class SteveJob {
   private void setup() throws Exception {
     cleanUp();
 
+    _jobPath.mkdirs();
     _inputPath.mkdirs();
     _outputPath.mkdirs();
     _logOutputPath.mkdirs();
     _lbDeploymentHomePath.mkdirs();
-
-    try {
-      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _outputPath.toString());
-      Process p = pb.start();
-      p.waitFor();
-      p.destroy();
-    } catch (Exception e) {
-    }
-
-    try {
-      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _logOutputPath.toString());
-      Process p = pb.start();
-      p.waitFor();
-      p.destroy();
-    } catch (Exception e) {
-    }
-
-    try {
-      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _lbDeploymentHomePath.toString());
-      Process p = pb.start();
-      p.waitFor();
-      p.destroy();
-    } catch (Exception e) {
-    }
 
     _diskFreeStart = _inputPath.getFreeSpace();
 
@@ -276,7 +254,7 @@ public class SteveJob {
     }
 
     try {
-      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _inputPath.toString());
+      ProcessBuilder pb = new ProcessBuilder("chmod", "-R", "777", _jobPath.toString());
       Process p = pb.start();
       p.waitFor();
       p.destroy();
