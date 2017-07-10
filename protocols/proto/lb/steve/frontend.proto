@@ -20,6 +20,7 @@ message Request {
   optional JobResultRequest result = 3;
   optional JobCancelRequest cancel = 4;
   optional JobLogRequest log = 5;
+  optional JobLBLogsRequest logs = 6;
 
   // job implementation request
   optional ImplAddRequest impl_add = 20;
@@ -47,6 +48,7 @@ message Response {
   optional JobResultResponse result = 12;
   optional JobCancelResponse cancel = 13;
   optional JobLogResponse log = 14;
+  optional JobLBLogsResponse logs = 15;
 
   // job implementation
   optional ImplAddResponse impl_add = 20;
@@ -156,6 +158,17 @@ message JobLogResponse {
   required string log = 1;
 }
 
+/**
+ * Request LB logs of an executed job.
+ */
+message JobLBLogsRequest {
+  required string id = 1;
+  required string destination = 2;
+}
+
+message JobLBLogsResponse {
+  required File file = 1;
+}
 
 /**
  * Add a new job implementation
