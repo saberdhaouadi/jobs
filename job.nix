@@ -335,7 +335,7 @@ let
             pushd hprof
             echo "$(ls $hp_prefix.*.heap | tail -n 1)"
             popd
-          }
+          ''}
         }
 
         mkdir -p $out/report
