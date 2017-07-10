@@ -245,6 +245,17 @@ let
           start_monitors
         }
 
+        function rebuild_workspace() {
+          local hp_prefix="$1"
+          echo "Rebuilding workspace"
+          print_last_profile $hp_prefix
+          lb delete lb-steve || true
+          # Make sure we get a dump between workspace deletion & rebuild
+          sleep $((profile_interval + 60))
+          print_last_profile $hp_prefix
+          ${jobs.database.build}/install.sh
+        }
+
         function start_monitors() {
           ${if heap_profiling
             then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
@@ -316,6 +327,15 @@ let
 
             popd
           ''}
+        }
+
+        function print_last_profile() {
+          local hp_prefix="$1"
+          ${pkgs.lib.optionalString heap_profiling ''
+            pushd hprof
+            echo "$(ls $hp_prefix.*.heap | tail -n 1)"
+            popd
+          }
         }
 
         mkdir -p $out/report
@@ -554,7 +574,6 @@ let
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = bench_duration; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
-*/
 
     benchmark.dev-walgreens-jobs-run-data2x-restarts =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
@@ -574,6 +593,27 @@ let
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.2
         generate_heap_profiles "lb-server.hprof.2"
       '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+*/
+
+    benchmark.dev-walgreens-jobs-run-data2x-rebuilds =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
+        mitmdump --version
+        # mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 47000"
+        # mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 2400"
+        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 100"
+
+        restart_services "lb-server.hprof"
+        rebuild_workspace "lb-server.hprof"
+        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.0
+
+        rebuild_workspace "lb-server.hprof"
+        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.0
+
+        rebuild_workspace "lb-server.hprof"
+        record_span "lb-walgreens-jobs" mitmdump -nc requests.part.0
+        generate_heap_profiles "lb-server.hprof"
+      '' "metrics" { buildInputs = [ mitmproxy ]; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+      # '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 
 /*
     benchmark.dev-walgreens-jobs-install =
