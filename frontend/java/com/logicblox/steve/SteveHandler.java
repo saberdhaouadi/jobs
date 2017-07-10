@@ -227,6 +227,8 @@ public class SteveHandler extends ProtoBufHandler {
               new HttpException(HttpStatus.BAD_REQUEST_400, "Not yet implemented"));
     } else if (request.hasLog()) {
       resp = handleLog(httpRequest, httpResponse, request.getLog());
+    } else if (request.hasLbLogs()) {
+      resp = handleLBLogs(httpRequest, httpResponse, request.getLbLogs());
     } else if (request.hasImplAdd()) {
       resp = handleImplAdd(httpRequest, httpResponse, request.getImplAdd());
     } else if (request.hasImplGet()) {
@@ -480,6 +482,65 @@ public class SteveHandler extends ProtoBufHandler {
         tmpFile.delete();
       }
     });
+  }
+
+  private ListenableFuture<Frontend.Response> handleLBLogs(
+          HttpServletRequest httpRequest,
+          HttpServletResponse httpResponse,
+          Frontend.JobLBLogsRequest req) throws IOException {
+    _statsd.incrementCounter("get_lb_logs");
+
+    final String user = getUser(httpRequest);
+
+    URI tmpUrl;
+    try {
+      tmpUrl = Utils.getURI(req.getDestination());
+    } catch (URISyntaxException exc) {
+      throw new ServiceException(
+              new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax"));
+    }
+
+    final URI dest = tmpUrl;
+    URI logs;
+    try {
+      logs = new URI(_jobLogPrefix + "/" + req.getId() + "/lb-logs.tgz");
+    }
+    catch(URISyntaxException e) {
+      return Futures.immediateFailedFuture(new ServiceException(new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax")));
+    }
+    ListenableFuture<ObjectMetadata> md = _s3client.exists(logs);
+    ListenableFuture<S3File> s3File = Futures.transform(md,
+           new AsyncFunction<ObjectMetadata, S3File>() {
+              public ListenableFuture<S3File> apply(ObjectMetadata m) throws IOException {
+                  if (m == null)
+                    throw new ServiceException(
+                            new SimpleErrorCode("FILE_NOT_FOUND", 400, "Log does not exist"));
+
+                  CopyOptions options = new CopyOptionsBuilder()
+                  .setSourceBucketName(Utils.getBucket(logs))
+                  .setSourceKey(Utils.getObjectKey(logs))
+                  .setDestinationBucketName(Utils.getBucket(dest))
+                  .setDestinationKey(Utils.getObjectKey(dest))
+                  .setCannedAcl("bucket-owner-full-control")
+                  .createCopyOptions();
+                return _s3client.copy(options);
+              }
+           });
+
+    return Futures.transform(
+            s3File,
+            new Function<S3File, Frontend.Response>() {
+              public Frontend.Response apply(S3File loc) {
+                Frontend.File file = Conversions.convertDataToFrontendFile(Conversions.convertS3FileToData(loc));
+                Frontend.ImplGetResponse.Builder resp = Frontend.ImplGetResponse.newBuilder().setFile(file);
+
+                return
+                        Frontend.Response.newBuilder()
+                                .setImplGet(resp)
+                                .build();
+              }
+            });
+
   }
 
   /**
