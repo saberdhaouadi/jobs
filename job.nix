@@ -574,12 +574,13 @@ let
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = bench_duration; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
+*/
 
     benchmark.dev-walgreens-jobs-run-data2x-restarts =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         mitmdump --version
         # mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 47000"
-        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 2400"
+        mitmdump -nr ${requests_dev_20170303-101311} -s "${./split.py} requests.part 4800"
 
         restart_services "lb-server.hprof.0"
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.0
@@ -592,9 +593,9 @@ let
         restart_services "lb-server.hprof.2"
         record_span "lb-walgreens-jobs" mitmdump -nc requests.part.2
         generate_heap_profiles "lb-server.hprof.2"
-      '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
-*/
+      '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 50*60*60; meta.maxSilent = 50*60*60; };
 
+/*
     benchmark.dev-walgreens-jobs-run-data2x-rebuilds =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
         mitmdump --version
@@ -615,7 +616,6 @@ let
       '' "metrics" { buildInputs = [ mitmproxy ]; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
       # '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 
-/*
     benchmark.dev-walgreens-jobs-install =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
         record_span "run-installer" ${jobs.database.build}/install.sh
