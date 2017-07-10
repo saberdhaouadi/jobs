@@ -20,7 +20,7 @@ message Request {
   optional JobResultRequest result = 3;
   optional JobCancelRequest cancel = 4;
   optional JobLogRequest log = 5;
-  optional JobLBLogsRequest logs = 6;
+  optional JobLBLogsRequest lb_logs = 6;
 
   // job implementation request
   optional ImplAddRequest impl_add = 20;
