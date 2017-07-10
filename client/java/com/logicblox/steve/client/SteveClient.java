@@ -135,6 +135,28 @@ public class SteveClient implements SteveClientInterface {
   }
 
   /**
+   * Get the LB services logs of the specified job id.
+   */
+  public ListenableFuture<String> getLBLogs(String id, URI destination)
+          throws ServiceClientException {
+    Frontend.Request.Builder req =
+            Frontend.Request.newBuilder()
+                    .setLbLogs(
+                            Frontend.JobLBLogsRequest.newBuilder()
+                                    .setDestination(destination.toString())
+                                    .setId(id));
+
+    return Futures.transform(
+            post(req.build()),
+            new Function<Frontend.Response, String>() {
+              @Override
+              public String apply(Frontend.Response response) {
+                return id;
+              }
+            });
+  }
+
+  /**
    * Get the result of the specified job id.
    */
   public ListenableFuture<List<Frontend.File>> getResult(String id)

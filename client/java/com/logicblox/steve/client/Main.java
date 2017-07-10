@@ -117,6 +117,7 @@ public class Main {
     _commander.addCommand("create-job", new CreateJobCommand());
     _commander.addCommand("status", new StatusCommand());
     _commander.addCommand("log", new LogCommand());
+    _commander.addCommand("lb-logs", new LBLogsCommand());
     _commander.addCommand("output", new OutputCommand());
     _commander.addCommand("upload-impl", new UploadJobImplCommand());
     _commander.addCommand("download-impl", new DownloadJobImplCommand());
@@ -437,6 +438,48 @@ public class Main {
                   System.out.println(log);
 
                   return Futures.immediateFuture(null);
+                }
+              }).get();
+    }
+  }
+
+  /**
+   * Download LB services logs
+   */
+  @Parameters(commandDescription = "Download LB services logs (tar.gz file) of job")
+  class LBLogsCommand extends Command {
+    @Parameter(
+            description = "Job identifier",
+            required = true)
+    List<String> _ids;
+
+    @Parameter(
+            names = {"-o", "--output"},
+            description = "Output location (S3 URL or local file)",
+            required = true)
+    String _output;
+
+    @Override
+    public void invoke() throws Exception {
+      final SteveClientInterface client = getSteveClient();
+      if (_ids.size() != 1)
+        throw new UsageException("Must specify exactly one job identifier.");
+
+      URI outputURI;
+      final boolean autoDownload = !_output.startsWith("s3://");
+      if (autoDownload)
+        outputURI = createUniqueOutputPrefixURI();
+      else
+        outputURI = URI.create(_output);
+
+      Futures.transform(client.getLBLogs(_ids.get(0), outputURI),
+              new AsyncFunction<String, Object>() {
+                @Override
+                public ListenableFuture<Object> apply(String id) throws Exception {
+                  if(autoDownload)
+                    return (ListenableFuture) _s3client.download(new File(_output),outputURI);
+                  else
+                    return Futures.immediateFuture((Object) id);
                 }
               }).get();
     }
