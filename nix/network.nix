@@ -601,6 +601,18 @@ with pkgs.lib;
     { config, pkgs, lib, resources, nodes, ... }:
     let
       logicblox = builder-config.getLB (import ../lb-version.nix);
+      updateLBversions = pkgs.writeScriptBin "update-lb-versions" ''
+        #! /usr/bin/env bash
+        set -ex
+
+        export PLATFORM_RELEASES=$(mktemp)
+        aws s3 cp s3://${s3Name}/override/platform_releases.nix $PLATFORM_RELEASES
+
+        export CSV=$(nix-build ${./lb-versions.nix} --no-out-link)
+        if [[ -n "$CSV" ]] ; then
+          lb web-client import -i $CSV http://localhost:8080/tdx/platform_versions
+        fi
+      '';
     in
     {
       deployment.targetEnv = "ec2";
@@ -620,6 +632,8 @@ with pkgs.lib;
         <lbdevops/nixos/logicblox/datadog/all.nix>
         ./datadog/database.nix
       ] ;
+
+      environment.systemPackages = [ updateLBversions ];
 
       services.logicblox.enable = true;
       services.logicblox.logicblox = logicblox;
