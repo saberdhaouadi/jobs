@@ -257,8 +257,8 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [
-                "arn:aws:s3:::${s3Name}/backups/*",
-                "arn:aws:s3:::${s3Name}/reports/*"
+                "arn:aws:s3:::${s3Name}",
+                "arn:aws:s3:::${s3Name}/*"
               ]
             }
           ]
@@ -605,8 +605,14 @@ with pkgs.lib;
         #! /usr/bin/env bash
         set -ex
 
+        function exit_trap()
+        {
+          rm -f $PLATFORM_RELEASES
+        }
+        trap exit_trap EXIT
+
         export PLATFORM_RELEASES=$(mktemp)
-        aws s3 cp s3://${s3Name}/override/platform_releases.nix $PLATFORM_RELEASES
+        ${pkgs.awscli}/bin/aws s3 cp s3://${s3Name}/override/platform-releases.nix $PLATFORM_RELEASES
 
         export CSV=$(nix-build ${./lb-versions.nix} --no-out-link)
         if [[ -n "$CSV" ]] ; then
