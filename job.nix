@@ -84,6 +84,7 @@ let
   bench = data: name: precommand: command: id: attrs:
     let
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
+      hp_enabled = ((attrs ? heap_profiling) && attrs.heap_profiling);
     in builder_config.buildLB (attrs // {
       inherit name;
       buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl pkgs.pythonPackages.requests2 ] ++ (attrs.buildInputs or []);
@@ -207,7 +208,7 @@ let
 
         function start_lb_server() {
           local hp_prefix="$1"
-          ${if heap_profiling
+          ${if hp_enabled
             then ''
               # Enable heap-profiling for throughput phase
               mkdir -p hprof
@@ -257,7 +258,7 @@ let
         }
 
         function start_monitors() {
-          ${if heap_profiling
+          ${if hp_enabled
             then "lb_server_pid=$(pgrep -f 'lb-server --daemonize')"
             else "lb_server_pid=$(cat $LB_DEPLOYMENT_HOME/logs/current/lb-server.pid)"}
 
@@ -277,7 +278,7 @@ let
 
         function generate_heap_profiles() {
           local hp_prefix="$1"
-          ${pkgs.lib.optionalString heap_profiling ''
+          ${pkgs.lib.optionalString hp_enabled ''
             pushd hprof
 
             set +o pipefail
@@ -331,7 +332,7 @@ let
 
         function print_last_profile() {
           local hp_prefix="$1"
-          ${pkgs.lib.optionalString heap_profiling ''
+          ${pkgs.lib.optionalString hp_enabled ''
             pushd hprof
             echo "$(ls $hp_prefix.*.heap | tail -n 1)"
             popd
@@ -569,13 +570,32 @@ let
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
       '' "metrics" { buildInputs = [ mitmproxy ]; timeout = 12*60*60; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
-
-    benchmark.dev-walgreens-jobs-run-data2x =
-      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
-        record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
-      '' "metrics" { buildInputs = [ mitmproxy ]; timeout = bench_duration; dataset_multiplier = 2; meta.timeout = 20*60*60; meta.maxSilent = 20*60*60; };
 */
 
+    benchmark.dev-walgreens-jobs-run-data2x-nohp =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
+        restart_services "lb-server.hprof"
+        record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311} 
+      '' "metrics" { buildInputs = [ mitmproxy ];
+                     dataset_multiplier = 2;
+                     timeout = bench_duration;
+                     heap_profiling = false;
+                     meta.timeout = 50*60*60;
+                     meta.maxSilent = 50*60*60; };
+
+    benchmark.dev-walgreens-jobs-run-data2x-hp =
+      bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
+        restart_services "lb-server.hprof"
+        record_span "lb-walgreens-jobs" mitmdump -nc ${requests_dev_20170303-101311}
+        generate_heap_profiles "lb-server.hprof"
+      '' "metrics" { buildInputs = [ mitmproxy ];
+                     dataset_multiplier = 2;
+                     timeout = bench_duration;
+                     heap_profiling = true;
+                     meta.timeout = 50*60*60;
+                     meta.maxSilent = 50*60*60; };
+
+/*
     benchmark.dev-walgreens-jobs-run-data2x-restarts =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         mitmdump --version
@@ -595,7 +615,6 @@ let
         generate_heap_profiles "lb-server.hprof.2"
       '' "metrics" { buildInputs = [ mitmproxy ]; dataset_multiplier = 2; meta.timeout = 50*60*60; meta.maxSilent = 50*60*60; };
 
-/*
     benchmark.dev-walgreens-jobs-run-data2x-rebuilds =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "" ''
         mitmdump --version
