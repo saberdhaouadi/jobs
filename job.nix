@@ -267,6 +267,7 @@ let
           memusg-monitor --memusg-pid $lb_server_pid  >> memusg-monitor.csv 2>&1 &
           # inverval == HEAP_PROFILE_TIME_INTERVAL
           wssize-monitor --interval $profile_interval >> wssize-monitor.csv 2>&1 &
+          cmd-monitor --cmd "lb batch-script lb-steve 'profileDiskSpace -T -S -L -O -V -K'" --mode create-new --file profileDiskSpace.out --interval 1800 &
         }
 
         function stop_monitors() {
@@ -274,6 +275,7 @@ let
           pkill -f cpuusg-monitor || true
           pkill -f memusg-monitor || true
           pkill -f wssize-monitor || true
+          pkill -f cmd-monitor    || true
         }
 
         function generate_heap_profiles() {
@@ -344,6 +346,9 @@ let
         ${command}
 
         fancy_report ${id}
+
+        mkdir $out/report/profileDiskSpace
+        cp profileDiskSpace.out* $out/report/profileDiskSpace
 
         dudir="$LB_DEPLOYMENT_HOME/workspaces"
         wssize=$(du -BM --max-depth=0 "$dudir" | sed 's/M//' | awk '{print $1}')
@@ -583,6 +588,7 @@ let
                      meta.timeout = 50*60*60;
                      meta.maxSilent = 50*60*60; };
 
+/*
     benchmark.dev-walgreens-jobs-run-data2x-hp =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         restart_services "lb-server.hprof"
@@ -595,7 +601,6 @@ let
                      meta.timeout = 50*60*60;
                      meta.maxSilent = 50*60*60; };
 
-/*
     benchmark.dev-walgreens-jobs-run-data2x-restarts =
       bench data_dev_20170303-101311 "lb-walgreens-jobs-run" "${jobs.database.build}/install.sh" ''
         mitmdump --version
