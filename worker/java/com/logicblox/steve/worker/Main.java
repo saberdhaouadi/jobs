@@ -95,7 +95,7 @@ public class Main {
   AmazonSQS sqs;
 
   // Settings
-  private static int _idle = 2;
+  private static int _idle = 10;
   private static String _incomingUrl = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String _outgoingUrl = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
   private static String _handle_dir = "/var/lib/lb-steve";
@@ -331,21 +331,7 @@ public class Main {
         // If idling for more than x minutes, poweroff machine
         boolean idleTooLong = (System.currentTimeMillis() - waitingSince) / 1000 > _idle * 60;
 
-        long nextInstanceHour;
-        try {
-          DateTime dt = ISODateTimeFormat.dateTimeParser().parseDateTime(getMetadata().pendingTime);
-
-          long diffInMillis = DateTime.now().getMillis() - dt.getMillis();
-          nextInstanceHour = 60 - ((diffInMillis % 3600000) / 60000);
-        } catch (Exception e) {
-          // If anything goes wrong in determining the number of minutes till next instance
-          // hour, default to 0, which will cause the instance to shutdown when idling for x
-          // minutes
-          nextInstanceHour = 0;
-          System.err.println("WARNING: Could not determine start of next instance hour: " + e.getMessage());
-        }
-
-        if (_shutdownOnIdle && idleTooLong && nextInstanceHour <= 3) {
+        if (idleTooLong) {
           shutdownSelf();
         }
 
