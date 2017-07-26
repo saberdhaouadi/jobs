@@ -3,6 +3,7 @@
 , src_lb_web_original
 , src_s3lib
 , src_datalog_generator
+, src_builder_config
 , benchmarks ? null
 , heap_profiling ? false
 , nixpkgs_1703 ? null
@@ -15,7 +16,7 @@ let
   inherit (builder_config) pkgs getLB;
 
   integration_jobset =
-    import (config + "/integration/jobsets.nix") {
+    import (src_builder_config + "/integration/jobsets.nix") {
       inherit src_logicblox src_lb_web_original src_s3lib src_datalog_generator;
       args_logicblox = {
         inherit extraDefines;
