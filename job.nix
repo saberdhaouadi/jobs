@@ -463,7 +463,7 @@ let
       build = builder_config.buildLBConfig {
         name = "jobs-database";
         src = ./frontend-database;
-        buildInputs = [ logicblox ];
+        buildInputs = [ logicblox lb_web ];
         configureFlags = [
           "--with-protocols=${protocols}"
         ];
