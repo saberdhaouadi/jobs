@@ -21,6 +21,7 @@ let
         inherit extraDefines;
         config = logicblox_config;
       };
+    };
 
   platform = integration_jobset.platform;
 
