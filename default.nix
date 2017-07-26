@@ -29,7 +29,9 @@ let
   # platform = getLB platform_release;
 in
   import ./job.nix {
-    logicblox = platform;
+    # logicblox = platform;
+    logicblox = platform.logicblox;
+    lb_web = platform.lb_web;
     inherit builder_config benchmarks heap_profiling nixpkgs_1703 bench_duration;
     inherit (pkgs) python stdenv fetchurl unzip makeWrapper runCommand jdk;
   }
