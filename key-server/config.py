@@ -35,11 +35,11 @@ classpath = [
   '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar',
   '$(lb_web)/lib/java/guava-15.0.jar',
-  '$(lb_web)/lib/java/httpclient-4.3.6.jar',
-  '$(lb_web)/lib/java/httpcore-4.3.3.jar',
-  '$(lb_web)/lib/java/jackson-annotations-2.5.3.jar',
-  '$(lb_web)/lib/java/jackson-core-2.5.3.jar',
-  '$(lb_web)/lib/java/jackson-databind-2.5.3.jar',
+  '$(lb_web)/lib/java/httpclient-4.5.2.jar',
+  '$(lb_web)/lib/java/httpcore-4.4.4.jar',
+  '$(lb_web)/lib/java/jackson-annotations-2.6.0.jar',
+  '$(lb_web)/lib/java/jackson-core-2.6.6.jar',
+  '$(lb_web)/lib/java/jackson-databind-2.6.6.jar',
   '$(lb_web)/lib/java/java-statsd-client-2.0.0.jar',
   '$(lb_web)/lib/java/jcommander-1.29.jar',
   '$(lb_web)/lib/java/jetty-client-7.6.7.v20120910.jar',
@@ -69,7 +69,7 @@ classpath = [
 
   '$(lb_web)/lib/java/s3lib-0.2.jar',
   '$(lb_web)/lib/java/commons-io-2.4.jar',
-  '$(lb_web)/lib/java/aws-java-sdk-1.10.20.jar',
+  '$(lb_web)/lib/java/aws-java-sdk-1.11.102.jar',
 
   '$(logicblox)/lib/java/lb-connectblox.jar',
 

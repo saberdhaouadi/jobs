@@ -57,7 +57,7 @@ classpath = [
   '$(logicblox)/lib/java/guava-15.0.jar',
   '$(logicblox)/lib/java/lb-common.jar',
   '$(lb_web)/lib/java/s3lib-0.2.jar',
-  '$(lb_web)/lib/java/aws-java-sdk-1.10.20.jar',
+  '$(lb_web)/lib/java/aws-java-sdk-1.11.102.jar',
   '$(lb_web)/lib/java/lb-web-client.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar'
 ]
