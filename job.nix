@@ -87,7 +87,7 @@ let
       hp_enabled = ((attrs ? heap_profiling) && attrs.heap_profiling);
     in builder_config.buildLB (attrs // {
       inherit name;
-      buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl pkgs.pythonPackages.requests2 ] ++ (attrs.buildInputs or []);
+      buildInputs = [ logicblox lb_web bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl pkgs.pythonPackages.requests2 ] ++ (attrs.buildInputs or []);
       requiredSystemFeatures = ["perf"];
       # LB_CONFIG = ./config/perf;
       buildCommand = ''
