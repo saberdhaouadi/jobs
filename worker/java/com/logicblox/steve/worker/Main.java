@@ -331,7 +331,7 @@ public class Main {
         // If idling for more than x minutes, poweroff machine
         boolean idleTooLong = (System.currentTimeMillis() - waitingSince) / 1000 > _idle * 60;
 
-        if (idleTooLong) {
+        if (_shutdownOnIdle && idleTooLong) {
           shutdownSelf();
         }
 
