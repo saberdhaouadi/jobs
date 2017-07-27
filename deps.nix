@@ -21,6 +21,7 @@ let
       };
       buildInputs = [ pkgs.unzip ];
       buildCommand = ''
+        set -x
         unzip $src
         mkdir -p $out/lib/java
         cp $name/lib/$name.jar $out/lib/java
