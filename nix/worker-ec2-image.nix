@@ -66,7 +66,7 @@
       devices=""
       nr=0
       mkdir -p /var/lock/lvm
-      for device in /dev/xvd[bcde]*; do
+      for device in /dev/xvd[bcdef]*; do
         echo $device
         lvm pvcreate -f $device
         devices="$devices $device"

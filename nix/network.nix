@@ -3,7 +3,6 @@
 , accountId ? "826045886586"
 , name
 , logToken ? ""
-, catchRequests ? false
 }:
 let
   environments = import ./environments.nix;
@@ -111,7 +110,7 @@ let
       http_server_threads = 500
 
       [handler:steve]
-      database_prefix = http://database-${name}:${if catchRequests then "80" else "8080"}/db
+      database_prefix = http://database-${name}:8080/db
 
       ${pkgs.lib.concatMapStrings (t: ''
       [job-queue:${workerName t}]
@@ -184,6 +183,11 @@ with pkgs.lib;
               "Resource": [
                 "arn:aws:ec2:${region}:${accountId}:instance/*"
               ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": "sts:AssumeRole",
+              "Resource": "*"
             },
             {
               "Action": [
@@ -478,11 +482,11 @@ with pkgs.lib;
       services.nginx.appendConfig = ''
         worker_processes 4;
         worker_rlimit_nofile 30000;
-        events {
+      '';
+      services.nginx.eventsConfig = ''
             worker_connections 9000;
             use epoll;
             multi_accept on;
-        }
       '';
       services.nginx.httpConfig = ''
         log_format timed_combined '$remote_addr - $remote_user [$time_local]  "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
@@ -500,7 +504,7 @@ with pkgs.lib;
           server_name ${env.hostName};
           server_tokens off;
 
-          listen [::]:443 default_server ssl spdy ipv6only=off;
+          listen [::]:443 default_server ssl ipv6only=off;
 
           ssl_certificate         /run/keys/server.crt;
           ssl_trusted_certificate /run/keys/server.crt;
@@ -667,15 +671,6 @@ with pkgs.lib;
         startAt = "*:15";
       };
 
-      systemd.services.mitmproxy =
-        { description = "mitmproxy";
-          enable = catchRequests;
-          wantedBy = [ "multi-user.target" ];
-          serviceConfig = {
-            ExecStart = "${pkgs.pythonPackages.mitmproxy}/bin/mitmdump --port 80 -R http://localhost:8080 -w /tmp/requests.txt -q --cadir /tmp/mitmproxy";
-          };
-        };
-
       networking.firewall.allowedTCPPorts = [ 8080 55183 80 ];
 
       fileSystems."/data" =
@@ -741,11 +736,11 @@ with pkgs.lib;
       services.nginx.appendConfig = ''
         worker_processes 4;
         worker_rlimit_nofile 30000;
-        events {
+      '';
+      services.nginx.eventsConfig = ''
             worker_connections 9000;
             use epoll;
             multi_accept on;
-        }
       '';
       services.nginx.httpConfig = ''
         log_format timed_combined '$remote_addr - $remote_user [$time_local]  "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_response_time $pipe';
@@ -764,7 +759,7 @@ with pkgs.lib;
           server_name ${env.hostName};
           server_tokens off;
 
-          listen [::]:443 default_server ssl spdy ipv6only=off;
+          listen [::]:443 default_server ssl ipv6only=off;
 
           ssl_certificate         /run/keys/server.crt;
           ssl_trusted_certificate /run/keys/server.crt;
