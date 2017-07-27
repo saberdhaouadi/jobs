@@ -127,14 +127,17 @@ in
               }
               {
                 q = "avg:lb.steve.status.progress{host:steve-${name}}.as_count()";
+                style.palette = "orange";
                 type = "bars";
               }
               {
                 q = "avg:lb.steve.status.failed{host:steve-${name}}.as_count()";
+                style.palette = "warm";
                 type = "bars";
               }
               {
                 q = "avg:lb.steve.status.succeeded{host:steve-${name}}.as_count()";
+                style.palette = "cool";
                 type = "bars";
               }
               {
