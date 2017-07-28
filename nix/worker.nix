@@ -94,6 +94,13 @@ in
     nix.useSandbox = true;
     nix.package = pkgs.nixUnstable;
 
+    nixpkgs.config.packageOverrides = pkgs: {
+      nixUnstable = pkgs.lib.overrideDerivation pkgs.nix (attrs: {
+        patches = [ ./nix-dev-shm.patch ./nix-user-agent.patch ];
+      });
+    };
+
+
     systemd.extraConfig = ''
       DefaultCPUAccounting=true
       DefaultMemoryAccounting=true
