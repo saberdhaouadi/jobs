@@ -88,6 +88,8 @@ in
     nix.extraOptions = ''
       build-compress-log = false
       user-agent-suffix = lb-jobs
+      sandbox-dev-shm-size = 75%
+      signed-binary-caches =
     '';
     nix.useSandbox = true;
     nix.package = pkgs.nixUnstable;
@@ -200,11 +202,6 @@ in
       }
     '';
 
-    nixpkgs.config.packageOverrides = pkgs: {
-      nixUnstable = pkgs.lib.overrideDerivation pkgs.nix (attrs: {
-        patches = [ ./nix-dev-shm.patch ./nix-user-agent.patch ];
-      });
-    };
   };
 
 }
