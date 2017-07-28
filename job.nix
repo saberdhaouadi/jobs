@@ -333,8 +333,7 @@ let
     in 
       runCommand "worker-ec2-image" { preferLocalBuild = true; } ''
         mkdir -p $out/nix-support
-        xz -z -c ${image}/nixos.img  > $out/worker.img.xz
-        echo "file img $out/worker.img.xz" > $out/nix-support/hydra-build-products
+        echo "file img ${image}/nixos.qcow2" > $out/nix-support/hydra-build-products
       '';
 
   database =
