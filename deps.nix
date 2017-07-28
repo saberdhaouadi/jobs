@@ -21,8 +21,10 @@ let
       };
       buildInputs = [ pkgs.unzip ];
       buildCommand = ''
-        set -x
-        unzip $src
+        # o option is necessary because the archive contains two
+        # documentation files that have identical case-insensitive
+        # names.
+        unzip -o $src
         mkdir -p $out/lib/java
         cp $name/lib/$name.jar $out/lib/java
       '';
