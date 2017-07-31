@@ -21,6 +21,7 @@ let
         mkdir out impl
         pushd impl
         tar --strip-components=1 -xf ${impl platform}/implementations/wag_ML_features_extraction.tgz
+        sed -i 's|/tmp/job/in|$1|' run
         ./run ../in ../out
         popd
         ls -lR out
