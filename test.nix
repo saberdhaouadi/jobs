@@ -18,7 +18,7 @@ let
         tar -xf ${data}
         mkdir out impl
         pushd impl
-        tar --strip-components=1 -xf ${impl}/implementations/wag_ML_features_extraction.tgz
+        tar --strip-components=1 -xf ${impl platform}/implementations/wag_ML_features_extraction.tgz
         ./run ../in ../out
         popd
         ls -lR out
