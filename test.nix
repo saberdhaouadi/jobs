@@ -11,7 +11,7 @@ let
   };
 
   runJob = platform:
-    buildLB {
+    builder_config.buildLB {
       name = "run-job";
       buildInputs = [ (getLB platform) ];
       buildCommand = ''
