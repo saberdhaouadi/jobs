@@ -19,7 +19,7 @@ let
       buildCommand = ''
         mkdir -p /tmp/job/out
         tar -C /tmp/job -xf ${data}
-        echo '${metadata}' > in/metadata.json
+        echo '${metadata}' > /tmp/job/in/metadata.json
         ./run /tmp/job/in /tmp/job/out
         ls -lR /tmp/job/out
         mkdir $out
