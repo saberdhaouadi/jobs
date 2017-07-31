@@ -16,7 +16,7 @@ let
       name = "run-job";
       buildInputs = [ (builder_config.getLB platform) pkgs.jq ];
       src = "${impl platform}/implementations/wag_ML_features_extraction.tgz";
-      buildCommand = ''
+      installPhase = ''
         mkdir -p /tmp/job/out
         tar -C /tmp/job -xf ${data}
         echo '${metadata}' > /tmp/job/in/metadata.json
