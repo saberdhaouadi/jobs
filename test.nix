@@ -3,6 +3,7 @@
 }:
 let
   builder_config = import <config> {};
+  pkgs = builder_config.pkgs;
   impl = platform_release: (import walgreens_ml_src { inherit walgreens_ml_src walgreens_dm_src platform_release; }).build;
 
   data = builder_config.fetchs3 {
