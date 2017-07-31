@@ -15,16 +15,13 @@ let
     builder_config.buildLB {
       name = "run-job";
       buildInputs = [ (builder_config.getLB platform) pkgs.jq ];
+      src = "${impl platform}/implementations/wag_ML_features_extraction.tgz";
       buildCommand = ''
-        tar -xf ${data}
+        mkdir -p /tmp/job/out
+        tar -C /tmp/job -xf ${data}
         echo '${metadata}' > in/metadata.json
-        mkdir out impl
-        pushd impl
-        tar --strip-components=1 -xf ${impl platform}/implementations/wag_ML_features_extraction.tgz
-        sed -i 's|/tmp/job/in|$1|' run
-        ./run ../in ../out
-        popd
-        ls -lR out
+        ./run /tmp/job/in /tmp/job/out
+        ls -lR /tmp/job/out
         mkdir $out
       '';
       requiredSystemFeatures = [ "perf" ];
