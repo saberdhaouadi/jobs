@@ -13,7 +13,7 @@ let
   runJob = platform:
     builder_config.buildLB {
       name = "run-job";
-      buildInputs = [ (builder_config.getLB platform) ];
+      buildInputs = [ (builder_config.getLB platform) pkgs.jq ];
       buildCommand = ''
         tar -xf ${data}
         mkdir out impl
