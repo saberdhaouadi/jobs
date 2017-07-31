@@ -17,6 +17,7 @@ let
       buildInputs = [ (builder_config.getLB platform) pkgs.jq ];
       buildCommand = ''
         tar -xf ${data}
+        echo '${metadata}' > in/metadata.json
         mkdir out impl
         pushd impl
         tar --strip-components=1 -xf ${impl platform}/implementations/wag_ML_features_extraction.tgz
@@ -28,6 +29,9 @@ let
       requiredSystemFeatures = [ "perf" ];
     };
     
+  metadata = builtins.toJSON {
+    job_tag = "job00002_066";
+  };
 in
 {
   "4_4_3" = runJob "4.4.3";
