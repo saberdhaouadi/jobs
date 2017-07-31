@@ -14,7 +14,7 @@ let
   runJob = platform:
     builder_config.buildLB {
       name = "run-job";
-      buildInputs = [ (builder_config.getLB platform) pkgs.jq ];
+      buildInputs = [ (builder_config.getLB platform) pkgs.jq pkgs.curl pkgs.time ];
       src = "${impl platform}/implementations/wag_ML_features_extraction.tgz";
       installPhase = ''
         mkdir -p /tmp/job/out
