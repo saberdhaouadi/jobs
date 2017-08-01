@@ -10,6 +10,8 @@
 , bench_duration ? 30*60
 , extraDefines ? []
 , logicblox_config ? "release"
+, enableTCMalloc ? true
+, useStaticLinking ? true
 }:
 let
   builder_config = import <config> {};
@@ -19,7 +21,7 @@ let
     import (src_builder_config + "/integration/jobsets.nix") {
       inherit src_logicblox src_lb_web_original src_s3lib src_datalog_generator;
       args_logicblox = {
-        inherit extraDefines;
+        inherit extraDefines enableTCMalloc useStaticLinking;
         config = logicblox_config;
       };
     };
