@@ -6,8 +6,6 @@
     <lbdevops/logicblox/config/logging/logentries.nix>
   ];
 
-  boot.kernelPackages = pkgs.linuxPackages_4_4;
-
   logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
 
   ec2.hvm = true;
