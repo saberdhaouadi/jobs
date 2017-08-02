@@ -74,6 +74,7 @@
       done
 
       set -x
+      if [ -n "$devices" ]; then
       echo "vgcreate"
       lvm vgcreate raid $devices
       echo "lvcreate"
@@ -102,6 +103,7 @@
       mount --rbind $targetRoot/$diskForUnionfs/root/nix /unionfs-chroot/rw-nix
 
       unionfs -o allow_other,cow,nonempty,chroot=/unionfs-chroot,max_files=32768 /rw-nix=RW:/ro-nix=RO $targetRoot/nix
+      fi
       set +x
     '';
 
