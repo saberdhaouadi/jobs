@@ -28,7 +28,7 @@ curl -L https://bob.logicblox.com/build/$build/download-by-type/file/img | xz -d
 
 echo "NixOS version is $version"
 
-rm -f ec2-amis.nix
+echo "{" > nix/amis.nix
 
 types="hvm"
 stores="ebs s3"
@@ -269,9 +269,10 @@ for type in $types; do
             done
             echo
 
-            echo "  $region.$type-$store = \"$ami\";" >> ec2-amis.nix
+            echo "  $region.$store = \"$ami\";" >> nix/amis.nix
         done
 
     done
 
 done
+echo "}" >> nix/amis.nix
