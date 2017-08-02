@@ -397,7 +397,7 @@ with pkgs.lib;
           source /etc/profile
           exec lb-steve-provisioner $@ \
                  --region ${r} \
-                 --ami ${amis."${r}"} \
+                 --ami ${amis."${r}".s3} \
                  --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
