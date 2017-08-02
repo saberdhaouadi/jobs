@@ -68,41 +68,43 @@
       mkdir -p /var/lock/lvm
       for device in /dev/xvd[bcdef]*; do
         echo $device
-        lvm pvcreate -f $device
-        devices="$devices $device"
-        nr=$((nr+1))
+        if [ -e "$device" ]; then
+          lvm pvcreate -f $device
+          devices="$devices $device"
+          nr=$((nr+1))
+        fi
       done
 
       set -x
       if [ -n "$devices" ]; then
-      echo "vgcreate"
-      lvm vgcreate raid $devices
-      echo "lvcreate"
-      lvm lvcreate -vvv --noudevsync --zero n raid --name raid --extents '100%FREE' --stripes $nr
-      echo "vgchange"
-      lvm vgchange --noudevsync -ay raid
+        echo "vgcreate"
+        lvm vgcreate raid $devices
+        echo "lvcreate"
+        lvm lvcreate -vvv --noudevsync --zero n raid --name raid --extents '100%FREE' --stripes $nr
+        echo "vgchange"
+        lvm vgchange --noudevsync -ay raid
 
-      diskForUnionfs=/disk0
-      echo "Creating ext4 filesystem on /dev/dm-0"
-      mke2fs -t ext4 /dev/dm-0
-      echo "Mounting /dev/dm-0 to $diskForUnionfs"
-      mountFS /dev/dm-0 $diskForUnionfs "" ext4
+        diskForUnionfs=/disk0
+        echo "Creating ext4 filesystem on /dev/dm-0"
+        mke2fs -t ext4 /dev/dm-0
+        echo "Mounting /dev/dm-0 to $diskForUnionfs"
+        mountFS /dev/dm-0 $diskForUnionfs "" ext4
 
-      mkdir -m 755 -p $targetRoot/$diskForUnionfs/root
-      mkdir -m 1777 -p $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
-      mount --bind $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
+        mkdir -m 755 -p $targetRoot/$diskForUnionfs/root
+        mkdir -m 1777 -p $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
+        mount --bind $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
 
-      mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/var $targetRoot/var
-      mount --bind $targetRoot/$diskForUnionfs/root/var $targetRoot/var
+        mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/var $targetRoot/var
+        mount --bind $targetRoot/$diskForUnionfs/root/var $targetRoot/var
 
-      mkdir -p /unionfs-chroot/ro-nix
-      mount --rbind $targetRoot/nix /unionfs-chroot/ro-nix
+        mkdir -p /unionfs-chroot/ro-nix
+        mount --rbind $targetRoot/nix /unionfs-chroot/ro-nix
 
-      mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/nix
-      mkdir -p /unionfs-chroot/rw-nix
-      mount --rbind $targetRoot/$diskForUnionfs/root/nix /unionfs-chroot/rw-nix
+        mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/nix
+        mkdir -p /unionfs-chroot/rw-nix
+        mount --rbind $targetRoot/$diskForUnionfs/root/nix /unionfs-chroot/rw-nix
 
-      unionfs -o allow_other,cow,nonempty,chroot=/unionfs-chroot,max_files=32768 /rw-nix=RW:/ro-nix=RO $targetRoot/nix
+        unionfs -o allow_other,cow,nonempty,chroot=/unionfs-chroot,max_files=32768 /rw-nix=RW:/ro-nix=RO $targetRoot/nix
       fi
       set +x
     '';
