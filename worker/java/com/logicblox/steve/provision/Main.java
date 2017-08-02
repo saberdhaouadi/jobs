@@ -21,13 +21,15 @@ public class Main {
   private static String queue = "c3-xlarge";
   private static String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
   private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
-  private static String ami = "ami-70242d66";
+  private static String ami = "ami-820c2af9";
   private static String key = "rob";
   private static String region = "us-east-1";
   private static String s3Bucket = "steve-jobs";
   private static String instanceType = "c3.xlarge";
   private static String role = "steve-jobs-worker";
   private static String serviceUri = "http://localhost:8082/keys";
+  private static String subnetId = null;
+  private static String securityGroup = "admin";
 
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
   private static double pctSpot = 0.9;
@@ -38,6 +40,7 @@ public class Main {
   private static int maxInstances = 300;
   private static int minInstances = 0;
   private static boolean dryRun = true;
+  private static int diskSize = 0;
 
   private static Regions[] regions = new Regions[]{ Regions.US_EAST_1, Regions.US_WEST_1, Regions.US_WEST_2 };
 
@@ -157,6 +160,25 @@ public class Main {
             .withType(Number.class)
             .create());
 
+    options.addOption(OptionBuilder.withLongOpt("disk-size")
+            .withDescription("Root disk size in GiB (for EBS backed images)")
+            .hasArg()
+            .withArgName("number")
+            .withType(Number.class)
+            .create());
+
+    options.addOption(OptionBuilder.withLongOpt("subnet-id")
+            .withDescription("Subnet ID")
+            .hasArg()
+            .withArgName("subnet")
+            .create());
+
+    options.addOption(OptionBuilder.withLongOpt("security-group")
+            .withDescription("Security group")
+            .hasArg()
+            .withArgName("security group")
+            .create());
+
     options.addOption(OptionBuilder.withLongOpt("dry-run")
             .withDescription("Whether to actually create the requested instances")
             .create());
@@ -184,6 +206,10 @@ public class Main {
         instanceType = _cmdline.getOptionValue("instance-type");
       if (_cmdline.hasOption("key-service"))
         serviceUri = _cmdline.getOptionValue("key-service");
+      if (_cmdline.hasOption("subnet-id"))
+        subnetId = _cmdline.getOptionValue("subnet-id");
+      if (_cmdline.hasOption("security-group"))
+        securityGroup = _cmdline.getOptionValue("security-group");
 
       if (_cmdline.hasOption("total"))
         totalNeeded = ((Number) _cmdline.getParsedOptionValue("total")).intValue();
@@ -193,6 +219,8 @@ public class Main {
         maxDelta = ((Number) _cmdline.getParsedOptionValue("max-delta")).intValue();
       if (_cmdline.hasOption("min"))
         minInstances = ((Number) _cmdline.getParsedOptionValue("min")).intValue();
+      if (_cmdline.hasOption("disk-size"))
+        diskSize = ((Number) _cmdline.getParsedOptionValue("disk-size")).intValue();
 
       if (_cmdline.hasOption("spot-price"))
         spotPrice = ((Number) _cmdline.getParsedOptionValue("spot-price")).doubleValue();
@@ -340,9 +368,32 @@ public class Main {
     req.setKeyName(key);
     req.setUserData(getUserData());
 
-    Collection<String> groups = new ArrayList<String>();
-    groups.add("admin");
-    req.setSecurityGroups(groups);
+    if(subnetId == null) {
+      Collection<String> groups = new ArrayList<String>();
+      groups.add(securityGroup);
+      req.setSecurityGroups(groups);
+    } else {
+      Collection<String> groups = new ArrayList<String>();
+      groups.add(securityGroup);
+      req.setSecurityGroupIds(groups);
+    }
+
+    if(subnetId != null) {
+      req.setSubnetId(subnetId);
+    }
+    if(diskSize != 0) {
+      BlockDeviceMapping blockDeviceMapping = new BlockDeviceMapping();
+      blockDeviceMapping.setDeviceName("/dev/sda1");
+
+      EbsBlockDevice ebs = new EbsBlockDevice();
+      ebs.setVolumeSize(diskSize);
+      blockDeviceMapping.setEbs(ebs);
+
+      ArrayList<BlockDeviceMapping> blockList = new ArrayList<BlockDeviceMapping>();
+      blockList.add(blockDeviceMapping);
+
+      req.setBlockDeviceMappings(blockList);
+    }
 
     RunInstancesResult res = ec2.runInstances(req);
 
@@ -401,9 +452,33 @@ public class Main {
     spec.setKeyName(key);
     spec.setUserData(getUserData());
 
-    Collection<String> groups = new ArrayList<String>();
-    groups.add("admin");
-    spec.setSecurityGroups(groups);
+    if(subnetId == null) {
+      Collection<String> groups = new ArrayList<String>();
+      groups.add(securityGroup);
+      spec.setSecurityGroups(groups);
+    } else {
+      Collection<GroupIdentifier> groups = new ArrayList<GroupIdentifier>();
+      groups.add(new GroupIdentifier().withGroupId(securityGroup));
+      spec.setAllSecurityGroups(groups);
+    }
+
+    if(subnetId != null) {
+      spec.setSubnetId(subnetId);
+    }
+    if(diskSize != 0) {
+      BlockDeviceMapping blockDeviceMapping = new BlockDeviceMapping();
+      blockDeviceMapping.setDeviceName("/dev/sda1");
+
+      EbsBlockDevice ebs = new EbsBlockDevice();
+      ebs.setVolumeSize(diskSize);
+      blockDeviceMapping.setEbs(ebs);
+
+      ArrayList<BlockDeviceMapping> blockList = new ArrayList<BlockDeviceMapping>();
+      blockList.add(blockDeviceMapping);
+
+      spec.setBlockDeviceMappings(blockList);
+    }
+
     req.setLaunchSpecification(spec);
 
     RequestSpotInstancesResult res = ec2.requestSpotInstances(req);
