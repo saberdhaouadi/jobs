@@ -290,7 +290,7 @@ public class SteveJob {
     }
 
     try {
-      _client.download(new File("/tmp/job/job.tar.gz"), jobImplUri).get();
+      _client.download(new File("/tmp/job/job.tar.gz"), jobImplUri, true).get();
     } catch (Exception e) {
       e.printStackTrace();
       throw new InternalException("Could not download job implementation '" + _impl + "' from '" + uri + "'", e);
@@ -317,7 +317,7 @@ public class SteveJob {
         return _client.downloadDirectory(f, inputUri, true, true);
       else {
         List<ListenableFuture<S3File>> l = new ArrayList();
-        l.add(_client.download(f, inputUri));
+        l.add(_client.download(f, inputUri, true));
         return Futures.successfulAsList(l);
       }
     } catch (Exception e) {
@@ -406,7 +406,7 @@ public class SteveJob {
       String key = "override/platform-releases.nix";
       platformOverride = _client.exists(_s3Bucket, key).get();
       if (platformOverride != null) {
-        _client.download(new File("/tmp/platform-releases.nix"), new URI(String.format("s3://%s/%s", _s3Bucket, key))).get();
+        _client.download(new File("/tmp/platform-releases.nix"), new URI(String.format("s3://%s/%s", _s3Bucket, key)), true).get();
         log("Downloaded override for platform-releases.nix.");
       }
     } catch (Exception e) {

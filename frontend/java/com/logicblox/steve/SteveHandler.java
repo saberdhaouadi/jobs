@@ -448,7 +448,7 @@ public class SteveHandler extends ProtoBufHandler {
                   throw new ServiceException(
                           new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Log is too big"));
 
-                return _s3client.download(tmpFile, inputUrl);
+                return _s3client.download(tmpFile, inputUrl, true);
               }
             });
 
@@ -588,7 +588,7 @@ public class SteveHandler extends ProtoBufHandler {
                           new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Implementation is too big"));
 
                 // TODO check the account of the encryption key used.
-                return _s3client.download(tmpFile, inputUrl);
+                return _s3client.download(tmpFile, inputUrl, true);
               }
             });
 
