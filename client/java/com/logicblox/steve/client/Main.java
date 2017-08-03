@@ -477,7 +477,7 @@ public class Main {
                 @Override
                 public ListenableFuture<Object> apply(String id) throws Exception {
                   if(autoDownload)
-                    return (ListenableFuture) _s3client.download(new File(_output),outputURI);
+                    return (ListenableFuture) _s3client.download(new File(_output),outputURI, true);
                   else
                     return Futures.immediateFuture((Object) id);
                 }
@@ -563,7 +563,7 @@ public class Main {
 
       for (Frontend.File file : files) {
         Path targetFile = p.resolve(Conversions.getBasename(file));
-        downloads.add(_s3client.download(targetFile.toFile(), URI.create(file.getUrl())));
+        downloads.add(_s3client.download(targetFile.toFile(), URI.create(file.getUrl()), true));
       }
 
       return Futures.transform(Futures.allAsList(downloads), Functions.constant(files));
@@ -572,7 +572,7 @@ public class Main {
       // TOOD check the ETag from the download
       return
               Futures.transform(
-                      _s3client.download(p.toFile(), URI.create(files.get(0).getUrl())),
+                      _s3client.download(p.toFile(), URI.create(files.get(0).getUrl()), true),
                       Functions.constant(files));
     }
   }
@@ -680,7 +680,7 @@ public class Main {
                 @Override
                 public ListenableFuture<Object> apply(String id) throws Exception {
                   if(autoDownload)
-                    return (ListenableFuture) _s3client.download(new File(_output),outputURI);
+                    return (ListenableFuture) _s3client.download(new File(_output),outputURI, true);
                   else
                     return Futures.immediateFuture((Object) id);
                 }
