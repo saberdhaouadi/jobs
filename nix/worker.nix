@@ -96,7 +96,11 @@ in
 
     nixpkgs.config.packageOverrides = pkgs: {
       nixUnstable = pkgs.lib.overrideDerivation pkgs.nix (attrs: {
-        patches = [ ./nix-dev-shm.patch ./nix-user-agent.patch ];
+        patchPhase = ''
+          ${attrs.patchPhase or ""}
+          patch -p1 < ${./nix-dev-shm.patch}
+          patch -p1 < ${./nix-user-agent.patch}
+        '';
       });
     };
 
