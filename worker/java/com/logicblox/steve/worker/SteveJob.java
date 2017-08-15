@@ -419,9 +419,18 @@ public class SteveJob {
     ArrayList<String> args = new ArrayList<String>();
     args.add("nix-instantiate");
     args.add("<worker/nix/job.nix>");
-    args.add("--argstr");
-    args.add("platform_version");
-    args.add(_metadata.containsKey("platform") ? _metadata.get("platform") : "3.10.15");
+    if (_metadata.containsKey("platform") && _metadata.get("platform").startsWith("/nix/store/") ) {
+      args.add("--arg");
+      args.add("external_platform");
+      args.add("builtins.storePath "+_metadata.get("platform"));
+      args.add("--option");
+      args.add("extra-binary-caches");
+      args.add("s3://logicblox-cache");
+    } else {
+      args.add("--argstr");
+      args.add("platform_version");
+      args.add(_metadata.containsKey("platform") ? _metadata.get("platform") : "3.10.15");
+    }
     args.add("--arg");
     args.add("dependencies");
     args.add(_metadata.containsKey("dependencies") ? "with (import <config/lib> {}).pkgs; ["+_metadata.get("dependencies").replace(",", " ")+"]" : "[]");

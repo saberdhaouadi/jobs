@@ -84,6 +84,25 @@ in
       "/usr/bin/env=${pkgs.coreutils}/bin/env"
       "/lib64/ld-linux-x86-64.so.2=${pkgs.glibc}/lib64/ld-linux-x86-64.so.2"
       "/bin/bash=${pkgs.bash}/bin/bash"
+      "/dev/nvidiactl?"
+      "/dev/nvidia-uvm?"
+      "/dev/nvidia-modeset?"
+      "/dev/nvidia0?"
+      "/dev/nvidia1?"
+      "/dev/nvidia2?"
+      "/dev/nvidia3?"
+      "/dev/nvidia4?"
+      "/dev/nvidia5?"
+      "/dev/nvidia6?"
+      "/dev/nvidia7?"
+      "/dev/nvidia8?"
+      "/dev/nvidia9?"
+      "/dev/nvidia10?"
+      "/dev/nvidia11?"
+      "/dev/nvidia12?"
+      "/dev/nvidia13?"
+      "/dev/nvidia14?"
+      "/dev/nvidia15?"
     ];
     nix.extraOptions = ''
       build-compress-log = false
@@ -93,6 +112,7 @@ in
     '';
     nix.useSandbox = true;
     nix.package = pkgs.nixUnstable;
+    nix.trustedBinaryCaches = [ "s3://logicblox-cache" ];
 
     nixpkgs.config.packageOverrides = pkgs: {
       nixUnstable = pkgs.lib.overrideDerivation pkgs.nix (attrs: {
@@ -103,7 +123,6 @@ in
         '';
       });
     };
-
 
     systemd.extraConfig = ''
       DefaultCPUAccounting=true
@@ -213,6 +232,18 @@ in
       }
     '';
 
+    nixpkgs.config.packageOverrides = pkgs: {
+      nixUnstable = pkgs.lib.overrideDerivation pkgs.nixUnstable (attrs: rec {
+        name = "nix-1.12${suffix}";
+        suffix = "pre5413_b4b1f452";
+        src = pkgs.fetchFromGitHub {
+          owner = "NixOS";
+          repo = "nix";
+          rev = "b4b1f4525f8dc8f320d666c208bff5cb36777580";
+          sha256 = "0qb18k2rp6bbg8g50754srl95dq0lr96i297856yhrx1hh1ja37z";
+        };
+      });
+    };
   };
 
 }
