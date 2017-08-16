@@ -35,6 +35,7 @@
     };
 
 
+  boot.initrd.availableKernelModules = [ "nmve" ];
   boot.initrd.extraUtilsCommands =
     ''
       cp --remove-destination ${pkgs.e2fsprogs}/sbin/mke2fs $out/bin
