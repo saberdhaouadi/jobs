@@ -131,7 +131,8 @@ block(`create_job) {
       +proto:CreateJobRequest_metadata(req, p),
       +proto:Param_key[p] = "platform",
       +proto:Param_value[p] = platformId,
-      !lb:steve:schema:supported_platform_version(platformId).
+      !lb:steve:schema:supported_platform_version(platformId),
+      !string:like(platformId, "/nix/store/%").
 
     // Check no-services value
     +service_support:export_error(index, "INVALID_METADATA", "Value of 'no-services' can only be 'true'.") <-

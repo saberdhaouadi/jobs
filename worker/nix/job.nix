@@ -1,10 +1,11 @@
-{ platform_version
+{ platform_version ? ""
+, external_platform ? null
 , dependencies ? []
 }:
 let
   inherit (import <config/lib> {}) releases pkgs;
   platform = builtins.getAttr platform_version releases.platform;
-  isFullPlatform = pkgs.lib.versionAtLeast platform_version "4.3.7";
+  isFullPlatform = external_platform != null || (pkgs.lib.versionAtLeast platform_version "4.3.7");
   metadata = builtins.fromJSON (builtins.readFile /tmp/job/in/metadata.json);
 in
   pkgs.stdenv.mkDerivation (metadata // rec {
@@ -22,7 +23,8 @@ in
       pkgs.perl
       pkgs.fio
       pkgs.time
-    ] ++ pkgs.lib.optional isFullPlatform releases.platforms."${platform_version}"
+    ] ++ pkgs.lib.optional (external_platform != null) external_platform
+      ++ pkgs.lib.optional (isFullPlatform && external_platform == null) releases.platforms."${platform_version}"
       ++ pkgs.lib.optionals (! isFullPlatform) [ platform.logicblox platform.bloxweb ]
       ++ pkgs.lib.optional ((pkgs.lib.substring 0 1 platform_version) == "3") releases.pdxscience."4.0.0".pdxscience
       ++ dependencies;
