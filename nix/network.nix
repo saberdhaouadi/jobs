@@ -397,7 +397,7 @@ with pkgs.lib;
           source /etc/profile
           exec lb-steve-provisioner $@ \
                  --region ${r} \
-                 --ami ${amis."${r}".s3} \
+                 --ami ${if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3} \
                  --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
@@ -405,6 +405,9 @@ with pkgs.lib;
                  --outgoing ${sqsStatusURL} \
                  --role ${resources.iamRoles.worker-role.name} \
                  --instance-type ${env.workers."${t}".instanceType or t} \
+                 --security-group ${env.workers."${t}".securityGroup or "admin"} \
+                 ${lib.optionalString (env.workers."${t}" ? subnetId) "--subnet-id ${env.workers."${t}".subnetId}"} \
+                 --disk-size ${env.workers."${t}".diskSize or "0"} \
                  --spot-price ${env.workers."${t}".price} \
                  --percentage-spot ${env.workers."${t}".percentageSpot} \
                  --percentage-queue ${env.workers."${t}".percentageQueue or "0.6"} \
