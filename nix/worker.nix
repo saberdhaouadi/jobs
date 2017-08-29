@@ -231,19 +231,6 @@ in
         endscript
       }
     '';
-
-    nixpkgs.config.packageOverrides = pkgs: {
-      nixUnstable = pkgs.lib.overrideDerivation pkgs.nixUnstable (attrs: rec {
-        name = "nix-1.12${suffix}";
-        suffix = "pre5413_b4b1f452";
-        src = pkgs.fetchFromGitHub {
-          owner = "NixOS";
-          repo = "nix";
-          rev = "b4b1f4525f8dc8f320d666c208bff5cb36777580";
-          sha256 = "0qb18k2rp6bbg8g50754srl95dq0lr96i297856yhrx1hh1ja37z";
-        };
-      });
-    };
   };
 
 }
