@@ -54,7 +54,7 @@ in
           generate-node-address = false
 
           queues {
-               steve-jobs-status {
+              steve-jobs-status {
                   defaultVisibilityTimeout = 10 seconds
                   delay = 5 seconds
                   receiveMessageWait = 0 seconds
