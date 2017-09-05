@@ -134,6 +134,7 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ../nix/database.nix ];
+        virtualisation.memorySize = 4096;
         system.build.s3Name = "steve-jobs";
       };
   };
@@ -141,6 +142,9 @@ in
     $aws->start;
     $aws->waitForUnit("elasticmq-server");
     $aws->waitForUnit("minio-s3");
+
+    $database->start;
+    $database->waitForUnit("install-app");
 
     startAll;
     print $aws->succeed("aws --endpoint-url http://127.0.0.1:9000 s3 ls s3://steve-jobs");
