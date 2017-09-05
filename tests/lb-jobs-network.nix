@@ -105,9 +105,13 @@ in
       };
   };
   testScript = ''
-    $aws->succeed("${pkgs.awscli}/bin/aws --endpoint-url http://127.0.0.1:9000 s3 ls s3://steve-jobs");
-    $aws->succeed("${pkgs.awscli}/bin/aws sqs list-queues --region elasticmq --endpoint-url http://127.0.0.1:9324");
-    $worker->waitUntilSucceeds("ping -c 1 aws");
-    $worker->succeed("${pkgs.awscli}/bin/aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
+    $aws->start;
+    $aws->waitForUnit("elasticmq-server");
+    $aws->waitForUnit("minio-s3");
+
+    startAll;
+    print $aws->succeed("${pkgs.awscli}/bin/aws --endpoint-url http://127.0.0.1:9000 s3 ls s3://steve-jobs");
+    print $aws->succeed("${pkgs.awscli}/bin/aws sqs list-queues --region elasticmq --endpoint-url http://127.0.0.1:9324");
+    print $worker->succeed("${pkgs.awscli}/bin/aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
   '';
 })
