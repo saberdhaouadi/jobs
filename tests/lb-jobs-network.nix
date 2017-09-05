@@ -123,6 +123,18 @@ in
         imports = [ common ];
       };
 
+    frontend =
+      { config, pkgs, ... }:
+      {
+        imports = [ common ];
+      };
+
+    keyserver =
+      { config, pkgs, ... }:
+      {
+        imports = [ common ];
+      };
+
     client =
       { config, pkgs, ... }:
       {
@@ -145,6 +157,12 @@ in
 
     $database->start;
     $database->waitForUnit("install-app");
+
+    $frontend->start;
+    #$frontend->waitForUnit("lb-steve-frontend");
+
+    $keyserver->start;
+    #$keyserver->waitForUnit("lb-steve-key-server");
 
     startAll;
     print $aws->succeed("aws --endpoint-url http://127.0.0.1:9000 s3 ls s3://steve-jobs");
