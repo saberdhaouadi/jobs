@@ -18,6 +18,18 @@ let
   # fake AWS creds for the AWS cli to use
   awsAccessKey = "9NLZKB4SPH2OP5L845XE";
   awsSecretKey = "rvzui7pQS0PI1aAOhtTHWVmJvhMY+b9xSw7arAbC";
+
+  builds = import ../. {};
+
+  common =
+    { config, pkgs, ... }:
+    {
+      environment.systemPackages = [ pkgs.awscli ];
+      environment.shellInit = ''
+        export AWS_ACCESS_KEY_ID=${awsAccessKey}
+        export AWS_SECRET_ACCESS_KEY=${awsSecretKey}
+      '';
+    };
 in
 {
   name = "lb-jobs-tests";
@@ -25,10 +37,8 @@ in
     aws =
       { config, pkgs, ...}:
       {
-        environment.shellInit = ''
-          export AWS_ACCESS_KEY_ID=${awsAccessKey}
-          export AWS_SECRET_ACCESS_KEY=${awsSecretKey}
-        '';
+        imports = [ common ];
+
         environment.etc."elastiqmq/custom.conf".text = ''
           include classpath("application.conf")
 
@@ -95,13 +105,17 @@ in
             '';
           };
       };
+
     worker =
       { config, pkgs, ... }:
       {
-        environment.shellInit = ''
-          export AWS_ACCESS_KEY_ID=${awsAccessKey}
-          export AWS_SECRET_ACCESS_KEY=${awsSecretKey}
-        '';
+        imports = [ common ];
+      };
+
+    client =
+      { config, pkgs, ... }:
+      {
+        imports = [ common ];
       };
   };
   testScript = ''
@@ -110,8 +124,8 @@ in
     $aws->waitForUnit("minio-s3");
 
     startAll;
-    print $aws->succeed("${pkgs.awscli}/bin/aws --endpoint-url http://127.0.0.1:9000 s3 ls s3://steve-jobs");
-    print $aws->succeed("${pkgs.awscli}/bin/aws sqs list-queues --region elasticmq --endpoint-url http://127.0.0.1:9324");
-    print $worker->succeed("${pkgs.awscli}/bin/aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
+    print $aws->succeed("aws --endpoint-url http://127.0.0.1:9000 s3 ls s3://steve-jobs");
+    print $aws->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://127.0.0.1:9324");
+    print $worker->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
   '';
 })
