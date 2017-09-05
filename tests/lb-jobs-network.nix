@@ -127,7 +127,7 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ];
-        environment.systemPackages = [ builds.client.build ];
+        environment.systemPackages = [ pkgs.openjdk pkgs.python2 builds.client.build ];
       };
 
     database =
