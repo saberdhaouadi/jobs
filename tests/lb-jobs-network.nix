@@ -127,6 +127,7 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ];
+        environment.systemPackages = [ builds.client.build ];
       };
 
     database =
