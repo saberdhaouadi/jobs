@@ -606,28 +606,12 @@ with pkgs.lib;
 
   "database-${name}" =
     { config, pkgs, lib, resources, nodes, ... }:
-    let
-      logicblox = builder-config.getLB (import ../lb-version.nix);
-      updateLBversions = pkgs.writeScriptBin "update-lb-versions" ''
-        #! /usr/bin/env bash
-        set -ex
-
-        function exit_trap()
-        {
-          rm -f $PLATFORM_RELEASES
-        }
-        trap exit_trap EXIT
-
-        export PLATFORM_RELEASES=$(mktemp)
-        ${pkgs.awscli}/bin/aws s3 cp s3://${s3Name}/override/platform-releases.nix $PLATFORM_RELEASES
-
-        export CSV=$(nix-build ${./lb-versions.nix} --no-out-link)
-        if [[ -n "$CSV" ]] ; then
-          lb web-client import -i $CSV http://localhost:8080/tdx/platform_versions
-        fi
-      '';
-    in
     {
+      imports = [ ./database.nix ];
+
+      # pass s3Name
+      system.build.s3Name = s3Name;
+
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
@@ -640,30 +624,9 @@ with pkgs.lib;
 
       imports = [
         <lbdevops/logicblox/production.nix>
-        <lbdevops/nixos/logicblox/lb40-module.nix>
-        <lbdevops/nixos/logicblox/installer.nix>
         <lbdevops/nixos/logicblox/datadog/all.nix>
         ./datadog/database.nix
       ] ;
-
-      environment.systemPackages = [ updateLBversions ];
-
-      services.logicblox.enable = true;
-      services.logicblox.logicblox = logicblox;
-      services.logicblox.config.lb-server = ''
-        [workspace]
-        auto_backup_mode=none
-      '';
-
-      services.logicblox.config.lb-web-server = ''
-        [statsd]
-        prefix = lb.web
-        hostname = 127.0.0.1
-        port = 8125
-      '';
-
-      logicblox.application.installer = builds.database.build;
-      services.nginx.enable = lib.mkOverride 0 false;
 
       systemd.services.export-billing = {
         description = "Export billing data";
@@ -673,8 +636,6 @@ with pkgs.lib;
         '';
         startAt = "*:15";
       };
-
-      networking.firewall.allowedTCPPorts = [ 8080 55183 80 ];
 
       fileSystems."/data" =
         { autoFormat = true;
