@@ -22,13 +22,24 @@ let
   builds = import ../. {};
 
   common =
-    { config, pkgs, ... }:
+    { config, pkgs, lib, ... }:
     {
-      environment.systemPackages = [ pkgs.awscli ];
-      environment.shellInit = ''
-        export AWS_ACCESS_KEY_ID=${awsAccessKey}
-        export AWS_SECRET_ACCESS_KEY=${awsSecretKey}
-      '';
+      options = {
+        deployment = lib.mkOption {
+          internal = true;
+          default = {};
+          description = ''
+            Attribute set of derivations used to setup the system.
+          '';
+        };
+      };
+      config = {
+        environment.systemPackages = [ pkgs.awscli ];
+        environment.shellInit = ''
+          export AWS_ACCESS_KEY_ID=${awsAccessKey}
+          export AWS_SECRET_ACCESS_KEY=${awsSecretKey}
+        '';
+      };
     };
 in
 {
@@ -116,6 +127,13 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ];
+      };
+
+    database =
+      { config, pkgs, ... }:
+      {
+        imports = [ common ../nix/database.nix ];
+        system.build.s3Name = "steve-jobs";
       };
   };
   testScript = ''
