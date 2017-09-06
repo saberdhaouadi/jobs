@@ -167,7 +167,7 @@ in
     keyserver =
       { config, pkgs, ... }:
       {
-        imports = [ common ];
+        imports = [ common ../nix/keyserver.nix ];
       };
 
     client =
