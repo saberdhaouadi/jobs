@@ -120,7 +120,9 @@ in
     worker =
       { config, pkgs, ... }:
       {
-        imports = [ common ];
+        imports = [ common ../nix/worker.nix ];
+
+        lb-steve-worker.arguments = "--incoming http://aws:9324/queue/steve-jobs-worker --outgoing http://aws:9324/queue/steve-jobs-status --bucket ${config.system.build.s3Name} --key-service http://keyserver:8082/keys";
       };
 
     frontend =
@@ -128,6 +130,37 @@ in
       {
         imports = [ common ../nix/frontend.nix ];
         system.build.frontendConfig = ''
+          [global]
+          jvm_dump_dir = /tmp
+          logdir_access = /var/log/lb-steve-worker
+          logdir = /var/log/lb-steve-worker
+          authentication_cache = $(LB_DEPLOYMENT_HOME)/authentication_cache
+          tmpdir = /tmp
+          http_server_threads = 500
+
+          [handler:steve]
+          database_prefix = http://database:8080/db
+
+          [job-queue:worker]
+          implementation = sqs
+          env_credentials = true
+          sqs_endpoint = http://127.0.0.1:9324
+          sqs_queue_url = http://aws:9324/queue/steve-jobs-worker
+
+          [status-queue]
+          implementation = sqs
+          env_credentials = true
+          sqs_endpoint = http://127.0.0.1:9324
+          sqs_queue_url = http://aws:9324/queue/steve-jobs-status
+
+          [job-implementations]
+          prefix = s3://steve-jobs-test/jobs-impl
+
+          [job-logs]
+          prefix = s3://steve-jobs-test/jobs
+
+          [realm-config:default-signature]
+          mechanism_option_credential_service = http://database:55183/admin/credentials
         '';
       };
 
