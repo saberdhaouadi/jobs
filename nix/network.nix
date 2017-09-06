@@ -611,6 +611,7 @@ with pkgs.lib;
 
       # pass s3Name
       system.build.s3Name = s3Name;
+      system.build.frontendConfig = frontendConfig;
 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -792,21 +793,6 @@ with pkgs.lib;
 
         nginx.serviceConfig.LimitNOFILE = 32768;
 
-        lb-steve-frontend = {
-          description = "LB Steve Frontend";
-          after = [ "network.target" ];
-          wantedBy = [ "multi-user.target" ];
-          path = [ pkgs.jdk pkgs.bash builds.frontend ];
-          preStart = ''
-            mkdir -p /var/log/lb-steve-worker
-          '';
-          environment.JAVA_ARGS = "-server -Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -XX:+PreserveFramePointer";
-          serviceConfig = {
-            ExecStart = "${builds.frontend}/bin/lb-steve-frontend --config ${frontendConfig}";
-            Restart = "always";
-            RestartSec = "10";
-          };
-        };
       };
 
       services.dd-agent.jmxConfig = ''

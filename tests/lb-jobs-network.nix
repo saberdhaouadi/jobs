@@ -126,7 +126,9 @@ in
     frontend =
       { config, pkgs, ... }:
       {
-        imports = [ common ];
+        imports = [ common ../nix/frontend.nix ];
+        system.build.frontendConfig = ''
+        '';
       };
 
     keyserver =
@@ -159,12 +161,14 @@ in
     $database->waitForUnit("install-app");
 
     $frontend->start;
-    #$frontend->waitForUnit("lb-steve-frontend");
+    $frontend->waitForUnit("lb-steve-frontend");
 
     $keyserver->start;
     #$keyserver->waitForUnit("lb-steve-key-server");
 
     startAll;
+    #$worker->waitForUnit("lb-steve-worker");
+
     print $aws->succeed("aws --endpoint-url http://127.0.0.1:9000 s3 ls s3://steve-jobs");
     print $aws->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://127.0.0.1:9324");
     print $worker->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
