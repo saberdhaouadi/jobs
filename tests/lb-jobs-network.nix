@@ -197,10 +197,10 @@ in
     $frontend->waitForUnit("lb-steve-frontend");
 
     $keyserver->start;
-    #$keyserver->waitForUnit("lb-steve-key-server");
+    $keyserver->waitForUnit("lb-steve-key-server");
 
     startAll;
-    #$worker->waitForUnit("lb-steve-worker");
+    $worker->waitForUnit("lb-steve-worker");
 
     print $aws->succeed("aws --endpoint-url http://127.0.0.1:9000 s3 ls s3://steve-jobs");
     print $aws->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://127.0.0.1:9324");

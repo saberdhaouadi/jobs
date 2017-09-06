@@ -469,6 +469,7 @@ with pkgs.lib;
 
       imports = [
         <lbdevops/logicblox/production.nix>
+        ./keyserver.nix
       ] ;
 
       fileSystems."/keys" =
@@ -553,22 +554,6 @@ with pkgs.lib;
 
       systemd.services = {
         nginx.serviceConfig.LimitNOFILE = 32768;
-
-        lb-steve-key-server = {
-          description = "LB Steve Frontend";
-          after = [ "network.target" ];
-          wantedBy = [ "multi-user.target" ];
-          path = [ pkgs.jdk pkgs.bash builds.frontend ];
-          preStart = ''
-            mkdir -p /var/log/lb-steve-key-server
-          '';
-          environment.JAVA_ARGS = "-Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false";
-          serviceConfig = {
-            ExecStart = "${builds.key-server}/bin/lb-steve-key-server";
-            Restart = "always";
-            RestartSec = "10";
-          };
-        };
       };
 
       services.dd-agent.jmxConfig = ''
@@ -669,7 +654,7 @@ with pkgs.lib;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
       deployment.ec2.ebsInitialRootDiskSize = 100;
 
-      imports = [ <lbdevops/logicblox/production.nix> ];
+      imports = [ <lbdevops/logicblox/production.nix> ./frontend.nix ];
 
       boot.kernel.sysctl = {
         "net.ipv4.ip_local_port_range" = "1024 65000";
