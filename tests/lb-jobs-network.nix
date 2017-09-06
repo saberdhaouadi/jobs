@@ -152,6 +152,7 @@ in
 
           [handler:steve]
           database_prefix = http://database:8080/db
+          s3_endpoint = http://127.0.0.1:9000
 
           [job-queue:worker]
           implementation = sqs
