@@ -128,6 +128,11 @@ in
         imports = [ common ../nix/worker.nix ];
         virtualisation.writableStore = true;
         virtualisation.memorySize = 4096;
+        virtualisation.diskSize = 8192;
+
+        system.activationScripts.ec2metadata = ''
+          touch /root/user-data
+        '';
 
         lb-steve-worker.arguments = "--incoming http://aws:9324/queue/steve-jobs-worker --outgoing http://aws:9324/queue/steve-jobs-status --bucket ${config.system.build.s3Name} --key-service http://keyserver:8082/keys";
       };
@@ -213,4 +218,4 @@ in
     print $worker->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
   '';
 }) {}
-) (drv: { __noChroot = true; })
+) (drv: { __noChroot = true; inherit (drv) driver; })
