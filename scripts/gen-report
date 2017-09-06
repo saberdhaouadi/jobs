@@ -1,0 +1,60 @@
+#! /usr/bin/env nix-shell
+#! nix-shell -i python -p pythonPackages.requests
+
+import requests
+import json
+import sys
+from pprint import pprint
+
+columns = sys.argv[5:]
+column_headers = [ c.upper().replace('-','_') for c in columns ]
+column_bindings = [ { 'predicate_name': 'lb:steve:tdx:exported_job_metadata_value'+str(i), 'predicate_binding_columns': 'JOB,'+c } 
+for i, c in enumerate(column_headers) ]
+column_headers = ''.join([ c+',' for c in column_headers ])
+column_formats = ''.join([ 'string,' for c in columns ])
+
+file_binding = {
+  'file': {
+    'delimiter':',',
+    'column_headers': column_headers + 'JOB,JOBIMPL,CREATED,STARTED,FINISHED,DURATION,CPU_USAGE,MAX_MEMORY_USAGE,MAX_DISK_USAGE',
+    'column_formats': column_formats + 'string,string,string,string,string,int,int,int,int',
+    'file_columns_required': 'JOB,JOBIMPL'
+  },
+ 'binding': [
+    { 'predicate_name':'lb:steve:tdx:exported_job',
+      'predicate_binding_columns':'JOB'
+    },
+    { 'predicate_name':'lb:steve:schema:Job:impl',
+      'predicate_binding_columns':'JOB,JOBIMPL'
+    },
+    { 'predicate_name':'lb:steve:schema:Job:created',
+      'predicate_binding_columns':'JOB,CREATED'
+    },
+    { 'predicate_name':'lb:steve:schema:Job:start',
+      'predicate_binding_columns':'JOB,STARTED'
+    },
+    { 'predicate_name':'lb:steve:schema:Job:finish',
+      'predicate_binding_columns':'JOB,FINISHED'
+    } ] + column_bindings + [
+    { 'predicate_name':'lb:steve:schema:Job:duration',
+      'predicate_binding_columns':'JOB,DURATION'
+    },
+    { 'predicate_name':'lb:steve:schema:Job:cpu_usage',
+      'predicate_binding_columns':'JOB,CPU_USAGE'
+    },
+    { 'predicate_name':'lb:steve:schema:Job:max_memory',
+      'predicate_binding_columns':'JOB,MAX_MEMORY_USAGE'
+    },
+    { 'predicate_name':'lb:steve:schema:Job:max_disk_usage',
+      'predicate_binding_columns':'JOB,MAX_DISK_USAGE'
+    }
+  ]
+}
+
+headers = { 'x-blox-response-content-uri': sys.argv[1] }
+r = requests.get('http://database-test:8080/tdx/jobdata', params={ 'file_binding':json.dumps(file_binding), 'filter_key': 
+sys.argv[3], 'filter_value': sys.argv[4], 'column': columns, 'account': sys.argv[2]}, headers=headers)
+
+sys.stdout.write(str(r.status_code))
+sys.stdout.write(r.text)
+
