@@ -1,3 +1,5 @@
+(import <nixpkgs> {}).lib.overrideDerivation (
+
 import <nixpkgs/nixos/tests/make-test.nix> ({ pkgs, lib, ... }:
 let
   elasticmq = pkgs.fetchurl {
@@ -39,6 +41,9 @@ let
           export AWS_ACCESS_KEY_ID=${awsAccessKey}
           export AWS_SECRET_ACCESS_KEY=${awsSecretKey}
         '';
+
+        # pass some global info
+        system.build.s3Name = "steve-jobs";
       };
     };
 in
@@ -121,6 +126,8 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ../nix/worker.nix ];
+        virtualisation.writableStore = true;
+        virtualisation.memorySize = 4096;
 
         lb-steve-worker.arguments = "--incoming http://aws:9324/queue/steve-jobs-worker --outgoing http://aws:9324/queue/steve-jobs-status --bucket ${config.system.build.s3Name} --key-service http://keyserver:8082/keys";
       };
@@ -182,7 +189,6 @@ in
       {
         imports = [ common ../nix/database.nix ];
         virtualisation.memorySize = 4096;
-        system.build.s3Name = "steve-jobs";
       };
   };
   testScript = ''
@@ -206,4 +212,5 @@ in
     print $aws->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://127.0.0.1:9324");
     print $worker->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
   '';
-})
+}) {}
+) (drv: { __noChroot = true; })
