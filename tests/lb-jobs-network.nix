@@ -36,7 +36,9 @@ let
         };
       };
       config = {
-        environment.systemPackages = [ pkgs.awscli ];
+        networking.firewall.enable = false;
+
+        environment.systemPackages = with pkgs; [ awscli jq curl ];
         environment.shellInit = ''
           export AWS_ACCESS_KEY_ID=${awsAccessKey}
           export AWS_SECRET_ACCESS_KEY=${awsSecretKey}
@@ -93,9 +95,6 @@ in
           }
         '';
 
-        networking.firewall.allowPing = true;
-        networking.firewall.allowedTCPPorts = [ 9324 ];
-
         systemd.services.minio-s3 =
           { config, ...}:
           {
@@ -134,7 +133,7 @@ in
           touch /root/user-data
         '';
 
-        lb-steve-worker.arguments = "--incoming http://aws:9324/queue/steve-jobs-worker --outgoing http://aws:9324/queue/steve-jobs-status --bucket ${config.system.build.s3Name} --key-service http://keyserver:8082/keys";
+        lb-steve-worker.arguments = "--incoming http://aws:9324/queue/steve-jobs-worker --outgoing http://aws:9324/queue/steve-jobs-status --bucket ${config.system.build.s3Name} --key-service http://keyserver:8082/keys --s3-endpoint http://aws:9000";
       };
 
     frontend =
@@ -198,25 +197,33 @@ in
       };
   };
   testScript = ''
-    $aws->start;
-    $aws->waitForUnit("elasticmq-server");
-    $aws->waitForUnit("minio-s3");
+    subtest "Initializing", sub {
+      $aws->start;
+      $aws->waitForUnit("elasticmq-server");
+      $aws->waitForUnit("minio-s3");
 
-    $database->start;
-    $database->waitForUnit("install-app");
+      $database->start;
+      $database->waitForUnit("install-app");
 
-    $frontend->start;
-    $frontend->waitForUnit("lb-steve-frontend");
+      $frontend->start;
+      $frontend->waitForUnit("lb-steve-frontend");
 
-    $keyserver->start;
-    $keyserver->waitForUnit("lb-steve-key-server");
+      $keyserver->start;
+      $keyserver->waitForUnit("lb-steve-key-server");
 
-    startAll;
-    $worker->waitForUnit("lb-steve-worker");
+      startAll;
+      $worker->waitForUnit("lb-steve-worker");
+    };
 
-    print $aws->succeed("aws --endpoint-url http://127.0.0.1:9000 s3 ls s3://steve-jobs");
-    print $aws->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://127.0.0.1:9324");
-    print $worker->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
+    subtest "Basic AWS CLI tests", sub {
+      print $client->succeed("aws --endpoint-url http://aws:9000 s3 ls s3://steve-jobs");
+      print $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
+      print $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
+    };
+
+    subtest "Basic lb-steve CLI tests", sub {
+      1;
+    };
   '';
 }) {}
 ) (drv: { __noChroot = true; inherit (drv) driver; })
