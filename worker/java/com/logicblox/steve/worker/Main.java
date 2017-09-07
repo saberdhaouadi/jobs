@@ -101,6 +101,7 @@ public class Main {
   private static String _handle_dir = "/var/lib/lb-steve";
   private static String _handle_file = _handle_dir + "/lb-steve-worker.handle";
   private static String _s3Bucket = "steve-jobs";
+  private static String _s3Endpoint = null;
   private static boolean _returnJob = false;
   private static boolean _shutdownOnIdle = false;
   private static String _keyService = "http://127.0.0.1:8080/keys";
@@ -127,6 +128,12 @@ public class Main {
             .withDescription("S3 bucket name")
             .hasArg()
             .withArgName("NAME")
+            .create());
+
+    options.addOption(OptionBuilder.withLongOpt("s3-endpoint")
+            .withDescription("S3 endpoint")
+            .hasArg()
+            .withArgName("URL")
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("outgoing")
@@ -162,6 +169,8 @@ public class Main {
         _outgoingUrl = _cmdline.getOptionValue("outgoing");
       if (_cmdline.hasOption("bucket"))
         _s3Bucket = _cmdline.getOptionValue("bucket");
+      if (_cmdline.hasOption("s3-endpoint"))
+        _s3Endpoint = _cmdline.getOptionValue("s3-endpoint");
       if (_cmdline.hasOption("key-service"))
         _keyService = _cmdline.getOptionValue("key-service");
 
@@ -182,6 +191,9 @@ public class Main {
   public Main() {
     // TODO pass in a configuration for S3
     this.client = S3Utils.createS3Client(null);
+    if (_s3Endpoint != null) {
+      this.client.setEndpoint(_s3Endpoint);
+    }
 
     setupSQS();
 
