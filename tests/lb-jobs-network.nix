@@ -237,18 +237,20 @@ in
       $worker->waitForUnit("lb-steve-worker");
 
       # initialize users
-      print $database->succeed("lb web-client import -i ${./data/users.csv} http://localhost:8080/tdx/users");
+      $database->succeed("lb web-client import -i ${./data/users.csv} http://localhost:8080/tdx/users");
+      $database->succeed("lb web-client import -i ${./data/provision-config.csv} http://localhost:8080/tdx/provision-config");
+      $database->succeed("lb web-client import -i ${./data/platform_versions.csv} http://localhost:8080/tdx/platform_versions");
     };
 
     subtest "Basic AWS CLI tests", sub {
-      print $client->succeed("aws --endpoint-url http://aws:9000 s3 ls s3://steve-jobs");
-      print $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
-      print $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
+      $client->succeed("aws --endpoint-url http://aws:9000 s3 ls s3://steve-jobs");
+      $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
+      $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
     };
 
     subtest "Basic lb-steve CLI tests", sub {
-      print $client->succeed("lb-steve -c ${clientConfig} list-queues");
-      print $client->succeed("lb-steve -c ${clientConfig} list-platforms");
+      $client->succeed("lb-steve -c ${clientConfig} list-queues");
+      $client->succeed("lb-steve -c ${clientConfig} list-platforms");
     };
   '';
 }) {}
