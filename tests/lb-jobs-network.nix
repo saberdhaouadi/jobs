@@ -21,6 +21,11 @@ let
   awsAccessKey = "9NLZKB4SPH2OP5L845XE";
   awsSecretKey = "rvzui7pQS0PI1aAOhtTHWVmJvhMY+b9xSw7arAbC";
 
+  awsEnvironment = {
+    AWS_ACCESS_KEY_ID=awsAccessKey;
+    AWS_SECRET_ACCESS_KEY=awsSecretKey;
+  };
+
   builds = import ../. {};
 
   common =
@@ -38,7 +43,7 @@ let
       config = {
         networking.firewall.enable = false;
 
-        environment.systemPackages = with pkgs; [ awscli jq curl ];
+        environment.systemPackages = with pkgs; [ awscli jq curl openssl ];
         environment.shellInit = ''
           export AWS_ACCESS_KEY_ID=${awsAccessKey}
           export AWS_SECRET_ACCESS_KEY=${awsSecretKey}
@@ -48,6 +53,17 @@ let
         system.build.s3Name = "steve-jobs";
       };
     };
+
+  clientConfig = pkgs.writeText "lb-steve-client.config" ''
+    default_input_prefix = s3://steve-jobs/inputs
+    default_output_prefix = s3://steve-jobs/outputs
+
+    service = http://frontend:8081/job
+
+    [auth]
+    user = user1
+    key_file = ${./dummy-key.pem}
+  '';
 in
 {
   name = "lb-jobs-tests";
@@ -64,7 +80,7 @@ in
           // Used to create the queue URL (may be different from bind address!)
           node-address {
               protocol = http
-              host = localhost
+              host = aws
               port = 9324
               context-path = ""
           }
@@ -129,6 +145,8 @@ in
         virtualisation.memorySize = 4096;
         virtualisation.diskSize = 8192;
 
+        systemd.services.lb-steve-worker.environment = awsEnvironment;
+
         system.activationScripts.ec2metadata = ''
           touch /root/user-data
         '';
@@ -140,7 +158,10 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ../nix/frontend.nix ];
-        system.build.frontendConfig = ''
+
+        systemd.services.lb-steve-frontend.environment = awsEnvironment;
+
+        system.build.frontendConfig = pkgs.writeText "lb-steve-frontend.config" ''
           [global]
           jvm_dump_dir = /tmp
           logdir_access = /var/log/lb-steve-worker
@@ -151,18 +172,18 @@ in
 
           [handler:steve]
           database_prefix = http://database:8080/db
-          s3_endpoint = http://127.0.0.1:9000
+          s3_endpoint = http://aws:9000
 
           [job-queue:worker]
           implementation = sqs
           env_credentials = true
-          sqs_endpoint = http://127.0.0.1:9324
+          sqs_endpoint = http://aws:9324
           sqs_queue_url = http://aws:9324/queue/steve-jobs-worker
 
           [status-queue]
           implementation = sqs
           env_credentials = true
-          sqs_endpoint = http://127.0.0.1:9324
+          sqs_endpoint = http://aws:9324
           sqs_queue_url = http://aws:9324/queue/steve-jobs-status
 
           [job-implementations]
@@ -193,6 +214,7 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ../nix/database.nix ];
+        systemd.services.lb-web-server.environment = awsEnvironment;
         virtualisation.memorySize = 4096;
       };
   };
@@ -213,6 +235,9 @@ in
 
       startAll;
       $worker->waitForUnit("lb-steve-worker");
+
+      # initialize users
+      print $database->succeed("lb web-client import -i ${./data/users.csv} http://localhost:8080/tdx/users");
     };
 
     subtest "Basic AWS CLI tests", sub {
@@ -222,7 +247,8 @@ in
     };
 
     subtest "Basic lb-steve CLI tests", sub {
-      1;
+      print $client->succeed("lb-steve -c ${clientConfig} list-queues");
+      print $client->succeed("lb-steve -c ${clientConfig} list-platforms");
     };
   '';
 }) {}
