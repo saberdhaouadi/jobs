@@ -55,6 +55,7 @@ let
     };
 
   clientConfig = pkgs.writeText "lb-steve-client.config" ''
+    s3_endpoint = http://aws:9000
     default_input_prefix = s3://steve-jobs/inputs
     default_output_prefix = s3://steve-jobs/outputs
 
@@ -251,6 +252,7 @@ in
     subtest "Basic lb-steve CLI tests", sub {
       $client->succeed("lb-steve -c ${clientConfig} list-queues");
       $client->succeed("lb-steve -c ${clientConfig} list-platforms");
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl noop -i ${../sample-jobs/noop} --wait");
     };
   '';
 }) {}
