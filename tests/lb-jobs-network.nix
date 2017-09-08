@@ -2,6 +2,8 @@
 
 import <nixpkgs/nixos/tests/make-test.nix> ({ pkgs, lib, ... }:
 let
+  builder_config = import <config> {};
+
   elasticmq = pkgs.fetchurl {
     url = "https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.13.8.jar";
     sha256 = "1qb93r97ndplp230vfzw3hfr188617p1n8alpgj4aqgk86hmylj1";
@@ -44,7 +46,7 @@ let
         networking.firewall.enable = false;
 
         networking.extraHosts = ''
-          ${(lib.head nodes.aws.config.networking.interfaces.eth1.ip4).address} steve-jobs.aws
+          ${(lib.head nodes.aws.config.networking.interfaces.eth1.ip4).address} lb-jobs.aws
         '';
 
         environment.systemPackages = with pkgs; [ awscli jq curl openssl ];
@@ -54,14 +56,14 @@ let
         '';
 
         # pass some global info
-        system.build.s3Name = "steve-jobs";
+        system.build.s3Name = "lb-jobs";
       };
     };
 
   clientConfig = pkgs.writeText "lb-steve-client.config" ''
-    s3_endpoint = http://aws:9000
-    default_input_prefix = s3://steve-jobs/inputs
-    default_output_prefix = s3://steve-jobs/outputs
+    s3_endpoint = http://192.168.1.1:9000
+    default_input_prefix = s3://lb-jobs/inputs
+    default_output_prefix = s3://lb-jobs/outputs
 
     service = http://frontend:8081/job
 
@@ -77,6 +79,8 @@ in
       { config, pkgs, ...}:
       {
         imports = [ common ];
+
+        virtualisation.diskSize = 4096;
 
         environment.etc."elastiqmq/custom.conf".text = ''
           include classpath("application.conf")
@@ -103,12 +107,12 @@ in
           generate-node-address = false
 
           queues {
-              steve-jobs-status {
+              lb-jobs-status {
                   defaultVisibilityTimeout = 10 seconds
                   delay = 5 seconds
                   receiveMessageWait = 0 seconds
               }
-              steve-jobs-worker {
+              lb-jobs-worker {
                   defaultVisibilityTimeout = 10 seconds
                   delay = 5 seconds
                   receiveMessageWait = 0 seconds
@@ -153,9 +157,26 @@ in
 
         system.activationScripts.ec2metadata = ''
           touch /root/user-data
+
+          echo "${toString [
+            pkgs.pythonFull
+            pkgs.pythonPackages.pandas
+            pkgs.pythonPackages.scikitlearn
+            pkgs.pythonPackages.matplotlib
+            pkgs.pythonPackages.plotly
+            pkgs.pythonPackages.statsmodels
+            pkgs.socat
+            pkgs.jq
+            pkgs.curl
+            pkgs.perl
+            pkgs.fio
+            pkgs.time
+            (builder_config.getLB "4.4.6.1")
+            (pkgs.writeText "gurobi.lic" "TOKENSERVER=127.0.0.1")
+          ]}"
         '';
 
-        lb-steve-worker.arguments = "--incoming http://aws:9324/queue/steve-jobs-worker --outgoing http://aws:9324/queue/steve-jobs-status --bucket ${config.system.build.s3Name} --key-service http://keyserver:8082/keys --s3-endpoint http://aws:9000";
+        lb-steve-worker.arguments = "--incoming http://aws:9324/queue/lb-jobs-worker --outgoing http://aws:9324/queue/lb-jobs-status --bucket ${config.system.build.s3Name} --key-service http://keyserver:8082/keys --s3-endpoint http://192.168.1.1:9000";
       };
 
     frontend =
@@ -176,25 +197,25 @@ in
 
           [handler:steve]
           database_prefix = http://database:8080/db
-          s3_endpoint = http://aws:9000
+          s3_endpoint = http://192.168.1.1:9000
 
           [job-queue:worker]
           implementation = sqs
           env_credentials = true
           sqs_endpoint = http://aws:9324
-          sqs_queue_url = http://aws:9324/queue/steve-jobs-worker
+          sqs_queue_url = http://aws:9324/queue/lb-jobs-worker
 
           [status-queue]
           implementation = sqs
           env_credentials = true
           sqs_endpoint = http://aws:9324
-          sqs_queue_url = http://aws:9324/queue/steve-jobs-status
+          sqs_queue_url = http://aws:9324/queue/lb-jobs-status
 
           [job-implementations]
-          prefix = s3://steve-jobs-test/jobs-impl
+          prefix = s3://lb-jobs/jobs-impl
 
           [job-logs]
-          prefix = s3://steve-jobs-test/jobs
+          prefix = s3://lb-jobs/jobs
 
           [realm-config:default-signature]
           mechanism_option_credential_service = http://database:55183/admin/credentials
@@ -247,8 +268,8 @@ in
     };
 
     subtest "Basic AWS CLI tests", sub {
-      $client->succeed("aws --endpoint-url http://aws:9000 s3api create-bucket --bucket steve-jobs");
-      $client->succeed("aws --endpoint-url http://aws:9000 s3 ls s3://steve-jobs");
+      $client->succeed("aws --endpoint-url http://192.168.1.1:9000 s3api create-bucket --bucket lb-jobs");
+      $client->succeed("aws --endpoint-url http://192.168.1.1:9000 s3 ls s3://lb-jobs");
       $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
       $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
     };
@@ -257,6 +278,8 @@ in
       $client->succeed("lb-steve -c ${clientConfig} list-queues");
       $client->succeed("lb-steve -c ${clientConfig} list-platforms");
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl noop -i ${../sample-jobs/noop} --wait");
+      print $client->succeed("lb-steve -c ${clientConfig} list-impl");
+      print $client->succeed("lb-steve -c ${clientConfig} create-job --impl noop --wait");
     };
   '';
 }) {}
