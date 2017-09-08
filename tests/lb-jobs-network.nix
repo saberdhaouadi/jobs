@@ -29,7 +29,7 @@ let
   builds = import ../. {};
 
   common =
-    { config, pkgs, lib, ... }:
+    { config, nodes, pkgs, lib, ... }:
     {
       options = {
         deployment = lib.mkOption {
@@ -42,6 +42,10 @@ let
       };
       config = {
         networking.firewall.enable = false;
+
+        networking.extraHosts = ''
+          ${(lib.head nodes.aws.config.networking.interfaces.eth1.ip4).address} steve-jobs.aws
+        '';
 
         environment.systemPackages = with pkgs; [ awscli jq curl openssl ];
         environment.shellInit = ''
@@ -121,7 +125,6 @@ in
             };
             wantedBy = [ "multi-user.target" ];
             script = ''
-              mkdir -p aws-s3/steve-jobs
               ${minio}/bin/minio server aws-s3
             '';
           };
@@ -244,6 +247,7 @@ in
     };
 
     subtest "Basic AWS CLI tests", sub {
+      $client->succeed("aws --endpoint-url http://aws:9000 s3api create-bucket --bucket steve-jobs");
       $client->succeed("aws --endpoint-url http://aws:9000 s3 ls s3://steve-jobs");
       $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
       $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
