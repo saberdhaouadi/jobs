@@ -1,5 +1,5 @@
 { builds ? import ../. {}
-}
+}:
 (import <nixpkgs> {}).lib.overrideDerivation (
 
 import <nixpkgs/nixos/tests/make-test.nix> ({ pkgs, lib, ... }:
