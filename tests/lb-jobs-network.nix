@@ -1,3 +1,5 @@
+{ builds ? import ../. {}
+}
 (import <nixpkgs> {}).lib.overrideDerivation (
 
 import <nixpkgs/nixos/tests/make-test.nix> ({ pkgs, lib, ... }:
@@ -27,8 +29,6 @@ let
     AWS_ACCESS_KEY_ID=awsAccessKey;
     AWS_SECRET_ACCESS_KEY=awsSecretKey;
   };
-
-  builds = import ../. {};
 
   common =
     { config, nodes, pkgs, lib, ... }:
