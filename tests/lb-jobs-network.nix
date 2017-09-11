@@ -284,4 +284,4 @@ in
     };
   '';
 }) {}
-) (drv: { __noChroot = true; inherit (drv) driver; })
+) (drv: { __noChroot = true; inherit (drv) driver; requiredSystemFeatures = [ "perf" ]; })
