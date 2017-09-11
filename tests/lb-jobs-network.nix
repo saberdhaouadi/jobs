@@ -172,8 +172,6 @@ in
             pkgs.fio
             pkgs.time
             (builder_config.getLB "4.4.6.1")
-            (pkgs.writeText "gurobi.lic" "TOKENSERVER=127.0.0.1")
-            pkgs.stdenv
           ]}"
         '';
 
@@ -279,8 +277,8 @@ in
       $client->succeed("lb-steve -c ${clientConfig} list-queues");
       $client->succeed("lb-steve -c ${clientConfig} list-platforms");
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl noop -i ${../sample-jobs/noop} --wait");
-      print $client->succeed("lb-steve -c ${clientConfig} list-impl");
-      print $client->succeed("lb-steve -c ${clientConfig} create-job --impl noop --wait");
+      $client->succeed("lb-steve -c ${clientConfig} list-impl");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl noop --wait");
     };
   '';
 }) {}
