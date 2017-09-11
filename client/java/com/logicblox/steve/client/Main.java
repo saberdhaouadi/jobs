@@ -136,7 +136,6 @@ public class Main {
     if (file2 != null)
       _config = new Config(file2, _config);
 
-    _s3client = S3Utils.createS3Client(_config);
   }
 
   abstract class GlobalArgsCommand {
@@ -872,6 +871,8 @@ public class Main {
 
         if (cmd.keyFile != null)
           _keyFile = cmd.keyFile;
+
+        _s3client = S3Utils.createS3Client(_config);
 
         cmd.invoke();
       } else {

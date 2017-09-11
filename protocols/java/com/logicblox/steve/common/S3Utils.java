@@ -50,6 +50,9 @@ public class S3Utils {
             getKeyProvider(config));
 
     result.setRetryCount(retryCount);
+    if(config != null && config.isSome("s3_endpoint")) {
+      result.setEndpoint(config.getStringError("s3_endpoint"));
+    }
     return result;
   }
 

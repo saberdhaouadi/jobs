@@ -469,6 +469,7 @@ with pkgs.lib;
 
       imports = [
         <lbdevops/logicblox/production.nix>
+        ./keyserver.nix
       ] ;
 
       fileSystems."/keys" =
@@ -553,22 +554,6 @@ with pkgs.lib;
 
       systemd.services = {
         nginx.serviceConfig.LimitNOFILE = 32768;
-
-        lb-steve-key-server = {
-          description = "LB Steve Frontend";
-          after = [ "network.target" ];
-          wantedBy = [ "multi-user.target" ];
-          path = [ pkgs.jdk pkgs.bash builds.frontend ];
-          preStart = ''
-            mkdir -p /var/log/lb-steve-key-server
-          '';
-          environment.JAVA_ARGS = "-Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false";
-          serviceConfig = {
-            ExecStart = "${builds.key-server}/bin/lb-steve-key-server";
-            Restart = "always";
-            RestartSec = "10";
-          };
-        };
       };
 
       services.dd-agent.jmxConfig = ''
@@ -606,28 +591,13 @@ with pkgs.lib;
 
   "database-${name}" =
     { config, pkgs, lib, resources, nodes, ... }:
-    let
-      logicblox = builder-config.getLB (import ../lb-version.nix);
-      updateLBversions = pkgs.writeScriptBin "update-lb-versions" ''
-        #! /usr/bin/env bash
-        set -ex
-
-        function exit_trap()
-        {
-          rm -f $PLATFORM_RELEASES
-        }
-        trap exit_trap EXIT
-
-        export PLATFORM_RELEASES=$(mktemp)
-        ${pkgs.awscli}/bin/aws s3 cp s3://${s3Name}/override/platform-releases.nix $PLATFORM_RELEASES
-
-        export CSV=$(nix-build ${./lb-versions.nix} --no-out-link)
-        if [[ -n "$CSV" ]] ; then
-          lb web-client import -i $CSV http://localhost:8080/tdx/platform_versions
-        fi
-      '';
-    in
     {
+      imports = [ ./database.nix ];
+
+      # pass s3Name
+      system.build.s3Name = s3Name;
+      system.build.frontendConfig = frontendConfig;
+
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
@@ -640,30 +610,9 @@ with pkgs.lib;
 
       imports = [
         <lbdevops/logicblox/production.nix>
-        <lbdevops/nixos/logicblox/lb40-module.nix>
-        <lbdevops/nixos/logicblox/installer.nix>
         <lbdevops/nixos/logicblox/datadog/all.nix>
         ./datadog/database.nix
       ] ;
-
-      environment.systemPackages = [ updateLBversions ];
-
-      services.logicblox.enable = true;
-      services.logicblox.logicblox = logicblox;
-      services.logicblox.config.lb-server = ''
-        [workspace]
-        auto_backup_mode=none
-      '';
-
-      services.logicblox.config.lb-web-server = ''
-        [statsd]
-        prefix = lb.web
-        hostname = 127.0.0.1
-        port = 8125
-      '';
-
-      logicblox.application.installer = builds.database.build;
-      services.nginx.enable = lib.mkOverride 0 false;
 
       systemd.services.export-billing = {
         description = "Export billing data";
@@ -673,8 +622,6 @@ with pkgs.lib;
         '';
         startAt = "*:15";
       };
-
-      networking.firewall.allowedTCPPorts = [ 8080 55183 80 ];
 
       fileSystems."/data" =
         { autoFormat = true;
@@ -707,7 +654,7 @@ with pkgs.lib;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
       deployment.ec2.ebsInitialRootDiskSize = 100;
 
-      imports = [ <lbdevops/logicblox/production.nix> ];
+      imports = [ <lbdevops/logicblox/production.nix> ./frontend.nix ];
 
       boot.kernel.sysctl = {
         "net.ipv4.ip_local_port_range" = "1024 65000";
@@ -831,21 +778,6 @@ with pkgs.lib;
 
         nginx.serviceConfig.LimitNOFILE = 32768;
 
-        lb-steve-frontend = {
-          description = "LB Steve Frontend";
-          after = [ "network.target" ];
-          wantedBy = [ "multi-user.target" ];
-          path = [ pkgs.jdk pkgs.bash builds.frontend ];
-          preStart = ''
-            mkdir -p /var/log/lb-steve-worker
-          '';
-          environment.JAVA_ARGS = "-server -Xmx4800m -Xss2048k -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7199 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -XX:+PreserveFramePointer";
-          serviceConfig = {
-            ExecStart = "${builds.frontend}/bin/lb-steve-frontend --config ${frontendConfig}";
-            Restart = "always";
-            RestartSec = "10";
-          };
-        };
       };
 
       services.dd-agent.jmxConfig = ''
