@@ -150,7 +150,7 @@ in
       {
         imports = [ common ../nix/worker.nix ];
         virtualisation.writableStore = true;
-        virtualisation.memorySize = 4096;
+        virtualisation.memorySize = 6*1024;
         virtualisation.diskSize = 8192;
 
         systemd.services.lb-steve-worker.environment = awsEnvironment;
@@ -173,6 +173,7 @@ in
             pkgs.time
             (builder_config.getLB "4.4.6.1")
             (pkgs.writeText "gurobi.lic" "TOKENSERVER=127.0.0.1")
+            pkgs.stdenv
           ]}"
         '';
 
