@@ -69,7 +69,7 @@ let
 
     [auth]
     user = user1
-    key_file = ${./dummy-key.pem}
+    key_file = ${./keys/dummy-lb-jobs-key.pem}
   '';
 in
 {
