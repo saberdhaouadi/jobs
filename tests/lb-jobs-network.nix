@@ -302,7 +302,7 @@ in
 
     subtest "Running 'r-test' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl r-test -i ${../sample-jobs}/r-test --wait");
-      $client->fail("lb-steve -c ${clientConfig} create-job --impl r-test --wait -m no-services=true -m dependencies=R,rPackages.nlme,rPackages.data_table");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl r-test --wait -m no-services=true -m dependencies=R,rPackages.nlme,rPackages.data_table");
     };
   '';
 }) {}
