@@ -79,7 +79,7 @@ import com.logicblox.common.logging.SystemDLogger;
 import com.logicblox.concurrent.MoreFutures;
 
 import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.S3File;
+import com.logicblox.s3lib.StoreFile;
 
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.S3Utils;
@@ -202,16 +202,16 @@ public class Main {
         URI tempURI = createUniqueInputURI(inputFile.getName());
         return Futures.transform(
                 _s3client.uploadDirectory(inputFile, tempURI, _inputEncryptionKey),
-                new Function<List<S3File>, List<Frontend.File>>() {
-                  public List<Frontend.File> apply(List<S3File> files) {
+                new Function<List<StoreFile>, List<Frontend.File>>() {
+                  public List<Frontend.File> apply(List<StoreFile> files) {
                     return Collections.singletonList(Frontend.File.newBuilder().setUrl(tempURI.toString()+"/").build());
                   }
                 });
       } else {
         return Futures.transform(
                 _s3client.upload(inputFile, createUniqueInputURI(inputFile.getName()), _inputEncryptionKey),
-                new Function<S3File, List<Frontend.File>>() {
-                  public List<Frontend.File> apply(S3File file) {
+                new Function<StoreFile, List<Frontend.File>>() {
+                  public List<Frontend.File> apply(StoreFile file) {
                     return Collections.singletonList(Conversions.convertToFrontendFile(file));
                   }
                 });
@@ -559,7 +559,7 @@ public class Main {
     Path p = Paths.get(output);
     if (Files.isDirectory(p) || output.endsWith("/") || files.size() > 1) {
       // Assume that we want to download the list of files to a directory.
-      List<ListenableFuture<S3File>> downloads = new ArrayList<ListenableFuture<S3File>>();
+      List<ListenableFuture<StoreFile>> downloads = new ArrayList<ListenableFuture<StoreFile>>();
 
       for (Frontend.File file : files) {
         Path targetFile = p.resolve(Conversions.getBasename(file));

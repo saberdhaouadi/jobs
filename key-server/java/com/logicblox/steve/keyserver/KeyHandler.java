@@ -42,7 +42,7 @@ import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.concurrent.MoreFutures;
 import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.S3File;
+import com.logicblox.s3lib.StoreFile;
 import com.logicblox.sqs.SQSClient;
 import com.logicblox.sqs.SQSClients;
 import com.logicblox.sqs.SQSException;

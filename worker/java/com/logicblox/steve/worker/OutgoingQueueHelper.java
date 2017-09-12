@@ -7,7 +7,7 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.googlecode.protobuf.format.JsonFormat;
 
-import com.logicblox.s3lib.S3File;
+import com.logicblox.s3lib.StoreFile;
 import com.logicblox.steve.protocol.Backend;
 
 import java.net.InetAddress;
@@ -81,12 +81,12 @@ public class OutgoingQueueHelper {
     sendResult(msgBuilder.build());
   }
 
-  public void notifySuccess(List<S3File> result, long cpuUsage, long maxMemory, long maxDiskUsage) {
+  public void notifySuccess(List<StoreFile> result, long cpuUsage, long maxMemory, long maxDiskUsage) {
     Backend.JobStatus.Builder msgBuilder = getBuilder();
     msgBuilder.setStatusCode(Backend.StatusCode.SUCCEEDED);
 
     Backend.SucceededDetails.Builder details = Backend.SucceededDetails.newBuilder();
-    for (S3File f : result) {
+    for (StoreFile f : result) {
       details.addOutput(
               Backend.File.newBuilder()
                       .setUrl("s3://" + f.getBucketName() + "/" + f.getKey())
