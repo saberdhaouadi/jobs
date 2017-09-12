@@ -287,7 +287,7 @@ in
 
     subtest "Running 'metadata' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl metadata -i ${../sample-jobs}/metadata --wait");
-      $client->succeed("lb-steve -c ${clientConfig} create-job --impl metadata --wait -m key=value");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl metadata --wait -m key=value -m no-services=true");
     };
 
     subtest "Running 'identity' job", sub {
@@ -305,7 +305,7 @@ in
     };
 
     subtest "Running 'no-network' job", sub {
-      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl no-network -i ${../sample-jobs}/no-network --wait");
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl no-network -i ${../sample-jobs}/no-network --wait -m no-services=true");
       $client->fail("lb-steve -c ${clientConfig} create-job --impl no-network --wait");
     };
 
