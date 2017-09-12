@@ -283,11 +283,18 @@ in
     subtest "Running '${i}' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl ${i} -i ${../sample-jobs}/${i} --wait");
       $client->succeed("lb-steve -c ${clientConfig} create-job --impl ${i} --wait");
-    };'') [ "noop" "gurobi" "total" "identity" "ancestor" ]}
+    };'') [ "noop" "gurobi" "total" "ancestor" ]}
 
     subtest "Running 'metadata' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl metadata -i ${../sample-jobs}/metadata --wait");
       $client->succeed("lb-steve -c ${clientConfig} create-job --impl metadata --wait -m key=value");
+    };
+
+    subtest "Running 'identity' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl identity -i ${../sample-jobs}/identity --wait");
+      $client->succeed("echo '123' > asd.txt");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl identity --wait -m no-services=true -i asd.txt -o output");
+      $client->succeed("diff asd.txt output/asd.txt");
     };
 
     subtest "Running 'fail' job", sub {
