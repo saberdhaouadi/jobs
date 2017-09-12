@@ -276,10 +276,14 @@ in
     subtest "Basic lb-steve CLI tests", sub {
       $client->succeed("lb-steve -c ${clientConfig} list-queues");
       $client->succeed("lb-steve -c ${clientConfig} list-platforms");
-      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl noop -i ${../sample-jobs/noop} --wait");
       $client->succeed("lb-steve -c ${clientConfig} list-impl");
-      $client->succeed("lb-steve -c ${clientConfig} create-job --impl noop --wait");
     };
+
+    ${lib.concatMapStrings (i: ''
+    subtest "Running ${i} job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl ${i} -i ${../sample-jobs}/${i} --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl ${i} --wait");
+    };'') [ "noop" "gurobi" "total" "timeout" "metadata" "identity" "fail" "ancestor" ]}
   '';
 }) {}
 ) (drv: { __noChroot = true; inherit (drv) driver; requiredSystemFeatures = [ "perf" ]; })
