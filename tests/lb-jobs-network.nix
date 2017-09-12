@@ -292,9 +292,11 @@ in
 
     subtest "Running 'identity' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl identity -i ${../sample-jobs}/identity --wait");
-      $client->succeed("echo '123' > asd.txt");
-      $client->succeed("lb-steve -c ${clientConfig} create-job --impl identity --wait -m no-services=true -i asd.txt -o output");
-      $client->succeed("diff asd.txt output/asd.txt");
+      $client->succeed("echo '123' > asd1.txt");
+      $client->succeed("echo '456' > asd2.txt");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl identity --wait -m no-services=true -i asd1.txt -i asd2.txt -o output");
+      $client->succeed("diff asd1.txt output/asd1.txt");
+      $client->succeed("diff asd2.txt output/asd2.txt");
     };
 
     subtest "Running 'fail' job", sub {
