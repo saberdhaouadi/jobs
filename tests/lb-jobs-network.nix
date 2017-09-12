@@ -280,10 +280,20 @@ in
     };
 
     ${lib.concatMapStrings (i: ''
-    subtest "Running ${i} job", sub {
+    subtest "Running '${i}' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl ${i} -i ${../sample-jobs}/${i} --wait");
       $client->succeed("lb-steve -c ${clientConfig} create-job --impl ${i} --wait");
-    };'') [ "noop" "gurobi" "total" "timeout" "metadata" "identity" "fail" "ancestor" ]}
+    };'') [ "noop" "gurobi" "total" "metadata" "identity" "ancestor" ]}
+
+    subtest "Running 'fail' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl fail -i ${../sample-jobs}/fail --wait");
+      $client->fail("lb-steve -c ${clientConfig} create-job --impl fail --wait");
+    };
+
+    subtest "Running 'timeout' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl timeout -i ${../sample-jobs}/timeout --wait");
+      $client->fail("lb-steve -c ${clientConfig} create-job --impl timeout --wait -m timeout=30");
+    };
   '';
 }) {}
 ) (drv: { __noChroot = true; inherit (drv) driver; requiredSystemFeatures = [ "perf" ]; })
