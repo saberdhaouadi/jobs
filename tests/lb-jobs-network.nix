@@ -304,6 +304,11 @@ in
       $client->fail("lb-steve -c ${clientConfig} create-job --impl fail --wait");
     };
 
+    subtest "Running 'no-network' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl no-network -i ${../sample-jobs}/no-network --wait");
+      $client->fail("lb-steve -c ${clientConfig} create-job --impl no-network --wait");
+    };
+
     subtest "Running 'timeout' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl timeout -i ${../sample-jobs}/timeout --wait");
       $client->fail("lb-steve -c ${clientConfig} create-job --impl timeout --wait -m timeout=30");
