@@ -1,9 +1,0 @@
-#! /bin/sh
-set -e
-input=$1
-
-function metadata() {
-  echo $(jq -r ".\"$input\"" $input/metadata.json)
-}
-
-blender --background $input/*.blend --render-output $2/ --render-format PNG --use-extension 1 --render-frame $(metadata "frame")

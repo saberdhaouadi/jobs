@@ -1,3 +1,5 @@
+{ builds ? import ../. {}
+}:
 (import <nixpkgs> {}).lib.overrideDerivation (
 
 import <nixpkgs/nixos/tests/make-test.nix> ({ pkgs, lib, ... }:
@@ -27,8 +29,6 @@ let
     AWS_ACCESS_KEY_ID=awsAccessKey;
     AWS_SECRET_ACCESS_KEY=awsSecretKey;
   };
-
-  builds = import ../. {};
 
   common =
     { config, nodes, pkgs, lib, ... }:
@@ -69,7 +69,7 @@ let
 
     [auth]
     user = user1
-    key_file = ${./dummy-key.pem}
+    key_file = ${./keys/dummy-lb-jobs-key.pem}
   '';
 in
 {
@@ -172,8 +172,6 @@ in
             pkgs.fio
             pkgs.time
             (builder_config.getLB "4.4.6.1")
-            (pkgs.writeText "gurobi.lic" "TOKENSERVER=127.0.0.1")
-            pkgs.stdenv
           ]}"
         '';
 
@@ -278,10 +276,48 @@ in
     subtest "Basic lb-steve CLI tests", sub {
       $client->succeed("lb-steve -c ${clientConfig} list-queues");
       $client->succeed("lb-steve -c ${clientConfig} list-platforms");
-      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl noop -i ${../sample-jobs/noop} --wait");
-      print $client->succeed("lb-steve -c ${clientConfig} list-impl");
-      print $client->succeed("lb-steve -c ${clientConfig} create-job --impl noop --wait");
+      $client->succeed("lb-steve -c ${clientConfig} list-impl");
+    };
+
+    ${lib.concatMapStrings (i: ''
+    subtest "Running '${i}' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl ${i} -i ${../sample-jobs}/${i} --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl ${i} --wait");
+    };'') [ "noop" "gurobi" "total" "ancestor" ]}
+
+    subtest "Running 'metadata' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl metadata -i ${../sample-jobs}/metadata --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl metadata --wait -m key=value -m no-services=true");
+    };
+
+    subtest "Running 'identity' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl identity -i ${../sample-jobs}/identity --wait");
+      $client->succeed("echo '123' > asd1.txt");
+      $client->succeed("echo '456' > asd2.txt");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl identity --wait -m no-services=true -i asd1.txt -i asd2.txt -o output");
+      $client->succeed("diff asd1.txt output/asd1.txt");
+      $client->succeed("diff asd2.txt output/asd2.txt");
+    };
+
+    subtest "Running 'fail' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl fail -i ${../sample-jobs}/fail --wait");
+      $client->fail("lb-steve -c ${clientConfig} create-job --impl fail --wait");
+    };
+
+    subtest "Running 'no-network' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl no-network -i ${../sample-jobs}/no-network --wait -m no-services=true");
+      $client->fail("lb-steve -c ${clientConfig} create-job --impl no-network --wait");
+    };
+
+    subtest "Running 'timeout' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl timeout -i ${../sample-jobs}/timeout --wait");
+      $client->fail("lb-steve -c ${clientConfig} create-job --impl timeout --wait -m timeout=30");
+    };
+
+    subtest "Running 'r-test' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl r-test -i ${../sample-jobs}/r-test --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl r-test --wait -m no-services=true -m dependencies=R,rPackages.nlme,rPackages.data_table");
     };
   '';
 }) {}
-) (drv: { __noChroot = true; inherit (drv) driver; })
+) (drv: { __noChroot = true; inherit (drv) driver; requiredSystemFeatures = [ "perf" ]; })
