@@ -1,4 +1,0 @@
-#! /bin/sh
-set -e
-
-ffmpeg -framerate 60 -i $1/%04d.png -profile:v high -pix_fmt yuv420p -preset slower -crf 15 -vf colormatrix=bt601:bt709 $2/output.mp4
