@@ -155,6 +155,7 @@ with pkgs.lib;
   resources.elasticIPs.key-ip-us-west-2 = { region = "us-west-2" ; accessKeyId = account; };
   "key-proxy-${name}-us-west-2" = key-proxy "us-west-2";
 
+  resources.ec2KeyPairs.worker-kp = { inherit region ; accessKeyId = account; };
   resources.ec2KeyPairs.kp = { inherit region ; accessKeyId = account; };
   resources.ec2KeyPairs.kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
   resources.ec2KeyPairs.kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
@@ -401,6 +402,7 @@ with pkgs.lib;
                  --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
+                 --key ${resources.ec2KeyPairs.worker-kp.name} \
                  --incoming ${sqsURL t} \
                  --outgoing ${sqsStatusURL} \
                  --role ${resources.iamRoles.worker-role.name} \
