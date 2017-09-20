@@ -266,6 +266,8 @@ let
 
   jobs = rec {
 
+  tests = import ./tests/lb-jobs-network.nix { builds = jobs; };
+
   frontend =
      builder_config.buildLBConfig {
       name = "jobs-frontend";

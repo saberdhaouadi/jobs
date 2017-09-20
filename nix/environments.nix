@@ -7,6 +7,8 @@ let
       (lib.filterAttrs (n: v: (v.onDemand or false)) queues)
     );
 
+  subnetId = "subnet-dc1a4194";
+  securityGroup = "sg-b3ac49c3";
 in
 rec {
   prod =
@@ -26,6 +28,7 @@ rec {
         "i2.2xlarge" = { number = 0; price = "1.88"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "500"; min = "75"; onDemand = true; maxDelta = "100";};
         "i2.4xlarge" = { number = 0; price = "3.72"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "300"; min = "75"; };
         "i2.8xlarge" = { number = 0; price = "7.44"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "50"; };
+        "i3.xlarge" = { number = 0; price = "0.312"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; diskSize = "10"; inherit subnetId securityGroup; };
       };
     };
 

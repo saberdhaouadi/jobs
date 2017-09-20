@@ -1,8 +1,8 @@
 {
-  us-east-1.ebs = "ami-d0cee8ab";
-  us-west-1.ebs = "ami-9bb890fb";
-  us-west-2.ebs = "ami-f6d0378e";
-  us-east-1.s3 = "ami-becaecc5";
-  us-west-1.s3 = "ami-bdb890dd";
-  us-west-2.s3 = "ami-67dd3a1f";
+  us-east-1.ebs = "ami-9bc1f3e0";
+  us-west-1.ebs = "ami-e4123884";
+  us-west-2.ebs = "ami-0421cc7c";
+  us-east-1.s3 = "ami-5ac1f321";
+  us-west-1.s3 = "ami-fc12389c";
+  us-west-2.s3 = "ami-4723ce3f";
 }

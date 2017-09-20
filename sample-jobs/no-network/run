@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+set -e
+curl -v https://www.google.com
