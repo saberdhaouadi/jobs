@@ -153,6 +153,8 @@ in
         virtualisation.memorySize = 6*1024;
         virtualisation.diskSize = 8192;
 
+        boot.kernel.sysctl."vm.panic_on_oom" = 0;
+
         systemd.services.lb-steve-worker.environment = awsEnvironment;
 
         system.activationScripts.ec2metadata = ''
@@ -302,6 +304,11 @@ in
     subtest "Running 'fail' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl fail -i ${../sample-jobs}/fail --wait");
       $client->fail("lb-steve -c ${clientConfig} create-job --impl fail --wait");
+    };
+
+    subtest "Running 'oom-killer' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl oom-killer -i ${../sample-jobs}/oom-killer --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl oom-killer --wait | grep 'Job was killed, most likely due to memory shortage'");
     };
 
     subtest "Running 'no-network' job", sub {
