@@ -24,9 +24,9 @@ import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.bloxweb.client.ProtobufServiceClient;
 import com.logicblox.bloxweb.client.ServiceClientException;
 
-import com.logicblox.s3lib.ExpBackoffRetryPolicy;
-import com.logicblox.s3lib.ThrowableRetriableTask;
-import com.logicblox.s3lib.ThrowableRetryPolicy;
+import com.logicblox.cloudstore.ExpBackoffRetryPolicy;
+import com.logicblox.cloudstore.ThrowableRetriableTask;
+import com.logicblox.cloudstore.ThrowableRetryPolicy;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.protocol.Frontend;
 

@@ -3,8 +3,8 @@ package com.logicblox.steve.worker;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.sqs.model.Message;
 
-import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.StoreFile;
+import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.StoreFile;
 import com.logicblox.steve.common.Data;
 import com.logicblox.concurrent.MoreFutures;
 
@@ -72,7 +72,7 @@ public class SteveJob {
   private long _cpuUsage = 0;
   private long _maxMemory = 0;
 
-  private File _keyDir = new File(com.logicblox.s3lib.Utils.getDefaultKeyDirectory());
+  private File _keyDir = new File(com.logicblox.cloudstore.Utils.getDefaultKeyDirectory());
   private File _shellDir = new File("/tmp/shell");
   private SteveKeyServerHelper _keyHelper;
   private File _cpuacct = new File("/sys/fs/cgroup/cpu,cpuacct/system.slice/nix-daemon.service/cpuacct.usage");
@@ -284,7 +284,7 @@ public class SteveJob {
     log(uri);
     URI jobImplUri;
     try {
-      jobImplUri = com.logicblox.s3lib.Utils.getURI(uri);
+      jobImplUri = com.logicblox.cloudstore.Utils.getURI(uri);
     } catch (URISyntaxException e) {
       throw new InternalException("Invalid URI '" + uri, e);
     }
@@ -301,7 +301,7 @@ public class SteveJob {
     log("Downloading input '" + input.toString() + "'");
     URI inputUri;
     try {
-      inputUri = com.logicblox.s3lib.Utils.getURI(input.getLocation());
+      inputUri = com.logicblox.cloudstore.Utils.getURI(input.getLocation());
     } catch (URISyntaxException e) {
       throw new InternalException("Invalid URI '" + input, e);
     }

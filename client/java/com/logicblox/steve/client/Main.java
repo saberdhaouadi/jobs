@@ -78,11 +78,11 @@ import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
 import com.logicblox.concurrent.MoreFutures;
 
-import com.logicblox.s3lib.DownloadOptions;
-import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.StoreFile;
-import com.logicblox.s3lib.UploadOptions;
-import com.logicblox.s3lib.Utils;
+import com.logicblox.cloudstore.DownloadOptions;
+import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.StoreFile;
+import com.logicblox.cloudstore.UploadOptions;
+import com.logicblox.cloudstore.Utils;
 
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.S3Utils;

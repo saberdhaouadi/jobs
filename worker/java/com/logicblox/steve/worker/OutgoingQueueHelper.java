@@ -7,7 +7,7 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.googlecode.protobuf.format.JsonFormat;
 
-import com.logicblox.s3lib.StoreFile;
+import com.logicblox.cloudstore.StoreFile;
 import com.logicblox.steve.protocol.Backend;
 
 import java.net.InetAddress;

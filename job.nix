@@ -2,7 +2,7 @@
 , fetchurl
 , logicblox
 , lb_web ? null
-, s3lib ? null
+, cloudstore ? null
 , jdk
 , unzip
 , builder_config

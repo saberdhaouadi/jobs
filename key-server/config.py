@@ -67,7 +67,7 @@ classpath = [
   '$(lb_web)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
   '$(lb_web)/lib/java/google-oauth-client-1.19.0.jar',
 
-  '$(lb_web)/lib/java/s3lib-0.2.jar',
+  '$(lb_web)/lib/java/cloudstore-0.2.jar',
   '$(lb_web)/lib/java/commons-io-2.4.jar',
   '$(lb_web)/lib/java/aws-java-sdk-1.11.102.jar',
 

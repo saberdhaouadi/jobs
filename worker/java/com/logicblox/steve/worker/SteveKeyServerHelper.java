@@ -17,9 +17,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 
-import com.logicblox.s3lib.ThrowableRetryPolicy;
-import com.logicblox.s3lib.ThrowableRetriableTask;
-import com.logicblox.s3lib.ExpBackoffRetryPolicy;
+import com.logicblox.cloudstore.ThrowableRetryPolicy;
+import com.logicblox.cloudstore.ThrowableRetriableTask;
+import com.logicblox.cloudstore.ExpBackoffRetryPolicy;
 
 import java.util.HashMap;
 import java.util.Map;

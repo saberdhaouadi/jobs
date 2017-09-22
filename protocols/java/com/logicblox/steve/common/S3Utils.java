@@ -7,10 +7,10 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
-import com.logicblox.s3lib.DirectoryKeyProvider;
-import com.logicblox.s3lib.KeyProvider;
-import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.Utils;
+import com.logicblox.cloudstore.DirectoryKeyProvider;
+import com.logicblox.cloudstore.KeyProvider;
+import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.Utils;
 
 import com.logicblox.bloxweb.config.ConfigMap;
 

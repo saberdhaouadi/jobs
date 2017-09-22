@@ -18,7 +18,7 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.logicblox.s3lib.StoreFile;
+import com.logicblox.cloudstore.StoreFile;
 import com.logicblox.steve.common.Status.Event;
 import com.logicblox.steve.protocol.Backend;
 import com.logicblox.steve.protocol.Database;

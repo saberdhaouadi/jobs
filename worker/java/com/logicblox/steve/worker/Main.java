@@ -12,7 +12,7 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.googlecode.protobuf.format.JsonFormat;
 import com.amazonaws.util.EC2MetadataUtils;
 
-import com.logicblox.s3lib.S3Client;
+import com.logicblox.cloudstore.S3Client;
 import com.logicblox.steve.protocol.Backend;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.S3Utils;
