@@ -8,7 +8,7 @@ lbconfig_package(
   default_targets=['jars', 'findbugs'])
 
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
-aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/cloudstore"})
+aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
 
 depends_on(
   logicblox_dep,
