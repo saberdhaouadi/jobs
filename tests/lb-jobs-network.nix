@@ -326,6 +326,11 @@ in
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl r-test -i ${../sample-jobs}/r-test --wait");
       $client->succeed("lb-steve -c ${clientConfig} create-job --impl r-test --wait -m no-services=true -m dependencies=R,rPackages.nlme,rPackages.data_table");
     };
+
+    subtest "Running 'scikitlearn' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl scikitlearn -i ${../sample-jobs}/scikitlearn --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl scikitlearn --wait -m no-services=true -m dependencies=pythonPackages.matplotlib,pythonPackages.numpy,pythonPackages.scikitlearn");
+    };
   '';
 }) {}
 ) (drv: { __noChroot = true; inherit (drv) driver; requiredSystemFeatures = [ "perf" ]; })
