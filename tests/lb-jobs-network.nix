@@ -242,6 +242,7 @@ in
         imports = [ common ../nix/database.nix ];
         systemd.services.lb-web-server.environment = awsEnvironment;
         virtualisation.memorySize = 4096;
+        virtualisation.diskSize = 8192;
       };
   };
   testScript = ''
