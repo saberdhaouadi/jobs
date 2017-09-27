@@ -594,11 +594,15 @@ with pkgs.lib;
   "database-${name}" =
     { config, pkgs, lib, resources, nodes, ... }:
     {
-      imports = [ ./database.nix ];
+      imports = [
+        ./database.nix
+        <lbdevops/logicblox/production.nix>
+        <lbdevops/nixos/logicblox/datadog/all.nix>
+        ./datadog/database.nix
+      ];
 
       # pass s3Name
       system.build.s3Name = s3Name;
-      system.build.frontendConfig = frontendConfig;
 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -609,12 +613,6 @@ with pkgs.lib;
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
-
-      imports = [
-        <lbdevops/logicblox/production.nix>
-        <lbdevops/nixos/logicblox/datadog/all.nix>
-        ./datadog/database.nix
-      ] ;
 
       systemd.services.export-billing = {
         description = "Export billing data";
@@ -657,6 +655,8 @@ with pkgs.lib;
       deployment.ec2.ebsInitialRootDiskSize = 100;
 
       imports = [ <lbdevops/logicblox/production.nix> ./frontend.nix ];
+
+      system.build.frontendConfig = frontendConfig;
 
       boot.kernel.sysctl = {
         "net.ipv4.ip_local_port_range" = "1024 65000";
