@@ -731,6 +731,8 @@ with pkgs.lib;
           access_log /var/spool/nginx/logs/access.log timed_combined buffer=16k;
           error_log /var/spool/nginx/logs/error.log error;
 
+          error_page 503 /maintenance.json;
+
           location = / {
               try_files $uri /index.html;
               break;
@@ -739,11 +741,18 @@ with pkgs.lib;
               alias ${../www/index.html};
               break;
           }
+          location = /maintenance.json {
+              alias ${./maintenance.json};
+          }
           location = /lb-steve-client.tgz {
               alias ${builds.client.binary_tarball}/lb-steve-client.tgz;
               break;
           }
           location / {
+              if (-f /var/log/lb-steve-worker/maintenance) {
+                  return 503;
+              }
+
               proxy_pass         http://localhost:8081/;
               proxy_redirect     off;
               proxy_set_header   Host             $host;
