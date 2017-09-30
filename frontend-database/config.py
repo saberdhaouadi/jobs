@@ -19,6 +19,7 @@ lb_library(
 )
 
 install_file('scripts/install.sh', '')
+install_file('scripts/export.sh', '')
 
 rule(
     output = 'deploy',

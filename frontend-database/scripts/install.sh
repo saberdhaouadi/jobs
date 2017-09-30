@@ -34,23 +34,12 @@ tdx="users jobimpls jobimpl_metadata jobs job_metadata job_inputs job_outputs jo
 backup_dir="$LB_DEPLOYMENT_HOME/exports/`date +"%Y%m%d-%H%M%S"`"
 latest_link=$LB_DEPLOYMENT_HOME/exports/latest
 
-if [[ -d "$(lb filepath lb-steve)" ]]; then
-  trap trap_handler ERR
+trap trap_handler ERR
 
-  mkdir -p $backup_dir
-  echo "Export data to $backup_dir"
-  for t in $tdx; do
-    echo " - $t"
-    record_span "export-$t" lb web-client export --timeout 3600 -n -o file://$backup_dir/$t.csv http://localhost:8080/tdx/$t
-  done
+./export.sh
 
-  record_span "export-workspace" lb export-workspace lb-steve $backup_dir/workspace
-  rm -f $latest_link
-  ln -s $backup_dir $latest_link
-fi
-
-db_created=1
 lb create --overwrite lb-steve
+db_created=1
 
 proj=$top/share/lb_steve_frontend_database
 if [[ ! -d $proj ]]; then
