@@ -277,10 +277,10 @@ in
     };
 
     subtest "lwfm basic test", sub {
-      $client->succeed("aws s3 cp ${<paperboat>} s3://lb-jobs/paperboat/${builtins.baseNameOf <paperboat>} --endpoint-url http://192.168.1.1:9000");
+      $client->succeed("aws s3 cp ${<paperboat>}/foula-*.tgz s3://lb-jobs/paperboat/foula.tgz --endpoint-url http://192.168.1.1:9000");
       $client->succeed("aws s3 cp ${./data/lwfm-training}  s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --endpoint-url http://192.168.1.1:9000");
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl lwfm -i ${../sample-jobs}/lwfm --wait");
-      $client->succeed("lb-steve -c ${clientConfig} create-job --impl lwfm -i s3://lb-jobs/paperboat/${builtins.baseNameOf <paperboat>} -i s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --wait -m no-services=true");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl lwfm -i s3://lb-jobs/paperboat/foula.tgz -i s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --wait -m no-services=true");
     };
 
     subtest "Basic lb-steve CLI tests", sub {
