@@ -2,7 +2,9 @@
 
 mkdir -p $2/coeffs
 
-$1/foula-*/bin/lwfm.x \
+tar xvf $1/foula-*.tgz
+
+./foula-*/bin/lwfm.x \
     $1/training \
     --order=2 \
     --rank=10 \
