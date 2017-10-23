@@ -270,20 +270,17 @@ in
       $database->succeed("lb web-client import -i ${./data/platform_versions.csv} http://localhost:8080/tdx/platform_versions");
     };
 
-    subtest "Basic lwfm invocation", sub {
-      $client->succeed("${<paperboat>}/bin/lwfm.x");
-    };
-
     subtest "Basic AWS CLI tests", sub {
       $client->succeed("aws --endpoint-url http://192.168.1.1:9000 s3api create-bucket --bucket lb-jobs");
       $client->succeed("aws --endpoint-url http://192.168.1.1:9000 s3 ls s3://lb-jobs");
       $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
-      $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
     };
 
     subtest "lwfm basic test", sub {
-      $client->succeed("aws s3 cp ${<paperboat>} s3://lb-jobs/paperboat/ --recursive --endpoint-url http://192.168.1.1:9000");
-      $client->succeed("lb-steve ");
+      $client->succeed("aws s3 cp ${<paperboat>} s3://lb-jobs/paperboat/${builtins.baseNameOf <paperboat>} --endpoint-url http://192.168.1.1:9000");
+      $client->succeed("aws s3 cp ${./data/lwfm-training}  s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --endpoint-url http://192.168.1.1:9000");
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl lwfm -i ${../sample-jobs}/lwfm --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl lwfm -i s3://lb-jobs/paperboat/${builtins.baseNameOf <paperboat>} -i s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --wait -m no-services=true");
     };
 
     subtest "Basic lb-steve CLI tests", sub {

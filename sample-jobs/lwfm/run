@@ -2,10 +2,10 @@
 
 mkdir -p $2/coeffs
 
-tar xvf $1/foula-*.tgz
+tar xvf $1/foula.tgz
 
 ./foula-*/bin/lwfm.x \
-    $1/training \
+    $1/lwfm-training \
     --order=2 \
     --rank=10 \
     --adaptive_sgd \
