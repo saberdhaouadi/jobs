@@ -276,13 +276,6 @@ in
       $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
     };
 
-    subtest "lwfm basic test", sub {
-      $client->succeed("aws s3 cp ${<paperboat>}/foula-*.tgz s3://lb-jobs/paperboat/foula.tgz --endpoint-url http://192.168.1.1:9000");
-      $client->succeed("aws s3 cp ${./data/lwfm-training}  s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --endpoint-url http://192.168.1.1:9000");
-      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl lwfm -i ${../sample-jobs}/lwfm --wait");
-      $client->succeed("lb-steve -c ${clientConfig} create-job --impl lwfm -i s3://lb-jobs/paperboat/foula.tgz -i s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --wait -m no-services=true");
-    };
-
     subtest "Basic lb-steve CLI tests", sub {
       $client->succeed("lb-steve -c ${clientConfig} list-queues");
       $client->succeed("lb-steve -c ${clientConfig} list-platforms");
@@ -294,6 +287,13 @@ in
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl ${i} -i ${../sample-jobs}/${i} --wait");
       $client->succeed("lb-steve -c ${clientConfig} create-job --impl ${i} --wait");
     };'') [ "noop" "gurobi" "total" "ancestor" ]}
+
+    subtest "lwfm training test", sub {
+      $client->succeed("aws s3 cp ${<paperboat>}/foula-*.tgz s3://lb-jobs/paperboat/foula.tgz --endpoint-url http://192.168.1.1:9000");
+      $client->succeed("aws s3 cp ${./data/lwfm-training}  s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --endpoint-url http://192.168.1.1:9000");
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl lwfm -i ${../sample-jobs}/lwfm --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl lwfm -i s3://lb-jobs/paperboat/foula.tgz -i s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --wait -m no-services=true");
+    };
 
     subtest "Running 'metadata' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl metadata -i ${../sample-jobs}/metadata --wait");
