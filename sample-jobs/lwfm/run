@@ -1,0 +1,14 @@
+#! /usr/bin/env bash
+
+mkdir -p $2/coeffs
+
+$1/foula-*/bin/lwfm.x \
+    $1/training \
+    --order=2 \
+    --rank=10 \
+    --adaptive_sgd \
+    --reg_type=2 \
+    --reg_param=0.01,0.01 \
+    --seed=-1 \
+    --min_forecast=0.0 \
+    --output_path=$2/coeffs/
