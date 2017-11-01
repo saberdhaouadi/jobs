@@ -1,4 +1,5 @@
-{ builds ? import ../. {}
+{ builds ? import ../. {},
+  paperboat ? null
 }:
 (import <nixpkgs> {}).lib.overrideDerivation (
 
@@ -233,7 +234,7 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ];
-        environment.systemPackages = [ pkgs.openjdk pkgs.python2 builds.client.build ];
+        environment.systemPackages = [ pkgs.openjdk pkgs.python2 builds.client.build (builder_config.getLB "4.4.8") ];
       };
 
     database =
@@ -267,12 +268,15 @@ in
       $database->succeed("lb web-client import -i ${./data/users.csv} http://localhost:8080/tdx/users");
       $database->succeed("lb web-client import -i ${./data/provision-config.csv} http://localhost:8080/tdx/provision-config");
       $database->succeed("lb web-client import -i ${./data/platform_versions.csv} http://localhost:8080/tdx/platform_versions");
+
+      # make encryption keys available in the key server
+      $keyserver->succeed("mkdir -p /keys/lb-steve/logicblox/");
+      $keyserver->succeed("cp ${./keys/test-key.pem} /keys/lb-steve/logicblox/test-key.pem");
     };
 
     subtest "Basic AWS CLI tests", sub {
       $client->succeed("aws --endpoint-url http://192.168.1.1:9000 s3api create-bucket --bucket lb-jobs");
       $client->succeed("aws --endpoint-url http://192.168.1.1:9000 s3 ls s3://lb-jobs");
-      $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
       $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
     };
 
@@ -282,11 +286,28 @@ in
       $client->succeed("lb-steve -c ${clientConfig} list-impl");
     };
 
+    subtest "Running identity job with encryption", sub {
+      $client->succeed("mkdir .s3lib-keys; cp ${./keys/test-key.pem} .s3lib-keys/test-key.pem");
+      $client->succeed("echo 'This content is encrypted' > encrypted.txt");
+      $client->succeed("cloud-store upload -i encrypted.txt s3://lb-jobs/inputs/encrypted.txt --key test-key --keydir .s3lib-keys --endpoint http://192.168.1.1:9000");
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl identity -i ${../sample-jobs}/identity --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl identity --wait -m no-services=true -i s3://lb-jobs/inputs/encrypted.txt --input-key test-key --output-key test-key --output s3://lb-jobs/output/");
+      $client->succeed("cloud-store download s3://lb-jobs/output/encrypted.txt --overwrite --keydir .s3lib-keys --endpoint http://192.168.1.1:9000");
+      $client->succeed("[[ \$(cat ./encrypted.txt) = 'This content is encrypted' ]]");
+    };
+
     ${lib.concatMapStrings (i: ''
     subtest "Running '${i}' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl ${i} -i ${../sample-jobs}/${i} --wait");
       $client->succeed("lb-steve -c ${clientConfig} create-job --impl ${i} --wait");
     };'') [ "noop" "gurobi" "total" "ancestor" ]}
+
+    subtest "lwfm training test", sub {
+      $client->succeed("aws s3 cp ${<paperboat>}/foula-*.tgz s3://lb-jobs/paperboat/foula.tgz --endpoint-url http://192.168.1.1:9000");
+      $client->succeed("aws s3 cp ${./data/lwfm-training}  s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --endpoint-url http://192.168.1.1:9000");
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl lwfm -i ${../sample-jobs}/lwfm --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl lwfm -i s3://lb-jobs/paperboat/foula.tgz -i s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --wait -m no-services=true");
+    };
 
     subtest "Running 'metadata' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl metadata -i ${../sample-jobs}/metadata --wait");
