@@ -189,6 +189,8 @@ in
     nixpkgs.config.allowUnfree = true;
     nixpkgs.config.allowBroken = true;
 
+    services.journald.rateLimitBurst = 0;
+
     services.logrotate.enable = true;
     services.logrotate.config = ''
       /var/log/messages {
