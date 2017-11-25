@@ -104,6 +104,7 @@ in
           sha256 = "299c4c31a8b0b8d84f90bb17baec12e94f2ec4952297373697c86e3ed1fb82  ↪a2";
         };
       });
+    };
     nix.trustedBinaryCaches = [ "s3://logicblox-cache" ];
 
     systemd.extraConfig = ''
