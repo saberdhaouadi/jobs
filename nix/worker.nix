@@ -101,7 +101,7 @@ in
           owner = "NixOS";
           repo = "nix";
           rev = "549c3706a5d63e10d908b43da8479331a844018f";
-          sha256 = "299c4c31a8b0b8d84f90bb17baec12e94f2ec4952297373697c86e3ed1fb82  ↪a2";
+          sha256 = "299c4c31a8b0b8d84f90bb17baec12e94f2ec4952297373697c86e3ed1fb82a2";
         };
       });
     };
