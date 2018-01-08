@@ -77,6 +77,7 @@ let
     { config, pkgs, resources, nodes, lib, ... }:
     {
       imports = [ ./worker.nix ];
+      boot.kernelPackages = pkgs.linuxPackages_4_9;
 
       lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName queue}".name} --outgoing ${resources.sqsQueues."${sqsStatusName}".name} --bucket ${s3Name} --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys";
 
