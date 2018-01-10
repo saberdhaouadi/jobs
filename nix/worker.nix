@@ -93,18 +93,6 @@ in
     '';
     nix.useSandbox = true;
     nix.package = pkgs.nixUnstable;
-    # FIXME remove once the revision shows up in the channels
-    nixpkgs.config.packageOverrides = pkgs: {
-      nixUnstable = pkgs.nixUnstable.overrideAttrs (oldAttrs: rec {
-        suffix = "pre5774_549c370";
-        src = pkgs.fetchFromGitHub {
-          owner = "NixOS";
-          repo = "nix";
-          rev = "549c3706a5d63e10d908b43da8479331a844018f";
-          sha256 = "299c4c31a8b0b8d84f90bb17baec12e94f2ec4952297373697c86e3ed1fb82a2";
-        };
-      });
-    };
     nix.trustedBinaryCaches = [ "s3://logicblox-cache" ];
 
     systemd.extraConfig = ''
