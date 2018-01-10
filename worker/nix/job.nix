@@ -15,7 +15,6 @@ in
       pkgs.pythonPackages.pandas
       pkgs.pythonPackages.scikitlearn
       pkgs.pythonPackages.matplotlib
-      pkgs.pythonPackages.plotly
       pkgs.pythonPackages.statsmodels
       pkgs.socat
       pkgs.jq
@@ -51,7 +50,7 @@ in
         cmd=start
         for i in $(seq 1 7); do
           echo "starting LogicBlox services [$i]"
-          timeout -k 10 60 $lbservices $cmd &> /dev/null
+          timeout -k 10 120 $lbservices $cmd &> /dev/null
           if [[ "$?" == "0" ]]; then
             set -e
             return
