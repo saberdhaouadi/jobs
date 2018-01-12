@@ -65,7 +65,7 @@ public class OutgoingQueueHelper {
       msgBuilder.setFailedDetails(
               Backend.FailedDetails.newBuilder()
                       .setErrorCode("INTERNAL_ERROR")
-                      .setErrorMessage(e.getMessage());
+                      .setErrorMessage(e.getMessage()));
     } else if (e instanceof DownloadInputFailedException) {
       msgBuilder.setFailedDetails(
               Backend.FailedDetails.newBuilder()
