@@ -818,9 +818,13 @@ with pkgs.lib;
     };
 
   defaults =
-    { lib, ... }:
+    { config, lib, ... }:
     { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
+      services.dd-agent.tags = [
+          "deployment:${config.deployment.name}"
+          "uuid:${config.deployment.uuid}"
+        ];
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
