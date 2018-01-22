@@ -77,6 +77,7 @@ let
     { config, pkgs, resources, nodes, lib, ... }:
     {
       imports = [ ./worker.nix ];
+      boot.kernelPackages = pkgs.linuxPackages_4_9;
 
       lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName queue}".name} --outgoing ${resources.sqsQueues."${sqsStatusName}".name} --bucket ${s3Name} --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys";
 
@@ -817,9 +818,13 @@ with pkgs.lib;
     };
 
   defaults =
-    { lib, ... }:
+    { config, lib, ... }:
     { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
+      services.dd-agent.tags = [
+          "deployment:${config.deployment.name}"
+          "uuid:${config.deployment.uuid}"
+        ];
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )

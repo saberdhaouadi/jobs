@@ -6,6 +6,9 @@
     <lbdevops/logicblox/config/logging/logentries.nix>
   ];
 
+  #FIXME revert once DEVOPS-43/LB-3068 are fixed
+  boot.kernelPackages = pkgs.linuxPackages_4_4;
+
   logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
 
   ec2.hvm = true;
