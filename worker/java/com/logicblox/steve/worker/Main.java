@@ -334,7 +334,7 @@ public class Main {
         .withTags(new Tag().withKey("billing-tag").withValue(tag));
       CreateTagsResult response = client.createTags(request);
     } catch (Exception e) {
-      System.err.println("WARNING: Failure while tagging the instance: "+e.getMessage());
+      System.err.println("WARNING: Failure while tagging the instance: " + e.getMessage());
     }
 
   }
