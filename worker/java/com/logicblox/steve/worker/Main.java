@@ -333,7 +333,6 @@ public class Main {
     } catch (Exception e) {
       System.err.println("WARNING: Failure while tagging the instance: " + e.getMessage());
     }
-
   }
 
   private void setupSQS() {
