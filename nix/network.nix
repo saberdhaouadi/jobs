@@ -178,8 +178,7 @@ with pkgs.lib;
               "Effect": "Allow",
               "Action": [
                 "ec2:TerminateInstances",
-                "ec2:CreateTags",
-                "ec2:DeleteTags"
+                "ec2:CreateTags"
               ],
               "Condition": {
                 "ArnEquals": {

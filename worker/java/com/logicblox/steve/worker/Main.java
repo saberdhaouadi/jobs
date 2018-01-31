@@ -307,10 +307,7 @@ public class Main {
         }
       } finally {
         resetTimeout.interrupt();
-        if (steve.hasCompleted() || steve.hasBeenCancelled()) {
-          removeIncoming(job);
-          removeTag(_jobTag);
-        }
+        if (steve.hasCompleted() || steve.hasBeenCancelled()) removeIncoming(job);
       }
     }
   }
@@ -337,18 +334,6 @@ public class Main {
       System.err.println("WARNING: Failure while tagging the instance: " + e.getMessage());
     }
 
-  }
-
-  private void removeTag(String tag) {
-    try {
-      AmazonEC2 client = AmazonEC2ClientBuilder.standard().build();
-      DeleteTagsRequest request = new DeleteTagsRequest()
-        .withResources(EC2MetadataUtils.getInstanceId())
-        .withTags(new Tag().withKey("lb-jobs-account").withValue(tag));
-      DeleteTagsResult response = client.deleteTags(request);
-    } catch (Exception e) {
-      System.err.println("WARNING: Failure while removing the tag: " + e.getMessage());
-    }
   }
 
   private void setupSQS() {
