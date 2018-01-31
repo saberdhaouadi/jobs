@@ -273,10 +273,10 @@ public class Main {
         metadata.put(p.getKey(), p.getValue());
       }
 
-      if msg.hasAccount()
+      if (msg.hasAccount())
         _jobTag = msg.getAccount();
 
-      createTags(_jobTag);
+      createTag(_jobTag);
 
       SteveJob steve = new SteveJob(
               this.client,
