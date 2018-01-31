@@ -1,6 +1,11 @@
 package com.logicblox.steve.worker;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.CreateTagsResult;
+import com.amazonaws.services.ec2.model.CreateTagsRequest;
+import com.amazonaws.services.ec2.model.Tag;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -266,6 +271,16 @@ public class Main {
       Map<String, String> metadata = new HashMap<String, String>();
       for (Backend.Param p : msg.getMetadataList()) {
         metadata.put(p.getKey(), p.getValue());
+      }
+
+      try {
+        AmazonEC2 client = AmazonEC2ClientBuilder.standard().build();
+        CreateTagsRequest request = new CreateTagsRequest()
+          .withResources(EC2MetadataUtils.getInstanceId())
+          .withTags(new Tag().withKey("account").withValue(metadata.get("account")));
+        CreateTagsResult response = client.createTags(request);
+      } catch (Exception e) {
+        System.err.println("Failure while tagging the instance: "+e.getMessage());
       }
 
       SteveJob steve = new SteveJob(
