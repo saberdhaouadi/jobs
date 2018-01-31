@@ -273,8 +273,8 @@ public class Main {
         metadata.put(p.getKey(), p.getValue());
       }
 
-      if metadata.containsKey("billing-tag")
-        _jobTag = metadata.get("billing-tag");
+      if msg.hasAccount()
+        _jobTag = msg.getAccount();
 
       createTags(_jobTag);
 
@@ -331,7 +331,7 @@ public class Main {
       AmazonEC2 client = AmazonEC2ClientBuilder.standard().build();
       CreateTagsRequest request = new CreateTagsRequest()
         .withResources(EC2MetadataUtils.getInstanceId())
-        .withTags(new Tag().withKey("billing-tag").withValue(tag));
+        .withTags(new Tag().withKey("lb-jobs-account").withValue(tag));
       CreateTagsResult response = client.createTags(request);
     } catch (Exception e) {
       System.err.println("WARNING: Failure while tagging the instance: " + e.getMessage());
@@ -344,7 +344,7 @@ public class Main {
       AmazonEC2 client = AmazonEC2ClientBuilder.standard().build();
       DeleteTagsRequest request = new DeleteTagsRequest()
         .withResources(EC2MetadataUtils.getInstanceId())
-        .withTags(new Tag().withKey("billing-tag").withValue(tag));
+        .withTags(new Tag().withKey("lb-jobs-account").withValue(tag));
       DeleteTagsResult response = client.deleteTags(request);
     } catch (Exception e) {
       System.err.println("WARNING: Failure while removing the tag: " + e.getMessage());
