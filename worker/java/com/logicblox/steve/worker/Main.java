@@ -3,9 +3,7 @@ package com.logicblox.steve.worker;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
-import com.amazonaws.services.ec2.model.CreateTagsResult;
-import com.amazonaws.services.ec2.model.CreateTagsRequest;
-import com.amazonaws.services.ec2.model.Tag;
+import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -110,6 +108,8 @@ public class Main {
   private static boolean _returnJob = false;
   private static boolean _shutdownOnIdle = false;
   private static String _keyService = "http://127.0.0.1:8080/keys";
+
+  private String _jobTag = "unknown-account";
 
   private SteveKeyServerHelper _keyHelper;
 
@@ -273,15 +273,8 @@ public class Main {
         metadata.put(p.getKey(), p.getValue());
       }
 
-      try {
-        AmazonEC2 client = AmazonEC2ClientBuilder.standard().build();
-        CreateTagsRequest request = new CreateTagsRequest()
-          .withResources(EC2MetadataUtils.getInstanceId())
-          .withTags(new Tag().withKey("account").withValue(metadata.get("account")));
-        CreateTagsResult response = client.createTags(request);
-      } catch (Exception e) {
-        System.err.println("Failure while tagging the instance: "+e.getMessage());
-      }
+      _jobTag = metadata.get("account");
+      createTags(_jobTag);
 
       SteveJob steve = new SteveJob(
               this.client,
@@ -312,7 +305,10 @@ public class Main {
         }
       } finally {
         resetTimeout.interrupt();
-        if (steve.hasCompleted() || steve.hasBeenCancelled()) removeIncoming(job);
+        if (steve.hasCompleted() || steve.hasBeenCancelled()) {
+          removeIncoming(job);
+          removeTag(_jobTag);
+        }
       }
     }
   }
@@ -325,6 +321,31 @@ public class Main {
       }
     } catch (Exception e) {
       System.err.println("ERROR: Deleting message from incoming queue failed! " + e.getMessage());
+    }
+  }
+
+  private void createTag(String tag) {
+    try {
+        AmazonEC2 client = AmazonEC2ClientBuilder.standard().build();
+        CreateTagsRequest request = new CreateTagsRequest()
+          .withResources(EC2MetadataUtils.getInstanceId())
+          .withTags(new Tag().withKey("lb-jobs-account").withValue(tag));
+        CreateTagsResult response = client.createTags(request);
+      } catch (Exception e) {
+        System.err.println("WARNING: Failure while tagging the instance: "+e.getMessage());
+      }
+
+  }
+
+  private void removeTag(String tag) {
+    try {
+      AmazonEC2 client = AmazonEC2ClientBuilder.standard().build();
+      DeleteTagsRequest request = new DeleteTagsRequest()
+        .withResources(EC2MetadataUtils.getInstanceId())
+        .withTags(new Tag().withKey("lb-jobs-account").withValue(tag));
+      DeleteTagsResult response = client.deleteTags(request);
+    } catch (Exception e) {
+      System.err.println("WARNING: Failure while removing the tag: " + e.getMessage());
     }
   }
 
