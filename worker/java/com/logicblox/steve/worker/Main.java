@@ -95,6 +95,7 @@ public class Main {
   }
 
   private S3Client client;
+  private AmazonEC2 ec2Client;
   AmazonSQS sqs;
 
   // Settings
@@ -196,6 +197,8 @@ public class Main {
   public Main() {
     // TODO pass in a configuration for S3
     this.client = S3Utils.createS3Client(null);
+    this.ec2Client = AmazonEC2ClientBuilder.standard().build();
+
     if (_s3Endpoint != null) {
       this.client.setEndpoint(_s3Endpoint);
     }
@@ -308,6 +311,7 @@ public class Main {
       } finally {
         resetTimeout.interrupt();
         if (steve.hasCompleted() || steve.hasBeenCancelled()) removeIncoming(job);
+        resetTag();
       }
     }
   }
@@ -325,14 +329,25 @@ public class Main {
 
   private void createTag(String tag) {
     try {
-      AmazonEC2 client = AmazonEC2ClientBuilder.standard().build();
       CreateTagsRequest request = new CreateTagsRequest()
         .withResources(EC2MetadataUtils.getInstanceId())
         .withTags(new Tag().withKey("lb-jobs-account").withValue(tag));
-      CreateTagsResult response = client.createTags(request);
+      CreateTagsResult response = ec2Client.createTags(request);
     } catch (Exception e) {
       System.err.println("WARNING: Failure while tagging the instance: " + e.getMessage());
     }
+  }
+
+  private void resetTag() {
+    try {
+      CreateTagsRequest request = new CreateTagsRequest()
+        .withResources(EC2MetadataUtils.getInstanceId())
+        .withTags(new Tag().withKey("lb-jobs-account").withValue(""));
+      CreateTagsResult response = ec2Client.createTags(request);
+    } catch (Exception e) {
+      System.err.println("WARNING: Failure while tagging the instance: " + e.getMessage());
+    }
+
   }
 
   private void setupSQS() {
