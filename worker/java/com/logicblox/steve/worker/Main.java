@@ -36,6 +36,7 @@ import org.joda.time.DateTime;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
 
 public class Main {
   class EC2DynamicMetadata {
@@ -279,7 +280,7 @@ public class Main {
       if (msg.hasAccount())
         _jobTag = msg.getAccount();
 
-      createTag(_jobTag);
+      createTag(_jobTag, msg.getJobImpl());
 
       SteveJob steve = new SteveJob(
               this.client,
@@ -327,11 +328,14 @@ public class Main {
     }
   }
 
-  private void createTag(String tag) {
+  private void createTag(String tag, String impl) {
     try {
+      ArrayList<Tag> instanceTags = new ArrayList<Tag>();
+      instanceTags.add(new Tag().withKey("lb-jobs-account").withValue(tag));
+      instanceTags.add(new Tag().withKey("lb-jobs-impl").withValue(impl));
       CreateTagsRequest request = new CreateTagsRequest()
         .withResources(EC2MetadataUtils.getInstanceId())
-        .withTags(new Tag().withKey("lb-jobs-account").withValue(tag));
+        .withTags(instanceTags);
       CreateTagsResult response = ec2Client.createTags(request);
     } catch (Exception e) {
       System.err.println("WARNING: Failure while tagging the instance: " + e.getMessage());
@@ -340,9 +344,12 @@ public class Main {
 
   private void resetTag() {
     try {
+      ArrayList<Tag> instanceTags = new ArrayList<Tag>();
+      instanceTags.add(new Tag().withKey("lb-jobs-account").withValue(""));
+      instanceTags.add(new Tag().withKey("lb-jobs-impl").withValue(""));
       CreateTagsRequest request = new CreateTagsRequest()
         .withResources(EC2MetadataUtils.getInstanceId())
-        .withTags(new Tag().withKey("lb-jobs-account").withValue(""));
+        .withTags(instanceTags);
       CreateTagsResult response = ec2Client.createTags(request);
     } catch (Exception e) {
       System.err.println("WARNING: Failure while tagging the instance: " + e.getMessage());
