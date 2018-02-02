@@ -29,6 +29,7 @@ let
   awsEnvironment = {
     AWS_ACCESS_KEY_ID=awsAccessKey;
     AWS_SECRET_ACCESS_KEY=awsSecretKey;
+    AWS_REGION="us-east-1";
   };
 
   common =
@@ -54,6 +55,7 @@ let
         environment.shellInit = ''
           export AWS_ACCESS_KEY_ID=${awsAccessKey}
           export AWS_SECRET_ACCESS_KEY=${awsSecretKey}
+          export AWS_REGION=us-east-1
         '';
 
         # pass some global info
