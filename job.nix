@@ -329,15 +329,23 @@ let
       '';
     };
 
-  worker_image.ec2 =
+  worker_image =
     let
-      image = (import <nixpkgs/nixos> { system = "x86_64-linux"; configuration = ./nix/worker-ec2-image.nix; }).config.system.build.amazonImage;
-    in 
-      runCommand "worker-ec2-image" { preferLocalBuild = true; } ''
-        mkdir -p $out/nix-support
-        xz -z -c ${image}/nixos.qcow2  > $out/worker.qcow2.xz
-        echo "file img $out/worker.qcow2.xz" > $out/nix-support/hydra-build-products
-      '';
+      base = configuration: (import <nixpkgs/nixos> { system = "x86_64-linux"; inherit configuration; }).config.system.build;
+      ec2Image = (base ./nix/worker-ec2-image.nix).amazonImage;
+      gceImage = (base ./nix/worker-gce-image.nix).googleComputeImage;
+      packageImage = provider: image: runCommand "worker-${provider}-image"
+        { preferLocalBuild = true; }
+        ''
+          mkdir -p $out/nix-support
+          xz -z -c ${image}/nixos.qcow2  > $out/worker.qcow2.xz
+          echo "file img $out/worker.qcow2.xz" > $out/nix-support/hydra-build-products
+        '';
+    in
+    {
+      ec2 = packageImage "ec2" ec2Image;
+      gce = packageImage "gce" gceImage;
+    }; 
 
   database =
     builder_config.genericAppJobset {
