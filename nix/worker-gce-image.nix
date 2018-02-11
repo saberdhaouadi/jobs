@@ -14,7 +14,7 @@
   system.build.googleComputeImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
     inherit pkgs lib config;
     diskSize = 4096;
-    format = "qcow2";
+    format = "raw";
     configFile = pkgs.writeText "configuration.nix"
       ''
         {
