@@ -334,17 +334,17 @@ let
       base = configuration: (import <nixpkgs/nixos> { system = "x86_64-linux"; inherit configuration; }).config.system.build;
       ec2Image = (base ./nix/worker-ec2-image.nix).amazonImage;
       gceImage = (base ./nix/worker-gce-image.nix).googleComputeImage;
-      packageImage = provider: image: runCommand "worker-${provider}-image"
+      packageImage = provider: image: format: runCommand "worker-${provider}-image"
         { preferLocalBuild = true; }
         ''
           mkdir -p $out/nix-support
-          xz -z -c ${image}/nixos.qcow2  > $out/worker.qcow2.xz
-          echo "file img $out/worker.qcow2.xz" > $out/nix-support/hydra-build-products
+          xz -z -c ${image}/nixos.${format}  > $out/worker.${format}.xz
+          echo "file img $out/worker.${format}.xz" > $out/nix-support/hydra-build-products
         '';
     in
     {
-      ec2 = packageImage "ec2" ec2Image;
-      gce = gceImage;
+      ec2 = packageImage "ec2" ec2Image "qcow2";
+      gce = packageImage "gce" gceImage "raw";
     }; 
 
   database =
