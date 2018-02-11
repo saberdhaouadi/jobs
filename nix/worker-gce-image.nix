@@ -10,6 +10,19 @@
   lb-steve-worker.shutdownOnIdle = true;
   users.mutableUsers = lib.mkOverride 0 false;
 
+
+  system.build.googleComputeImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
+    inherit pkgs lib config;
+    diskSize = 4096;
+    format = "qcow2";
+    configFile = pkgs.writeText "configuration.nix"
+      ''
+        {
+        }
+      '';
+  };
+
+
   systemd.services.lb-steve-worker =
     {
       #environment.AWS_ACCESS_KEY_ID = builtins.readFile <global_creds/gce-access>;

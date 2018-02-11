@@ -9,7 +9,7 @@ buildAndUploadFor() {
 
     echo "building $system image..."
     nix-build '<nixpkgs/nixos>' \
-        -A config.system.build.googleComputeImage --argstr system "$system" -o gce --option extra-binary-caches s3://logicblox-cache -I lbdevops=$HOME/src/lbdevops -I config=$HOME/src/config -I nixpkgs-unstable=channel:nixos-unstable
+        -A config.system.build.googleComputeImage -o gce --option extra-binary-caches s3://logicblox-cache -I lbdevops=$HOME/src/lbdevops -I config=$HOME/src/config -I nixpkgs-unstable=channel:nixos-unstable -I nixpkgs=$HOME/src/nixpkgs -I global_creds=$HOME/fake-global_creds
 }
 
 buildAndUploadFor x86_64-linux x86_64
