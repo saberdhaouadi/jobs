@@ -22,7 +22,7 @@
       '';
     postVM = ''
       pushd $out
-      mv $diskImage nixos.raw
+      mv $diskImage disk.raw
       popd
     '';
   };
