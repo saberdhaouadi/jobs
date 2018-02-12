@@ -347,7 +347,8 @@ let
         { preferLocalBuild = true; }
         ''
           mkdir -p $out/nix-support
-          tar -Sczf $out/worker-gce.tar.gz -C ${gceImage} nixos.img
+          mv ${gceImage}/nixos.img nixos.raw
+          tar -Sczf $out/worker-gce.tar.gz nixos.raw
           echo "file img $out/worker-gce.tar.gz" > $out/nix-support/hydra-build-products
         '';
     }; 
