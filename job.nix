@@ -344,7 +344,7 @@ let
     in
     {
       ec2 = packageImage "ec2" ec2Image "qcow2";
-      gce = packageImage "gce" gceImage "raw";
+      gce = packageImage "gce" gceImage "img";
     }; 
 
   database =
