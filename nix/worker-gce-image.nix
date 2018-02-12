@@ -20,6 +20,11 @@
         {
         }
       '';
+    postVM = ''
+      pushd $out
+      mv $diskImage nixos.raw
+      popd
+    '';
   };
 
 
