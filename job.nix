@@ -348,7 +348,7 @@ let
         ''
           mkdir -p $out/nix-support
           tar -Sczf $out/worker-gce.tar.gz -C ${gceImage} nixos.img
-          echo "file img $out/worker-gce.tar.gz" > $out/nix-support/hydra-build-products"
+          echo "file img $out/worker-gce.tar.gz" > $out/nix-support/hydra-build-products
         '';
     }; 
 
