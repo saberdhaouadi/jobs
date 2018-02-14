@@ -56,7 +56,9 @@ in
 
   config = {
 
-    boot.initrd.availableKernelModules = [ "nmve" ];
+    boot.kernelPackages = pkgs.linuxPackages_latest;
+
+    boot.initrd.availableKernelModules = [ "nvme" ];
 
     # Adding packages that are used by the jobs to the system
     # closure, to make them immediately available.
