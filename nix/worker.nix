@@ -55,6 +55,9 @@ in
   };
 
   config = {
+
+    boot.initrd.availableKernelModules = [ "nmve" ];
+
     # Adding packages that are used by the jobs to the system
     # closure, to make them immediately available.
     environment.systemPackages = [
