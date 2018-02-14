@@ -56,7 +56,7 @@ in
 
   config = {
 
-    boot.kernelPackages = pkgs.linuxPackages_latest;
+    boot.kernelPackages = pkgs.linuxPackages_4_14;
 
     boot.initrd.availableKernelModules = [ "nvme" ];
 
