@@ -39,7 +39,7 @@
       cp --remove-destination ${pkgs.e2fsprogs}/sbin/mke2fs $out/bin
     '';
 
-  boot.initrd.postMountCommands = pkgs.lib.mkOverride 0
+  lb-steve-worker.initrd.metadataServiceSetup =
     ''
       metaDir=$targetRoot/etc/ec2-metadata
       mkdir -m 0755 -p "$metaDir"
@@ -61,7 +61,10 @@
       if ! [ -e "$metaDir/public-keys-0-openssh-key" ]; then
         wget -q -O "$metaDir/public-keys-0-openssh-key" http://169.254.169.254/1.0/meta-data/public-keys/0/openssh-key
       fi
+    '';
 
+  lb-steve-worker.initrd.deviceDiscovery =
+    ''
       devices=""
       nr=0
       mkdir -p /var/lock/lvm
@@ -73,41 +76,7 @@
           nr=$((nr+1))
         fi
       done
-
-      set -x
-      if [ -n "$devices" ]; then
-        echo "vgcreate"
-        lvm vgcreate raid $devices
-        echo "lvcreate"
-        lvm lvcreate -vvv --noudevsync --zero n raid --name raid --extents '100%FREE' --stripes $nr
-        echo "vgchange"
-        lvm vgchange --noudevsync -ay raid
-
-        diskForUnionfs=/disk0
-        echo "Creating ext4 filesystem on /dev/dm-0"
-        mke2fs -t ext4 /dev/dm-0
-        echo "Mounting /dev/dm-0 to $diskForUnionfs"
-        mountFS /dev/dm-0 $diskForUnionfs "" ext4
-
-        mkdir -m 755 -p $targetRoot/$diskForUnionfs/root
-        mkdir -m 1777 -p $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
-        mount --bind $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
-
-        mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/var $targetRoot/var
-        mount --bind $targetRoot/$diskForUnionfs/root/var $targetRoot/var
-
-        mkdir -p /unionfs-chroot/ro-nix
-        mount --rbind $targetRoot/nix /unionfs-chroot/ro-nix
-
-        mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/nix
-        mkdir -p /unionfs-chroot/rw-nix
-        mount --rbind $targetRoot/$diskForUnionfs/root/nix /unionfs-chroot/rw-nix
-
-        unionfs -o allow_other,cow,nonempty,chroot=/unionfs-chroot,max_files=32768 /rw-nix=RW:/ro-nix=RO $targetRoot/nix
-      fi
-      set +x
     '';
-
 
   system.build.amazonImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
     inherit pkgs lib config;
