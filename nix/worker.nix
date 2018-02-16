@@ -76,7 +76,6 @@ in
     boot.kernelPackages = pkgs.linuxPackages_4_14;
 
     boot.initrd.availableKernelModules = [ "nvme" ];
-    boot.initrd.postMountCommands = pkgs.lib.mkOverride 0
 
     boot.initrd.postMountCommands = pkgs.lib.mkOverride 0
       ( cfg.lb-steve-worker.initrd.metadataServiceSetup
