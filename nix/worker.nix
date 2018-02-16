@@ -78,9 +78,9 @@ in
     boot.initrd.availableKernelModules = [ "nvme" ];
 
     boot.initrd.postMountCommands = pkgs.lib.mkOverride 0
-      ( cfg.lb-steve-worker.initrd.metadataServiceSetup
+      ( cfg.initrd.metadataServiceSetup
       ++
-        cfg.lb-steve-worker.initrd.deviceDiscovery
+        cfg.initrd.deviceDiscovery
       ++
       ''
         set -x
