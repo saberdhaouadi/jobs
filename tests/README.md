@@ -1,0 +1,1 @@
+nix build -f tests/lb-jobs-network.nix -I config=/home/amine/src/config -I nixpkgs=channel:nixos-17.09 -I nixpkgs-unstable=channel:nixos-unstable -I lbdevops=/home/amine/src/lbdevops -I paperboat=/nix/store/pxaqsspgkkhbf382k185yzaclprf57xa-foula-9a45a569d7d523ee84076c45dee701b647d91549 --option build-use-sandbox false
