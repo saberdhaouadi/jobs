@@ -118,14 +118,14 @@ block(`create_job) {
       +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_input(req, f),
       +proto:File_url[f] = url,
-      string:like(url, valid_input_prefix),
-      ! string:like(url, valid_input_object).
+      string:like(url, valid_input_prefix[]),
+      ! string:like(url, valid_input_object[]).
 
     +service_support:export_error(index, "INVALID_OUTPUT", "Output '" + prefix + "' is invalid. Should be a GCS or S3 URL.") <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_output_prefix[req] = prefix,
-      ! string:like(prefix, valid_input_prefix),
+      ! string:like(prefix, valid_input_prefix[]),
       prefix != "".
 
     +service_support:export_error(index, "INVALID_PLATFORM", "Platform '" + platformId + "' not supported.") <-
