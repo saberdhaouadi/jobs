@@ -54,7 +54,7 @@ in
     };
     lb-steve-worker.initrd.metadataServiceSetup = mkOption {
       default = "";
-      types = types.lines;
+      type = types.lines;
       description = ''
         Initial script that will run as part of stage 1 boot process and fetch
         needed metadata from either GCE or EC2 instances.
@@ -62,7 +62,7 @@ in
     };
     lb-steve-worker.initrd.deviceDiscovery = mkOption {
       default = "";
-      types = types.lines;
+      type = types.lines;
       description = ''
         A script that will lookup available ephemeral devices/local SSDs in
         EC2/GCP instances and add them to $devices variable which will be
