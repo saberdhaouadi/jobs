@@ -4,6 +4,8 @@ block(`create_job) {
 
   clauses(`{
 
+     valid_input_prefix[] = prefix -> string(prefix).
+     valid_input_object[] = object -> string(object).
      valid_input_prefix[] = prefix <- (prefix = "s3://%"; prefix = "gs://%").
      valid_input_object[] = object <- (object = "s3://%/_%"; object = "gs://%/_%").
 
