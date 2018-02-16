@@ -79,9 +79,9 @@ in
 
     boot.initrd.postMountCommands = pkgs.lib.mkOverride 0
       ( cfg.initrd.metadataServiceSetup
-      ++
+      +
         cfg.initrd.deviceDiscovery
-      ++
+      +
       ''
         set -x
         if [ -n "$devices" ]; then
