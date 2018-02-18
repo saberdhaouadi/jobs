@@ -4,11 +4,6 @@ block(`create_job) {
 
   clauses(`{
 
-     valid_input_prefix[] = prefix -> string(prefix).
-     valid_input_object[] = object -> string(object).
-     valid_input_prefix[] = prefix <- (prefix = "s3://%"; prefix = "gs://%").
-     valid_input_object[] = object <- (object = "s3://%/_%"; object = "gs://%/_%").
-
     /**
      * Validate the user.
      */
@@ -113,21 +108,26 @@ block(`create_job) {
       +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_input(req, f),
       +proto:File_url[f] = url,
-      ! string:like(url, valid_input_prefix[]).
+      ! string:like(url, "s3://%"),
+      ! string:like(url, "gs://%").
 
     +service_support:export_error(index, "INVALID_INPUT", "Input '" + url + "' is invalid. You cannot use a complete bucket as input.") <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_input(req, f),
       +proto:File_url[f] = url,
-      string:like(url, valid_input_prefix[]),
-      ! string:like(url, valid_input_object[]).
+      ( string:like(url, "s3://%");
+        string:like(url, "gs://%")
+      ),
+      ! string:like(url, "s3://%/_%"),
+      ! string:like(url, "gs://%/_%").
 
     +service_support:export_error(index, "INVALID_OUTPUT", "Output '" + prefix + "' is invalid. Should be a GCS or S3 URL.") <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_output_prefix[req] = prefix,
-      ! string:like(prefix, valid_input_prefix[]),
+      ! string:like(prefix, "s3://%"),
+      ! string:like(prefix, "gs://%"),
       prefix != "".
 
     +service_support:export_error(index, "INVALID_PLATFORM", "Platform '" + platformId + "' not supported.") <-
