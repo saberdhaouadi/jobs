@@ -19,6 +19,5 @@ gcloud beta compute --project "manifest-canto-796" \
         --local-ssd interface="NVME" \
         --image $image \
         --image-project "manifest-canto-796" \
-        --boot-disk-size $size \
         --boot-disk-type "pd-ssd" \
         --boot-disk-device-name "worker"

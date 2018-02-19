@@ -40,7 +40,7 @@ with pkgs.lib;
           echo "vgcreate"
           lvm vgcreate raid $devices
           echo "lvcreate"
-          lvm lvcreate -vvv --noudevsync --zero n raid --name raid --extents '100%FREE' --stripes $nr
+          lvm lvcreate -vvv --noudevsync --zero n raid --name raid --extents '100%FREE' --stripes $nr || true
           echo "vgchange"
           lvm vgchange --noudevsync -ay raid
 
