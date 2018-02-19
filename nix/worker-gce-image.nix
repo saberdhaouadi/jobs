@@ -10,6 +10,7 @@ in
 {
   imports = [
     ./worker.nix
+    ./boot.nix
     <nixpkgs/nixos/modules/virtualisation/google-compute-config.nix>
   ];
 

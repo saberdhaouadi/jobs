@@ -2,6 +2,7 @@
 {
   imports = [
     ./worker.nix
+    ./boot.nix
     <nixpkgs/nixos/modules/virtualisation/amazon-image.nix>
     <lbdevops/logicblox/config/logging/logentries.nix>
   ];
