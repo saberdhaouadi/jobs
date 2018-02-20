@@ -35,11 +35,6 @@
         };
     };
 
-  boot.initrd.extraUtilsCommands =
-    ''
-      cp --remove-destination ${pkgs.e2fsprogs}/sbin/mke2fs $out/bin
-    '';
-
   lb-steve-worker.initrd.metadataServiceSetup =
     ''
       metaDir=$targetRoot/etc/ec2-metadata

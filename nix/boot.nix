@@ -27,7 +27,14 @@ with pkgs.lib;
   config = {
     boot.kernelPackages = pkgs.linuxPackages_4_14;
 
+    boot.kernelParams = pkgs.lib.mkOverride 0 [ "console=ttyS0" ];
+
     boot.initrd.availableKernelModules = [ "nvme" ];
+
+    boot.initrd.extraUtilsCommands =
+    ''
+      cp --remove-destination ${pkgs.e2fsprogs}/sbin/mke2fs $out/bin
+    '';
 
     boot.initrd.postMountCommands = pkgs.lib.mkOverride 0
       ( cfg.initrd.metadataServiceSetup
