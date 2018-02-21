@@ -31,6 +31,8 @@ with pkgs.lib;
 
     boot.initrd.availableKernelModules = [ "nvme" ];
 
+    boot.initrd.supportedFilesystems = [ "unionfs-fuse" ];
+
     boot.initrd.extraUtilsCommands =
     ''
       cp --remove-destination ${pkgs.e2fsprogs}/sbin/mke2fs $out/bin
