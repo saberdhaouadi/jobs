@@ -4,8 +4,8 @@
 # To start with do: nix-shell -p awscli --run "aws configure"
 
 
-set -o pipefail
-#set -x
+set -eo pipefail
+set -x
 
 stateDir=/tmp/ec2-image
 echo "keeping state in $stateDir"
@@ -129,7 +129,6 @@ for type in $types; do
                                 -o "$AWS_ACCESS_KEY_ID" -w "$AWS_SECRET_ACCESS_KEY" \
                                 --region "$region" -z "${region}a" \
                                 --bucket "$bucket" --prefix "$bucketDir/" \
-                                | tee /dev/stderr \
                                 | sed 's/.*\(import-vol-[0-9a-z]\+\).*/\1/ ; t ; d')
                             echo -n "$taskId" > $stateDir/$region.$type.task-id
                         fi

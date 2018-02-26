@@ -160,6 +160,7 @@ public class SteveJob {
     } catch (InternalException e) {
       if(_receiveCount >= 5) {
         _outgoing.notifyFailure(new InternalException("Retried job multiple time, but keep hitting internal error."), _cpuUsage, _maxMemory, _maxDiskUsage);
+        teardown();
       } else {
         _outgoing.notifyStatus("There was an internal error while executing the job. It will be restarted on another worker.");
         if(e.getCause() != null) {

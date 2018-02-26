@@ -1,6 +1,9 @@
 package com.logicblox.steve.worker;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -33,6 +36,7 @@ import org.joda.time.DateTime;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
 
 public class Main {
   class EC2DynamicMetadata {
@@ -92,6 +96,7 @@ public class Main {
   }
 
   private S3Client client;
+  private AmazonEC2 ec2Client;
   AmazonSQS sqs;
 
   // Settings
@@ -105,6 +110,8 @@ public class Main {
   private static boolean _returnJob = false;
   private static boolean _shutdownOnIdle = false;
   private static String _keyService = "http://127.0.0.1:8080/keys";
+
+  private String _jobTag = "unknown-account";
 
   private SteveKeyServerHelper _keyHelper;
 
@@ -191,6 +198,8 @@ public class Main {
   public Main() {
     // TODO pass in a configuration for S3
     this.client = S3Utils.createS3Client(null);
+    this.ec2Client = AmazonEC2ClientBuilder.standard().build();
+
     if (_s3Endpoint != null) {
       this.client.setEndpoint(_s3Endpoint);
     }
@@ -268,6 +277,11 @@ public class Main {
         metadata.put(p.getKey(), p.getValue());
       }
 
+      if (msg.hasAccount())
+        _jobTag = msg.getAccount();
+
+      createTag(_jobTag, msg.getJobImpl());
+
       SteveJob steve = new SteveJob(
               this.client,
               _s3Bucket,
@@ -298,6 +312,7 @@ public class Main {
       } finally {
         resetTimeout.interrupt();
         if (steve.hasCompleted() || steve.hasBeenCancelled()) removeIncoming(job);
+        resetTag();
       }
     }
   }
@@ -311,6 +326,35 @@ public class Main {
     } catch (Exception e) {
       System.err.println("ERROR: Deleting message from incoming queue failed! " + e.getMessage());
     }
+  }
+
+  private void createTag(String tag, String impl) {
+    try {
+      ArrayList<Tag> instanceTags = new ArrayList<Tag>();
+      instanceTags.add(new Tag().withKey("lb-jobs-account").withValue(tag));
+      instanceTags.add(new Tag().withKey("lb-jobs-impl").withValue(impl));
+      CreateTagsRequest request = new CreateTagsRequest()
+        .withResources(EC2MetadataUtils.getInstanceId())
+        .withTags(instanceTags);
+      CreateTagsResult response = ec2Client.createTags(request);
+    } catch (Exception e) {
+      System.err.println("WARNING: Failure while tagging the instance: " + e.getMessage());
+    }
+  }
+
+  private void resetTag() {
+    try {
+      ArrayList<Tag> instanceTags = new ArrayList<Tag>();
+      instanceTags.add(new Tag().withKey("lb-jobs-account").withValue(""));
+      instanceTags.add(new Tag().withKey("lb-jobs-impl").withValue(""));
+      CreateTagsRequest request = new CreateTagsRequest()
+        .withResources(EC2MetadataUtils.getInstanceId())
+        .withTags(instanceTags);
+      CreateTagsResult response = ec2Client.createTags(request);
+    } catch (Exception e) {
+      System.err.println("WARNING: Failure while tagging the instance: " + e.getMessage());
+    }
+
   }
 
   private void setupSQS() {

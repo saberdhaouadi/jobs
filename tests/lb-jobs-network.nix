@@ -1,4 +1,5 @@
-{ builds ? import ../. {}
+{ builds ? import ../. {},
+  paperboat ? null
 }:
 (import <nixpkgs> {}).lib.overrideDerivation (
 
@@ -28,6 +29,7 @@ let
   awsEnvironment = {
     AWS_ACCESS_KEY_ID=awsAccessKey;
     AWS_SECRET_ACCESS_KEY=awsSecretKey;
+    AWS_REGION="us-east-1";
   };
 
   common =
@@ -53,6 +55,7 @@ let
         environment.shellInit = ''
           export AWS_ACCESS_KEY_ID=${awsAccessKey}
           export AWS_SECRET_ACCESS_KEY=${awsSecretKey}
+          export AWS_REGION=us-east-1
         '';
 
         # pass some global info
@@ -153,6 +156,8 @@ in
         virtualisation.memorySize = 6*1024;
         virtualisation.diskSize = 8192;
 
+        boot.kernel.sysctl."vm.panic_on_oom" = 0;
+
         systemd.services.lb-steve-worker.environment = awsEnvironment;
 
         system.activationScripts.ec2metadata = ''
@@ -231,7 +236,7 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ];
-        environment.systemPackages = [ pkgs.openjdk pkgs.python2 builds.client.build ];
+        environment.systemPackages = [ pkgs.openjdk pkgs.python2 builds.client.build (builder_config.getLB "4.4.8") ];
       };
 
     database =
@@ -240,6 +245,7 @@ in
         imports = [ common ../nix/database.nix ];
         systemd.services.lb-web-server.environment = awsEnvironment;
         virtualisation.memorySize = 4096;
+        virtualisation.diskSize = 8192;
       };
   };
   testScript = ''
@@ -264,12 +270,15 @@ in
       $database->succeed("lb web-client import -i ${./data/users.csv} http://localhost:8080/tdx/users");
       $database->succeed("lb web-client import -i ${./data/provision-config.csv} http://localhost:8080/tdx/provision-config");
       $database->succeed("lb web-client import -i ${./data/platform_versions.csv} http://localhost:8080/tdx/platform_versions");
+
+      # make encryption keys available in the key server
+      $keyserver->succeed("mkdir -p /keys/lb-steve/logicblox/");
+      $keyserver->succeed("cp ${./keys/test-key.pem} /keys/lb-steve/logicblox/test-key.pem");
     };
 
     subtest "Basic AWS CLI tests", sub {
       $client->succeed("aws --endpoint-url http://192.168.1.1:9000 s3api create-bucket --bucket lb-jobs");
       $client->succeed("aws --endpoint-url http://192.168.1.1:9000 s3 ls s3://lb-jobs");
-      $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
       $client->succeed("aws sqs list-queues --region elasticmq --endpoint-url http://aws:9324");
     };
 
@@ -279,11 +288,28 @@ in
       $client->succeed("lb-steve -c ${clientConfig} list-impl");
     };
 
+    subtest "Running identity job with encryption", sub {
+      $client->succeed("mkdir .s3lib-keys; cp ${./keys/test-key.pem} .s3lib-keys/test-key.pem");
+      $client->succeed("echo 'This content is encrypted' > encrypted.txt");
+      $client->succeed("cloud-store upload -i encrypted.txt s3://lb-jobs/inputs/encrypted.txt --key test-key --keydir .s3lib-keys --endpoint http://192.168.1.1:9000");
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl identity -i ${../sample-jobs}/identity --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl identity --wait -m no-services=true -i s3://lb-jobs/inputs/encrypted.txt --input-key test-key --output-key test-key --output s3://lb-jobs/output/");
+      $client->succeed("cloud-store download s3://lb-jobs/output/encrypted.txt --overwrite --keydir .s3lib-keys --endpoint http://192.168.1.1:9000");
+      $client->succeed("[[ \$(cat ./encrypted.txt) = 'This content is encrypted' ]]");
+    };
+
     ${lib.concatMapStrings (i: ''
     subtest "Running '${i}' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl ${i} -i ${../sample-jobs}/${i} --wait");
       $client->succeed("lb-steve -c ${clientConfig} create-job --impl ${i} --wait");
     };'') [ "noop" "gurobi" "total" "ancestor" ]}
+
+    subtest "lwfm training test", sub {
+      $client->succeed("aws s3 cp ${<paperboat>}/foula-*.tgz s3://lb-jobs/paperboat/foula.tgz --endpoint-url http://192.168.1.1:9000");
+      $client->succeed("aws s3 cp ${./data/lwfm-training}  s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --endpoint-url http://192.168.1.1:9000");
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl lwfm -i ${../sample-jobs}/lwfm --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl lwfm -i s3://lb-jobs/paperboat/foula.tgz -i s3://lb-jobs/paperboat/${builtins.baseNameOf ./data/lwfm-training} --wait -m no-services=true");
+    };
 
     subtest "Running 'metadata' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl metadata -i ${../sample-jobs}/metadata --wait");
@@ -304,6 +330,11 @@ in
       $client->fail("lb-steve -c ${clientConfig} create-job --impl fail --wait");
     };
 
+    subtest "Running 'oom-killer' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl oom-killer -i ${../sample-jobs}/oom-killer --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl oom-killer --wait | grep 'Job was killed, most likely due to memory shortage'");
+    };
+
     subtest "Running 'no-network' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl no-network -i ${../sample-jobs}/no-network --wait -m no-services=true");
       $client->fail("lb-steve -c ${clientConfig} create-job --impl no-network --wait");
@@ -317,6 +348,11 @@ in
     subtest "Running 'r-test' job", sub {
       $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl r-test -i ${../sample-jobs}/r-test --wait");
       $client->succeed("lb-steve -c ${clientConfig} create-job --impl r-test --wait -m no-services=true -m dependencies=R,rPackages.nlme,rPackages.data_table");
+    };
+
+    subtest "Running 'scikitlearn' job", sub {
+      $client->succeed("lb-steve -c ${clientConfig} upload-impl --impl scikitlearn -i ${../sample-jobs}/scikitlearn --wait");
+      $client->succeed("lb-steve -c ${clientConfig} create-job --impl scikitlearn --wait -m no-services=true -m dependencies=pythonPackages.matplotlib,pythonPackages.numpy,pythonPackages.scikitlearn");
     };
   '';
 }) {}

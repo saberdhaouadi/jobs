@@ -95,16 +95,6 @@ in
     nix.package = pkgs.nixUnstable;
     nix.trustedBinaryCaches = [ "s3://logicblox-cache" ];
 
-    nixpkgs.config.packageOverrides = pkgs: {
-      nixUnstable = pkgs.lib.overrideDerivation pkgs.nix (attrs: {
-        patchPhase = ''
-          ${attrs.patchPhase or ""}
-          patch -p1 < ${./nix-dev-shm.patch}
-          patch -p1 < ${./nix-user-agent.patch}
-        '';
-      });
-    };
-
     systemd.extraConfig = ''
       DefaultCPUAccounting=true
       DefaultMemoryAccounting=true
@@ -198,6 +188,8 @@ in
 
     nixpkgs.config.allowUnfree = true;
     nixpkgs.config.allowBroken = true;
+
+    services.journald.rateLimitBurst = 0;
 
     services.logrotate.enable = true;
     services.logrotate.config = ''

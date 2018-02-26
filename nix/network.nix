@@ -77,6 +77,7 @@ let
     { config, pkgs, resources, nodes, lib, ... }:
     {
       imports = [ ./worker.nix ];
+      boot.kernelPackages = pkgs.linuxPackages_4_9;
 
       lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName queue}".name} --outgoing ${resources.sqsQueues."${sqsStatusName}".name} --bucket ${s3Name} --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys";
 
@@ -156,6 +157,8 @@ with pkgs.lib;
   "key-proxy-${name}-us-west-2" = key-proxy "us-west-2";
 
   resources.ec2KeyPairs.worker-kp = { inherit region ; accessKeyId = account; };
+  resources.ec2KeyPairs.worker-kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
+  resources.ec2KeyPairs.worker-kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
   resources.ec2KeyPairs.kp = { inherit region ; accessKeyId = account; };
   resources.ec2KeyPairs.kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
   resources.ec2KeyPairs.kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
@@ -174,7 +177,8 @@ with pkgs.lib;
             {
               "Effect": "Allow",
               "Action": [
-                "ec2:TerminateInstances"
+                "ec2:TerminateInstances",
+                "ec2:CreateTags"
               ],
               "Condition": {
                 "ArnEquals": {
@@ -402,7 +406,7 @@ with pkgs.lib;
                  --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
-                 --key ${resources.ec2KeyPairs.worker-kp.name} \
+                 --key ${if r == "us-east-1" then resources.ec2KeyPairs.worker-kp.name else resources.ec2KeyPairs."worker-kp-${r}".name} \
                  --incoming ${sqsURL t} \
                  --outgoing ${sqsStatusURL} \
                  --role ${resources.iamRoles.worker-role.name} \
@@ -594,11 +598,15 @@ with pkgs.lib;
   "database-${name}" =
     { config, pkgs, lib, resources, nodes, ... }:
     {
-      imports = [ ./database.nix ];
+      imports = [
+        ./database.nix
+        <lbdevops/logicblox/production.nix>
+        <lbdevops/nixos/logicblox/datadog/all.nix>
+        ./datadog/database.nix
+      ];
 
       # pass s3Name
       system.build.s3Name = s3Name;
-      system.build.frontendConfig = frontendConfig;
 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
@@ -609,12 +617,6 @@ with pkgs.lib;
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
-
-      imports = [
-        <lbdevops/logicblox/production.nix>
-        <lbdevops/nixos/logicblox/datadog/all.nix>
-        ./datadog/database.nix
-      ] ;
 
       systemd.services.export-billing = {
         description = "Export billing data";
@@ -657,6 +659,8 @@ with pkgs.lib;
       deployment.ec2.ebsInitialRootDiskSize = 100;
 
       imports = [ <lbdevops/logicblox/production.nix> ./frontend.nix ];
+
+      system.build.frontendConfig = frontendConfig;
 
       boot.kernel.sysctl = {
         "net.ipv4.ip_local_port_range" = "1024 65000";
@@ -731,6 +735,8 @@ with pkgs.lib;
           access_log /var/spool/nginx/logs/access.log timed_combined buffer=16k;
           error_log /var/spool/nginx/logs/error.log error;
 
+          error_page 503 /maintenance.json;
+
           location = / {
               try_files $uri /index.html;
               break;
@@ -739,11 +745,18 @@ with pkgs.lib;
               alias ${../www/index.html};
               break;
           }
+          location = /maintenance.json {
+              alias ${./maintenance.json};
+          }
           location = /lb-steve-client.tgz {
               alias ${builds.client.binary_tarball}/lb-steve-client.tgz;
               break;
           }
           location / {
+              if (-f /var/log/lb-steve-worker/maintenance) {
+                  return 503;
+              }
+
               proxy_pass         http://localhost:8081/;
               proxy_redirect     off;
               proxy_set_header   Host             $host;
@@ -806,9 +819,13 @@ with pkgs.lib;
     };
 
   defaults =
-    { lib, ... }:
+    { config, lib, ... }:
     { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
+      services.dd-agent.tags = [
+          "deployment:${config.deployment.name}"
+          "uuid:${config.deployment.uuid}"
+        ];
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
