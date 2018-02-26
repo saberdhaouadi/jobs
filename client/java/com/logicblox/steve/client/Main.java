@@ -204,7 +204,7 @@ public class Main {
         URI tempURI = createUniqueInputURI(inputFile.getName());
 	UploadOptions options = _s3client.getOptionsBuilderFactory().newUploadOptionsBuilder()
           .setFile(inputFile)
-          .setBucketName(Utils.getBucket(tempURI))
+          .setBucketName(Utils.getBucketName(tempURI))
           .setObjectKey(Utils.getObjectKey(tempURI))
           .setEncKey(_inputEncryptionKey)
           .createOptions();
@@ -219,7 +219,7 @@ public class Main {
         URI tempURI = createUniqueInputURI(inputFile.getName());
 	UploadOptions options = _s3client.getOptionsBuilderFactory().newUploadOptionsBuilder()
           .setFile(inputFile)
-          .setBucketName(Utils.getBucket(tempURI))
+          .setBucketName(Utils.getBucketName(tempURI))
           .setObjectKey(Utils.getObjectKey(tempURI))
           .setEncKey(_inputEncryptionKey)
           .createOptions();
@@ -489,7 +489,7 @@ public class Main {
 
       DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
         .setFile(new File(_output))
-        .setBucketName(Utils.getBucket(outputURI))
+        .setBucketName(Utils.getBucketName(outputURI))
         .setObjectKey(Utils.getObjectKey(outputURI))
         .setOverwrite(true)
         .createOptions();
@@ -588,7 +588,7 @@ public class Main {
         URI uri = URI.create(file.getUrl());
         DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
           .setFile(targetFile.toFile())
-          .setBucketName(Utils.getBucket(uri))
+          .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
           .setOverwrite(true)
           .createOptions();
@@ -602,7 +602,7 @@ public class Main {
       URI uri = URI.create(files.get(0).getUrl());
       DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
           .setFile(p.toFile())
-          .setBucketName(Utils.getBucket(uri))
+          .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
           .setOverwrite(true)
           .createOptions();
@@ -713,7 +713,7 @@ public class Main {
 
       DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
           .setFile(new File(_output))
-          .setBucketName(Utils.getBucket(outputURI))
+          .setBucketName(Utils.getBucketName(outputURI))
           .setObjectKey(Utils.getObjectKey(outputURI))
           .setOverwrite(true)
           .createOptions();

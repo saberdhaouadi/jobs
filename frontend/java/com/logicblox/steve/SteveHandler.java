@@ -517,9 +517,9 @@ public class SteveHandler extends ProtoBufHandler {
                             new SimpleErrorCode("FILE_NOT_FOUND", 400, "Log does not exist"));
 
                   CopyOptions options = new CopyOptionsBuilder()
-                  .setSourceBucketName(Utils.getBucket(logs))
+                  .setSourceBucketName(Utils.getBucketName(logs))
                   .setSourceKey(Utils.getObjectKey(logs))
-                  .setDestinationBucketName(Utils.getBucket(dest))
+                  .setDestinationBucketName(Utils.getBucketName(dest))
                   .setDestinationKey(Utils.getObjectKey(dest))
                   .setCannedAcl("bucket-owner-full-control")
                   .createCopyOptions();
@@ -711,9 +711,9 @@ public class SteveHandler extends ProtoBufHandler {
                   return Futures.immediateFailedFuture(new ServiceException(new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax")));
                 }
                 CopyOptions options = new CopyOptionsBuilder()
-                  .setSourceBucketName(Utils.getBucket(archive))
+                  .setSourceBucketName(Utils.getBucketName(archive))
                   .setSourceKey(Utils.getObjectKey(archive))
-                  .setDestinationBucketName(Utils.getBucket(dest))
+                  .setDestinationBucketName(Utils.getBucketName(dest))
                   .setDestinationKey(Utils.getObjectKey(dest))
                   .setCannedAcl("bucket-owner-full-control")
                   .createCopyOptions();
