@@ -57,7 +57,7 @@ public class Conversions {
   }
 
   public static URI getURI(StoreFile file) {
-    return URI.create("s3://" + file.getBucketName() + "/" + file.getKey());
+    return URI.create("s3://" + file.getBucketName() + "/" + file.getObjectKey());
   }
 
 
