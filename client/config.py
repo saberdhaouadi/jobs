@@ -36,7 +36,7 @@ classpath = [
   '$(lb_web)/lib/java/annotations.jar',
   '$(lb_web)/lib/java/bloxweb-credentials.jar',
   '$(lb_web)/lib/java/bloxweb-email.jar',
-  '$(lb_web)/lib/java/commons-codec-1.9.jar',
+  '$(lb_web)/lib/java/commons-codec-1.10.jar',
   '$(lb_web)/lib/java/commons-configuration-1.8.jar',
   '$(lb_web)/lib/java/commons-lang-2.6.jar',
   '$(lb_web)/lib/java/google-http-client-1.19.0.jar',
