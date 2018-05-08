@@ -3,7 +3,7 @@ let
   awsCreds =
     {
       environment.AWS_ACCESS_KEY_ID = builtins.readFile <global_creds/gce-access>;
-      environment.AWS_SECRET_KEY = builtins.readFile <global_creds/gce-secret>;
+      environment.AWS_SECRET_ACCESS_KEY = builtins.readFile <global_creds/gce-secret>;
       environment.AWS_REGION = "us-east-1";
     };
 in
