@@ -47,6 +47,12 @@ classpath = [
   '$(lb_web)/lib/java/httpcore-4.4.4.jar',
   '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
 
+  '$(lb_web)/lib/java/google-api-client-1.19.1.jar',
+  '$(lb_web)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
+  '$(lb_web)/lib/java/google-http-client-1.19.0.jar',
+  '$(lb_web)/lib/java/google-http-client-jackson2-1.19.0.jar',
+  '$(lb_web)/lib/java/google-oauth-client-1.19.0.jar',
+
   '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
 
   '$(commons_exec)/lib/java/commons-exec.jar',

@@ -15,6 +15,8 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.googlecode.protobuf.format.JsonFormat;
 import com.amazonaws.util.EC2MetadataUtils;
 
+import com.logicblox.s3lib.GCSClient;
+import com.logicblox.s3lib.GCSClientBuilder;
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.steve.protocol.Backend;
 import com.logicblox.steve.common.Conversions;
@@ -97,6 +99,7 @@ public class Main {
 
   private S3Client client;
   private AmazonEC2 ec2Client;
+  private GCSClient gcsClient;
   AmazonSQS sqs;
 
   // Settings
@@ -196,12 +199,20 @@ public class Main {
   }
 
   public Main() {
+
     // TODO pass in a configuration for S3
     this.client = S3Utils.createS3Client(null);
     this.ec2Client = AmazonEC2ClientBuilder.standard().build();
 
     if (_s3Endpoint != null) {
       this.client.setEndpoint(_s3Endpoint);
+    }
+
+    try{
+      this.gcsClient = new GCSClientBuilder()
+              .createGCSClient();
+    } catch (Exception e) {
+      System.err.println("Exception while creating Google Storage Client" + e);
     }
 
     setupSQS();
@@ -284,6 +295,7 @@ public class Main {
 
       SteveJob steve = new SteveJob(
               this.client,
+              this.gcsClient,
               _s3Bucket,
               _outgoingUrl,
               msg.getJob(),

@@ -3,6 +3,8 @@ package com.logicblox.steve.worker;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.sqs.model.Message;
 
+import com.logicblox.s3lib.CloudStoreClient;
+import com.logicblox.s3lib.GCSClient;
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.S3File;
 import com.logicblox.steve.common.Data;
@@ -48,6 +50,7 @@ public class SteveJob {
   private URI _outputLbLogs;
 
   private S3Client _client;
+  private GCSClient _gcsClient;
 
   private File _jobPath = new File("/tmp/job");
   private File _inputPath = new File("/tmp/job/in");
@@ -78,12 +81,13 @@ public class SteveJob {
   private File _cpuacct = new File("/sys/fs/cgroup/cpu,cpuacct/system.slice/nix-daemon.service/cpuacct.usage");
   private File _memacct = new File("/sys/fs/cgroup/memory/system.slice/nix-daemon.service/memory.memsw.max_usage_in_bytes");
 
-  public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, String outputEncryptionKey, long timeout, Map<String, String> metadata, String account, int receiveCount, SteveKeyServerHelper keyHelper)
+  public SteveJob(S3Client client, GCSClient gcsClient, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, String outputEncryptionKey, long timeout, Map<String, String> metadata, String account, int receiveCount, SteveKeyServerHelper keyHelper)
           throws InternalException {
     _id = id;
     _impl = impl;
     _inputs = inputs;
     _client = client;
+    _gcsClient = gcsClient;
     _outgoing = new OutgoingQueueHelper(outgoingUrl, _id);
     _timeout = timeout;
     _s3Bucket = s3Bucket;
@@ -299,6 +303,7 @@ public class SteveJob {
   }
 
   private ListenableFuture<List<S3File>> downloadInput(Data input) throws InternalException {
+    CloudStoreClient client = input.toString().startsWith("s3") ? this._client : this._gcsClient;
     log("Downloading input '" + input.toString() + "'");
     URI inputUri;
     try {
@@ -315,10 +320,10 @@ public class SteveJob {
     File f = new File(_inputPath, last);
     try {
       if (input.getLocation().endsWith("/"))
-        return _client.downloadDirectory(f, inputUri, true, true);
+        return client.downloadDirectory(f, inputUri, true, true);
       else {
         List<ListenableFuture<S3File>> l = new ArrayList();
-        l.add(_client.download(f, inputUri, true));
+        l.add(client.download(f, inputUri, true));
         return Futures.successfulAsList(l);
       }
     } catch (Exception e) {
@@ -327,9 +332,10 @@ public class SteveJob {
   }
 
   private List<S3File> uploadOutput() throws UploadOutputFailedException {
+    CloudStoreClient client = _output.toString().startsWith("s3") ? this._client : this._gcsClient;
     try {
       log("Uploading output...");
-      return _client.uploadDirectory(_outputPath, _output, _outputEncryptionKey).get();
+      return client.uploadDirectory(_outputPath, _output, _outputEncryptionKey).get();
     } catch (Exception e) {
       throw new UploadOutputFailedException("Error uploading output files to " + _output, e);
     }
