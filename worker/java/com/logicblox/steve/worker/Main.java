@@ -1,6 +1,7 @@
 package com.logicblox.steve.worker;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.*;
@@ -18,6 +19,9 @@ import com.amazonaws.util.EC2MetadataUtils;
 import com.logicblox.s3lib.GCSClient;
 import com.logicblox.s3lib.GCSClientBuilder;
 import com.logicblox.s3lib.S3Client;
+import com.logicblox.s3lib.Utils;
+import com.logicblox.s3lib.AmazonS3ClientForGCS;
+
 import com.logicblox.steve.protocol.Backend;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.S3Utils;
@@ -204,12 +208,15 @@ public class Main {
     this.client = S3Utils.createS3Client(null);
     this.ec2Client = AmazonEC2ClientBuilder.standard().build();
 
+
     if (_s3Endpoint != null) {
       this.client.setEndpoint(_s3Endpoint);
     }
 
     try{
-      this.gcsClient = new GCSClientBuilder()
+      AWSCredentialsProvider gcsXMLProvider = Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
+      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
+      this.gcsClient = new GCSClientBuilder().setInternalS3Client(s3Client)
               .createGCSClient();
     } catch (Exception e) {
       System.err.println("Exception while creating Google Storage Client" + e);
