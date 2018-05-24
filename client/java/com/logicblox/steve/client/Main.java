@@ -164,8 +164,8 @@ public class Main {
   protected URI createUniqueURI(String option, String base) throws URISyntaxException, UsageException {
     String id = UUID.randomUUID().toString();
     String optionValue = _config.getStringError(option);
-    if(! optionValue.startsWith("s3://") ) {
-       throw new UsageException("Incorrect option '"+option+" = "+optionValue+"', should be a S3 URL.");
+    if(!(optionValue.startsWith("s3://") || optionValue.startsWith("gs://"))) {
+       throw new UsageException("Incorrect option '"+option+" = "+optionValue+"', should be a S3 or GCS URL.");
     }
     return URI.create(optionValue + "/" + id + (base != null ? "/" + base : ""));
   }
