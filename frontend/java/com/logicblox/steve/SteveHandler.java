@@ -14,8 +14,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpException;
-import org.eclipse.jetty.http.HttpStatus;
+import com.logicblox.web.common.http.HttpException;
+import com.logicblox.web.common.http.HttpStatus;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Charsets;
