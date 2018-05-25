@@ -324,7 +324,7 @@ public class SteveJob {
       else {
         List<ListenableFuture<S3File>> l = new ArrayList();
         l.add(client.download(f, inputUri, true));
-        return Futures.successfulAsList(l);
+        return Futures.allAsList(l);
       }
     } catch (Exception e) {
       return Futures.immediateFailedFuture(new InternalException("Error downloading input " + input.getLocation()));

@@ -5,6 +5,10 @@ let
       environment.AWS_ACCESS_KEY_ID = builtins.readFile <global_creds/gce-access>;
       environment.AWS_SECRET_ACCESS_KEY = builtins.readFile <global_creds/gce-secret>;
       environment.AWS_REGION = "us-east-1";
+      environment.GCS_XML_ACCESS_KEY = builtins.readFile <global_creds/gcs-access>;
+      environment.GCS_XML_SECRET_KEY = builtins.readFile <global_creds/gcs-secret>;
+      environment.GOOGLE_APPLICATION_CREDENTIALS = "/etc/google_application_credentials.json";
+
     };
 in
 {
@@ -48,6 +52,7 @@ in
     '';
 
   networking.hostName = pkgs.lib.mkForce "";
+  environment.etc."google_application_credentials.json".text = builtins.readFile <global_creds/google_application_credentials.json>
 
   lb-steve-worker.shutdownOnIdle = true;
   users.mutableUsers = lib.mkOverride 0 false;
