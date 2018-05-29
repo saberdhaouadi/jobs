@@ -4,6 +4,7 @@ let
     {
       environment.AWS_ACCESS_KEY_ID = builtins.readFile <global_creds/gce-access>;
       environment.AWS_SECRET_ACCESS_KEY = builtins.readFile <global_creds/gce-secret>;
+      environment.AWS_SECRET_KEY = builtins.readFile <global_creds/gce-secret>;
       environment.AWS_REGION = "us-east-1";
       environment.GCS_XML_ACCESS_KEY = builtins.readFile <global_creds/gcs-access>;
       environment.GCS_XML_SECRET_KEY = builtins.readFile <global_creds/gcs-secret>;
