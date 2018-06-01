@@ -29,7 +29,7 @@ config_file('$(lb_web)/config/lb-web-server.config')
 if subprocess.check_output(["lb", "version"]).strip() == "4.4.4":
     netty = '$(lb_web)/lib/java/netty-all-4.1.8.Final.jar'
 else:
-    netty = '$(lb_web)/lib/java/netty-all-4.1.13.Final.jar'
+    netty = '$(lb_web)/lib/java/netty-all-4.1.22.Final.jar'
 
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
@@ -38,11 +38,8 @@ classpath = [
   '$(lb_web)/lib/java/bloxweb-credentials.jar',
   '$(lb_web)/lib/java/bloxweb-email.jar',
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
-  '$(lb_web)/lib/java/commons-collections-3.2.1.jar',
   '$(lb_web)/lib/java/commons-configuration-1.8.jar',
-  '$(lb_web)/lib/java/commons-httpclient-3.1.jar',
   '$(lb_web)/lib/java/commons-lang-2.6.jar',
-  '$(lb_web)/lib/java/esapi-2.0.1.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar',
   '$(lb_web)/lib/java/guava-15.0.jar',
   '$(lb_web)/lib/java/java-statsd-client-2.0.0.jar',
@@ -55,13 +52,10 @@ classpath = [
   '$(lb_web)/lib/java/lb-web-json.jar',
   '$(lb_web)/lib/java/lb-web-server.jar',
   '$(lb_web)/lib/java/log4j-1.2.13.jar',
-  '$(lb_web)/lib/java/not-yet-commons-ssl-0.3.9.jar',
   '$(lb_web)/lib/java/protobuf-2.6.1.jar',
   '$(lb_web)/lib/java/scala-library.jar',
   '$(lb_web)/lib/java/servlet-api-2.5.jar',
   '$(lb_web)/lib/java/velocity-1.7.jar',
-  '$(lb_web)/lib/java/xmlsec-1.5.7.jar',
-  '$(lb_web)/lib/java/xmltooling-1.4.4.jar',
   '$(lb_web)/lib/java/google-api-client-1.19.1.jar',
   '$(lb_web)/lib/java/google-http-client-1.19.0.jar',
   '$(lb_web)/lib/java/google-http-client-jackson2-1.19.0.jar',
@@ -77,6 +71,30 @@ classpath = [
   '$(lb_web)/lib/java/jackson-core-2.6.6.jar',
   '$(lb_web)/lib/java/jackson-databind-2.6.6.jar',
   '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
+
+  #opensamlv3 dependencies
+  '$(lb_web)/lib/java/bcprov-jdk15on-1.54.jar',
+  '$(lb_web)/lib/java/commons-collections-3.2.1.jar',
+  '$(lb_web)/lib/java/cryptacular-1.1.1.jar',
+  '$(lb_web)/lib/java/java-support-7.3.0.jar',
+  '$(lb_web)/lib/java/metrics-core-3.1.2.jar',
+  '$(lb_web)/lib/java/opensaml-core-3.3.0.jar',
+  '$(lb_web)/lib/java/opensaml-messaging-api-3.3.0.jar',
+  '$(lb_web)/lib/java/opensaml-profile-api-3.3.0.jar',
+  '$(lb_web)/lib/java/opensaml-saml-api-3.3.0.jar',
+  '$(lb_web)/lib/java/opensaml-saml-impl-3.3.0.jar',
+  '$(lb_web)/lib/java/opensaml-security-api-3.3.0.jar',
+  '$(lb_web)/lib/java/opensaml-security-impl-3.3.0.jar',
+  '$(lb_web)/lib/java/opensaml-soap-api-3.3.0.jar',
+  '$(lb_web)/lib/java/opensaml-soap-impl-3.3.0.jar',
+  '$(lb_web)/lib/java/opensaml-storage-api-3.3.0.jar',
+  '$(lb_web)/lib/java/opensaml-xmlsec-api-3.3.0.jar',
+  '$(lb_web)/lib/java/opensaml-xmlsec-impl-3.3.0.jar',
+  '$(lb_web)/lib/java/slf4j-api-1.7.12.jar',
+  '$(lb_web)/lib/java/stax2-api-3.1.4.jar',
+  '$(lb_web)/lib/java/stax-api-1.0-2.jar',
+  '$(lb_web)/lib/java/woodstox-core-asl-4.4.1.jar',
+  '$(lb_web)/lib/java/xmlsec-2.0.5.jar',
 
   '$(commons_cli)/lib/java/commons-cli.jar'
 ]
@@ -124,4 +142,3 @@ check_jar(
   resources={'tests/java/com/logicblox/steve/db/users.csv': 'com/logicblox/steve/db/users.csv'}
   #resources={'tests/users.csv':'com/logicblox/steve/db/users.csv'}
 )
-
