@@ -133,10 +133,6 @@ public class Main {
     if (!_logDir.exists())
       throw new UsageException("directory '" + _logDir.getPath() + "' does not exist");
 
-    //if (_config.getBoolError("debug")) {
-    //  System.setProperty("org.eclipse.jetty.util.log.DEBUG", "true");
-    //}
-
     if (_config.contains("max_log_message_length"))
       GlobalConfig.setMaxLogMessageLength(
               _config.getIntError("max_log_message_length"));
