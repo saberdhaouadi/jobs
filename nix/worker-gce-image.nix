@@ -52,6 +52,8 @@ in
       done
     '';
 
+  boot.initrd.network.enable = true;
+
   networking.hostName = pkgs.lib.mkForce "";
   environment.etc."google_application_credentials.json".text = builtins.readFile <global_creds/google_application_credentials.json>;
 
