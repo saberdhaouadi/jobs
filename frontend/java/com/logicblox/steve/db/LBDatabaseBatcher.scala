@@ -66,12 +66,10 @@ class LBDatabaseBatcher(serviceUri: String, readOnly: Boolean) extends Batcher[R
 
     // use the protobuf client to post the envelope as a request, and hook 
     // a function to process the response
-    val exch = new ProtoBufExchange(builder.build(), ResponseEnvelope.newBuilder())
-    exch.setReadonly(readOnly)
+    val future = client.postProtobuf(serviceUri, builder.build(), ResponseEnvelope.newBuilder()).asInstanceOf[ListenableFuture[ResponseEnvelope]]
 
-    client.postProtobuf(serviceUri, builder.build(), ResponseEnvelope.newBuilder())
-    .map(response => {
-      response.asInstanceOf[ResponseEnvelope].getResponseList()
+    future.map(response => {
+      response.getResponseList()
     })
   }
   
