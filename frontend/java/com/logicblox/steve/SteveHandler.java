@@ -1,22 +1,5 @@
 package com.logicblox.steve;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import com.logicblox.web.common.http.HttpException;
-import com.logicblox.web.common.http.HttpStatus;
-
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
@@ -28,22 +11,13 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.logicblox.bloxweb.HandlerUtils;
-import com.logicblox.bloxweb.HandlerValidationException;
-import com.logicblox.bloxweb.InvalidRequestException;
-import com.logicblox.bloxweb.ProtoBufExchange;
-import com.logicblox.bloxweb.ProtoBufHandler;
-import com.logicblox.bloxweb.SimpleErrorCode;
+import com.logicblox.bloxweb.*;
 import com.logicblox.bloxweb.UsageException;
 import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.concurrent.MoreFutures;
-import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.S3File;
-import com.logicblox.s3lib.CopyOptions;
-import com.logicblox.s3lib.CopyOptionsBuilder;
-import com.logicblox.s3lib.Utils;
+import com.logicblox.s3lib.*;
 import com.logicblox.sqs.SQSClient;
 import com.logicblox.sqs.SQSClients;
 import com.logicblox.sqs.SQSException;
@@ -54,14 +28,25 @@ import com.logicblox.steve.common.S3Utils;
 import com.logicblox.steve.common.Status;
 import com.logicblox.steve.common.Status.StatusBuilder;
 import com.logicblox.steve.db.Database;
-import com.logicblox.steve.db.LBDatabase;
 import com.logicblox.steve.db.Job;
 import com.logicblox.steve.db.JobImpl;
+import com.logicblox.steve.db.LBDatabase;
 import com.logicblox.steve.frontend.JobQueueClient;
 import com.logicblox.steve.frontend.StatusQueueClient;
 import com.logicblox.steve.protocol.Frontend;
+import com.logicblox.web.common.http.HttpException;
+import com.logicblox.web.common.http.HttpStatus;
+import com.logicblox.web.server.http.HttpRequest;
+import com.logicblox.web.server.http.HttpResponse;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.StatsDClient;
+
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
 
 public class SteveHandler extends ProtoBufHandler {
   private static final long MAX_IMPL_SIZE = 70;
@@ -188,7 +173,7 @@ public class SteveHandler extends ProtoBufHandler {
    * @param request
    * @return
    */
-  public String getUser(HttpServletRequest request) {
+  public String getUser(HttpRequest request) {
     // TODO - this is somewhat costly, maybe we should cache.
     // this assumes the user is authenticated with a signature based realm.
     final Map<String, String> params = new HashMap<String, String>();
@@ -203,10 +188,10 @@ public class SteveHandler extends ProtoBufHandler {
 
   @Override
   protected ListenableFuture<ProtoBufExchange> handle(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           ProtoBufExchange exchange)
-          throws ServletException, IOException, InvalidProtocolBufferException, InvalidRequestException {
+          throws IOException, InvalidProtocolBufferException, InvalidRequestException {
     Frontend.Request request = (Frontend.Request) exchange.getRequestMessage();
 
     ListenableFuture<Frontend.Response> resp;
@@ -254,8 +239,8 @@ public class SteveHandler extends ProtoBufHandler {
   }
 
   private ListenableFuture<Frontend.Response> handleCreate(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           Frontend.JobCreateRequest req) {
     _statsd.incrementCounter("create_job");
 
@@ -307,8 +292,8 @@ public class SteveHandler extends ProtoBufHandler {
   }
 
   private ListenableFuture<Frontend.Response> handleState(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           final Frontend.StateRequest req) {
     _statsd.incrementCounter("set_state");
 
@@ -374,8 +359,8 @@ public class SteveHandler extends ProtoBufHandler {
   }
 
   private ListenableFuture<Frontend.Response> handleResult(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           final Frontend.JobResultRequest req) {
     _statsd.incrementCounter("get_result");
     ListenableFuture<Job> job = _db.getJob(req.getJobId());
@@ -411,8 +396,8 @@ public class SteveHandler extends ProtoBufHandler {
   }
 
   private ListenableFuture<Frontend.Response> handleLog(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           final Frontend.JobLogRequest req)
           throws IOException {
     _statsd.incrementCounter("get_log");
@@ -485,8 +470,8 @@ public class SteveHandler extends ProtoBufHandler {
   }
 
   private ListenableFuture<Frontend.Response> handleLBLogs(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           Frontend.JobLBLogsRequest req) throws IOException {
     _statsd.incrementCounter("get_lb_logs");
 
@@ -547,8 +532,8 @@ public class SteveHandler extends ProtoBufHandler {
    * Handle a request to add a new job implementation.
    */
   private ListenableFuture<Frontend.Response> handleImplAdd(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           final Frontend.ImplAddRequest req)
           throws IOException {
     _statsd.incrementCounter("upload_impl");
@@ -682,8 +667,8 @@ public class SteveHandler extends ProtoBufHandler {
   }
 
   private ListenableFuture<Frontend.Response> handleImplGet(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           Frontend.ImplGetRequest req) throws IOException {
     _statsd.incrementCounter("get_impl");
 
@@ -741,8 +726,8 @@ public class SteveHandler extends ProtoBufHandler {
    * Handle a request to list job implementations.
    */
   private ListenableFuture<Frontend.Response> handleImplList(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           Frontend.ImplListRequest req) {
     _statsd.incrementCounter("list_impl");
 
@@ -766,8 +751,8 @@ public class SteveHandler extends ProtoBufHandler {
   }
 
   private ListenableFuture<Frontend.Response> handleListPlatforms(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           Frontend.ListPlatformsRequest req) {
     _statsd.incrementCounter("list_platforms");
 
@@ -785,8 +770,8 @@ public class SteveHandler extends ProtoBufHandler {
   }
 
   private ListenableFuture<Frontend.Response> handleListQueues(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           Frontend.ListQueuesRequest req) {
     _statsd.incrementCounter("list_queues");
 
@@ -804,8 +789,8 @@ public class SteveHandler extends ProtoBufHandler {
   }
 
   private ListenableFuture<Frontend.Response> handleListMetadataKeys(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           Frontend.ListMetadataKeysRequest req) {
     _statsd.incrementCounter("list_metadata_keys");
 
@@ -824,8 +809,8 @@ public class SteveHandler extends ProtoBufHandler {
   }
 
   private ListenableFuture<Frontend.Response> handleListMetadataValues(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           Frontend.ListMetadataValuesRequest req) {
     _statsd.incrementCounter("list_metadata_values");
 

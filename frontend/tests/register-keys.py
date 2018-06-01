@@ -2,8 +2,10 @@
 import os
 import sys
 
-lbpath =  os.path.join(os.environ.get('LB_WEBSERVER_HOME'), 'lib', 'python')
-sys.path.insert(0, lbpath)
+LB_WEBSERVER_HOME = os.environ.get('LB_WEBSERVER_HOME')
+
+sys.path.insert(0, '%s/lib/python' % os.environ.get('LOGICBLOX_HOME'))
+sys.path.insert(0, '%s/lib/python' % LB_WEBSERVER_HOME)
 
 import lb.web.credentials
 

@@ -12,8 +12,6 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.logicblox.bloxweb.SimpleErrorCode;
-import com.logicblox.bloxweb.client.ProtobufServiceClient;
-import com.logicblox.bloxweb.client.ServiceConnector;
 import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDLogger;
@@ -63,37 +61,37 @@ public class LBDatabase implements Database {
   public LBDatabase(String dbServicesPrefix) {
     _dbServicesPrefix = dbServicesPrefix;
 
-    _createJobBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/createJob").createProtobufClient(), false);
+    _createJobBatcher = new LBDatabaseBatcher(_dbServicesPrefix+"/createJob", false);
     _createJobBatcher.start();
 
-    _addStatusBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/addStatus").createProtobufClient(), false);
+    _addStatusBatcher = new LBDatabaseBatcher(_dbServicesPrefix+"/addStatus", false);
     _addStatusBatcher.start();
 
-    _setResultBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/setResult").createProtobufClient(), false);
+    _setResultBatcher = new LBDatabaseBatcher(_dbServicesPrefix+"/setResult", false);
     _setResultBatcher.start();
 
-    _setJobImplBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/setJobImpl").createProtobufClient(), false);
+    _setJobImplBatcher = new LBDatabaseBatcher(_dbServicesPrefix+"/setJobImpl", false);
     _setJobImplBatcher.start();
 
-    _getJobBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getJob").createProtobufClient(), true);
+    _getJobBatcher = new LBDatabaseBatcher(_dbServicesPrefix+"/getJob", true);
     _getJobBatcher.start();
 
-    _getUserBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getUser").createProtobufClient(), true);
+    _getUserBatcher = new LBDatabaseBatcher(_dbServicesPrefix+"/getUser", true);
     _getUserBatcher.start();
 
-    _getJobImplBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getJobImpl").createProtobufClient(), true);
+    _getJobImplBatcher = new LBDatabaseBatcher(_dbServicesPrefix+"/getJobImpl", true);
     _getJobImplBatcher.start();
 
-    _getQueuesBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getQueues").createProtobufClient(), true);
+    _getQueuesBatcher = new LBDatabaseBatcher(_dbServicesPrefix+"/getQueues", true);
     _getQueuesBatcher.start();
 
-    _getPlatformsBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getPlatforms").createProtobufClient(), true);
+    _getPlatformsBatcher = new LBDatabaseBatcher(_dbServicesPrefix+"/getPlatforms", true);
     _getPlatformsBatcher.start();
 
-    _getMetadataKeysBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getMetadataKeys").createProtobufClient(), true);
+    _getMetadataKeysBatcher = new LBDatabaseBatcher(_dbServicesPrefix+"/getMetadataKeys", true);
     _getMetadataKeysBatcher.start();
 
-    _getMetadataValuesBatcher = new LBDatabaseBatcher(ServiceConnector.create(_dbServicesPrefix+"/getMetadataValues").createProtobufClient(), true);
+    _getMetadataValuesBatcher = new LBDatabaseBatcher(_dbServicesPrefix+"/getMetadataValues", true);
     _getMetadataValuesBatcher.start();
   }
   

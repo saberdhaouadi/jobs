@@ -4,29 +4,33 @@ import com.logicblox.util.Batcher
 import com.logicblox.steve.protocol.Database.Request
 import com.logicblox.steve.protocol.Database.Response
 import com.logicblox.steve.protocol.Database.RequestEnvelope
+
 import scala.concurrent.Future
 import scala.collection.JavaConversions._
-import com.logicblox.bloxweb.client.ProtobufServiceClient
 import com.logicblox.bloxweb.ProtoBufExchange
 import com.logicblox.steve.protocol.Database.ResponseEnvelope
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.FutureCallback
+
 import scala.concurrent.Promise
 import com.google.common.util.concurrent.Futures
+
 import scala.concurrent.ExecutionContext
 import scala.collection.mutable
 import com.google.common.util.concurrent.SettableFuture
+
 import scala.util.Failure
 import scala.util.Success
 import com.timgroup.statsd.StatsDClient
 import com.timgroup.statsd.NonBlockingStatsDClient
 
 import com.logicblox.util._
+import com.logicblox.web.client.service.ServiceClient
 
 /**
  * An implementation of a Batcher that batches LBDatabase requests, and return responses.
  */
-class LBDatabaseBatcher(client: ProtobufServiceClient, readOnly: Boolean) extends Batcher[Request, Response] {
+class LBDatabaseBatcher(serviceUri: String, readOnly: Boolean) extends Batcher[Request, Response] {
 
   /**
    * An implicit context to execute future combinators asynchronously.
@@ -38,7 +42,9 @@ class LBDatabaseBatcher(client: ProtobufServiceClient, readOnly: Boolean) extend
    */
   val statsd = new NonBlockingStatsDClient("lb.steve.internal", "localhost", 8125)
   val metric = if (readOnly) "batcher.read.size" else "batcher.write.size"
-    
+
+  def client = new ServiceClient()
+
   /**
    * Do not impose a limit in the number of requests per batch.
    */
@@ -63,9 +69,9 @@ class LBDatabaseBatcher(client: ProtobufServiceClient, readOnly: Boolean) extend
     val exch = new ProtoBufExchange(builder.build(), ResponseEnvelope.newBuilder())
     exch.setReadonly(readOnly)
 
-    client.postMessage(exch)
-    .map(exchange => {
-      exchange.getResponseMessage().asInstanceOf[ResponseEnvelope].getResponseList()
+    client.postProtobuf(serviceUri, builder.build(), ResponseEnvelope.newBuilder())
+    .map(response => {
+      response.asInstanceOf[ResponseEnvelope].getResponseList()
     })
   }
   

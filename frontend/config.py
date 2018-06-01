@@ -56,8 +56,6 @@ classpath = [
   '$(lb_web)/lib/java/lb-web-server.jar',
   '$(lb_web)/lib/java/log4j-1.2.13.jar',
   '$(lb_web)/lib/java/not-yet-commons-ssl-0.3.9.jar',
-  '$(lb_web)/lib/java/opensaml-2.6.4.jar',
-  '$(lb_web)/lib/java/openws-1.5.4.jar',
   '$(lb_web)/lib/java/protobuf-2.6.1.jar',
   '$(lb_web)/lib/java/scala-library.jar',
   '$(lb_web)/lib/java/servlet-api-2.5.jar',
@@ -71,7 +69,7 @@ classpath = [
   '$(lb_web)/lib/java/google-oauth-client-1.19.0.jar',
 
   '$(lb_web)/lib/java/s3lib-0.2.jar',
-  '$(lb_web)/lib/java/commons-io-2.4.jar',
+  '$(logicblox)/lib/java/commons-io-2.4.jar',
   '$(lb_web)/lib/java/aws-java-sdk-1.11.102.jar',
   '$(lb_web)/lib/java/httpclient-4.5.2.jar',
   '$(lb_web)/lib/java/httpcore-4.4.4.jar',
