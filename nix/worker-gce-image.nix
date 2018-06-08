@@ -11,6 +11,26 @@ let
       environment.GOOGLE_APPLICATION_CREDENTIALS = "/etc/google_application_credentials.json";
 
     };
+      udhcpcScript = pkgs.writeScript "udhcp-script"
+    ''
+      #! /bin/sh
+      if [ "$1" = bound ]; then
+        ip address add "$ip/$mask" dev "$interface"
+        if [ -n "$staticroutes" ]; then
+          echo $staticroutes | awk -e '{for(i=0; i< NF;i+=2) system("ip route add "$(i+1)" via "$(i+2)" dev '"$interface"' proto kernel scope link")}'
+        fi
+        if [ -n "$router" ]; then
+          ip route add default via "$router" dev "$interface"
+        fi
+        if [ -n "$dns" ]; then
+          rm -f /etc/resolv.conf
+          for i in $dns; do
+            echo "nameserver $dns" >> /etc/resolv.conf
+          done
+        fi
+      fi
+    '';
+
 in
 {
   imports = [
@@ -18,6 +38,22 @@ in
     ./boot.nix
     <nixpkgs/nixos/modules/virtualisation/google-compute-config.nix>
   ];
+  boot.initrd.kernelModules = [ "af_packet" ];
+  boot.initrd.preLVMCommands = lib.mkBefore ''
+            if [ -z "$hasNetwork" ]; then
+
+          # Bring up all interfaces.
+          for iface in $(cd /sys/class/net && ls); do
+            echo "bringing up network interface $iface..."
+            ip link set "$iface" up
+          done
+
+          # Acquire a DHCP lease.
+          echo "acquiring IP address via DHCP..."
+          udhcpc --quit --now --script ${udhcpcScript} && hasNetwork=1
+        fi
+      '';
+
 
   lb-steve-worker.initrd.metadataServiceSetup =
     ''
@@ -51,8 +87,6 @@ in
         fi
       done
     '';
-
-  boot.initrd.network.enable = true;
 
   networking.hostName = pkgs.lib.mkForce "";
   environment.etc."google_application_credentials.json".text = builtins.readFile <global_creds/google_application_credentials.json>;
