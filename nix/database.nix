@@ -1,7 +1,7 @@
 { config, pkgs, lib, resources, nodes, ... }:
 let
   builder-config = import <config> {};
-  logicblox = builder-config.getLB (import ../lb-version.nix);
+  #logicblox = builder-config.getLB (import ../lb-version.nix);
   updateLBversions = pkgs.writeScriptBin "update-lb-versions" ''
     #! /usr/bin/env bash
     set -ex
