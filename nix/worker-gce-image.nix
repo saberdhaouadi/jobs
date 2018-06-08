@@ -61,13 +61,13 @@ in
       mkdir -m 0755 -p "$metaDir"
 
       echo "getting GCE instance metadata..."
-      if ! [ -e "metaDir/instance-id" ]; then
-        wget -q --header='Metadata-Flavor: Google' -O "metaDir/instance-id" http://metadata.google.internal/computeMetadata/v1/instance/id
+      if ! [ -e "$metaDir/instance-id" ]; then
+        wget -q --header='Metadata-Flavor: Google' -O "$metaDir/instance-id" http://169.254.169.254/computeMetadata/v1/instance/id
       fi
 
       # use the same path for user data as EC2 to avoid duplicate code
       if ! [ -e "$metaDir/user-data" ]; then
-        wget -q --header='Metadata-Flavor: Google' -O "$metaDir/user-data" http://metadata.google.internal/computeMetadata/v1/instance/attributes/startup-script
+        wget -q --header='Metadata-Flavor: Google' -O "$metaDir/user-data" http://169.254.169.254/computeMetadata/v1/instance/attributes/startup-script
       fi
     '';
 
