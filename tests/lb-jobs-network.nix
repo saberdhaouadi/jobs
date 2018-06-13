@@ -1,4 +1,4 @@
-{ client ? import ../. {},
+{ builds ? import ../. {},
   paperboat ? null
 }:
 (import <nixpkgs> {}).lib.overrideDerivation (
@@ -238,7 +238,7 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ];
-        environment.systemPackages = [ pkgs.openjdk pkgs.python2 client (builder_config.getLB "4.4.8") ];
+        environment.systemPackages = [ pkgs.openjdk pkgs.python2 builds.client.build (builder_config.getLB "4.4.8") ];
       };
 
     database =
