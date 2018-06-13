@@ -88,7 +88,7 @@ in
         environment.etc."elastiqmq/custom.conf".text = ''
           include classpath("application.conf")
 
-          // What is the outside visible address of this ElasticMQ node 
+          // What is the outside visible address of this ElasticMQ node
           // Used to create the queue URL (may be different from bind address!)
           node-address {
               protocol = http
@@ -187,6 +187,7 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ../nix/frontend.nix ];
+        logicblox.jobs.builds = builds;
 
         systemd.services.lb-steve-frontend.environment = awsEnvironment;
 
@@ -230,6 +231,7 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ../nix/keyserver.nix ];
+        logicblox.jobs.builds = builds;
       };
 
     client =
@@ -243,6 +245,7 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ../nix/database.nix ];
+        logicblox.jobs.builds = builds;
         systemd.services.lb-web-server.environment = awsEnvironment;
         virtualisation.memorySize = 4096;
         virtualisation.diskSize = 8192;
