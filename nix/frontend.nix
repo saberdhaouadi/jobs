@@ -11,7 +11,7 @@ in
       description = "LB Steve Frontend";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
-      path = [ pkgs.jdk pkgs.bash builds.frontend ];
+      path = [ pkgs.jdk pkgs.bash config.logicblox.jobs.builds.frontend ];
       preStart = ''
         mkdir -p /var/log/lb-steve-worker
       '';
