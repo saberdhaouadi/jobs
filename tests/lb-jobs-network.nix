@@ -243,11 +243,11 @@ in
       };
 
     database =
-      { config, pkgs, ... }:
+      { config, pkgs, lib, ... }:
       {
         imports = [ common ../nix/database.nix ];
         logicblox.jobs.builds = builds;
-        services.logicblox.logicblox = platform;
+        services.logicblox.logicblox =  lib.mkForce platform;
         systemd.services.lb-web-server.environment = awsEnvironment;
         virtualisation.memorySize = 4096;
         virtualisation.diskSize = 8192;
