@@ -247,7 +247,7 @@ in
       {
         imports = [ common ../nix/database.nix ];
         logicblox.jobs.builds = builds;
-        services.logicblox.logicblox =  lib.mkForce platform;
+        logicblox.jobs.platform  =  platform;
         systemd.services.lb-web-server.environment = awsEnvironment;
         virtualisation.memorySize = 4096;
         virtualisation.diskSize = 8192;
