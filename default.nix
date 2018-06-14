@@ -6,7 +6,7 @@
 let
   builder_config = import <config> {};
   inherit (builder_config) pkgs getLB;
-  platform = builtins.trace (builtins.typeOf platform_release) if (pkgs.lib.hasAttr "outPath") then platform_release.outPath else getLB platform_release;
+  platform = (if (pkgs.lib.hasAttr "outPath" platform_release) then platform_release.outPath else (getLB platform_release));
 in
   import ./job.nix {
     logicblox = platform;
