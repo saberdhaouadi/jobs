@@ -6,7 +6,7 @@
 let
   builder_config = import <config> {};
   inherit (builder_config) pkgs getLB;
-  platform = getLB platform_release;
+  platform = builtins.trace (builtins.typeOf platform_release) getLB platform_release;
 in
   import ./job.nix {
     logicblox = platform;
