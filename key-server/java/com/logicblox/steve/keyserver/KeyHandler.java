@@ -1,62 +1,25 @@
 package com.logicblox.steve.keyserver;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 
-import org.eclipse.jetty.http.HttpException;
-import org.eclipse.jetty.http.HttpStatus;
-
-import java.util.concurrent.Callable;
-
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.google.common.base.Charsets;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.io.Files;
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.logicblox.bloxweb.HandlerUtils;
-import com.logicblox.bloxweb.HandlerValidationException;
 import com.logicblox.bloxweb.InvalidRequestException;
 import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.bloxweb.ProtoBufHandler;
-import com.logicblox.bloxweb.SimpleErrorCode;
-import com.logicblox.bloxweb.UsageException;
 import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
-import com.logicblox.bloxweb.service.ServiceException;
-import com.logicblox.concurrent.MoreFutures;
-import com.logicblox.cloudstore.S3Client;
-import com.logicblox.cloudstore.StoreFile;
-import com.logicblox.sqs.SQSClient;
-import com.logicblox.sqs.SQSClients;
-import com.logicblox.sqs.SQSException;
-import com.logicblox.sqs.SQSQueueHandle;
-import com.logicblox.steve.common.Conversions;
-import com.logicblox.steve.common.Data;
-import com.logicblox.steve.common.S3Utils;
-import com.logicblox.steve.common.Status;
-import com.logicblox.steve.common.Status.StatusBuilder;
 import com.logicblox.steve.protocol.Keys;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.FileUtils;
-import java.io.FileFilter;
+import com.logicblox.web.server.http.HttpRequest;
+import com.logicblox.web.server.http.HttpResponse;
 
 public class KeyHandler extends ProtoBufHandler {
   public File keyDir;
@@ -99,10 +62,10 @@ public class KeyHandler extends ProtoBufHandler {
 
   @Override
   protected ListenableFuture<ProtoBufExchange> handle(
-          HttpServletRequest httpRequest,
-          HttpServletResponse httpResponse,
+          HttpRequest httpRequest,
+          HttpResponse httpResponse,
           ProtoBufExchange exchange)
-          throws ServletException, IOException, InvalidProtocolBufferException, InvalidRequestException {
+          throws IOException, InvalidProtocolBufferException, InvalidRequestException {
     Keys.GetKeysRequest request = (Keys.GetKeysRequest) exchange.getRequestMessage();
 
     File accountDir = new File(keyDir, request.getAccount());

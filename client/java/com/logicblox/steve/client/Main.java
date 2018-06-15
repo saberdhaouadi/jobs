@@ -1,19 +1,8 @@
 package com.logicblox.steve.client;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -22,12 +11,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Level;
 
 import com.beust.jcommander.JCommander;
@@ -35,46 +22,21 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.converters.IParameterSplitter;
-
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
-import com.google.protobuf.ByteString;
-import com.google.protobuf.ExtensionRegistry;
-import com.google.protobuf.Message;
-import com.google.protobuf.TextFormat;
-import com.googlecode.protobuf.format.JsonFormat;
-
-import com.logicblox.bloxweb.Encoding;
 import com.logicblox.bloxweb.UsageException;
-import com.logicblox.bloxweb.client.ClientConfigUtils;
-import com.logicblox.bloxweb.client.ProtobufServiceClient;
-import com.logicblox.bloxweb.client.ServiceConnector;
-import com.logicblox.bloxweb.client.Transport;
-import com.logicblox.bloxweb.client.Transports;
 import com.logicblox.bloxweb.client.SignUtils;
 import com.logicblox.bloxweb.config.Config;
 import com.logicblox.bloxweb.config.ConfigLocator;
-import com.logicblox.bloxweb.client.ServiceClientException;
-
 import com.logicblox.common.logging.Logger;
-import com.logicblox.common.logging.SystemDAppender;
-import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
 import com.logicblox.concurrent.MoreFutures;
 
@@ -87,8 +49,8 @@ import com.logicblox.cloudstore.Utils;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.S3Utils;
 import com.logicblox.steve.protocol.Frontend;
-
-import java.security.PrivateKey;
+import com.logicblox.web.Client.ContentEncoding;
+import com.logicblox.web.client.service.ServiceClientOptions;
 
 public class Main {
   public static void main(String[] args) {
@@ -209,7 +171,7 @@ public class Main {
           .setEncKey(_inputEncryptionKey)
           .createOptions();
         return Futures.transform(
-                _s3client.uploadDirectory(options),
+                _s3client.uploadRecursively(options),
                 new Function<List<StoreFile>, List<Frontend.File>>() {
                   public List<Frontend.File> apply(List<StoreFile> files) {
                     return Collections.singletonList(Frontend.File.newBuilder().setUrl(tempURI.toString()+"/").build());
@@ -240,12 +202,9 @@ public class Main {
     return _config.getSection("auth").getStringError(opt);
   }
 
-  protected ProtobufServiceClient getProtobufClient()
+  protected ServiceClientOptions getServiceClientOptions()
           throws URISyntaxException, UsageException {
-    String service = _config.getStringError("service");
-    URI serviceUri = new URI(service);
-    ServiceConnector connector = ServiceConnector.create(serviceUri.toString());
-
+    
     String user = _user;
     String keyFile = _keyFile;
 
@@ -254,13 +213,15 @@ public class Main {
     if (keyFile == null)
       keyFile = getAuthOption("key_file");
 
-    PrivateKey key;
+    
+    ServiceClientOptions options = new ServiceClientOptions();
     try {
-      key = SignUtils.readPrivateKeyFromPEM(new FileReader(keyFile));
-      connector.setTransport(Transports.sign(Transports.tcp(), user, key));
-      connector.setEncoding(Encoding.JSON);
-      connector.setGZIP(true);
-      return connector.createProtobufClient();
+      options.signature(user, keyFile);
+      
+      // The line below is no longer necessary, but I am leaving this
+      // here just to keep some validation before submitting the job
+      SignUtils.readPrivateKeyFromPEM(new FileReader(keyFile));
+      return options.encoding(ContentEncoding.GZIP);
     } catch (Exception e) {
       throw new UsageException("Could not load key file from " + keyFile + ": " + e.getMessage());
     }
@@ -268,7 +229,8 @@ public class Main {
 
   protected SteveClientInterface getSteveClient()
           throws URISyntaxException {
-    return new SteveClient(getProtobufClient(), Executors.newScheduledThreadPool(25));
+    URI service = new URI(_config.getStringError("service"));
+    return new SteveClient(service, getServiceClientOptions(), Executors.newScheduledThreadPool(25));
   }
 
   private static String formatJSON(String json) {

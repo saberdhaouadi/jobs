@@ -1,48 +1,39 @@
 package com.logicblox.steve.worker;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.logicblox.bloxweb.Encoding;
-import com.logicblox.bloxweb.ProtoBufExchange;
-import com.logicblox.bloxweb.client.ServiceClientException;
-import com.logicblox.bloxweb.client.ServiceConnector;
-import com.logicblox.bloxweb.client.Transports;
-import com.logicblox.bloxweb.client.ProtobufServiceClient;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.Executors;
-
-import com.logicblox.cloudstore.ThrowableRetryPolicy;
-import com.logicblox.cloudstore.ThrowableRetriableTask;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.logicblox.cloudstore.ExpBackoffRetryPolicy;
-
-import java.util.HashMap;
-import java.util.Map;
-
+import com.logicblox.cloudstore.ThrowableRetriableTask;
+import com.logicblox.cloudstore.ThrowableRetryPolicy;
 import com.logicblox.steve.protocol.Keys;
-import java.lang.Exception;
+import com.logicblox.web.client.service.ServiceClient;
+import com.logicblox.web.client.service.ServiceClientException;
 
 public class SteveKeyServerHelper {
-  private ProtobufServiceClient _client;
+  private ServiceClient _client = new ServiceClient(); 
   private ListeningScheduledExecutorService _scheduler;
-
+  private String _uri;
+  
   public SteveKeyServerHelper(String uri) {
-     _client = ServiceConnector.create().setTransport(Transports.tcp()).setURI(uri).setEncoding(Encoding.JSON).createProtobufClient();
+     _uri = uri;
      _scheduler = MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(1));
   }
 
   public Map<String, String> getKeys(String account) throws Exception {
     Keys.GetKeysRequest req = Keys.GetKeysRequest.newBuilder().setAccount(account).build();
-    ProtoBufExchange exchange = new ProtoBufExchange(req, Keys.GetKeysResponse.newBuilder());
 
     ListenableFuture<Keys.GetKeysResponse> pm = executeWithRetry(new Callable<ListenableFuture<Keys.GetKeysResponse>>() {
       public ListenableFuture<Keys.GetKeysResponse> call() throws InvalidProtocolBufferException, ServiceClientException {
-        return Futures.immediateFuture( (Keys.GetKeysResponse) _client.postMessage(exchange).result().getResponseMessage());
+        return _client.postJSON(_uri, req, Keys.GetKeysResponse.newBuilder());
       }
     });
 
