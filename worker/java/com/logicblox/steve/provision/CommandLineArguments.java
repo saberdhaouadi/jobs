@@ -28,7 +28,6 @@ public class CommandLineArguments {
     private static int minInstances = 0;
     private static boolean dryRun = true;
     private static int diskSize = 0;
-    private static boolean dryRun = true;
 
     public static String getQueue() {
         return queue;
