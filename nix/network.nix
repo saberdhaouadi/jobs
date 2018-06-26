@@ -377,20 +377,22 @@ with pkgs.lib;
           sourceGroup.groupName = "admin";
         } ;
       accounts = [
-       "297794765570"
-       "414877248210"
-       "162071310369"
-       "216775848791"
-       "716415058944"
-       "006491606506" # PDX Science
+       #"297794765570"
+       #"414877248210"
+       #"162071310369"
+       #"216775848791"
+       #"716415058944"
+       #"006491606506" # PDX Science
+       "202226491534"
       ];
     in
       { config, resources, ... }:
       {
         inherit region;
         accessKeyId = account;
+        vpcId = "vpc-15b4126d";
         description = "Security group for frontend";
-        rules = map entry ips ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; # { fromPort = 8080; toPort = 8080; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
+        rules = map entry ips ++ map accountEntry accounts ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; # { fromPort = 8080; toPort = 8080; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
       };
 
   "provisioner-${name}" =
