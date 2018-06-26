@@ -39,8 +39,13 @@ import com.logicblox.bloxweb.config.ConfigLocator;
 import com.logicblox.common.logging.Logger;
 import com.logicblox.common.logging.SystemDLogger;
 import com.logicblox.concurrent.MoreFutures;
-import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.S3File;
+
+import com.logicblox.cloudstore.DownloadOptions;
+import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.StoreFile;
+import com.logicblox.cloudstore.UploadOptions;
+import com.logicblox.cloudstore.Utils;
+
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.S3Utils;
 import com.logicblox.steve.protocol.Frontend;
@@ -159,18 +164,31 @@ public class Main {
 
       if (inputFile.isDirectory()) {
         URI tempURI = createUniqueInputURI(inputFile.getName());
+	UploadOptions options = _s3client.getOptionsBuilderFactory().newUploadOptionsBuilder()
+          .setFile(inputFile)
+          .setBucketName(Utils.getBucketName(tempURI))
+          .setObjectKey(Utils.getObjectKey(tempURI))
+          .setEncKey(_inputEncryptionKey)
+          .createOptions();
         return Futures.transform(
-                _s3client.uploadDirectory(inputFile, tempURI, _inputEncryptionKey),
-                new Function<List<S3File>, List<Frontend.File>>() {
-                  public List<Frontend.File> apply(List<S3File> files) {
+                _s3client.uploadRecursively(options),
+                new Function<List<StoreFile>, List<Frontend.File>>() {
+                  public List<Frontend.File> apply(List<StoreFile> files) {
                     return Collections.singletonList(Frontend.File.newBuilder().setUrl(tempURI.toString()+"/").build());
                   }
                 });
       } else {
+        URI tempURI = createUniqueInputURI(inputFile.getName());
+	UploadOptions options = _s3client.getOptionsBuilderFactory().newUploadOptionsBuilder()
+          .setFile(inputFile)
+          .setBucketName(Utils.getBucketName(tempURI))
+          .setObjectKey(Utils.getObjectKey(tempURI))
+          .setEncKey(_inputEncryptionKey)
+          .createOptions();
         return Futures.transform(
-                _s3client.upload(inputFile, createUniqueInputURI(inputFile.getName()), _inputEncryptionKey),
-                new Function<S3File, List<Frontend.File>>() {
-                  public List<Frontend.File> apply(S3File file) {
+                _s3client.upload(options),
+                new Function<StoreFile, List<Frontend.File>>() {
+                  public List<Frontend.File> apply(StoreFile file) {
                     return Collections.singletonList(Conversions.convertToFrontendFile(file));
                   }
                 });
@@ -431,12 +449,19 @@ public class Main {
       else
         outputURI = URI.create(_output);
 
+      DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
+        .setFile(new File(_output))
+        .setBucketName(Utils.getBucketName(outputURI))
+        .setObjectKey(Utils.getObjectKey(outputURI))
+        .setOverwrite(true)
+        .createOptions();
+
       Futures.transform(client.getLBLogs(_ids.get(0), outputURI),
               new AsyncFunction<String, Object>() {
                 @Override
                 public ListenableFuture<Object> apply(String id) throws Exception {
                   if(autoDownload)
-                    return (ListenableFuture) _s3client.download(new File(_output),outputURI, true);
+                    return (ListenableFuture) _s3client.download(options);
                   else
                     return Futures.immediateFuture((Object) id);
                 }
@@ -518,20 +543,34 @@ public class Main {
     Path p = Paths.get(output);
     if (Files.isDirectory(p) || output.endsWith("/") || files.size() > 1) {
       // Assume that we want to download the list of files to a directory.
-      List<ListenableFuture<S3File>> downloads = new ArrayList<ListenableFuture<S3File>>();
+      List<ListenableFuture<StoreFile>> downloads = new ArrayList<ListenableFuture<StoreFile>>();
 
       for (Frontend.File file : files) {
         Path targetFile = p.resolve(Conversions.getBasename(file));
-        downloads.add(_s3client.download(targetFile.toFile(), URI.create(file.getUrl()), true));
+        URI uri = URI.create(file.getUrl());
+        DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
+          .setFile(targetFile.toFile())
+          .setBucketName(Utils.getBucketName(uri))
+          .setObjectKey(Utils.getObjectKey(uri))
+          .setOverwrite(true)
+          .createOptions();
+        downloads.add(_s3client.download(options));
       }
 
       return Futures.transform(Futures.allAsList(downloads), Functions.constant(files));
     } else {
       // Assume that we want to download to a single file
       // TOOD check the ETag from the download
+      URI uri = URI.create(files.get(0).getUrl());
+      DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
+          .setFile(p.toFile())
+          .setBucketName(Utils.getBucketName(uri))
+          .setObjectKey(Utils.getObjectKey(uri))
+          .setOverwrite(true)
+          .createOptions();
       return
               Futures.transform(
-                      _s3client.download(p.toFile(), URI.create(files.get(0).getUrl()), true),
+                      _s3client.download(options),
                       Functions.constant(files));
     }
   }
@@ -634,12 +673,18 @@ public class Main {
       else
         outputURI = URI.create(_output);
 
+      DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
+          .setFile(new File(_output))
+          .setBucketName(Utils.getBucketName(outputURI))
+          .setObjectKey(Utils.getObjectKey(outputURI))
+          .setOverwrite(true)
+          .createOptions();
       Futures.transform(client.copyJobImpl(_impl, outputURI),
               new AsyncFunction<String, Object>() {
                 @Override
                 public ListenableFuture<Object> apply(String id) throws Exception {
                   if(autoDownload)
-                    return (ListenableFuture) _s3client.download(new File(_output),outputURI, true);
+                    return (ListenableFuture) _s3client.download(options);
                   else
                     return Futures.immediateFuture((Object) id);
                 }

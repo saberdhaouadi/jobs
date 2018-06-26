@@ -18,7 +18,7 @@ protocols_dep = (
   "protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"}
 )
 
-aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
+aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/cloud-store"})
 
 depends_on(
     logicblox_dep,
@@ -39,7 +39,7 @@ classpath = [
   '$(logicblox)/lib/java/commons-io-2.4.jar',
   '$(lb_web)/lib/java/guava-15.0.jar',
   '$(lb_web)/lib/java/google-http-client-1.19.0.jar',
-  '$(lb_web)/lib/java/s3lib-0.2.jar',
+  '$(lb_web)/lib/java/cloudstore-0.2.jar',
   '$(lb_web)/lib/java/jackson-annotations-2.6.0.jar',
   '$(lb_web)/lib/java/jackson-core-2.6.6.jar',
   '$(lb_web)/lib/java/jackson-databind-2.6.6.jar',

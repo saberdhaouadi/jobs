@@ -3,8 +3,8 @@ package com.logicblox.steve.worker;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.sqs.model.Message;
 
-import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.S3File;
+import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.StoreFile;
 import com.logicblox.steve.common.Data;
 import com.logicblox.concurrent.MoreFutures;
 
@@ -72,7 +72,7 @@ public class SteveJob {
   private long _cpuUsage = 0;
   private long _maxMemory = 0;
 
-  private File _keyDir = new File(com.logicblox.s3lib.Utils.getDefaultKeyDirectory());
+  private File _keyDir = new File(com.logicblox.cloudstore.Utils.getDefaultKeyDirectory());
   private File _shellDir = new File("/tmp/shell");
   private SteveKeyServerHelper _keyHelper;
   private File _cpuacct = new File("/sys/fs/cgroup/cpu,cpuacct/system.slice/nix-daemon.service/cpuacct.usage");
@@ -149,7 +149,7 @@ public class SteveJob {
 
       // Do not upload files when previous log already exists.
       if(!previousLogExists()) {
-        List<S3File> output = uploadOutput();
+        List<StoreFile> output = uploadOutput();
         _outgoing.notifySuccess(output, _cpuUsage, _maxMemory, _maxDiskUsage);
         log("Successfully uploaded output files for job " + _id);
       }
@@ -230,9 +230,9 @@ public class SteveJob {
 
     for (Data input : _inputs) {
       try {
-        List<S3File> fs = downloadInput(input).get();
+        List<StoreFile> fs = downloadInput(input).get();
         int failed = 0;
-        for(S3File f: fs) {
+        for(StoreFile f: fs) {
           if(f==null) {
             failed++;
           }
@@ -285,7 +285,7 @@ public class SteveJob {
     log(uri);
     URI jobImplUri;
     try {
-      jobImplUri = com.logicblox.s3lib.Utils.getURI(uri);
+      jobImplUri = com.logicblox.cloudstore.Utils.getURI(uri);
     } catch (URISyntaxException e) {
       throw new InternalException("Invalid URI '" + uri, e);
     }
@@ -298,11 +298,11 @@ public class SteveJob {
     }
   }
 
-  private ListenableFuture<List<S3File>> downloadInput(Data input) throws InternalException {
+  private ListenableFuture<List<StoreFile>> downloadInput(Data input) throws InternalException {
     log("Downloading input '" + input.toString() + "'");
     URI inputUri;
     try {
-      inputUri = com.logicblox.s3lib.Utils.getURI(input.getLocation());
+      inputUri = com.logicblox.cloudstore.Utils.getURI(input.getLocation());
     } catch (URISyntaxException e) {
       throw new InternalException("Invalid URI '" + input, e);
     }
@@ -317,7 +317,7 @@ public class SteveJob {
       if (input.getLocation().endsWith("/"))
         return _client.downloadDirectory(f, inputUri, true, true);
       else {
-        List<ListenableFuture<S3File>> l = new ArrayList();
+        List<ListenableFuture<StoreFile>> l = new ArrayList();
         l.add(_client.download(f, inputUri, true));
         return Futures.successfulAsList(l);
       }
@@ -326,7 +326,7 @@ public class SteveJob {
     }
   }
 
-  private List<S3File> uploadOutput() throws UploadOutputFailedException {
+  private List<StoreFile> uploadOutput() throws UploadOutputFailedException {
     try {
       log("Uploading output...");
       return _client.uploadDirectory(_outputPath, _output, _outputEncryptionKey).get();
