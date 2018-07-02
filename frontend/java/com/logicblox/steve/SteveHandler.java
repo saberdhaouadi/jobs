@@ -17,7 +17,11 @@ import com.logicblox.bloxweb.config.Section;
 import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.concurrent.MoreFutures;
-import com.logicblox.s3lib.*;
+import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.StoreFile;
+import com.logicblox.cloudstore.CopyOptions;
+import com.logicblox.cloudstore.CopyOptionsBuilder;
+import com.logicblox.cloudstore.Utils;
 import com.logicblox.sqs.SQSClient;
 import com.logicblox.sqs.SQSClients;
 import com.logicblox.sqs.SQSException;
@@ -421,10 +425,10 @@ public class SteveHandler extends ProtoBufHandler {
 
     // Check the S3 metadata, and if we're okay, then download the
     // log from S3 to a temporary file
-    ListenableFuture<S3File> inputFile = Futures.transform(
+    ListenableFuture<StoreFile> inputFile = Futures.transform(
             metadata,
-            new AsyncFunction<ObjectMetadata, S3File>() {
-              public ListenableFuture<S3File> apply(ObjectMetadata m) throws IOException {
+            new AsyncFunction<ObjectMetadata, StoreFile>() {
+              public ListenableFuture<StoreFile> apply(ObjectMetadata m) throws IOException {
                 if (m == null)
                   throw new ServiceException(
                           new SimpleErrorCode("FILE_NOT_FOUND", 400, "Log does not exist"));
@@ -439,8 +443,8 @@ public class SteveHandler extends ProtoBufHandler {
 
     ListenableFuture<String> log = Futures.transform(
             inputFile,
-            new AsyncFunction<S3File, String>() {
-              public ListenableFuture<String> apply(S3File logfile) throws IOException {
+            new AsyncFunction<StoreFile, String>() {
+              public ListenableFuture<String> apply(StoreFile logfile) throws IOException {
                 List<String> lines = Files.readLines(logfile.getLocalFile(), Charsets.UTF_8);
                 Joiner joiner = Joiner.on("\n");
                 String log = joiner.join(lines);
@@ -494,17 +498,17 @@ public class SteveHandler extends ProtoBufHandler {
       return Futures.immediateFailedFuture(new ServiceException(new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax")));
     }
     ListenableFuture<ObjectMetadata> md = _s3client.exists(logs);
-    ListenableFuture<S3File> s3File = Futures.transform(md,
-           new AsyncFunction<ObjectMetadata, S3File>() {
-              public ListenableFuture<S3File> apply(ObjectMetadata m) throws IOException {
+    ListenableFuture<StoreFile> s3File = Futures.transform(md,
+           new AsyncFunction<ObjectMetadata, StoreFile>() {
+              public ListenableFuture<StoreFile> apply(ObjectMetadata m) throws IOException {
                   if (m == null)
                     throw new ServiceException(
                             new SimpleErrorCode("FILE_NOT_FOUND", 400, "Log does not exist"));
 
                   CopyOptions options = new CopyOptionsBuilder()
-                  .setSourceBucketName(Utils.getBucket(logs))
+                  .setSourceBucketName(Utils.getBucketName(logs))
                   .setSourceKey(Utils.getObjectKey(logs))
-                  .setDestinationBucketName(Utils.getBucket(dest))
+                  .setDestinationBucketName(Utils.getBucketName(dest))
                   .setDestinationKey(Utils.getObjectKey(dest))
                   .setCannedAcl("bucket-owner-full-control")
                   .createCopyOptions();
@@ -514,9 +518,9 @@ public class SteveHandler extends ProtoBufHandler {
 
     return Futures.transform(
             s3File,
-            new Function<S3File, Frontend.Response>() {
-              public Frontend.Response apply(S3File loc) {
-                Frontend.File file = Conversions.convertDataToFrontendFile(Conversions.convertS3FileToData(loc));
+            new Function<StoreFile, Frontend.Response>() {
+              public Frontend.Response apply(StoreFile loc) {
+                Frontend.File file = Conversions.convertDataToFrontendFile(Conversions.convertStoreFileToData(loc));
                 Frontend.ImplGetResponse.Builder resp = Frontend.ImplGetResponse.newBuilder().setFile(file);
 
                 return
@@ -554,10 +558,10 @@ public class SteveHandler extends ProtoBufHandler {
 
     ListenableFuture<ObjectMetadata> metadata = _s3client.exists(inputUrl);
 
-    ListenableFuture<S3File> inputFile =
-            Futures.transform(metadata, new AsyncFunction<ObjectMetadata, S3File>() {
+    ListenableFuture<StoreFile> inputFile =
+            Futures.transform(metadata, new AsyncFunction<ObjectMetadata, StoreFile>() {
               @Override
-              public ListenableFuture<S3File> apply(ObjectMetadata m) throws Exception {
+              public ListenableFuture<StoreFile> apply(ObjectMetadata m) throws Exception {
                 if (m == null)
                   throw new ServiceException(
                           new SimpleErrorCode("FILE_NOT_FOUND", 400, "S3 file does not exist"));
@@ -577,9 +581,9 @@ public class SteveHandler extends ProtoBufHandler {
               }
             });
 
-    inputFile = Futures.withFallback(inputFile, new FutureFallback<S3File>() {
+    inputFile = Futures.withFallback(inputFile, new FutureFallback<StoreFile>() {
       @Override
-      public ListenableFuture<S3File> create(Throwable t) {
+      public ListenableFuture<StoreFile> create(Throwable t) {
         if (t instanceof ServiceException) {
           return Futures.immediateFailedFuture(t);
         } else {
@@ -590,10 +594,10 @@ public class SteveHandler extends ProtoBufHandler {
     });
 
     // Upload file to S3
-    ListenableFuture<S3File> newFile = Futures.transform(
+    ListenableFuture<StoreFile> newFile = Futures.transform(
             inputFile,
-            new AsyncFunction<S3File, S3File>() {
-              public ListenableFuture<S3File> apply(S3File input) throws IOException {
+            new AsyncFunction<StoreFile, StoreFile>() {
+              public ListenableFuture<StoreFile> apply(StoreFile input) throws IOException {
                 URI jobUri = URI.create(_jobImplPrefix + "/" + id + ".tar.gz");
 
                 // TODO verify etag again
@@ -606,12 +610,12 @@ public class SteveHandler extends ProtoBufHandler {
 
     ListenableFuture<String> jobImplId = Futures.transform(
             newFile,
-            new AsyncFunction<S3File, String>() {
-              public ListenableFuture<String> apply(S3File input) throws IOException {
+            new AsyncFunction<StoreFile, String>() {
+              public ListenableFuture<String> apply(StoreFile input) throws IOException {
                 return _db.setJobImpl(
                         user,
                         req.getId(),
-                        Conversions.convertS3FileToData(input),
+                        Conversions.convertStoreFileToData(input),
                         tags);
               }
             });
@@ -685,9 +689,9 @@ public class SteveHandler extends ProtoBufHandler {
     final URI dest = tmpUrl;
 
     ListenableFuture<JobImpl> impl = _db.getJobImpl(user, req.getId());
-    ListenableFuture<S3File> s3File = Futures.transform(impl,
-           new AsyncFunction<JobImpl, S3File>() {
-              public ListenableFuture<S3File> apply(JobImpl impl) throws IOException {
+    ListenableFuture<StoreFile> s3File = Futures.transform(impl,
+           new AsyncFunction<JobImpl, StoreFile>() {
+              public ListenableFuture<StoreFile> apply(JobImpl impl) throws IOException {
                 URI archive;
                 try {
                   archive = Utils.getURI(impl.archive.getLocation());
@@ -696,9 +700,9 @@ public class SteveHandler extends ProtoBufHandler {
                   return Futures.immediateFailedFuture(new ServiceException(new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax")));
                 }
                 CopyOptions options = new CopyOptionsBuilder()
-                  .setSourceBucketName(Utils.getBucket(archive))
+                  .setSourceBucketName(Utils.getBucketName(archive))
                   .setSourceKey(Utils.getObjectKey(archive))
-                  .setDestinationBucketName(Utils.getBucket(dest))
+                  .setDestinationBucketName(Utils.getBucketName(dest))
                   .setDestinationKey(Utils.getObjectKey(dest))
                   .setCannedAcl("bucket-owner-full-control")
                   .createCopyOptions();
@@ -708,9 +712,9 @@ public class SteveHandler extends ProtoBufHandler {
 
     return Futures.transform(
             s3File,
-            new Function<S3File, Frontend.Response>() {
-              public Frontend.Response apply(S3File loc) {
-                Frontend.File file = Conversions.convertDataToFrontendFile(Conversions.convertS3FileToData(loc));
+            new Function<StoreFile, Frontend.Response>() {
+              public Frontend.Response apply(StoreFile loc) {
+                Frontend.File file = Conversions.convertDataToFrontendFile(Conversions.convertStoreFileToData(loc));
                 Frontend.ImplGetResponse.Builder resp = Frontend.ImplGetResponse.newBuilder().setFile(file);
 
                 return

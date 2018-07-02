@@ -18,7 +18,7 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.logicblox.s3lib.S3File;
+import com.logicblox.cloudstore.StoreFile;
 import com.logicblox.steve.common.Status.Event;
 import com.logicblox.steve.protocol.Backend;
 import com.logicblox.steve.protocol.Database;
@@ -40,7 +40,7 @@ public class Conversions {
     iso8601Format.setTimeZone(TimeZone.getTimeZone("UTC"));
   }
 
-  public static Data convertS3FileToData(S3File file) {
+  public static Data convertStoreFileToData(StoreFile file) {
     return new Data(getURI(file).toString(), Optional.of("etag:" + file.getETag()));
   }
 
@@ -56,8 +56,8 @@ public class Conversions {
     return iso8601Format.format(date);
   }
 
-  public static URI getURI(S3File file) {
-    return URI.create("s3://" + file.getBucketName() + "/" + file.getKey());
+  public static URI getURI(StoreFile file) {
+    return URI.create("s3://" + file.getBucketName() + "/" + file.getObjectKey());
   }
 
 
@@ -94,7 +94,7 @@ public class Conversions {
     return new Data(file.getUrl(), Optional.ofNullable(file.hasHash() ? file.getHash() : null));
   }
 
-  public static Frontend.File convertToFrontendFile(S3File file) {
+  public static Frontend.File convertToFrontendFile(StoreFile file) {
     return Frontend.File.newBuilder()
             .setUrl(getURI(file).toString())
             .setHash("etag:" + file.getETag())
