@@ -370,6 +370,7 @@ let
     makeClosure (
       {config, pkgs, ...}:
       { imports = [ ./nix/worker.nix ];
+        logicblox.jobs.platform = logicblox;
       }
     );
 
