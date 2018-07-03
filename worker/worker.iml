@@ -10,6 +10,50 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
+          <root url="file:///opt/logicblox/compute/libs" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file:///opt/logicblox/compute/libs" />
+        </SOURCES>
+        <jarDirectory url="file:///opt/logicblox/compute/libs" recursive="false" />
+        <jarDirectory url="file:///opt/logicblox/compute/libs" recursive="false" type="SOURCES" />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file:///opt/logicblox/share-4.4.14/java" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file:///opt/logicblox/share-4.4.14/java" />
+        </SOURCES>
+        <jarDirectory url="file:///opt/logicblox/share-4.4.14/java" recursive="false" />
+        <jarDirectory url="file:///opt/logicblox/share-4.4.14/java" recursive="false" type="SOURCES" />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///opt/logicblox/commons-cli.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///opt/logicblox/commons-exec.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
           <root url="file://$MODULE_DIR$/lib" />
         </CLASSES>
         <JAVADOC />
@@ -17,6 +61,18 @@
         <jarDirectory url="file://$MODULE_DIR$/lib" recursive="false" />
       </library>
     </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file:///opt/logicblox/compute" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file:///opt/logicblox/compute" />
+        </SOURCES>
+        <jarDirectory url="file:///opt/logicblox/compute" recursive="false" />
+        <jarDirectory url="file:///opt/logicblox/compute" recursive="false" type="SOURCES" />
+      </library>
+    </orderEntry>
   </component>
 </module>
-

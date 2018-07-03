@@ -14,9 +14,14 @@ commons_exec_dep = (
 commons_cli_dep = (
   "commons_cli", {'default_path': "/opt/logicblox/deps/commons-cli-1.2"}
 )
+
 protocols_dep = (
   "protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"}
 )
+
+google_api_services_compute_dep = ("google_api_services_compute",
+                                   {'default_path': "/opt/logicblox/deps/google-api-services-compute"}
+                                   )
 
 aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
 
@@ -26,7 +31,8 @@ depends_on(
     commons_exec_dep,
     protocols_dep,
     aws_java_sdk_dep,
-    commons_cli_dep)
+    commons_cli_dep,
+    google_api_services_compute_dep)
 
 bin_program('lb-steve-worker')
 bin_program('lb-steve-provisioner')
@@ -54,12 +60,13 @@ classpath = [
   '$(lb_web)/lib/java/google-oauth-client-1.19.0.jar',
 
   '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
+  '$(google_api_services_compute)/lib/java/google-api-services-compute.jar',
 
   '$(commons_exec)/lib/java/commons-exec.jar',
   '$(commons_cli)/lib/java/commons-cli.jar',
   
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
-  '$(lb_web)/lib/java/gson-2.2.4.jar',  
+  '$(lb_web)/lib/java/gson-2.2.4.jar',
   '$(lb_web)/lib/java/lb-web-client.jar',
   '$(lb_web)/lib/java/lb-web-server.jar',
   '$(lb_web)/lib/java/log4j-1.2.13.jar',

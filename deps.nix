@@ -43,6 +43,14 @@ rec {
       sha256 = "1f0b1cg17k79cjij6fpichrh9jzrn0q3dxf8z2a8af23id1w49pk";
     };
 
+  google-api-services-compute =
+    buildjar {
+      name = "google-api-services-compute";
+      url = http://central.maven.org/maven2/com/google/apis/google-api-services-compute/v1-rev188-1.23.0/google-api-services-compute-v1-rev188-1.23.0.jar;
+      sha256 = "1ldwhkhhw4ds72zc0wr9pl08kf8sjr7j9sbp4xzk9d7722fw96cm";
+
+    };
+
   commons-cli =
     buildjar {
       name = "commons-cli";

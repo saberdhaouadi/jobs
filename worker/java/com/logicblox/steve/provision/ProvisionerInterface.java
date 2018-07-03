@@ -1,6 +1,5 @@
 package com.logicblox.steve.provision;
 
-import org.apache.commons.codec.binary.Base64;
 
 public interface ProvisionerInterface {
 
@@ -18,7 +17,6 @@ public interface ProvisionerInterface {
 
     void createSpotInstances(int nr);
 
-    void createTags(String id);
 
 
 }

@@ -11,6 +11,9 @@ public class CommandLineArguments {
     private static String ami = "ami-820c2af9";
     private static String key = "rob";
     private static String region = "us-east-1";
+
+    private static String backend = "aws";
+    private static String project = ""; // to be used when querying GCP API
     private static String s3Bucket = "steve-jobs";
     private static String instanceType = "c3.xlarge";
     private static String role = "steve-jobs-worker";
@@ -204,5 +207,22 @@ public class CommandLineArguments {
     public static void setDiskSize(int diskSize) {
         CommandLineArguments.diskSize = diskSize;
     }
+
+    public static String getProject() {
+        return project;
+    }
+
+    public static void setProject(String project) {
+        CommandLineArguments.project = project;
+    }
+
+    public static String getBackend() {
+        return backend;
+    }
+
+    public static void setBackend(String backend) {
+        CommandLineArguments.backend = backend;
+    }
+
 
 }

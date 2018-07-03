@@ -2,16 +2,11 @@ package com.logicblox.steve.provision;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.ec2.AmazonEC2;
-import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import org.apache.commons.cli.*;
-import org.apache.commons.codec.binary.Base64;
 
 import java.util.*;
-import java.lang.InterruptedException;
 
 public class Main {
   private AmazonSQS sqs;
@@ -156,6 +151,16 @@ public class Main {
             .hasArg()
             .withArgName("security group")
             .create());
+    options.addOption(OptionBuilder.withLongOpt("backend")
+            .withDescription("Cloud provider to use, aws or gcp")
+            .hasArg()
+            .withArgName("backend")
+            .create());
+    options.addOption(OptionBuilder.withLongOpt("project")
+            .withDescription("Name of the project (required when using GCP backend)")
+            .hasArg()
+            .withArgName("backend")
+            .create());
 
     options.addOption(OptionBuilder.withLongOpt("dry-run")
             .withDescription("Whether to actually create the requested instances")
@@ -207,9 +212,17 @@ public class Main {
       if (_cmdline.hasOption("percentage-queue"))
         cmdArgs.setPctQueue(((Number) _cmdline.getParsedOptionValue("percentage-queue")).doubleValue());
 
+      if (_cmdline.hasOption("backend"))
+        cmdArgs.setSubnetId(_cmdline.getOptionValue("backend"));
+      if (_cmdline.hasOption("project"))
+        cmdArgs.setSecurityGroup(_cmdline.getOptionValue("project"));
+
       if (cmdArgs.getMaxInstances() < cmdArgs.getTotalNeeded()) {
          cmdArgs.setMaxInstances(cmdArgs.getTotalNeeded());
       }
+
+      if (cmdArgs.getBackend().toLowerCase() == "gcp" && cmdArgs.getProject().isEmpty() )
+          throw new MissingOptionException("You need to specify the name of the project when using GCP backend");
 
       cmdArgs.setDryRun(_cmdline.hasOption("dry-run"));
     } catch (ParseException exp) {
@@ -261,7 +274,12 @@ public class Main {
   public void go() {
 
 
-    ProvisionerInterface backend = new AWSProvisioner(cmdArgs);
+    ProvisionerInterface backend;
+    if(cmdArgs.getBackend().toLowerCase() == "aws"){
+      backend = new AWSProvisioner(cmdArgs);
+    } else {
+      backend = new GCEProvisioner(cmdArgs);
+    }
 
     int totalNeeded = CalculateTotalNeeded();
 
