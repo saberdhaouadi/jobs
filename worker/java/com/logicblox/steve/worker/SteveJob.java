@@ -7,6 +7,10 @@ import com.logicblox.cloudstore.S3Client;
 import com.logicblox.cloudstore.StoreFile;
 import com.logicblox.steve.common.Data;
 import com.logicblox.concurrent.MoreFutures;
+import com.logicblox.cloudstore.DownloadOptions;
+import com.logicblox.cloudstore.UploadOptions;
+import com.logicblox.cloudstore.ExistsOptions;
+import com.logicblox.cloudstore.Metadata;
 
 import java.io.File;
 import java.io.IOException;
@@ -291,7 +295,14 @@ public class SteveJob {
     }
 
     try {
-      _client.download(new File("/tmp/job/job.tar.gz"), jobImplUri, true).get();
+      DownloadOptions options = _client.getOptionsBuilderFactory()
+                                  .newDownloadOptionsBuilder()
+                                  .setFile(new File("/tmp/job/job.tar.gz"))
+                                  .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(jobImplUri))
+                                  .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(jobImplUri))
+                                  .setOverwrite(true)
+                                  .createOptions();
+      _client.download(options).get();
     } catch (Exception e) {
       e.printStackTrace();
       throw new InternalException("Could not download job implementation '" + _impl + "' from '" + uri + "'", e);
@@ -316,8 +327,8 @@ public class SteveJob {
     DownloadOptions options = _client.getOptionsBuilderFactory()
                                   .newDownloadOptionsBuilder()
                                   .setFile(f)
-                                  .setBucketName(Utils.getBucketName(inputURI))
-                                  .setObjectKey(Utils.getObjectKey(inputURI))
+                                  .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(inputUri))
+                                  .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(inputUri))
                                   .setOverwrite(true)
                                   .createOptions();
     try {
@@ -340,9 +351,9 @@ public class SteveJob {
       UploadOptions options =
           _client.getOptionsBuilderFactory()
               .newUploadOptionsBuilder()
-              .setFile(_output)
-              .setBucketName(Utils.getBucketName(_outputPath))
-              .setObjectKey(Utils.getObjectKey(_outputPath))
+              .setFile(_outputPath)
+              .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(_output))
+              .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(_output))
               .setEncKey(_outputEncryptionKey)
               .createOptions();
       return _client.uploadRecursively(options).get();
@@ -352,7 +363,7 @@ public class SteveJob {
   }
 
   private boolean previousLogExists() throws InternalException {
-    ObjectMetadata log = null;
+    Metadata log = null;
     try {
       ExistsOptions options =
           _client.getOptionsBuilderFactory()
@@ -368,7 +379,7 @@ public class SteveJob {
   }
 
   private boolean jobCancelled() throws InternalException {
-    ObjectMetadata cancelled = null;
+    Metadata cancelled = null;
     try {
       ExistsOptions options =
           _client.getOptionsBuilderFactory()
@@ -404,9 +415,9 @@ public class SteveJob {
             UploadOptions options =
                     _client.getOptionsBuilderFactory()
                         .newUploadOptionsBuilder()
-                        .setFile(_outputLog)
-                        .setBucketName(Utils.getBucketName(_logPath))
-                        .setObjectKey(Utils.getObjectKey(_logPath))
+                        .setFile(logPath)
+                        .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(_outputLog))
+                        .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(_outputLog))
                         .createOptions();
             _client.upload(options).get();
             if(_lbDeploymentLogsPath.exists()) {
@@ -417,12 +428,12 @@ public class SteveJob {
               if(_lbLogsPath.exists()) {
                 log("Uploading LB logs...[%s/%s]".format(_lbLogsPath.toString(),
                                                          _outputLbLogs));
-                UploadOptions options =
+                options =
                     _client.getOptionsBuilderFactory()
                         .newUploadOptionsBuilder()
-                        .setFile(_outputLbLogs)
-                        .setBucketName(Utils.getBucketName(_lbLogsPath))
-                        .setObjectKey(Utils.getObjectKey(_lbLogsPath))
+                        .setFile(_lbLogsPath)
+                        .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(_outputLbLogs))
+                        .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(_outputLbLogs))
                         .createOptions();
                 _client.upload(options).get();
               }
@@ -445,25 +456,25 @@ public class SteveJob {
   private void runJob() throws Exception {
     log("Checking for platform-releases.nix override.");
 
-    ObjectMetadata platformOverride;
+    Metadata platformOverride;
     try {
       String key = "override/platform-releases.nix";
-      ExistsOptions options =
+      ExistsOptions existsOptions =
           _client.getOptionsBuilderFactory()
               .newExistsOptionsBuilder()
               .setBucketName(_s3Bucket)
               .setObjectKey(key)
               .createOptions();
-      platformOverride = _client.exists(options).get();
+      platformOverride = _client.exists(existsOptions).get();
       if (platformOverride != null) {
-        DownloadOptions options = _client.getOptionsBuilderFactory()
+        DownloadOptions downloadOptions = _client.getOptionsBuilderFactory()
                                   .newDownloadOptionsBuilder()
                                   .setFile(new File("/tmp/platform-releases.nix"))
                                   .setBucketName(_s3Bucket)
                                   .setObjectKey(key)
                                   .setOverwrite(true)
                                   .createOptions();
-        _client.download(options).get();
+        _client.download(downloadOptions).get();
         log("Downloaded override for platform-releases.nix.");
       }
     } catch (Exception e) {
