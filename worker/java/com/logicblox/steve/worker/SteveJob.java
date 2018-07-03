@@ -313,12 +313,20 @@ public class SteveJob {
     last = last.substring(last.lastIndexOf('/') + 1);
 
     File f = new File(_inputPath, last);
+    DownloadOptions options = _client.getOptionsBuilderFactory()
+                                  .newDownloadOptionsBuilder()
+                                  .setFile(f)
+                                  .setBucketName(Utils.getBucketName(inputURI))
+                                  .setObjectKey(Utils.getObjectKey(inputURI))
+                                  .setOverwrite(true)
+                                  .createOptions();
     try {
-      if (input.getLocation().endsWith("/"))
-        return _client.downloadDirectory(f, inputUri, true, true);
+      if (input.getLocation().endsWith("/")) {
+        return _client.downloadRecursively(options);
+      }
       else {
         List<ListenableFuture<StoreFile>> l = new ArrayList();
-        l.add(_client.download(f, inputUri, true));
+        l.add(_client.download(options));
         return Futures.successfulAsList(l);
       }
     } catch (Exception e) {
@@ -329,7 +337,15 @@ public class SteveJob {
   private List<StoreFile> uploadOutput() throws UploadOutputFailedException {
     try {
       log("Uploading output...");
-      return _client.uploadDirectory(_outputPath, _output, _outputEncryptionKey).get();
+      UploadOptions options =
+          _client.getOptionsBuilderFactory()
+              .newUploadOptionsBuilder()
+              .setFile(_output)
+              .setBucketName(Utils.getBucketName(_outputPath))
+              .setObjectKey(Utils.getObjectKey(_outputPath))
+              .setEncKey(_outputEncryptionKey)
+              .createOptions();
+      return _client.uploadRecursively(options).get();
     } catch (Exception e) {
       throw new UploadOutputFailedException("Error uploading output files to " + _output, e);
     }
@@ -338,7 +354,13 @@ public class SteveJob {
   private boolean previousLogExists() throws InternalException {
     ObjectMetadata log = null;
     try {
-      log = _client.exists(_s3Bucket, String.format("jobs/%s/log", _id)).get();
+      ExistsOptions options =
+          _client.getOptionsBuilderFactory()
+              .newExistsOptionsBuilder()
+              .setBucketName(_s3Bucket)
+              .setObjectKey(String.format("jobs/%s/log", _id))
+              .createOptions();
+      log = _client.exists(options).get();
       return (log != null);
     } catch (Exception e) {
       throw new InternalException("Could not determine if log file already exists in S3.", e);
@@ -348,7 +370,13 @@ public class SteveJob {
   private boolean jobCancelled() throws InternalException {
     ObjectMetadata cancelled = null;
     try {
-      cancelled = _client.exists(_s3Bucket, String.format("jobs/%s/cancelled", _id)).get();
+      ExistsOptions options =
+          _client.getOptionsBuilderFactory()
+              .newExistsOptionsBuilder()
+              .setBucketName(_s3Bucket)
+              .setObjectKey(String.format("jobs/%s/cancelled", _id))
+              .createOptions();
+      cancelled = _client.exists(options).get();
       return (cancelled != null);
     } catch (Exception e) {
       throw new InternalException("Could not determine if job was cancelled.", e);
@@ -373,15 +401,30 @@ public class SteveJob {
           // upload logs
           try {
             log("Uploading log...[%s/%s]".format(logPath.toString(), _outputLog));
-            _client.upload(logPath, _outputLog).get();
+            UploadOptions options =
+                    _client.getOptionsBuilderFactory()
+                        .newUploadOptionsBuilder()
+                        .setFile(_outputLog)
+                        .setBucketName(Utils.getBucketName(_logPath))
+                        .setObjectKey(Utils.getObjectKey(_logPath))
+                        .createOptions();
+            _client.upload(options).get();
             if(_lbDeploymentLogsPath.exists()) {
               ProcessBuilder pb = new ProcessBuilder("tar", "-C", _lbDeploymentHomePath.toString(), "-czf", _lbLogsPath.toString(), "logs");
               Process p = pb.start();
               p.waitFor();
               p.destroy();
               if(_lbLogsPath.exists()) {
-                log("Uploading LB logs...[%s/%s]".format(_lbLogsPath.toString(), _outputLbLogs));
-                _client.upload(_lbLogsPath, _outputLbLogs).get();
+                log("Uploading LB logs...[%s/%s]".format(_lbLogsPath.toString(),
+                                                         _outputLbLogs));
+                UploadOptions options =
+                    _client.getOptionsBuilderFactory()
+                        .newUploadOptionsBuilder()
+                        .setFile(_outputLbLogs)
+                        .setBucketName(Utils.getBucketName(_lbLogsPath))
+                        .setObjectKey(Utils.getObjectKey(_lbLogsPath))
+                        .createOptions();
+                _client.upload(options).get();
               }
             }
           } catch (Exception e) {
@@ -405,9 +448,22 @@ public class SteveJob {
     ObjectMetadata platformOverride;
     try {
       String key = "override/platform-releases.nix";
-      platformOverride = _client.exists(_s3Bucket, key).get();
+      ExistsOptions options =
+          _client.getOptionsBuilderFactory()
+              .newExistsOptionsBuilder()
+              .setBucketName(_s3Bucket)
+              .setObjectKey(key)
+              .createOptions();
+      platformOverride = _client.exists(options).get();
       if (platformOverride != null) {
-        _client.download(new File("/tmp/platform-releases.nix"), new URI(String.format("s3://%s/%s", _s3Bucket, key)), true).get();
+        DownloadOptions options = _client.getOptionsBuilderFactory()
+                                  .newDownloadOptionsBuilder()
+                                  .setFile(new File("/tmp/platform-releases.nix"))
+                                  .setBucketName(_s3Bucket)
+                                  .setObjectKey(key)
+                                  .setOverwrite(true)
+                                  .createOptions();
+        _client.download(options).get();
         log("Downloaded override for platform-releases.nix.");
       }
     } catch (Exception e) {
