@@ -7,7 +7,6 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.compute.model.*;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.RandomStringUtils;
 
 
@@ -204,30 +203,16 @@ public class GCEProvisioner implements ProvisionerInterface {
         }
         return 0;
 
-
     }
 
     // get number of on-demand instances that are not yet terminated
     public int getNumberOfCurrentOnDemandInstances() {
         return getNumberOfRunningInstances(false);
-
-
     }
 
     // get number of spot instances that are not yet terminated
     public int getNumberOfCurrentSpotInstances() {
         return getNumberOfRunningInstances(true);
-    }
-
-    String getUserData() {
-        return Base64.encodeBase64String(
-                String.format("WORKERARGS=\"--bucket %s --incoming %s --outgoing %s --key-service %s\"",
-                        cmdArgs.getS3Bucket(),
-                        cmdArgs.getIncoming_url(),
-                        cmdArgs.getOutgoing_url(),
-                        cmdArgs.getServiceUri()
-                ).getBytes()
-        );
     }
 
     public CommandLineArguments getCmdArgs() {
@@ -243,8 +228,6 @@ public class GCEProvisioner implements ProvisionerInterface {
                 cmdArgs.getIncoming_url(),
                 cmdArgs.getOutgoing_url(),
                 cmdArgs.getServiceUri().toString());
-
-
     }
 
 }
