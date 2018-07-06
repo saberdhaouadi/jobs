@@ -3,15 +3,10 @@
 , accountId ? "826045886586"
 , name
 , logToken ? ""
-, isVpc ? false
+, vpcId ? ""
 }:
 let
-  environments = import ./environments.nix // mkIf ( isVpc ){
-    dev-2 =
-    { hostName = "steve-dev-2.logicblox.com";
-      elasticIPv4 = "34.231.25.40";
-      inherit (prod) workers;
-    }; };
+  environments = import ./environments.nix;
   env = environments."${name}";
 
   instanceTypes = builtins.attrNames env.workers;
@@ -382,7 +377,7 @@ with pkgs.lib;
           sourceGroup.ownerId = account;
           sourceGroup.groupName = "admin";
         } ;
-      accounts = if (isVpc) then
+      accounts = if ( vpcId != "" ) then
         [ "202226491534" ]
         else
         [
@@ -398,7 +393,7 @@ with pkgs.lib;
       {
         inherit region;
         accessKeyId = account;
-        vpcId = mkIf (isVpc) "vpc-15b4126d";
+        vpcId = mkIf (vpcId != "") vpcId;
         description = "Security group for frontend";
         rules = map entry ips ++ map accountEntry accounts ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; # { fromPort = 8080; toPort = 8080; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
       };
