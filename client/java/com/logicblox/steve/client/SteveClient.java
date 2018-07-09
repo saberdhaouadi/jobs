@@ -20,7 +20,8 @@ import com.logicblox.cloudstore.ThrowableRetriableTask;
 import com.logicblox.cloudstore.ThrowableRetryPolicy;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.protocol.Frontend;
-import com.logicblox.web.client.service.ProtobufServiceExchangeFactory;
+import com.logicblox.web.client.service.JsonServiceExchangeFactory;
+
 import com.logicblox.web.client.service.ServiceClient;
 import com.logicblox.web.client.service.ServiceClientException;
 import com.logicblox.web.client.service.ServiceClientOptions;
@@ -392,7 +393,7 @@ public class SteveClient implements SteveClientInterface {
   private ListenableFuture<Frontend.Response> post(Frontend.Request req)
           throws ServiceClientException {
 
-    ServiceExchange<Frontend.Response> exchange = ProtobufServiceExchangeFactory
+    ServiceExchange<Frontend.Response> exchange = JsonServiceExchangeFactory
         .call(HttpMethod.POST, _serviceUri, req, Frontend.Response.newBuilder(), _options);
     
     ListenableFuture<Frontend.Response> pm = executeWithRetry(new Callable<ListenableFuture<Frontend.Response>>() {
