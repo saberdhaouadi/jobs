@@ -22,6 +22,9 @@ import com.logicblox.cloudstore.StoreFile;
 import com.logicblox.cloudstore.CopyOptions;
 import com.logicblox.cloudstore.CopyOptionsBuilder;
 import com.logicblox.cloudstore.Utils;
+import com.logicblox.cloudstore.ExistsOptions;
+import com.logicblox.cloudstore.DownloadOptions;
+import com.logicblox.cloudstore.Metadata;
 import com.logicblox.sqs.SQSClient;
 import com.logicblox.sqs.SQSClients;
 import com.logicblox.sqs.SQSException;
@@ -421,14 +424,21 @@ public class SteveHandler extends ProtoBufHandler {
     }
     final URI inputUrl = tmpUrl;
 
-    ListenableFuture<ObjectMetadata> metadata = _s3client.exists(inputUrl);
+    ExistsOptions existsOptions =
+          _s3client.getOptionsBuilderFactory()
+              .newExistsOptionsBuilder()
+              .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(inputUrl))
+              .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(inputUrl))
+              .createOptions();
+
+    ListenableFuture<Metadata> metadata = _s3client.exists(existsOptions);
 
     // Check the S3 metadata, and if we're okay, then download the
     // log from S3 to a temporary file
     ListenableFuture<StoreFile> inputFile = Futures.transform(
             metadata,
-            new AsyncFunction<ObjectMetadata, StoreFile>() {
-              public ListenableFuture<StoreFile> apply(ObjectMetadata m) throws IOException {
+            new AsyncFunction<Metadata, StoreFile>() {
+              public ListenableFuture<StoreFile> apply(Metadata m) throws IOException {
                 if (m == null)
                   throw new ServiceException(
                           new SimpleErrorCode("FILE_NOT_FOUND", 400, "Log does not exist"));
@@ -437,7 +447,14 @@ public class SteveHandler extends ProtoBufHandler {
                   throw new ServiceException(
                           new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Log is too big"));
 
-                return _s3client.download(tmpFile, inputUrl, true);
+                DownloadOptions downloadOptions = _s3client.getOptionsBuilderFactory()
+                  .newDownloadOptionsBuilder()
+                  .setFile(tmpFile)
+                  .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(inputUrl))
+                  .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(inputUrl))
+                  .setOverwrite(true)
+                  .createOptions();
+                return _s3client.download(downloadOptions);
               }
             });
 
@@ -497,22 +514,30 @@ public class SteveHandler extends ProtoBufHandler {
     catch(URISyntaxException e) {
       return Futures.immediateFailedFuture(new ServiceException(new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax")));
     }
-    ListenableFuture<ObjectMetadata> md = _s3client.exists(logs);
+    ListenableFuture<Metadata> md = _s3client.exists(
+        _s3client.getOptionsBuilderFactory()
+            .newExistsOptionsBuilder()
+            .setBucketName(
+                com.logicblox.cloudstore.Utils.getBucketName(logs))
+            .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(logs))
+            .createOptions());
     ListenableFuture<StoreFile> s3File = Futures.transform(md,
-           new AsyncFunction<ObjectMetadata, StoreFile>() {
-              public ListenableFuture<StoreFile> apply(ObjectMetadata m) throws IOException {
+           new AsyncFunction<Metadata, StoreFile>() {
+              public ListenableFuture<StoreFile> apply(Metadata m) throws IOException {
                   if (m == null)
                     throw new ServiceException(
                             new SimpleErrorCode("FILE_NOT_FOUND", 400, "Log does not exist"));
 
-                  CopyOptions options = new CopyOptionsBuilder()
-                  .setSourceBucketName(Utils.getBucketName(logs))
-                  .setSourceKey(Utils.getObjectKey(logs))
-                  .setDestinationBucketName(Utils.getBucketName(dest))
-                  .setDestinationKey(Utils.getObjectKey(dest))
-                  .setCannedAcl("bucket-owner-full-control")
-                  .createCopyOptions();
-                return _s3client.copy(options);
+                  CopyOptions options =
+                      _s3client.getOptionsBuilderFactory()
+                          .newCopyOptionsBuilder()
+                          .setSourceBucketName(Utils.getBucketName(logs))
+                          .setSourceObjectKey(Utils.getObjectKey(logs))
+                          .setDestinationBucketName(Utils.getBucketName(dest))
+                          .setDestinationObjectKey(Utils.getObjectKey(dest))
+                          .setCannedAcl("bucket-owner-full-control")
+                          .createOptions();
+                  return _s3client.copy(options);
               }
            });
 
@@ -556,12 +581,18 @@ public class SteveHandler extends ProtoBufHandler {
 
     final URI inputUrl = tmpUrl;
 
-    ListenableFuture<ObjectMetadata> metadata = _s3client.exists(inputUrl);
+    ListenableFuture<Metadata> metadata = _s3client.exists(
+        _s3client.getOptionsBuilderFactory()
+            .newExistsOptionsBuilder()
+            .setBucketName(
+                com.logicblox.cloudstore.Utils.getBucketName(inputUrl))
+            .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(inputUrl))
+            .createOptions());
 
     ListenableFuture<StoreFile> inputFile =
-            Futures.transform(metadata, new AsyncFunction<ObjectMetadata, StoreFile>() {
+            Futures.transform(metadata, new AsyncFunction<Metadata, StoreFile>() {
               @Override
-              public ListenableFuture<StoreFile> apply(ObjectMetadata m) throws Exception {
+              public ListenableFuture<StoreFile> apply(Metadata m) throws Exception {
                 if (m == null)
                   throw new ServiceException(
                           new SimpleErrorCode("FILE_NOT_FOUND", 400, "S3 file does not exist"));
@@ -577,7 +608,18 @@ public class SteveHandler extends ProtoBufHandler {
                           new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Implementation is too big"));
 
                 // TODO check the account of the encryption key used.
-                return _s3client.download(tmpFile, inputUrl, true);
+                return _s3client.download(
+                    _s3client.getOptionsBuilderFactory()
+                        .newDownloadOptionsBuilder()
+                        .setFile(tmpFile)
+                        .setBucketName(
+                            com.logicblox.cloudstore.Utils.getBucketName(
+                                inputUrl))
+                        .setObjectKey(
+                            com.logicblox.cloudstore.Utils.getObjectKey(
+                                inputUrl))
+                        .setOverwrite(true)
+                        .createOptions());
               }
             });
 
@@ -601,7 +643,16 @@ public class SteveHandler extends ProtoBufHandler {
                 URI jobUri = URI.create(_jobImplPrefix + "/" + id + ".tar.gz");
 
                 // TODO verify etag again
-                return _s3client.upload(input.getLocalFile(), jobUri);
+                return _s3client.upload(
+                    _s3client.getOptionsBuilderFactory()
+                        .newUploadOptionsBuilder()
+                        .setFile(input.getLocalFile())
+                        .setBucketName(
+                            com.logicblox.cloudstore.Utils.getBucketName(
+                                jobUri))
+                        .setObjectKey(
+                            com.logicblox.cloudstore.Utils.getObjectKey(jobUri))
+                        .createOptions());
               }
             });
 
@@ -699,13 +750,15 @@ public class SteveHandler extends ProtoBufHandler {
                 catch(URISyntaxException e) {
                   return Futures.immediateFailedFuture(new ServiceException(new SimpleErrorCode("INVALID_URL_SYNTAX", 400, "Invalid URL syntax")));
                 }
-                CopyOptions options = new CopyOptionsBuilder()
-                  .setSourceBucketName(Utils.getBucketName(archive))
-                  .setSourceKey(Utils.getObjectKey(archive))
-                  .setDestinationBucketName(Utils.getBucketName(dest))
-                  .setDestinationKey(Utils.getObjectKey(dest))
-                  .setCannedAcl("bucket-owner-full-control")
-                  .createCopyOptions();
+                CopyOptions options =
+                    _s3client.getOptionsBuilderFactory()
+                        .newCopyOptionsBuilder()
+                        .setSourceBucketName(Utils.getBucketName(archive))
+                        .setSourceObjectKey(Utils.getObjectKey(archive))
+                        .setDestinationBucketName(Utils.getBucketName(dest))
+                        .setDestinationObjectKey(Utils.getObjectKey(dest))
+                        .setCannedAcl("bucket-owner-full-control")
+                        .createOptions();
                 return _s3client.copy(options);
               }
            });
