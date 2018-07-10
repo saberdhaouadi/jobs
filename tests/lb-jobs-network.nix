@@ -1,4 +1,5 @@
-{ client ? import ../. {},
+{ builds ? import ../. {},
+  platform,
   paperboat ? null
 }:
 (import <nixpkgs> {}).lib.overrideDerivation (
@@ -88,7 +89,7 @@ in
         environment.etc."elastiqmq/custom.conf".text = ''
           include classpath("application.conf")
 
-          // What is the outside visible address of this ElasticMQ node 
+          // What is the outside visible address of this ElasticMQ node
           // Used to create the queue URL (may be different from bind address!)
           node-address {
               protocol = http
@@ -187,6 +188,7 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ../nix/frontend.nix ];
+        logicblox.jobs.builds = builds;
 
         systemd.services.lb-steve-frontend.environment = awsEnvironment;
 
@@ -230,19 +232,22 @@ in
       { config, pkgs, ... }:
       {
         imports = [ common ../nix/keyserver.nix ];
+        logicblox.jobs.builds = builds;
       };
 
     client =
       { config, pkgs, ... }:
       {
         imports = [ common ];
-        environment.systemPackages = [ pkgs.openjdk pkgs.python2 client (builder_config.getLB "4.4.8") ];
+        environment.systemPackages = [ pkgs.openjdk pkgs.python2 builds.client.build (builder_config.getLB "4.4.8") ];
       };
 
     database =
-      { config, pkgs, ... }:
+      { config, pkgs, lib, ... }:
       {
         imports = [ common ../nix/database.nix ];
+        logicblox.jobs.builds = builds;
+        logicblox.jobs.platform  =  platform;
         systemd.services.lb-web-server.environment = awsEnvironment;
         virtualisation.memorySize = 4096;
         virtualisation.diskSize = 8192;
