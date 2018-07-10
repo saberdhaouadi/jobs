@@ -2,6 +2,7 @@ package com.logicblox.steve.client;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
@@ -13,15 +14,17 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.logicblox.concurrent.FutureTransform;
-import com.logicblox.concurrent.MoreFutures;
+import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.cloudstore.ExpBackoffRetryPolicy;
 import com.logicblox.cloudstore.ThrowableRetriableTask;
 import com.logicblox.cloudstore.ThrowableRetryPolicy;
+import com.logicblox.concurrent.FutureTransform;
+import com.logicblox.concurrent.MoreFutures;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.protocol.Frontend;
+import com.logicblox.web.client.http.HttpClientExchange;
+import com.logicblox.web.client.http.HttpClientRequest;
 import com.logicblox.web.client.service.JsonServiceExchangeFactory;
-
 import com.logicblox.web.client.service.ServiceClient;
 import com.logicblox.web.client.service.ServiceClientException;
 import com.logicblox.web.client.service.ServiceClientOptions;
@@ -393,15 +396,21 @@ public class SteveClient implements SteveClientInterface {
   private ListenableFuture<Frontend.Response> post(Frontend.Request req)
           throws ServiceClientException {
 
-    ServiceExchange<Frontend.Response> exchange = JsonServiceExchangeFactory
-        .call(HttpMethod.POST, _serviceUri, req, Frontend.Response.newBuilder(), _options);
+    ProtoBufExchange exchange = new ProtoBufExchange(Frontend.Response.newBuilder(), Optional.empty());
     
-    ListenableFuture<Frontend.Response> pm = executeWithRetry(new Callable<ListenableFuture<Frontend.Response>>() {
-      public ListenableFuture<Frontend.Response> call() throws ServiceClientException {
-        return _client.send(exchange);
+    ListenableFuture<ProtoBufExchange> pm = executeWithRetry(new Callable<ListenableFuture<ProtoBufExchange>>() {
+      public ListenableFuture<ProtoBufExchange> call() throws ServiceClientException {
+        HttpClientRequest clientRequest = JsonServiceExchangeFactory
+          .call(HttpMethod.POST, _serviceUri, req, Frontend.Response.newBuilder(), _options).getRequest();
+        
+        ListenableFuture<HttpClientExchange> futureExchange = _client.getHttpClient().send(clientRequest);
+        return MoreFutures.transformSync(futureExchange, x ->  { 
+          exchange.setResponseJSON(x.response.getBodyAsString().orElse(""));
+          exchange.setStatus(x.response.getHttpStatus());
+          return exchange;
+          });
       }
     });
-
     return instrumentForErrorHandling(exchange, pm);
   }
 
@@ -409,14 +418,19 @@ public class SteveClient implements SteveClientInterface {
    * Transforms future into a future that will throw ServiceException.
    */
   private static ListenableFuture<Frontend.Response> instrumentForErrorHandling(
-          final ServiceExchange<Frontend.Response> e1,
-          ListenableFuture<Frontend.Response> future) {
+          final ProtoBufExchange e1,
+          ListenableFuture<ProtoBufExchange> future) {
     return MoreFutures.transform(
             future,
-            new FutureTransform<Frontend.Response, Frontend.Response>() {
+            new FutureTransform<ProtoBufExchange, Frontend.Response>() {
               @Override
-              public ListenableFuture<Frontend.Response> transform(Frontend.Response e2) {
-                return Futures.immediateFuture(e2);
+              public ListenableFuture<Frontend.Response> transform(ProtoBufExchange e2) {
+                try {
+                  Frontend.Response response = (Frontend.Response) e2.getResponseMessage();
+                  return Futures.immediateFuture(response);
+                } catch (Exception exc) {
+                  return Futures.immediateFailedFuture(exc);
+                }
               }
 
               @Override
@@ -428,9 +442,7 @@ public class SteveClient implements SteveClientInterface {
                   // throw that as a nice exception.
                   Frontend.Response response = null;
                   try {
-                    if (e1.getResult().isDone()) {
-                      response = e1.getResult().get();
-                    }
+                    response = (Frontend.Response) e1.getResponseMessage();
                   } catch (Exception e) {
                     System.err.println(e);
                     // on purpose ignore all exceptions. We'll just rethrow
