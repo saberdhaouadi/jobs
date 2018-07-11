@@ -4,6 +4,7 @@
 , name
 , logToken ? ""
 , vpcId ? ""
+, production ? false
 }:
 let
   environments = import ./environments.nix;
@@ -369,6 +370,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         } ;
+      # ips = if production then builtins.fromJSON (builtins.readFile ./prod-ips.json) else builtins.fromJSON (builtins.readFile ./dev-ips.json);
       ips = builtins.fromJSON (builtins.readFile ./ips.json);
       accountEntry = account:
         {
