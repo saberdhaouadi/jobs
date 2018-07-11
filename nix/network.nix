@@ -370,8 +370,8 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         } ;
-      # ips = if production then builtins.fromJSON (builtins.readFile ./prod-ips.json) else builtins.fromJSON (builtins.readFile ./dev-ips.json);
-      ips = builtins.fromJSON (builtins.readFile ./ips.json);
+      ips = if production then builtins.fromJSON (builtins.readFile ./prod-ips.json) else builtins.fromJSON (builtins.readFile ./dev-ips.json);
+      #ips = builtins.fromJSON (builtins.readFile ./ips.json);
       accountEntry = account:
         {
           fromPort = 443;
