@@ -14,17 +14,19 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.logicblox.concurrent.FutureTransform;
+import com.logicblox.concurrent.MoreFutures;
+import com.logicblox.bloxweb.JsonFormatFactory;
 import com.logicblox.bloxweb.ProtoBufExchange;
 import com.logicblox.cloudstore.ExpBackoffRetryPolicy;
 import com.logicblox.cloudstore.ThrowableRetriableTask;
 import com.logicblox.cloudstore.ThrowableRetryPolicy;
-import com.logicblox.concurrent.FutureTransform;
-import com.logicblox.concurrent.MoreFutures;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.protocol.Frontend;
 import com.logicblox.web.client.http.HttpClientExchange;
 import com.logicblox.web.client.http.HttpClientRequest;
 import com.logicblox.web.client.service.JsonServiceExchangeFactory;
+
 import com.logicblox.web.client.service.ServiceClient;
 import com.logicblox.web.client.service.ServiceClientException;
 import com.logicblox.web.client.service.ServiceClientOptions;
@@ -396,68 +398,59 @@ public class SteveClient implements SteveClientInterface {
   private ListenableFuture<Frontend.Response> post(Frontend.Request req)
           throws ServiceClientException {
 
-    ProtoBufExchange exchange = new ProtoBufExchange(Frontend.Response.newBuilder(), Optional.empty());
-    
-    ListenableFuture<ProtoBufExchange> pm = executeWithRetry(new Callable<ListenableFuture<ProtoBufExchange>>() {
-      public ListenableFuture<ProtoBufExchange> call() throws ServiceClientException {
-        HttpClientRequest clientRequest = JsonServiceExchangeFactory
-          .call(HttpMethod.POST, _serviceUri, req, Frontend.Response.newBuilder(), _options).getRequest();
-        
-        ListenableFuture<HttpClientExchange> futureExchange = _client.getHttpClient().send(clientRequest);
-        return MoreFutures.transformSync(futureExchange, x ->  { 
-          exchange.setResponseJSON(x.response.getBodyAsString().orElse(""));
-          exchange.setStatus(x.response.getHttpStatus());
-          return exchange;
-          });
+    ListenableFuture<Frontend.Response> pm = executeWithRetry(new Callable<ListenableFuture<Frontend.Response>>() {
+      public ListenableFuture<Frontend.Response> call() throws ServiceClientException {
+        return _client.postJSON(_serviceUri, req, Frontend.Response.newBuilder(), _options);
       }
     });
-    return instrumentForErrorHandling(exchange, pm);
+    return instrumentForErrorHandling(pm);
   }
 
   /**
    * Transforms future into a future that will throw ServiceException.
    */
   private static ListenableFuture<Frontend.Response> instrumentForErrorHandling(
-          final ProtoBufExchange e1,
-          ListenableFuture<ProtoBufExchange> future) {
+      ListenableFuture<Frontend.Response> future) {
+    
     return MoreFutures.transform(
-            future,
-            new FutureTransform<ProtoBufExchange, Frontend.Response>() {
-              @Override
-              public ListenableFuture<Frontend.Response> transform(ProtoBufExchange e2) {
-                try {
-                  Frontend.Response response = (Frontend.Response) e2.getResponseMessage();
-                  return Futures.immediateFuture(response);
-                } catch (Exception exc) {
-                  return Futures.immediateFailedFuture(exc);
+        future,
+        new FutureTransform<Frontend.Response, Frontend.Response>() {
+          @Override
+          public ListenableFuture<Frontend.Response> transform(Frontend.Response e2) {
+            return Futures.immediateFuture(e2);
+          }
+
+          @Override
+          public ListenableFuture<Frontend.Response> create(Throwable t) {
+            if (t instanceof ServiceClientException) {
+              ServiceClientException exc = (ServiceClientException) t;
+
+              // If we manage to get a response from the exchange, then
+              // throw that as a nice exception.
+              Frontend.Response response = null;
+              try {
+                if (exc.getBodyAsString().isPresent()) {
+                  response =
+                      (Frontend.Response)
+                          JsonServiceExchangeFactory.jsonToProtobuf(Frontend.Response.newBuilder())
+                              .apply(exc.getBodyAsString());
                 }
+              } catch (Exception e) {
+                System.err.println(e);
+                // on purpose ignore all exceptions. We'll just rethrow
+                // the original exception.
               }
 
-              @Override
-              public ListenableFuture<Frontend.Response> create(Throwable t) {
-                if (t instanceof ServiceClientException) {
-                  ServiceClientException exc = (ServiceClientException) t;
+              if (response != null)
+                return Futures.immediateFailedFuture(
+                    new SteveClientException(
+                        exc.getMessage(), exc.getHttpStatus().orElse(-1), response));
+            }
 
-                  // If we manage to get a response from the exchange, then
-                  // throw that as a nice exception.
-                  Frontend.Response response = null;
-                  try {
-                    response = (Frontend.Response) e1.getResponseMessage();
-                  } catch (Exception e) {
-                    System.err.println(e);
-                    // on purpose ignore all exceptions. We'll just rethrow
-                    // the original exception.
-                  }
-
-                  if (response != null)
-                    return Futures.immediateFailedFuture(
-                      new SteveClientException(exc.getMessage(), exc.getHttpStatus().orElse(-1), response));
-                }
-
-                return Futures.immediateFailedFuture(t);
-              }
-            });
-  }
+            return Futures.immediateFailedFuture(t);
+          }
+        });
+}
 
   protected <V> ListenableFuture<V> executeWithRetry(Callable<ListenableFuture<V>> callable) {
     int initialDelay = 300;
