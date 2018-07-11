@@ -50,4 +50,9 @@ rec {
       inherit (prod) workers;
     };
 
+  integration =
+    { hostName = "steve-integration.logicblox.com";
+      elasticIPv4 = "18.233.197.187";
+      inherit (prod) workers;
+    };
 }
