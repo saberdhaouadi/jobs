@@ -131,11 +131,9 @@ public class GCEProvisioner implements ProvisionerInterface {
             try {
 
                 Instance instance = this.createInstance(this.cmdArgs.getProject(), this.cmdArgs.getRegion(), this.cmdArgs.getInstanceType(), this.cmdArgs.getAmi(), preemptible);
-                System.out.println(instance.toPrettyString());
 
                 Compute.Instances.Insert request = computeService.instances().insert(this.cmdArgs.getProject(), this.cmdArgs.getRegion(), instance);
 
-                System.out.println(request.toString());
                 Operation response = request.execute();
 
                 // TODO: Log when we fail creating an instance.

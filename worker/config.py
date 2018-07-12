@@ -19,9 +19,9 @@ protocols_dep = (
   "protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"}
 )
 
-google_api_services_compute_dep = ("google_api_services_compute",
-                                   {'default_path': "/opt/logicblox/deps/google-api-services-compute"}
-                                   )
+google_java_sdk_dep = ("google_java_sdk",
+                       {'default_path': "/opt/logicblox/deps/google-api-services-compute"}
+                       )
 
 aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
 
@@ -32,39 +32,18 @@ depends_on(
     protocols_dep,
     aws_java_sdk_dep,
     commons_cli_dep,
-    google_api_services_compute_dep)
+    google_java_sdk_dep)
 
 bin_program('lb-steve-worker')
 bin_program('lb-steve-provisioner')
 
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
-
-  '$(lb_web)/lib/java/joda-time-2.8.1.jar',
-  '$(lb_web)/lib/java/jcommander-1.29.jar',
-  '$(lb_web)/lib/java/commons-io-2.4.jar',
-  '$(lb_web)/lib/java/guava-15.0.jar',
-  '$(lb_web)/lib/java/google-http-client-1.19.0.jar',
-  '$(lb_web)/lib/java/s3lib-0.2.jar',
-  '$(lb_web)/lib/java/jackson-annotations-2.6.0.jar',
-  '$(lb_web)/lib/java/jackson-core-2.6.6.jar',
-  '$(lb_web)/lib/java/jackson-databind-2.6.6.jar',
-  '$(lb_web)/lib/java/httpclient-4.5.2.jar',
-  '$(lb_web)/lib/java/httpcore-4.4.4.jar',
-  '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
-
-  '$(lb_web)/lib/java/google-api-client-1.19.1.jar',
-  '$(lb_web)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
-  '$(lb_web)/lib/java/google-http-client-1.19.0.jar',
-  '$(lb_web)/lib/java/google-http-client-jackson2-1.19.0.jar',
-  '$(lb_web)/lib/java/google-oauth-client-1.19.0.jar',
-
   '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
-  '$(google_api_services_compute)/lib/java/google-api-services-compute.jar',
 
   '$(commons_exec)/lib/java/commons-exec.jar',
   '$(commons_cli)/lib/java/commons-cli.jar',
-  
+
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar',
   '$(lb_web)/lib/java/lb-web-client.jar',
@@ -80,18 +59,71 @@ classpath = [
   '$(lb_web)/lib/java/jetty-util-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/protobuf-2.6.1.jar',
   '$(lb_web)/lib/java/lb-common.jar',
-  '$(lb_web)/lib/java/lb-common-protocol.jar'
+  '$(lb_web)/lib/java/lb-common-protocol.jar',
+
+    ]
+
+worker_classpath = [
+
+  '$(lb_web)/lib/java/joda-time-2.8.1.jar',
+  '$(lb_web)/lib/java/jcommander-1.29.jar',
+  '$(lb_web)/lib/java/commons-io-2.4.jar',
+  '$(lb_web)/lib/java/guava-15.0.jar',
+  '$(lb_web)/lib/java/s3lib-0.2.jar',
+  '$(lb_web)/lib/java/jackson-annotations-2.6.0.jar',
+  '$(lb_web)/lib/java/jackson-core-2.6.6.jar',
+  '$(lb_web)/lib/java/jackson-databind-2.6.6.jar',
+  '$(lb_web)/lib/java/httpclient-4.5.2.jar',
+  '$(lb_web)/lib/java/httpcore-4.4.4.jar',
+  '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
+
+  '$(lb_web)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
+
+]
+
+provision_classpath = [
+  '$(google_java_sdk)/google-api-services-compute.jar',
+
+  '$(google_java_sdk)/google-api-services-compute.jar',
+
+  '$(google_java_sdk)/google-api-java-client/libs/google-api-client-1.23.0.jar',
+  '$(google_java_sdk)/google-api-java-client/libs/google-http-client-1.23.0.jar',
+  '$(google_java_sdk)/google-api-java-client/libs/google-http-client-jackson-1.23.0.jar',
+  '$(google_java_sdk)/google-api-java-client/libs/google-http-client-jackson2-1.23.0.jar',
+  '$(google_java_sdk)/google-api-java-client/libs/google-oauth-client-1.23.0.jar',
+  '$(lb_web)/lib/java/joda-time-2.8.1.jar',
+  '$(lb_web)/lib/java/jcommander-1.29.jar',
+  '$(lb_web)/lib/java/commons-io-2.4.jar',
+  '$(lb_web)/lib/java/commons-lang-2.6.jar',
+  '$(lb_web)/lib/java/guava-15.0.jar',
+  '$(lb_web)/lib/java/s3lib-0.2.jar',
+  '$(lb_web)/lib/java/jackson-annotations-2.6.0.jar',
+  '$(lb_web)/lib/java/jackson-core-2.6.6.jar',
+  '$(lb_web)/lib/java/jackson-databind-2.6.6.jar',
+  '$(lb_web)/lib/java/httpclient-4.5.2.jar',
+  '$(lb_web)/lib/java/httpcore-4.4.4.jar',
+  '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
+
 ]
 
 jar(
    name = 'lb-steve-worker',
-   srcdir = 'java',
+   srcdir = 'java/com/logicblox/steve/worker',
    findbugs = True,
-   classpath = classpath)
+    classpath = worker_classpath + classpath)
+
+jar(
+    name = 'lb-steve-provision',
+    srcdir = 'java/com/logicblox/steve/provision',
+    findbugs = True,
+    classpath = provision_classpath + classpath)
+
 core.g_rules['findbugs'].input = set()
 
 install_dir('nix','nix')
 
-link_libs(classpath)
+# link_libs(worker_classpath)
+link_libs(provision_classpath + classpath + worker_classpath)
 
-install_files(classpath, 'lib/java')
+# install_files(worker_classpath, 'lib/java')
+install_files(provision_classpath + classpath + worker_classpath, 'lib/java')

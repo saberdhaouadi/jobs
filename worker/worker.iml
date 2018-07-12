@@ -10,32 +10,6 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file:///opt/logicblox/compute/libs" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="file:///opt/logicblox/compute/libs" />
-        </SOURCES>
-        <jarDirectory url="file:///opt/logicblox/compute/libs" recursive="false" />
-        <jarDirectory url="file:///opt/logicblox/compute/libs" recursive="false" type="SOURCES" />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="file:///opt/logicblox/share-4.4.14/java" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="file:///opt/logicblox/share-4.4.14/java" />
-        </SOURCES>
-        <jarDirectory url="file:///opt/logicblox/share-4.4.14/java" recursive="false" />
-        <jarDirectory url="file:///opt/logicblox/share-4.4.14/java" recursive="false" type="SOURCES" />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
           <root url="jar:///opt/logicblox/commons-cli.jar!/" />
         </CLASSES>
         <JAVADOC />
@@ -54,24 +28,33 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file://$MODULE_DIR$/lib" />
+          <root url="file:///nix/store/db7shl97b33wdjsw2xqc0hfar2bxr7dr-google-java-sdk-1.23.0/google-api-java-client/libs" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
-        <jarDirectory url="file://$MODULE_DIR$/lib" recursive="false" />
+        <SOURCES>
+          <root url="file:///nix/store/db7shl97b33wdjsw2xqc0hfar2bxr7dr-google-java-sdk-1.23.0/google-api-java-client/libs" />
+        </SOURCES>
+        <jarDirectory url="file:///nix/store/db7shl97b33wdjsw2xqc0hfar2bxr7dr-google-java-sdk-1.23.0/google-api-java-client/libs" recursive="false" />
+        <jarDirectory url="file:///nix/store/db7shl97b33wdjsw2xqc0hfar2bxr7dr-google-java-sdk-1.23.0/google-api-java-client/libs" recursive="false" type="SOURCES" />
       </library>
     </orderEntry>
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file:///opt/logicblox/compute" />
+          <root url="jar:///nix/store/db7shl97b33wdjsw2xqc0hfar2bxr7dr-google-java-sdk-1.23.0/google-api-services-compute.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES>
-          <root url="file:///opt/logicblox/compute" />
-        </SOURCES>
-        <jarDirectory url="file:///opt/logicblox/compute" recursive="false" />
-        <jarDirectory url="file:///opt/logicblox/compute" recursive="false" type="SOURCES" />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file:///nix/store/bnd16gi95mjjd7xhpjyscpx1lwc7dzym-aws-java-sdk-1.11.102/lib/java" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+        <jarDirectory url="file:///nix/store/bnd16gi95mjjd7xhpjyscpx1lwc7dzym-aws-java-sdk-1.11.102/lib/java" recursive="false" />
       </library>
     </orderEntry>
   </component>

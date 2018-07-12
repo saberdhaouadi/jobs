@@ -321,7 +321,7 @@ let
         "--with-commons-cli=${deps.commons-cli}"
         "--with-protocols=${protocols}"
         "--with-aws-java-sdk=${deps.aws-java-sdk}"
-        "--with-google-api-services-compute=${deps.google-api-services-compute}"
+        "--with-google-java-sdk=${deps.google-java-sdk}"
       ];
       postInstall = postInstall + ''
         for b in lb-steve-worker lb-steve-provisioner; do 

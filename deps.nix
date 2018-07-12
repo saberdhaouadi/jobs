@@ -12,6 +12,15 @@ let
       '';
     };
 
+  google-api-services-compute =
+    buildjar {
+      name = "google-api-services-compute";
+      url = http://central.maven.org/maven2/com/google/apis/google-api-services-compute/v1-rev188-1.23.0/google-api-services-compute-v1-rev188-1.23.0.jar;
+      sha256 = "1ldwhkhhw4ds72zc0wr9pl08kf8sjr7j9sbp4xzk9d7722fw96cm";
+
+    };
+
+
   aws-java-sdk =
     with pkgs; stdenv.mkDerivation rec {
       name = "aws-java-sdk-1.11.102";
@@ -30,11 +39,27 @@ let
       '';
     };
 
+  google-java-sdk =
+    with pkgs; stdenv.mkDerivation rec {
+      name = "google-java-sdk-1.23.0";
+      src = fetchurl {
+        url = http://central.maven.org/maven2/com/google/api-client/google-api-client-assembly/1.23.0/google-api-client-assembly-1.23.0-1.23.0.zip ;
+        sha256 = "07x5jgbp0cini29avz37ppzrlvwqfdb0d8g4il5xcy38ivsmms53";
+      };
+      buildInputs = [ pkgs.unzip google-api-services-compute ];
+      buildCommand = ''
+        mkdir  $out/
+        unzip  $src -d $out
+        cp ${google-api-services-compute}/lib/java/google-api-services-compute.jar $out/
+      '';
+    };
+
 
 
 in
 rec {
-  inherit aws-java-sdk;
+  inherit aws-java-sdk google-java-sdk;
+
 
   commons-exec =
     buildjar {
@@ -43,13 +68,6 @@ rec {
       sha256 = "1f0b1cg17k79cjij6fpichrh9jzrn0q3dxf8z2a8af23id1w49pk";
     };
 
-  google-api-services-compute =
-    buildjar {
-      name = "google-api-services-compute";
-      url = http://central.maven.org/maven2/com/google/apis/google-api-services-compute/v1-rev188-1.23.0/google-api-services-compute-v1-rev188-1.23.0.jar;
-      sha256 = "1ldwhkhhw4ds72zc0wr9pl08kf8sjr7j9sbp4xzk9d7722fw96cm";
-
-    };
 
   commons-cli =
     buildjar {

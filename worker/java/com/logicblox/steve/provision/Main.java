@@ -159,7 +159,7 @@ public class Main {
     options.addOption(OptionBuilder.withLongOpt("project")
             .withDescription("Name of the project (required when using GCP backend)")
             .hasArg()
-            .withArgName("backend")
+            .withArgName("project")
             .create());
 
     options.addOption(OptionBuilder.withLongOpt("dry-run")
@@ -213,9 +213,9 @@ public class Main {
         cmdArgs.setPctQueue(((Number) _cmdline.getParsedOptionValue("percentage-queue")).doubleValue());
 
       if (_cmdline.hasOption("backend"))
-        cmdArgs.setSubnetId(_cmdline.getOptionValue("backend"));
+        cmdArgs.setBackend(_cmdline.getOptionValue("backend"));
       if (_cmdline.hasOption("project"))
-        cmdArgs.setSecurityGroup(_cmdline.getOptionValue("project"));
+        cmdArgs.setProject(_cmdline.getOptionValue("project"));
 
       if (cmdArgs.getMaxInstances() < cmdArgs.getTotalNeeded()) {
          cmdArgs.setMaxInstances(cmdArgs.getTotalNeeded());
