@@ -222,7 +222,7 @@ public class Main {
       // The line below is no longer necessary, but I am leaving this
       // here just to keep some validation before submitting the job
       SignUtils.readPrivateKeyFromPEM(new FileReader(keyFileName));
-      return options.encoding(ContentEncoding.GZIP);
+      return options.encoding(ContentEncoding.GZIP_ON_WIRE);
     } catch (Exception e) {
       throw new UsageException("Could not load key file from " + keyFileName + ": " + e.getMessage());
     }
