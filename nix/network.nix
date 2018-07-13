@@ -379,17 +379,6 @@ with pkgs.lib;
           sourceGroup.ownerId = account;
           sourceGroup.groupName = "admin";
         } ;
-      accounts = if ( vpcId != "" ) then
-        [ "202226491534" ]
-        else
-        [
-         "297794765570"
-         "414877248210"
-         "162071310369"
-         "216775848791"
-         "716415058944"
-         "006491606506" # PDX Science
-        ];
     in
       { config, resources, ... }:
       {
@@ -397,7 +386,7 @@ with pkgs.lib;
         accessKeyId = account;
         vpcId = mkIf (vpcId != "") vpcId;
         description = "Security group for frontend";
-        rules = map entry ips ++ map accountEntry accounts ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; # { fromPort = 8080; toPort = 8080; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
+        rules = map entry ips ++ map accountEntry accountId ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; 
       };
 
   "provisioner-${name}" =
