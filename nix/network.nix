@@ -371,7 +371,6 @@ with pkgs.lib;
           sourceIp = "${ip}/32";
         } ;
       ips = if production then builtins.fromJSON (builtins.readFile ./prod-ips.json) else builtins.fromJSON (builtins.readFile ./dev-ips.json);
-      #ips = builtins.fromJSON (builtins.readFile ./ips.json);
       accountEntry = account:
         {
           fromPort = 443;
@@ -386,7 +385,7 @@ with pkgs.lib;
         accessKeyId = account;
         vpcId = mkIf (vpcId != "") vpcId;
         description = "Security group for frontend";
-        rules = map entry ips ++ map accountEntry accountId ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; 
+        rules = map entry ips ++ map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; 
       };
 
   "provisioner-${name}" =
