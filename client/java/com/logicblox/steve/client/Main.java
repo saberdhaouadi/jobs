@@ -206,24 +206,25 @@ public class Main {
           throws URISyntaxException, UsageException {
     
     String user = _user;
-    String keyFile = _keyFile;
+    String keyFileName = _keyFile;
 
     if (user == null)
       user = getAuthOption("user");
-    if (keyFile == null)
-      keyFile = getAuthOption("key_file");
+    if (keyFileName == null)
+      keyFileName = getAuthOption("key_file");
 
     
     ServiceClientOptions options = new ServiceClientOptions();
     try {
-      options.signature(user, keyFile);
+      File keyFile = new File(keyFileName);
+      options.signature(user, keyFile.getName(), keyFile.getParent());
       
       // The line below is no longer necessary, but I am leaving this
       // here just to keep some validation before submitting the job
-      SignUtils.readPrivateKeyFromPEM(new FileReader(keyFile));
-      return options.encoding(ContentEncoding.GZIP);
+      SignUtils.readPrivateKeyFromPEM(new FileReader(keyFileName));
+      return options.encoding(ContentEncoding.GZIP_ON_WIRE);
     } catch (Exception e) {
-      throw new UsageException("Could not load key file from " + keyFile + ": " + e.getMessage());
+      throw new UsageException("Could not load key file from " + keyFileName + ": " + e.getMessage());
     }
   }
 

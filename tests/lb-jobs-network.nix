@@ -159,6 +159,8 @@ in
 
         boot.kernel.sysctl."vm.panic_on_oom" = 0;
 
+        logicblox.jobs.builds = builds;
+
         systemd.services.lb-steve-worker.environment = awsEnvironment;
 
         system.activationScripts.ec2metadata = ''
