@@ -15,7 +15,7 @@ with lib;
 
   config = {
     logicblox.jobs = {
-      builds = mkDefault (import ../. { platform_release = logicblox.jobs.platform; });
+      builds = mkDefault (import ../. { platform_release = config.logicblox.jobs.platform; });
       platform = mkDefault ((import <config> {}).getLB (import ../lb-version.nix));
     };
   };

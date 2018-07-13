@@ -12,6 +12,7 @@ import com.logicblox.cloudstore.KeyProvider;
 import com.logicblox.cloudstore.S3Client;
 import com.logicblox.cloudstore.S3ClientBuilder;
 import com.logicblox.cloudstore.Utils;
+import com.logicblox.cloudstore.Metadata;
 
 import com.logicblox.bloxweb.config.ConfigMap;
 
@@ -61,7 +62,7 @@ public class S3Utils {
    * The hash needs to have the syntax "hash-type:hash-value", where
    * the supported hash-type is currently only 'etag'.
    */
-  public static boolean verifyHash(ObjectMetadata metadata, String hash) {
+  public static boolean verifyHash(Metadata metadata, String hash) {
     if (metadata == null)
       throw new IllegalArgumentException("metadata must not be null");
     if (hash == null)
