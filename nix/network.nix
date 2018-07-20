@@ -3,6 +3,8 @@
 , accountId ? "826045886586"
 , name
 , logToken ? ""
+, vpcId ? ""
+, production ? false
 }:
 let
   environments = import ./environments.nix;
@@ -53,7 +55,7 @@ let
       deployment.ec2.keyPair = resources.ec2KeyPairs."kp-${region}".name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "c3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.large" else "c3.large";
       deployment.ec2.elasticIPv4 = resources.elasticIPs."key-ip-${region}";
 
       networking.firewall.allowedTCPPorts = [ 443 ];
@@ -100,7 +102,7 @@ let
 
   builds = import ../. { platform_release = builder-config.getLB (import ../lb-version.nix); };
   s3Name = "steve-jobs-${name}";
-  frontendConfig = pkgs.writeText "lb-steve-frontend.config" 
+  frontendConfig = pkgs.writeText "lb-steve-frontend.config"
     ''
       [global]
       jvm_dump_dir = /tmp
@@ -346,7 +348,7 @@ with pkgs.lib;
               "Effect": "Allow",
               "Resource": [ "*" ]
             },
-            { 
+            {
               "Action": [
                 "s3:Get*",
                 "s3:Put*",
@@ -361,14 +363,14 @@ with pkgs.lib;
     };
 
   resources.ec2SecurityGroups.frontend-sg =
-    let 
+    let
       entry = ip:
         {
           fromPort = 443;
           toPort = 443;
           sourceIp = "${ip}/32";
         } ;
-      ips = builtins.fromJSON (builtins.readFile ./ips.json);
+      ips = if production then builtins.fromJSON (builtins.readFile ./prod-ips.json) else builtins.fromJSON (builtins.readFile ./dev-ips.json);
       accountEntry = account:
         {
           fromPort = 443;
@@ -376,21 +378,14 @@ with pkgs.lib;
           sourceGroup.ownerId = account;
           sourceGroup.groupName = "admin";
         } ;
-      accounts = [
-       "297794765570"
-       "414877248210"
-       "162071310369"
-       "216775848791"
-       "716415058944"
-       "006491606506" # PDX Science
-      ];
     in
       { config, resources, ... }:
       {
         inherit region;
         accessKeyId = account;
+        vpcId = mkIf (vpcId != "") vpcId;
         description = "Security group for frontend";
-        rules = map entry ips ++ map accountEntry accounts ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
+        rules = map entry ips ++ map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; 
       };
 
   "provisioner-${name}" =
@@ -447,7 +442,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "r3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
 
       imports = [
@@ -469,7 +464,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "r3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
 
@@ -567,7 +562,7 @@ with pkgs.lib;
             - host: 127.0.0.1
               name: jmx_instance
               port: 7199
- 
+
           init_config:
             conf:
               - include:
@@ -613,7 +608,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "c3.8xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.8xlarge" else "c3.8xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
@@ -651,7 +646,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.frontend-sg.name ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "c3.xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.xlarge" else "c3.xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       deployment.ec2.elasticIPv4 = env.elasticIPv4 or "";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
@@ -800,7 +795,7 @@ with pkgs.lib;
             - host: 127.0.0.1
               name: jmx_instance
               port: 7199
- 
+
           init_config:
             conf:
               - include:
@@ -810,7 +805,7 @@ with pkgs.lib;
                   domain: java.lang
                   type: GarbageCollector
           '';
- 
+
       services.dd-agent.nginxConfig = ''
         init_config:
         instances:
