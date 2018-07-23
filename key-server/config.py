@@ -57,6 +57,7 @@ classpath = [
   '$(lb_web)/lib/java/google-http-client-jackson2-1.19.0.jar',
   '$(lb_web)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
   '$(lb_web)/lib/java/google-oauth-client-1.19.0.jar',
+  '$(lb_web)/lib/java/netty-all-4.1.22.Final.jar',
 
   '$(lb_web)/lib/java/cloudstore-0.2.jar',
   '$(logicblox)/lib/java/commons-io-2.4.jar',

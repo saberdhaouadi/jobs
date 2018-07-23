@@ -18,6 +18,7 @@ depends_on(
 
 bin_program('lb-steve')
 config_file('config/lb-steve-client.config')
+config_file('$(lb_web)/config/lb-web-client.config')
 
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
@@ -30,6 +31,7 @@ classpath = [
   '$(lb_web)/lib/java/jackson-core-2.6.6.jar',
   '$(lb_web)/lib/java/jackson-databind-2.6.6.jar',
   '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
+  '$(lb_web)/lib/java/netty-all-4.1.22.Final.jar',
 
   '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
 

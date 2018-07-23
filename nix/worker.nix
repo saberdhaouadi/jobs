@@ -159,6 +159,7 @@ in
       wants = [ "gurobi-socket.service" ];
       wantedBy = [ "multi-user.target" ];
       path = [ config.logicblox.jobs.builds.worker ];
+      environment = { LB_WEBCLIENT_HOME = config.logicblox.jobs.platform; };
       preStart = ''
         systemctl is-active gurobi-socket.service
       '';

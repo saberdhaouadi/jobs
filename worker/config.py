@@ -30,6 +30,7 @@ depends_on(
 
 bin_program('lb-steve-worker')
 bin_program('lb-steve-provisioner')
+config_file('$(lb_web)/config/lb-web-client.config')
 
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
@@ -46,6 +47,10 @@ classpath = [
   '$(lb_web)/lib/java/httpclient-4.5.2.jar',
   '$(lb_web)/lib/java/httpcore-4.4.4.jar',
   '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
+  '$(lb_web)/lib/java/netty-all-4.1.22.Final.jar',
+  '$(lb_web)/lib/java/commons-codec-1.9.jar',
+  '$(lb_web)/lib/java/commons-configuration-1.8.jar',
+  '$(lb_web)/lib/java/commons-lang-2.6.jar',
 
   '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
 

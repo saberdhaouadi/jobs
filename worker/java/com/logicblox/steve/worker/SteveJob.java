@@ -353,7 +353,7 @@ public class SteveJob {
               .newUploadOptionsBuilder()
               .setFile(_outputPath)
               .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(_output))
-              .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(_output))
+              .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(_output)+"/")
               .setEncKey(_outputEncryptionKey)
               .createOptions();
       return _client.uploadRecursively(options).get();
