@@ -334,7 +334,9 @@ let
       image = (import <nixpkgs/nixos> {
         system = "x86_64-linux";
         configuration = {
-          imports = [ ./nix/worker-ec2-image.nix ];
+          imports = [
+            ./nix/worker-ec2-image.nix
+          ];
           logicblox.jobs.platform = logicblox;
         };
       }).config.system.build.amazonImage;
