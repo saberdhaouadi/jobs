@@ -4,8 +4,8 @@ import java.net.URI;
 import java.util.List;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.logicblox.bloxweb.client.ServiceClientException;
 import com.logicblox.steve.protocol.Frontend;
+import com.logicblox.web.client.service.ServiceClientException;
 
 /**
  * Client-side API for making calls to steve. This is used by the

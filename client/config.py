@@ -8,7 +8,7 @@ lbconfig_package(
   default_targets=['jars', 'findbugs'])
 
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
-aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
+aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/cloud-store"})
 
 depends_on(
   logicblox_dep,
@@ -18,11 +18,12 @@ depends_on(
 
 bin_program('lb-steve')
 config_file('config/lb-steve-client.config')
+config_file('$(lb_web)/config/lb-web-client.config')
 
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
 
-  '$(lb_web)/lib/java/s3lib-0.2.jar',
+  '$(lb_web)/lib/java/cloudstore-0.2.jar',
   '$(logicblox)/lib/java/commons-io-2.4.jar',
   '$(lb_web)/lib/java/httpclient-4.5.2.jar',
   '$(lb_web)/lib/java/httpcore-4.4.4.jar',
@@ -30,6 +31,7 @@ classpath = [
   '$(lb_web)/lib/java/jackson-core-2.6.6.jar',
   '$(lb_web)/lib/java/jackson-databind-2.6.6.jar',
   '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
+  '$(lb_web)/lib/java/netty-all-4.1.22.Final.jar',
 
   '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
 
@@ -44,14 +46,6 @@ classpath = [
   '$(lb_web)/lib/java/guava-15.0.jar',
   '$(lb_web)/lib/java/java-statsd-client-2.0.0.jar',
   '$(lb_web)/lib/java/jcommander-1.29.jar',
-  '$(lb_web)/lib/java/jetty-client-7.6.7.v20120910.jar',
-  '$(lb_web)/lib/java/jetty-continuation-7.6.7.v20120910.jar',
-  '$(lb_web)/lib/java/jetty-http-7.6.7.v20120910.jar',
-  '$(lb_web)/lib/java/jetty-io-7.6.7.v20120910.jar',
-  '$(lb_web)/lib/java/jetty-security-7.6.7.v20120910.jar',
-  '$(lb_web)/lib/java/jetty-server-7.6.7.v20120910.jar',
-  '$(lb_web)/lib/java/jetty-servlet-7.6.7.v20120910.jar',
-  '$(lb_web)/lib/java/jetty-util-7.6.7.v20120910.jar',
   '$(lb_web)/lib/java/joda-time-2.8.1.jar',
   '$(lb_web)/lib/java/lb-common.jar',
   '$(lb_web)/lib/java/lb-common-protocol.jar',

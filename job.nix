@@ -266,7 +266,7 @@ let
 
   jobs = rec {
 
-  tests = import ./tests/lb-jobs-network.nix { builds = jobs; };
+  tests = import ./tests/lb-jobs-network.nix { builds = jobs; platform = logicblox; };
 
   frontend =
      builder_config.buildLBConfig {
@@ -331,8 +331,14 @@ let
 
   worker_image.ec2 =
     let
-      image = (import <nixpkgs/nixos> { system = "x86_64-linux"; configuration = ./nix/worker-ec2-image.nix; }).config.system.build.amazonImage;
-    in 
+      image = (import <nixpkgs/nixos> {
+        system = "x86_64-linux";
+        configuration = {
+          imports = [ ./nix/worker-ec2-image.nix ];
+          logicblox.jobs.platform = logicblox;
+        };
+      }).config.system.build.amazonImage;
+    in
       runCommand "worker-ec2-image" { preferLocalBuild = true; } ''
         mkdir -p $out/nix-support
         xz -z -c ${image}/nixos.qcow2  > $out/worker.qcow2.xz
@@ -370,6 +376,7 @@ let
     makeClosure (
       {config, pkgs, ...}:
       { imports = [ ./nix/worker.nix ];
+        logicblox.jobs.platform = logicblox;
       }
     );
 

@@ -10,7 +10,7 @@ let
       #! /bin/sh
       set -e
       source /etc/profile
-      export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${builds.worker}:nixpkgs-unstable=${<nixpkgs-unstable>}"
+      export NIX_PATH="nixpkgs=${<nixpkgs>}:config=${<config>}:worker=${config.logicblox.jobs.builds.worker}:nixpkgs-unstable=${<nixpkgs-unstable>}"
       ${optionalString (config.deployment.targetEnv or "" == "") ''
         if [[ -f /root/user-data ]] ; then
           source /root/user-data
@@ -20,7 +20,7 @@ let
           exit 1
         fi
       ''}
-      ${builds.worker}/bin/lb-steve-worker ${cfg.arguments} $@
+      ${config.logicblox.jobs.builds.worker}/bin/lb-steve-worker ${cfg.arguments} $@
     '';
 
   shutdown-self =
@@ -35,7 +35,10 @@ let
 
 in
 {
-  imports = [ <lbdevops/logicblox/config/users.nix> ];
+  imports = [
+    <lbdevops/logicblox/config/users.nix>
+    ./builds.nix
+  ];
 
   options = {
     lb-steve-worker.shutdownOnIdle = mkOption {
@@ -70,7 +73,7 @@ in
       (builder-config.releases.s3lib "4.3.3")
 
       # actual packages
-      builds.worker
+      config.logicblox.jobs.builds.worker
       pkgs.stdenv
       pkgs.awscli
       shutdown-self
@@ -155,7 +158,8 @@ in
       after = [ "network.target" "fetch-ec2-data.service" "gurobi-socket.service" ];
       wants = [ "gurobi-socket.service" ];
       wantedBy = [ "multi-user.target" ];
-      path = [ builds.worker ];
+      path = [ config.logicblox.jobs.builds.worker ];
+      environment = { LB_WEBCLIENT_HOME = config.logicblox.jobs.platform; };
       preStart = ''
         systemctl is-active gurobi-socket.service
       '';
@@ -174,7 +178,7 @@ in
         after = [ "network.target" ];
         before = [ "shutdown.target" ];
 
-        path = [ builds.worker ];
+        path = [ config.logicblox.jobs.builds.worker ];
 
         serviceConfig =
           { ExecStart = "${pkgs.coreutils}/bin/echo";
