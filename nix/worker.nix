@@ -89,11 +89,12 @@ in
       build-compress-log = false
       user-agent-suffix = lb-jobs
       sandbox-dev-shm-size = 75%
-      signed-binary-caches =
     '';
     nix.useSandbox = true;
-    nix.package = pkgs.nixUnstable;
-    nix.trustedBinaryCaches = [ "s3://logicblox-cache" ];
+    nix.package = pkgs.nixStable2;
+    nix.binaryCaches = [ "https://cache-fastly.nixos.org" ];
+    nix.trustedBinaryCaches = [ "https://cache-fastly.nixos.org" "s3://logicblox-cache" ];
+    nix.binaryCachePublicKeys = [ "bob.logicblox.com-1:pvQBnviKJObXHv3ZWBeCQ22pDFduyFTEb2XoJn3aOtI=" ];
 
     systemd.extraConfig = ''
       DefaultCPUAccounting=true
