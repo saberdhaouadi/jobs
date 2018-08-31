@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -i bash -p qemu ec2_ami_tools jq ec2_api_tools awscli
+#! nix-shell -i bash -p qemu ec2_ami_tools jq ec2_api_tools awscli -I nixpkgs=channel:nixos-17.09
 
 # To start with do: nix-shell -p awscli --run "aws configure"
 
@@ -30,6 +30,7 @@ echo "NixOS version is $version"
 
 echo "{" > nix/amis.nix
 
+lbJobsDevAccountId="202226491534"
 types="hvm"
 stores="ebs s3"
 regions="us-east-1 us-west-1 us-west-2"
@@ -267,6 +268,9 @@ for type in $types; do
                 echo -n '.'
             done
             echo
+
+            aws ec2 modify-image-attribute \
+                --image-id "$ami" --region "$region" --launch-permission "Add=[{UserId=${lbJobsDevAccountId}}]"
 
             echo "  $region.$store = \"$ami\";" >> nix/amis.nix
         done
