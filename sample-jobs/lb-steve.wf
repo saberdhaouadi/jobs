@@ -22,14 +22,34 @@ workflow runOnAllQueues(impl)
   forall(q in {"c3-xlarge", "r3-xlarge", "r3-2xlarge", "r3-8xlarge", "i2-2xlarge", "c3-4xlarge" }) {
     runJob(impl=$impl, metadata={"job-queue=$(q)"})
   }
-
-workflow runOnAllPlatforms(impl)
-  forall(p in { "3.10.15", "4.1.5", "4.1.6", "4.1.7", "4.1.8", "4.1.9", "4.2.0", "4.2.1", "4.3.0", "4.3.1", "4.3.2" }) {
-    runJob(impl=$impl, metadata={"platform=$(p)"})
+/**
+ * This expects a platforms.csv file which can be generated using
+ * lb-steve list-impl, for now I exclude the following platform
+ * versions which don't seem to work properly:
+ * 4.3.10.1
+ * 4.3.10.2
+ * 4.3.11.1
+ * 4.3.12
+ * 4.3.12.0
+ * 4.3.15.1
+ * 4.3.7.10
+ * 4.4.6.3
+ */
+workflow runOnAllPlatforms(impl) [out*]
+  ($out=tuples) <~ lb.ReadCsv(
+    file = "platforms.csv"
+  )
+; forall ( p in $out ) [version] {
+    lb.ParseJsonObject(
+      json = $p,
+      bindings = { "0=platform" },
+      0 = $version
+    )
+; runJob(impl=$impl, metadata={"platform=$(version)"})
   }
 
 workflow uploadImpls()
-  forall(i in {"noop", "gurobi", "total", "timeout", "metadata", "identity", "fail", "ancestor"}) {
+  forall(i in {"noop", "gurobi", "total", "timeout", "metadata", "identity", "fail", "ancestor", "r-test"}) {
     uploadImpl(impl=$i)
   }
 
@@ -47,8 +67,8 @@ workflow runRTest()
 workflow runJob(impl, metadata*={}, inputs*={})[job, lb_jobs_service, lb_jobs_username, lb_jobs_key, impl_upload]
 
   lb.GetEnv(name="LB_JOBS_SERVICE", var=$lb_jobs_service, default="https://steve-test.logicblox.com/job")
-; lb.GetEnv(name="LB_JOBS_USERNAME", var=$lb_jobs_username, default="martin")
-; lb.GetEnv(name="LB_JOBS_KEY", var=$lb_jobs_key, default="./martin.pem")
+; lb.GetEnv(name="LB_JOBS_USERNAME", var=$lb_jobs_username, default="")
+; lb.GetEnv(name="LB_JOBS_KEY", var=$lb_jobs_key, default="")
 
 ; lb.steve.CreateJob(
     job_impl_id = $impl,
