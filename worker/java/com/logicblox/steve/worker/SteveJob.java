@@ -353,6 +353,9 @@ public class SteveJob {
               .newUploadOptionsBuilder()
               .setFile(_outputPath)
               .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(_output))
+              // FIXME(@AmineChikhaoui): the "/" suffix was added to just fix the tests
+              // this needs to be properly fixed before switching the production deployment
+              // to default.
               .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(_output)+"/")
               .setEncKey(_outputEncryptionKey)
               .createOptions();
