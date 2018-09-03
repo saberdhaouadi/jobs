@@ -169,6 +169,7 @@ with pkgs.lib;
   resources.s3Buckets."${s3Name}-bucket" = { inherit region ; accessKeyId = account; name = s3Name; };
   resources.s3Buckets."${s3Name}-logs-bucket" = { inherit region ; accessKeyId = account; name = "${s3Name}-logs"; };
 
+
   resources.iamRoles.worker-role =
     { resources, ... }:
     {
@@ -397,11 +398,11 @@ with pkgs.lib;
           source /etc/profile
           exec lb-steve-provisioner $@ \
                  --region ${r} \
-                 --ami ${if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3} \
-                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys \
+                 --ami ${if env.workers."${t}" ? ami then env.workers."${t}".ami else (if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3)} \
+                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else (if nodes ? "key-proxy-${name}-${r}" then nodes."key-proxy-${name}-${r}".config.networking.privateIPv4 else "localhost")}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
-                 --key ${if r == "us-east-1" then resources.ec2KeyPairs.worker-kp.name else resources.ec2KeyPairs."worker-kp-${r}".name} \
+                 --key ${if r == "us-east-1" then resources.ec2KeyPairs.worker-kp.name else (if resources.ec2KeyPairs ? "worker-kp-${r}" then resources.ec2KeyPairs."worker-kp-${r}".name else "nokey")} \
                  --incoming ${sqsURL t} \
                  --outgoing ${sqsStatusURL} \
                  --role ${resources.iamRoles.worker-role.name} \
@@ -414,13 +415,16 @@ with pkgs.lib;
                  --percentage-queue ${env.workers."${t}".percentageQueue or "0.6"} \
                  ${lib.optionalString (env.workers."${t}" ? maxDelta) "--max-delta ${env.workers."${t}".maxDelta}"} \
                  --max ${env.workers."${t}".max or "300"} \
-                 --min ${env.workers."${t}".min or "0"}
+                 --min ${env.workers."${t}".min or "0"}\
+                 --backend ${env.workers."${t}".backend or "ec2"} \
+                 --project ${env.workers."${t}".project or "project"}
         '';
       provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
       run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or "us-east-1")}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
         path = [ pkgs.jdk ];
+        environment.GOOGLE_APPLICATION_CREDENTIALS = "/run/keys/google";
         serviceConfig = {
           ExecStart = "${run-provisioner t}";
         };
@@ -444,6 +448,8 @@ with pkgs.lib;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
+      deployment.keys.google.keyFile = /home/deploy-lb-jobs/google.json;
+
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -812,6 +818,34 @@ with pkgs.lib;
           -   nginx_status_url: http://127.0.0.1/nginx_status/
       '';
     };
+
+  "google-nat-${name}" =
+    { config, pkgs, resources, lib, ... }:
+    let
+    in
+    {
+      deployment.targetEnv = "gce";
+      deployment.gce = {
+       canIpForward = true;
+       region =  "us-central1-a";
+       # ipAddress = "35.188.70.240";
+      };
+      networking.nat.enable = true;
+    };
+
+  resources.gceRoutes."route-key-server-${name}" = {resources, ...}: {
+    destination =  resources.machines."key-server-${name}";
+    name = "route-key-server-${name}";
+    nextHop = resources.machines."google-nat-${name}";
+    tags =  [ "worker" ];
+  };
+
+  resources.gceRoutes."route-gurobi-${name}" = {resources, ...}: {
+    destination = "54.83.193.103/32" ;
+    name = "route-gurobi-${name}";
+    nextHop = resources.machines."google-nat-${name}";
+    tags =  [ "worker" ];
+  };
 
   defaults =
     { config, lib, ... }:
