@@ -28,20 +28,20 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file:///nix/store/db7shl97b33wdjsw2xqc0hfar2bxr7dr-google-java-sdk-1.23.0/google-api-java-client/libs" />
+          <root url="file:///nix/store/85ify3rc7nja3ybwfzw1kh5qricv71i2-google-java-sdk-1.23.0/google-api-java-client/libs" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="file:///nix/store/db7shl97b33wdjsw2xqc0hfar2bxr7dr-google-java-sdk-1.23.0/google-api-java-client/libs" />
+          <root url="file:///nix/store/85ify3rc7nja3ybwfzw1kh5qricv71i2-google-java-sdk-1.23.0/google-api-java-client/libs" />
         </SOURCES>
-        <jarDirectory url="file:///nix/store/db7shl97b33wdjsw2xqc0hfar2bxr7dr-google-java-sdk-1.23.0/google-api-java-client/libs" recursive="false" />
-        <jarDirectory url="file:///nix/store/db7shl97b33wdjsw2xqc0hfar2bxr7dr-google-java-sdk-1.23.0/google-api-java-client/libs" recursive="false" type="SOURCES" />
+        <jarDirectory url="file:///nix/store/85ify3rc7nja3ybwfzw1kh5qricv71i2-google-java-sdk-1.23.0/google-api-java-client/libs" recursive="false" />
+        <jarDirectory url="file:///nix/store/85ify3rc7nja3ybwfzw1kh5qricv71i2-google-java-sdk-1.23.0/google-api-java-client/libs" recursive="false" type="SOURCES" />
       </library>
     </orderEntry>
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar:///nix/store/db7shl97b33wdjsw2xqc0hfar2bxr7dr-google-java-sdk-1.23.0/google-api-services-compute.jar!/" />
+          <root url="jar:///nix/store/85ify3rc7nja3ybwfzw1kh5qricv71i2-google-java-sdk-1.23.0/google-api-services-compute.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -50,11 +50,11 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file:///nix/store/bnd16gi95mjjd7xhpjyscpx1lwc7dzym-aws-java-sdk-1.11.102/lib/java" />
+          <root url="file:///nix/store/1xq9q5r3212h008rf6w2irjn1k4gxacy-aws-java-sdk-1.11.102/lib/java" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
-        <jarDirectory url="file:///nix/store/bnd16gi95mjjd7xhpjyscpx1lwc7dzym-aws-java-sdk-1.11.102/lib/java" recursive="false" />
+        <jarDirectory url="file:///nix/store/1xq9q5r3212h008rf6w2irjn1k4gxacy-aws-java-sdk-1.11.102/lib/java" recursive="false" />
       </library>
     </orderEntry>
   </component>
