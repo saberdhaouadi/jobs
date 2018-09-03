@@ -120,6 +120,13 @@ public class GCEProvisioner implements ProvisionerInterface {
         disks.add(disk);
         disks.add(localSSD);
 
+
+        List<String> tags_list = new ArrayList<String>();
+        tags_list.add("worker");
+        Tags tags = new Tags();
+        tags.setItems(tags_list);
+        instance.setTags(tags);
+
         instance.setDisks(disks);
         return instance;
 
