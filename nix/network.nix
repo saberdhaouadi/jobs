@@ -305,7 +305,8 @@ with pkgs.lib;
                 "ec2:TerminateInstances",
                 "ec2:RequestSpotInstances",
                 "ec2:CreateTags",
-                "iam:PassRole"
+                "iam:PassRole",
+                "iam:CreateServiceLinkedRole"
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
@@ -416,7 +417,7 @@ with pkgs.lib;
                  ${lib.optionalString (env.workers."${t}" ? maxDelta) "--max-delta ${env.workers."${t}".maxDelta}"} \
                  --max ${env.workers."${t}".max or "300"} \
                  --min ${env.workers."${t}".min or "0"}\
-                 --backend ${env.workers."${t}".backend or "ec2"} \
+                 --backend ${env.workers."${t}".backend or "aws"} \
                  --project ${env.workers."${t}".project or "project"}
         '';
       provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
