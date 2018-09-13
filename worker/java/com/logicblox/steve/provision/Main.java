@@ -275,7 +275,7 @@ public class Main {
 
 
     ProvisionerInterface backend;
-    if(cmdArgs.getBackend().toLowerCase() == "aws"){
+    if(cmdArgs.getBackend().toLowerCase().equals("aws")){
       backend = new AWSProvisioner(cmdArgs);
     } else {
       backend = new GCEProvisioner(cmdArgs);
