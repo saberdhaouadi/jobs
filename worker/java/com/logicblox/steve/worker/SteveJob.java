@@ -343,7 +343,7 @@ public class SteveJob {
       else {
         List<ListenableFuture<StoreFile>> l = new ArrayList();
         l.add(client.download(options));
-        return FuturesallAsList(l);
+        return Futures.allAsList(l);
       }
     } catch (Exception e) {
       return Futures.immediateFailedFuture(new InternalException("Error downloading input " + input.getLocation()));

@@ -17,8 +17,8 @@ import com.googlecode.protobuf.format.JsonFormat;
 import com.amazonaws.util.EC2MetadataUtils;
 
 import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.GCSClient;
 import com.logicblox.cloudstore.GCSClientBuilder;
-import com.logicblox.cloudstore.S3Client;
 import com.logicblox.cloudstore.Utils;
 import com.logicblox.cloudstore.AmazonS3ClientForGCS;
 import com.logicblox.steve.protocol.Backend;
