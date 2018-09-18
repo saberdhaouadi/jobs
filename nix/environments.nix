@@ -16,6 +16,7 @@ rec {
       elasticIPv4 = "54.243.141.142";
       workers = addOnDemandQueues {
         "c3.xlarge" = { number = 0; price = "0.25"; percentageSpot = "1.0"; onDemand = true; };
+        "n1-standard-2" = { number = 0; price = "0.25"; percentageSpot = "1.0"; onDemand = false; instanceType = "n1-standard-2"; backend ="gcp"; ami = "lb-jobs-3174373"; defaultRegion = "us-central1-f"; project = "manifest-canto-796";};
         "c3.xlarge-online" = { number = 1; price = "0.25"; percentageSpot = "0"; instanceType = "c3.xlarge"; };
         "c3.2xlarge" = { number = 0; price = "0.25"; percentageSpot = "1.0"; max = "500"; maxDelta = "100"; percentageQueue = "1.0"; };
         "c3.4xlarge" = { number = 0; price = "0.84"; percentageSpot = "1.0"; percentageQueue = "1.0"; min = "75"; maxDelta = "100"; };
@@ -44,4 +45,15 @@ rec {
       inherit (prod) workers;
     };
 
+  dev-2 =
+    { hostName = "steve-dev-2.logicblox.com";
+      elasticIPv4 = "34.231.25.40";
+      inherit (prod) workers;
+    };
+
+  integration =
+    { hostName = "steve-integration.logicblox.com";
+      elasticIPv4 = "18.233.197.187";
+      inherit (prod) workers;
+    };
 }

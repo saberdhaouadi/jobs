@@ -3,6 +3,8 @@
 , accountId ? "826045886586"
 , name
 , logToken ? ""
+, vpcId ? ""
+, production ? false
 }:
 let
   environments = import ./environments.nix;
@@ -53,7 +55,7 @@ let
       deployment.ec2.keyPair = resources.ec2KeyPairs."kp-${region}".name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "c3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.large" else "c3.large";
       deployment.ec2.elasticIPv4 = resources.elasticIPs."key-ip-${region}";
 
       networking.firewall.allowedTCPPorts = [ 443 ];
@@ -100,7 +102,7 @@ let
 
   builds = import ../. { platform_release = builder-config.getLB (import ../lb-version.nix); };
   s3Name = "steve-jobs-${name}";
-  frontendConfig = pkgs.writeText "lb-steve-frontend.config" 
+  frontendConfig = pkgs.writeText "lb-steve-frontend.config"
     ''
       [global]
       jvm_dump_dir = /tmp
@@ -166,6 +168,7 @@ with pkgs.lib;
   resources.sqsQueues = sqsQueues // { "${sqsStatusName}" = sqsStatusQueue;  };
   resources.s3Buckets."${s3Name}-bucket" = { inherit region ; accessKeyId = account; name = s3Name; };
   resources.s3Buckets."${s3Name}-logs-bucket" = { inherit region ; accessKeyId = account; name = "${s3Name}-logs"; };
+
 
   resources.iamRoles.worker-role =
     { resources, ... }:
@@ -302,7 +305,8 @@ with pkgs.lib;
                 "ec2:TerminateInstances",
                 "ec2:RequestSpotInstances",
                 "ec2:CreateTags",
-                "iam:PassRole"
+                "iam:PassRole",
+                "iam:CreateServiceLinkedRole"
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
@@ -346,7 +350,7 @@ with pkgs.lib;
               "Effect": "Allow",
               "Resource": [ "*" ]
             },
-            { 
+            {
               "Action": [
                 "s3:Get*",
                 "s3:Put*",
@@ -361,14 +365,14 @@ with pkgs.lib;
     };
 
   resources.ec2SecurityGroups.frontend-sg =
-    let 
+    let
       entry = ip:
         {
           fromPort = 443;
           toPort = 443;
           sourceIp = "${ip}/32";
         } ;
-      ips = builtins.fromJSON (builtins.readFile ./ips.json);
+      ips = if production then builtins.fromJSON (builtins.readFile ./prod-ips.json) else builtins.fromJSON (builtins.readFile ./dev-ips.json);
       accountEntry = account:
         {
           fromPort = 443;
@@ -376,21 +380,14 @@ with pkgs.lib;
           sourceGroup.ownerId = account;
           sourceGroup.groupName = "admin";
         } ;
-      accounts = [
-       "297794765570"
-       "414877248210"
-       "162071310369"
-       "216775848791"
-       "716415058944"
-       "006491606506" # PDX Science
-      ];
     in
       { config, resources, ... }:
       {
         inherit region;
         accessKeyId = account;
+        vpcId = mkIf (vpcId != "") vpcId;
         description = "Security group for frontend";
-        rules = map entry ips ++ map accountEntry accounts ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
+        rules = map entry ips ++ map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; 
       };
 
   "provisioner-${name}" =
@@ -402,11 +399,11 @@ with pkgs.lib;
           source /etc/profile
           exec lb-steve-provisioner $@ \
                  --region ${r} \
-                 --ami ${if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3} \
-                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys \
+                 --ami ${if env.workers."${t}" ? ami then env.workers."${t}".ami else (if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3)} \
+                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else (if nodes ? "key-proxy-${name}-${r}" then nodes."key-proxy-${name}-${r}".config.networking.privateIPv4 else "localhost")}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
-                 --key ${if r == "us-east-1" then resources.ec2KeyPairs.worker-kp.name else resources.ec2KeyPairs."worker-kp-${r}".name} \
+                 --key ${if r == "us-east-1" then resources.ec2KeyPairs.worker-kp.name else (if resources.ec2KeyPairs ? "worker-kp-${r}" then resources.ec2KeyPairs."worker-kp-${r}".name else "nokey")} \
                  --incoming ${sqsURL t} \
                  --outgoing ${sqsStatusURL} \
                  --role ${resources.iamRoles.worker-role.name} \
@@ -419,13 +416,16 @@ with pkgs.lib;
                  --percentage-queue ${env.workers."${t}".percentageQueue or "0.6"} \
                  ${lib.optionalString (env.workers."${t}" ? maxDelta) "--max-delta ${env.workers."${t}".maxDelta}"} \
                  --max ${env.workers."${t}".max or "300"} \
-                 --min ${env.workers."${t}".min or "0"}
+                 --min ${env.workers."${t}".min or "0"}\
+                 --backend ${env.workers."${t}".backend or "aws"} \
+                 --project ${env.workers."${t}".project or "project"}
         '';
       provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
       run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or "us-east-1")}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
         path = [ pkgs.jdk ];
+        environment.GOOGLE_APPLICATION_CREDENTIALS = "/run/keys/google";
         serviceConfig = {
           ExecStart = "${run-provisioner t}";
         };
@@ -447,8 +447,10 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "r3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
+      deployment.keys.google.keyFile = /home/deploy-lb-jobs/google.json;
+
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -469,7 +471,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "r3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
 
@@ -567,7 +569,7 @@ with pkgs.lib;
             - host: 127.0.0.1
               name: jmx_instance
               port: 7199
- 
+
           init_config:
             conf:
               - include:
@@ -613,7 +615,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "c3.8xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.8xlarge" else "c3.8xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
@@ -651,7 +653,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.frontend-sg.name ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = "c3.xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.xlarge" else "c3.xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       deployment.ec2.elasticIPv4 = env.elasticIPv4 or "";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
@@ -800,7 +802,7 @@ with pkgs.lib;
             - host: 127.0.0.1
               name: jmx_instance
               port: 7199
- 
+
           init_config:
             conf:
               - include:
@@ -810,13 +812,41 @@ with pkgs.lib;
                   domain: java.lang
                   type: GarbageCollector
           '';
- 
+
       services.dd-agent.nginxConfig = ''
         init_config:
         instances:
           -   nginx_status_url: http://127.0.0.1/nginx_status/
       '';
     };
+
+  "google-nat-${name}" =
+    { config, pkgs, resources, lib, ... }:
+    let
+    in
+    {
+      deployment.targetEnv = "gce";
+      deployment.gce = {
+       canIpForward = true;
+       region =  "us-central1-a";
+       # ipAddress = "35.188.70.240";
+      };
+      networking.nat.enable = true;
+    };
+
+  resources.gceRoutes."route-key-server-${name}" = {resources, ...}: {
+    destination =  resources.machines."key-server-${name}";
+    name = "route-key-server-${name}";
+    nextHop = resources.machines."google-nat-${name}";
+    tags =  [ "worker" ];
+  };
+
+  resources.gceRoutes."route-gurobi-${name}" = {resources, ...}: {
+    destination = "54.83.193.103/32" ;
+    name = "route-gurobi-${name}";
+    nextHop = resources.machines."google-nat-${name}";
+    tags =  [ "worker" ];
+  };
 
   defaults =
     { config, lib, ... }:
