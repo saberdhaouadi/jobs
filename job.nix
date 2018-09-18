@@ -266,7 +266,7 @@ let
 
   jobs = rec {
 
-  tests = import ./tests/lb-jobs-network.nix { builds = jobs; };
+  tests = import ./tests/lb-jobs-network.nix { builds = jobs; platform = logicblox; };
 
   frontend =
      builder_config.buildLBConfig {
@@ -384,6 +384,7 @@ let
     makeClosure (
       {config, pkgs, ...}:
       { imports = [ ./nix/worker.nix ];
+        logicblox.jobs.platform = logicblox;
       }
     );
 

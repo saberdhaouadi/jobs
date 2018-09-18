@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
+import com.logicblox.web.client.service.ServiceClient;
 import junit.framework.Assert;
 
 import org.junit.Before;
@@ -14,9 +15,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import com.logicblox.bloxweb.client.ClientConfigUtils;
-import com.logicblox.bloxweb.client.DelimImportOptions;
-import com.logicblox.bloxweb.client.DelimServiceClient;
-import com.logicblox.bloxweb.client.ServiceConnector;
+
 import com.logicblox.steve.common.Data;
 import com.logicblox.steve.common.Status;
 import com.logicblox.steve.common.Status.Event;
@@ -32,14 +31,11 @@ public class LBDatabaseTest extends PrototypeTest {
    * The object under test.
    */
   final LBDatabase db = new LBDatabase();
-
+  final String usersUrl = "http://localhost:8080/tdx/users";
   /**
    * A TDX client to load users for tests.
    */
-  final DelimServiceClient usersClient = ServiceConnector.create()
-          .setTransport(ClientConfigUtils.getTCPTransport())
-          .setURI("http://localhost:8080/tdx/users")
-          .createDelimClient();
+  final ServiceClient tdxClient = new ServiceClient();
 
 
   @Override
@@ -49,9 +45,7 @@ public class LBDatabaseTest extends PrototypeTest {
 
   @Before
   public void loadUsers() throws Exception {
-    usersClient.postDelimitedFile(
-            new DelimImportOptions(
-                    ByteStreams.toByteArray(getClass().getResourceAsStream("users.csv")))).get();
+    tdxClient.importTDX(usersUrl, getClass().getResourceAsStream("users.csv")).get();
   }
 
   @Test

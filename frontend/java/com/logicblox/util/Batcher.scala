@@ -4,7 +4,6 @@ import scala.concurrent.{Await, Promise, Future}
 import scala.collection.mutable
 import java.util.concurrent.{TimeUnit, ScheduledFuture, Executors, ScheduledExecutorService}
 import com.google.common.util.concurrent.{FutureCallback, Futures}
-import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 /**

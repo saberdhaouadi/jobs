@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Optional;
 
+import com.logicblox.bloxweb.service.ApplicationContext;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -17,7 +18,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.PatternLayout;
 
-import com.logicblox.bloxweb.BloxWebServer;
+import com.logicblox.web.server.netty.BloxwebServer;
 import com.logicblox.bloxweb.GlobalConfig;
 import com.logicblox.bloxweb.UsageException;
 import com.logicblox.bloxweb.config.Config;
@@ -48,15 +49,15 @@ public class Main {
         Collection<ValidationMessage> messages = ConfigValidator.validate(main._config);
         ConfigValidator.handleMessages(messages, logger);
 
-        main._ctx = new ServiceContext(main._logger, new ConfigFiles(main._config,Optional.<Config>empty(),Optional.<Config>empty()));
-        main._ctx.init();
+        ApplicationContext.lazyInit(main._logger, new ConfigFiles(main._config,Optional.<Config>empty(),Optional.<Config>empty()));
+        main._ctx = ApplicationContext.getInstance();
+
         // Create job-auth realm for authentication
         Specification.Realm.Builder realm = Specification.Realm.newBuilder().setName("job-auth").setConfig("default-signature");
         main._ctx.getAuthenticationProvider().addRealm(realm.build());
 
-        final BloxWebServer bloxwebServer = new BloxWebServer(
-                Optional.of(main._logDir),
-                main._ctx);
+        final BloxwebServer bloxwebServer = new BloxwebServer(
+                Optional.of(main._logDir));
 
         // start web server
         // TODO: exceptions in this thread gets caught how?
@@ -138,10 +139,6 @@ public class Main {
     _logDir = new File(_config.getStringError("logdir_access"));
     if (!_logDir.exists())
       throw new UsageException("directory '" + _logDir.getPath() + "' does not exist");
-
-    if (_config.getBoolError("debug")) {
-      System.setProperty("org.eclipse.jetty.util.log.DEBUG", "true");
-    }
 
     if (_config.contains("max_log_message_length"))
       GlobalConfig.setMaxLogMessageLength(
