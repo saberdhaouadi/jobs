@@ -18,6 +18,7 @@ public class GCEProvisioner implements ProvisionerInterface {
 
     static final String NETWORK_INTERFACE_CONFIG = "ONE_TO_ONE_NAT";
     static final String NETWORK_ACCESS_CONFIG = "External NAT";
+    static final String GOOGLE_API_ENDPOINT = "https://www.googleapis.com/compute/v1/projects/";
 
     Compute computeService;
 
@@ -50,8 +51,7 @@ public class GCEProvisioner implements ProvisionerInterface {
 
     private Instance createInstance(String project, String zone, String machineType, String image, boolean preemptible){
 
-        final String IMAGE_URI = "https://www.googleapis.com/compute/v1/projects/" + project + "/global/images/" + image;
-        long unixTimestamp = Instant.now().getEpochSecond();
+        final String IMAGE_URI = GOOGLE_API_ENDPOINT + project + "/global/images/" + image;
 
         String instanceName = "lb-jobs-worker-"  + UUID.randomUUID().toString();
 
@@ -62,11 +62,11 @@ public class GCEProvisioner implements ProvisionerInterface {
         schedule.setPreemptible(preemptible);
         instance.setScheduling(schedule);
 
-        instance.setMachineType( "https://www.googleapis.com/compute/v1/projects/" + project + "/zones/" + zone + "/machineTypes/" + machineType);
+        instance.setMachineType( GOOGLE_API_ENDPOINT + project + "/zones/" + zone + "/machineTypes/" + machineType);
 
         // TODO: Use network interface with more restriction to ingres connections.
         NetworkInterface ifc = new NetworkInterface();
-        ifc.setNetwork("https://www.googleapis.com/compute/v1/projects/" + project + "/global/networks/default");
+        ifc.setNetwork(GOOGLE_API_ENDPOINT + project + "/global/networks/default");
         List<AccessConfig> configs = new ArrayList<>();
         AccessConfig config = new AccessConfig();
         config.setType(NETWORK_INTERFACE_CONFIG);
@@ -97,7 +97,7 @@ public class GCEProvisioner implements ProvisionerInterface {
         AttachedDiskInitializeParams params = new AttachedDiskInitializeParams();
         params.setDiskName(instanceName);
         params.setSourceImage(IMAGE_URI);
-        params.setDiskType("https://www.googleapis.com/compute/v1/projects/" + project + "/zones/"
+        params.setDiskType(GOOGLE_API_ENDPOINT + project + "/zones/"
                 + zone + "/diskTypes/pd-ssd");
         disk.setInitializeParams(params);
 
@@ -107,7 +107,7 @@ public class GCEProvisioner implements ProvisionerInterface {
         localSSD.setType("SCRATCH");
         localSSD.setInterface("nvme");
         AttachedDiskInitializeParams localSSDParams = new AttachedDiskInitializeParams();
-        localSSDParams.setDiskType("https://www.googleapis.com/compute/v1/projects/" + project + "/zones/"
+        localSSDParams.setDiskType(GOOGLE_API_ENDPOINT + project + "/zones/"
                 + zone + "/diskTypes/local-ssd");
         localSSD.setInitializeParams(localSSDParams);
 
