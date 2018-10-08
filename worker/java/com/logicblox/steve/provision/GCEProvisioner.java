@@ -7,8 +7,6 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.compute.model.*;
-import org.apache.commons.lang.RandomStringUtils;
-
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -22,7 +20,6 @@ public class GCEProvisioner implements ProvisionerInterface {
     static final String NETWORK_ACCESS_CONFIG = "External NAT";
 
     Compute computeService;
-
 
     public GCEProvisioner(CommandLineArguments cmdArgs){
         this.setCmdArgs(cmdArgs);
@@ -56,7 +53,7 @@ public class GCEProvisioner implements ProvisionerInterface {
         final String IMAGE_URI = "https://www.googleapis.com/compute/v1/projects/" + project + "/global/images/" + image;
         long unixTimestamp = Instant.now().getEpochSecond();
 
-        String instanceName = "lb-jobs-worker-" + machineType + "-" + String.valueOf(unixTimestamp) + "-" + RandomStringUtils.randomAlphanumeric(4).toLowerCase();
+        String instanceName = "lb-jobs-worker-"  + UUID.randomUUID().toString();
 
         Instance instance = new Instance();
         instance.setName(instanceName);
@@ -87,12 +84,10 @@ public class GCEProvisioner implements ProvisionerInterface {
         metadata.setItems(Collections.singletonList(startupScript));
         instance.setMetadata(metadata);
 
-
         // Labels
         Map<String, String> labels = new HashMap<String, String>();
         labels.put("queue", this.cmdArgs.getInstanceType());
         instance.setLabels(labels);
-
 
         // Add attached Persistent Disk to be used by VM Instance, also add one local-ssd.
         AttachedDisk disk = new AttachedDisk();
@@ -119,7 +114,6 @@ public class GCEProvisioner implements ProvisionerInterface {
         List<AttachedDisk> disks = new ArrayList<>();
         disks.add(disk);
         disks.add(localSSD);
-
 
         List<String> tags_list = new ArrayList<String>();
         tags_list.add("worker");
@@ -151,8 +145,6 @@ public class GCEProvisioner implements ProvisionerInterface {
 
             }
         }
-
-
     }
 
     public void createSpotInstances(int nr) {
@@ -168,12 +160,10 @@ public class GCEProvisioner implements ProvisionerInterface {
 
     public void createOnDemandInstances(int nr) {
         System.err.println(String.format("Creating %d on-demand instances", nr));
-
         if (cmdArgs.isDryRun()) {
             System.out.println("Dry run detected.");
             return;
         }
-
         this.createInstances(nr, false);
     }
 
@@ -189,7 +179,6 @@ public class GCEProvisioner implements ProvisionerInterface {
     public int getNumberOfRunningInstances(boolean preemptible){
 
         try{
-
             Compute.Instances.List request = computeService.instances().list(cmdArgs.getProject(), cmdArgs.getRegion() );
             request.setFilter(this.getFilters(preemptible));
 
@@ -207,7 +196,6 @@ public class GCEProvisioner implements ProvisionerInterface {
             e.printStackTrace();
         }
         return 0;
-
     }
 
     // get number of on-demand instances that are not yet terminated

@@ -19,8 +19,6 @@ public class AWSProvisioner implements ProvisionerInterface {
         this.setCmdArgs(cmdArgs);
         ec2 = new AmazonEC2Client();
         ec2.setRegion(Region.getRegion(Regions.fromName(cmdArgs.getRegion())));
-
-
     }
 
     CommandLineArguments cmdArgs;
