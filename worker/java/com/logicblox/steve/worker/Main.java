@@ -198,7 +198,9 @@ public class Main {
   public Main() {
     // TODO pass in a configuration for S3
     this.client = S3Utils.createS3Client(null);
-    this.ec2Client = AmazonEC2ClientBuilder.standard().build();
+    this.ec2Client = AmazonEC2ClientBuilder.standard()
+            .withRegion(EC2MetadataUtils.getEC2InstanceRegion())
+            .build();
 
     if (_s3Endpoint != null) {
       this.client.setEndpoint(_s3Endpoint);
@@ -280,7 +282,11 @@ public class Main {
       if (msg.hasAccount())
         _jobTag = msg.getAccount();
 
-      createTag(_jobTag, msg.getJobImpl());
+      // update job-specific tags as the worker may process multiple jobs before dying
+      HashMap<String, String> jobTags = new HashMap<>();
+      jobTags.put("lb-jobs-account", _jobTag);
+      jobTags.put("lb-jobs-impl", msg.getJobImpl());
+      createTag(jobTags);
 
       SteveJob steve = new SteveJob(
               this.client,
@@ -328,11 +334,15 @@ public class Main {
     }
   }
 
-  private void createTag(String tag, String impl) {
+  private void createTag(HashMap<String, String> tags) {
+    if (tags.isEmpty())
+      return;
+
     try {
       ArrayList<Tag> instanceTags = new ArrayList<Tag>();
-      instanceTags.add(new Tag().withKey("lb-jobs-account").withValue(tag));
-      instanceTags.add(new Tag().withKey("lb-jobs-impl").withValue(impl));
+      tags.forEach((tagKey, tagValue) -> {
+        instanceTags.add(new Tag().withKey(tagKey).withValue(tagValue));
+      })
       CreateTagsRequest request = new CreateTagsRequest()
         .withResources(EC2MetadataUtils.getInstanceId())
         .withTags(instanceTags);
