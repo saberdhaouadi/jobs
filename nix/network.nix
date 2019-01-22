@@ -932,7 +932,7 @@ with pkgs.lib;
 
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> <lbdevops/nixos/local-modules/cloudwatch.nix>];
+    { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"
