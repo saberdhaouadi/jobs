@@ -150,7 +150,7 @@ with pkgs.lib;
 {
   network.description = "Steve Jobs [${name}]";
 
-  requires = [ <lbdevops/nixops/generic/tags.nix> ];
+  require = [ <lbdevops/nixops/generic/tags.nix> ];
 
   resources.elasticIPs.key-ip-us-west-1 = { region = "us-west-1" ; accessKeyId = account; };
   "key-proxy-${name}-us-west-1" = key-proxy "us-west-1";
