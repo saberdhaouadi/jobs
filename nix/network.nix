@@ -3,6 +3,7 @@
 , accountId ? "826045886586"
 , name
 , logToken ? ""
+,...
 }:
 let
   environments = import ./environments.nix;
