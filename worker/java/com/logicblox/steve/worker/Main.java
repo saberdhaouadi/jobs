@@ -342,7 +342,7 @@ public class Main {
       ArrayList<Tag> instanceTags = new ArrayList<Tag>();
       tags.forEach((tagKey, tagValue) -> {
         instanceTags.add(new Tag().withKey(tagKey).withValue(tagValue));
-      })
+      });
       CreateTagsRequest request = new CreateTagsRequest()
         .withResources(EC2MetadataUtils.getInstanceId())
         .withTags(instanceTags);
