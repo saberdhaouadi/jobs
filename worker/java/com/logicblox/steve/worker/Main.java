@@ -198,9 +198,13 @@ public class Main {
   public Main() {
     // TODO pass in a configuration for S3
     this.client = S3Utils.createS3Client(null);
-    this.ec2Client = AmazonEC2ClientBuilder.standard()
-          .withRegion(EC2MetadataUtils.getEC2InstanceRegion())
-          .build();
+    try {
+      this.ec2Client = AmazonEC2ClientBuilder.standard()
+            .withRegion(EC2MetadataUtils.getEC2InstanceRegion())
+            .build();
+    } catch (AmazonClientException exp) {
+      this.ec2Client = AmazonEC2ClientBuilder.standard().build();
+    }
 
     if (_s3Endpoint != null) {
       this.client.setEndpoint(_s3Endpoint);
