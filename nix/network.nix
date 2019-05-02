@@ -80,6 +80,8 @@ let
       imports = [ ./worker.nix ];
       boot.kernelPackages = pkgs.linuxPackages_4_9;
 
+      nix.package = lib.mkForce pkgs.nixUnstable;
+
       lb-steve-worker.arguments = "--incoming ${resources.sqsQueues."${sqsName queue}".name} --outgoing ${resources.sqsQueues."${sqsStatusName}".name} --bucket ${s3Name} --key-service https://${nodes."key-server-${name}".config.networking.privateIPv4}/keys";
 
       deployment.targetEnv = "ec2";
@@ -150,8 +152,6 @@ in
 with pkgs.lib;
 {
   network.description = "Steve Jobs [${name}]";
-
-  require = [ <lbdevops/nixops/generic/tags.nix> ];
 
   resources.elasticIPs.key-ip-us-west-1 = { region = "us-west-1" ; accessKeyId = account; };
   "key-proxy-${name}-us-west-1" = key-proxy "us-west-1";
@@ -406,7 +406,7 @@ with pkgs.lib;
           exec lb-steve-provisioner $@ \
                  --region ${r} \
                  --ami ${if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3} \
-                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys \
+                 --key-service ${env.workers."${t}".keyService or "https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys"} \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
                  --key ${if r == "us-east-1" then resources.ec2KeyPairs.worker-kp.name else resources.ec2KeyPairs."worker-kp-${r}".name} \
