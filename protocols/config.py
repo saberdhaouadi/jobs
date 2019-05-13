@@ -74,6 +74,4 @@ jar(
    findbugs = True,
    classpath = classpath)
 
-core.g_rules['findbugs'].input = set()
-
 link_libs(classpath)
