@@ -468,6 +468,7 @@ with pkgs.lib;
                  --role ${resources.iamRoles.worker-role.name} \
                  --instance-type ${env.workers."${t}".instanceType or t} \
                  --deployment-subnets ${concatStringsSep "/" dep-region.${region}.Subnets} \
+                 --security-group-ids ${concatStrings dep-region.${region}.securityGroupsIDs} \
                  --security-group ${env.workers."${t}".securityGroup or "admin"} \
                  ${lib.optionalString (env.workers."${t}" ? subnetId) "--subnet-id ${env.workers."${t}".subnetId}"} \
                  --disk-size ${env.workers."${t}".diskSize or "0"} \

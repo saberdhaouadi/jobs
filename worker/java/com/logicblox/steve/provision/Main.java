@@ -50,6 +50,7 @@ public class Main {
   private static int diskSize = 0;
   private static String SpotfleetRole = "arn:aws:iam::826045886586:role/aws-ec2-spot-fleet-role";
   private static String Subnets = "";
+  private static String SecGrpId = "";
   private static Regions[] regions = new Regions[]{ Regions.US_EAST_1, Regions.US_EAST_2, Regions.US_WEST_1, Regions.US_WEST_2 };
 
   public Main() {
@@ -191,6 +192,12 @@ public class Main {
             .hasArg()
             .withArgName("deployment subnets")
             .create());
+    options.addOption(OptionBuilder.withLongOpt("security-group-ids")
+            .withDescription("Deployment Security-groups")
+            .hasArg()
+            .withArgName("deployment security-groups")
+            .create());
+
 
     options.addOption(OptionBuilder.withLongOpt("dry-run")
             .withDescription("Whether to actually create the requested instances")
@@ -201,6 +208,8 @@ public class Main {
       CommandLine _cmdline = parser.parse(options, args);
       if (_cmdline.hasOption("deployment-subnets"))
         Subnets = _cmdline.getOptionValue("deployment-subnets");
+      if (_cmdline.hasOption("security-group-ids"))
+        SecGrpId = _cmdline.getOptionValue("security-group-ids");
       if (_cmdline.hasOption("queue"))
         queue = _cmdline.getOptionValue("queue");
       if (_cmdline.hasOption("bucket"))
@@ -567,7 +576,7 @@ public class Main {
        
 
         GroupIdentifier groupidf = new GroupIdentifier();
-        groupidf.setGroupId("sg-05cbec8d1f38ef449");
+        groupidf.setGroupId(SecGrpId);
         Collection<GroupIdentifier> identgroups = new ArrayList<GroupIdentifier>();
         identgroups.add(groupidf);
 
@@ -591,7 +600,7 @@ public class Main {
         fleettagsspec.setTags(tags);
         fleettagsspec.setResourceType("instance");
         tagspeclist.add(fleettagsspec);
-        fleetspec.setTagSpecifications(tagspeclist);
+        //fleetspec.setTagSpecifications(tagspeclist);
 
         LaunchSpecs.add(fleetspec);
         }
