@@ -13,12 +13,34 @@ let
     };
 
   aws-java-sdk =
-    with pkgs; stdenv.mkDerivation rec {
+    /*with pkgs; stdenv.mkDerivation rec {
       name = "aws-java-sdk-1.11.102";
       src = fetchurl {
         url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.11.102.zip;
         sha256 = "c06a529b86c08d73b840adc6fe103d49d7ff3eea011977267f0f350a333c2fb3";
-      };
+      };*/
+
+   /* with pkgs; stdenv.mkDerivation rec {
+    name = "aws-java-sdk-1.11.476";
+      src = fetchurl {
+        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.11.476.zip;
+        sha256 = "7d950aa9439134c61e0204b5debb15aadfd1ce18f4d71c0071f9100c6cf63c81";
+      };*/
+    /*with pkgs; stdenv.mkDerivation rec {
+      name = "aws-java-sdk-1.11.536";
+      src = fetchurl {
+        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.11.536.zip;
+        sha256 = "67547b5595bb0d8a419418419303ccd7db97df83b0087e6c1355e1522cc5b424";
+      };*/
+    with pkgs; stdenv.mkDerivation rec {
+        name = "aws-java-sdk-1.11.560";
+        src = fetchurl {
+          url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.11.560.zip;
+          sha256 = "6ce540cbeefc4bd411dd4aaa936f4a3f55f68f7584206ddf8dcc0a98d6fbc2a8";
+        };
+
+
+
       buildInputs = [ pkgs.unzip ];
       buildCommand = ''
         # o option is necessary because the archive contains two

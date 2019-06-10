@@ -5,6 +5,7 @@
 , logToken ? ""
 , vpcId ? ""
 , production ? false
+,...
 }:
 let
   environments = import ./environments.nix;
@@ -13,6 +14,18 @@ let
   instanceTypes = builtins.attrNames env.workers;
 
   amis = import ./amis.nix;
+
+  dev-ips = import ./dev-ips.nix;
+  devips =  dev-ips.dev;  
+  
+  prod-ips = import ./prod-ips.nix;
+  prodips = prod-ips.prod;
+
+  nat-gateways-ips = import ./nat-ips.nix;
+  natips = nat-gateways-ips.nat;
+
+  deployment-params = import ./regions-subnets.nix;
+  dep-region = deployment-params.region;
 
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
@@ -47,7 +60,7 @@ let
     '';
   };
 
-  key-proxy = region:
+/*  key-proxy = region:
     { config, pkgs, resources, nodes, ... }:
     {
       deployment.targetEnv = "ec2";
@@ -55,7 +68,7 @@ let
       deployment.ec2.keyPair = resources.ec2KeyPairs."kp-${region}".name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.large" else "c3.large";
+      deployment.ec2.instanceType = "c3.large";
       deployment.ec2.elasticIPv4 = resources.elasticIPs."key-ip-${region}";
 
       networking.firewall.allowedTCPPorts = [ 443 ];
@@ -73,7 +86,7 @@ let
         global
             user haproxy
       '';
-    };
+    }; */
 
   worker = queue: type:
     { config, pkgs, resources, nodes, lib, ... }:
@@ -151,19 +164,20 @@ in
 with pkgs.lib;
 {
   network.description = "Steve Jobs [${name}]";
-
-  resources.elasticIPs.key-ip-us-west-1 = { region = "us-west-1" ; accessKeyId = account; };
+  require = [ ~/asamtiLBjobs/src/lb-jobs-asamtitraining/lbdevops/nixops/generic/tags.nix ];
+ /* resources.elasticIPs.key-ip-us-west-1 = { region = "us-west-1" ; accessKeyId = account; };
   "key-proxy-${name}-us-west-1" = key-proxy "us-west-1";
 
   resources.elasticIPs.key-ip-us-west-2 = { region = "us-west-2" ; accessKeyId = account; };
-  "key-proxy-${name}-us-west-2" = key-proxy "us-west-2";
+  "key-proxy-${name}-us-west-2" = key-proxy "us-west-2"; */
+  resources.elasticIPs.key-server-ip = { inherit region ; accessKeyId = account ; };
 
   resources.ec2KeyPairs.worker-kp = { inherit region ; accessKeyId = account; };
   resources.ec2KeyPairs.worker-kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
   resources.ec2KeyPairs.worker-kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
   resources.ec2KeyPairs.kp = { inherit region ; accessKeyId = account; };
-  resources.ec2KeyPairs.kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
-  resources.ec2KeyPairs.kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
+  /*resources.ec2KeyPairs.kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
+  resources.ec2KeyPairs.kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };*/
 
   resources.sqsQueues = sqsQueues // { "${sqsStatusName}" = sqsStatusQueue;  };
   resources.s3Buckets."${s3Name}-bucket" = { inherit region ; accessKeyId = account; name = s3Name; };
@@ -303,8 +317,16 @@ with pkgs.lib;
                 "ec2:RunInstances",
                 "ec2:TerminateInstances",
                 "ec2:RequestSpotInstances",
+                "ec2:RequestSpotFleet",
+                "ec2:DescribeSpotFleetRequests",
+                "ec2:CancelSpotFleetRequests",
+                "ec2:DescribeSpotFleetInstances",
+                "ec2:DescribeSpotFleetRequestHistory",
+                "ec2:ModifySpotFleetRequest",
                 "ec2:CreateTags",
-                "iam:PassRole"
+                "iam:CreateServiceLinkedRole",
+                "iam:PassRole",
+                "ec2:CreateLaunchTemplateVersion"
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
@@ -370,7 +392,8 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         } ;
-      ips = if production then builtins.fromJSON (builtins.readFile ./prod-ips.json) else builtins.fromJSON (builtins.readFile ./dev-ips.json);
+      #ips = if production then builtins.fromJSON (builtins.readFile ./prod-ips.json) else builtins.fromJSON (builtins.readFile ./dev-ips.json);
+      ips = if production then prodips else devips ;
       accountEntry = account:
         {
           fromPort = 443;
@@ -387,25 +410,64 @@ with pkgs.lib;
         description = "Security group for frontend";
         rules = map entry ips ++ map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; 
       };
+  resources.ec2SecurityGroups.key-server-nats-sg =
+   #{ config, resources, ... }:
+   /* { rules = 
+      [{ toPort = 443; fromPort = 443; sourceIp = "54.198.86.153/32"; }
+       { toPort = 443; fromPort = 443; sourceIp = "34.227.139.230/32"; }];
+      
+        inherit region;
+        accessKeyId = account;
+        vpcId = mkIf (vpcId != "") vpcId;
+        description = "Security group for for key-server"; 
+      };*/
+
+    let
+      entry = ip:
+      {
+        fromPort = 443;
+        toPort = 443;
+        sourceIp = "${ip}/32";
+      } ;
+      ips = natips;
+        accountEntry = account:
+        {
+          fromPort = 443;
+          toPort = 443;
+          sourceGroup.ownerId = account;
+          sourceGroup.groupName = "admin";
+        };
+    in
+      { config, resources, ... }:
+      {
+        inherit region;
+        accessKeyId = account;
+        vpcId = mkIf (vpcId != "") vpcId;
+        description = "Security group for the key server ";
+        rules = map entry ips ++ map accountEntry(singleton accountId) ;
+      };
+
+   
 
   "provisioner-${name}" =
     { config, resources, nodes, lib, ...}:
     let
-      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != (env.workers."${t}".defaultRegion or "us-east-1")) "-${r}"}"
+      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}"
         ''
           #! /bin/sh
           source /etc/profile
           exec lb-steve-provisioner $@ \
-                 --region ${r} \
-                 --ami ${if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3} \
-                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys \
+                 --region ${region} \
+                 --ami ${dep-region.${region}.amis} \
+                 --key-service https://${resources.elasticIPs.key-server-ip.address}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
-                 --key ${if r == "us-east-1" then resources.ec2KeyPairs.worker-kp.name else resources.ec2KeyPairs."worker-kp-${r}".name} \
+                 --key ${resources.ec2KeyPairs.worker-kp.name} \
                  --incoming ${sqsURL t} \
                  --outgoing ${sqsStatusURL} \
                  --role ${resources.iamRoles.worker-role.name} \
                  --instance-type ${env.workers."${t}".instanceType or t} \
+                 --deployment-subnets ${concatStringsSep "/" dep-region.${region}.Subnets} \
                  --security-group ${env.workers."${t}".securityGroup or "admin"} \
                  ${lib.optionalString (env.workers."${t}" ? subnetId) "--subnet-id ${env.workers."${t}".subnetId}"} \
                  --disk-size ${env.workers."${t}".diskSize or "0"} \
@@ -417,7 +479,7 @@ with pkgs.lib;
                  --min ${env.workers."${t}".min or "0"}
         '';
       provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
-      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or "us-east-1")}/bin/run-provisioner-${workerName t}";
+      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or region)}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
         path = [ pkgs.jdk ];
@@ -436,7 +498,7 @@ with pkgs.lib;
         startAt = "*:0";
       };
     in
-    {
+    { #require = [ /lbdevops/nixops/generic/tags.nix ];
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
@@ -457,16 +519,17 @@ with pkgs.lib;
     };
 
   "key-server-${name}" =
-    { config, resources, ...}:
-    {
+    { config, pkgs, resources, lib, ...}:
+    {  #require = [ /lbdevops/nixops/generic/tags.nix ];
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" ];
+      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "c3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
+      deployment.ec2.elasticIPv4 = resources.elasticIPs.key-server-ip;
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -502,8 +565,6 @@ with pkgs.lib;
                 stub_status         on;
                 access_log         off;
                 allow        127.0.0.1;
-                deny               all;
-            }
         }
         server {
           server_name ${env.hostName};
@@ -602,13 +663,13 @@ with pkgs.lib;
 
       # pass s3Name
       system.build.s3Name = s3Name;
-
+       #require = [ /lbdevops/nixops/generic/tags.nix ];
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.8xlarge" else "c3.8xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "r4.2xlarge" else "r3.2xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
@@ -640,13 +701,13 @@ with pkgs.lib;
         exec iptables -I INPUT 1 -s $1 -j DROP
       '';
     in
-    {
+    {  #require = [ /lbdevops/nixops/generic/tags.nix ];
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.frontend-sg.name ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.xlarge" else "c3.xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.large" else "c3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       deployment.ec2.elasticIPv4 = env.elasticIPv4 or "";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;

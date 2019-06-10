@@ -11,13 +11,14 @@ lbconfig_package(
 
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
 frontend_database_dep = ("frontend_database", {'default_path': "/opt/logicblox/lb-steve-frontend-database"})
-
+aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
 commons_cli_dep = ( "commons_cli", {'default_path': deps})
 
 depends_on(
   logicblox_dep,
   lb_web_dep,
   commons_cli_dep,
+  aws_java_sdk_dep,
   protocols_dep,
   frontend_database_dep)
 
@@ -81,7 +82,7 @@ classpath = [
 
   '$(lb_web)/lib/java/s3lib-0.2.jar',
   '$(lb_web)/lib/java/commons-io-2.4.jar',
-  '$(lb_web)/lib/java/aws-java-sdk-1.11.102.jar',
+  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.560.jar',
   '$(lb_web)/lib/java/httpclient-4.5.2.jar',
   '$(lb_web)/lib/java/httpcore-4.4.4.jar',
   '$(lb_web)/lib/java/jackson-annotations-2.6.0.jar',

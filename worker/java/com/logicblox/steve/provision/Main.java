@@ -1,8 +1,14 @@
 package com.logicblox.steve.provision;
 
+
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.ec2.AbstractAmazonEC2;
+import com.amazonaws.services.ec2.AbstractAmazonEC2Async;
+import com.amazonaws.services.ec2.AmazonEC2Async;
+import com.amazonaws.services.ec2.AmazonEC2AsyncClient;
 import com.amazonaws.services.ec2.AmazonEC2;
+//import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -11,6 +17,7 @@ import org.apache.commons.cli.*;
 import org.apache.commons.codec.binary.Base64;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.lang.InterruptedException;
 
 public class Main {
@@ -41,8 +48,9 @@ public class Main {
   private static int minInstances = 0;
   private static boolean dryRun = true;
   private static int diskSize = 0;
-
-  private static Regions[] regions = new Regions[]{ Regions.US_EAST_1, Regions.US_WEST_1, Regions.US_WEST_2 };
+  private static String SpotfleetRole = "arn:aws:iam::826045886586:role/aws-ec2-spot-fleet-role";
+  private static String Subnets = "";
+  private static Regions[] regions = new Regions[]{ Regions.US_EAST_1, Regions.US_EAST_2, Regions.US_WEST_1, Regions.US_WEST_2 };
 
   public Main() {
     setupAmazon();
@@ -178,6 +186,11 @@ public class Main {
             .hasArg()
             .withArgName("security group")
             .create());
+    options.addOption(OptionBuilder.withLongOpt("deployment-subnets")
+            .withDescription("Deployment Subnets")
+            .hasArg()
+            .withArgName("deployment subnets")
+            .create());
 
     options.addOption(OptionBuilder.withLongOpt("dry-run")
             .withDescription("Whether to actually create the requested instances")
@@ -186,6 +199,8 @@ public class Main {
     CommandLineParser parser = new BasicParser();
     try {
       CommandLine _cmdline = parser.parse(options, args);
+      if (_cmdline.hasOption("deployment-subnets"))
+        Subnets = _cmdline.getOptionValue("deployment-subnets");
       if (_cmdline.hasOption("queue"))
         queue = _cmdline.getOptionValue("queue");
       if (_cmdline.hasOption("bucket"))
@@ -249,6 +264,7 @@ public class Main {
 
     ec2 = new AmazonEC2Client();
     ec2.setRegion(Region.getRegion(Regions.fromName(region)));
+    //ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.fromName(region)).build();
   }
 
   public void go() {
@@ -278,7 +294,8 @@ public class Main {
     }
 
     int spotCurrent = getNumberOfCurrentSpotInstances();
-    int odCurrent = getNumberOfCurrentOnDemandInstances();
+    //int odCurrent = getNumberOfCurrentOnDemandInstances();
+   int odCurrent = 0;
 
     int newNeeded = totalNeeded - spotCurrent - odCurrent;
     if (maxDelta != -1) {
@@ -292,9 +309,10 @@ public class Main {
     System.err.println(String.format("%s: Number of current on-demand instances : %d", queue, odCurrent));
 
     if (spotNeeded > 0)
-      createSpotInstances(spotNeeded);
-    if (odNeeded > 0)
-      createOnDemandInstances(odNeeded);
+      //createSpotInstances(spotNeeded);
+      createSpotfleet(spotNeeded);
+   /* if (odNeeded > 0)
+      createOnDemandInstances(odNeeded);*/
   }
 
   private String getUserData() {
@@ -310,6 +328,7 @@ public class Main {
 
   // get number of spot instances that are not yet terminated
   private int getNumberOfCurrentSpotInstances() {
+    
     int result = 0;
 
     for(Regions region: regions) {
@@ -329,17 +348,47 @@ public class Main {
       }
     }
     return result;
-  }
+    //alternative count for spot
+    /*int result = 0;
+    DescribeInstancesRequest req = null;
+     try { 
+     req = new DescribeInstancesRequest()
+             .withFilters(
+                     new Filter().withName("tag:S3Bucket").withValues(s3Bucket),
+                     new Filter().withName("tag:IncomingQueue").withValues(incoming_url),
+                     new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url)
+             );
+     } catch (Exception ex) {
+       System.out.println("foo");
+     }
+ 
+     DescribeInstancesResult res = ec2.describeInstances(req);
+     for (Reservation r : res.getReservations()) {
+       for (Instance i : r.getInstances()) {
+         if (!i.getState().getName().equals("terminated") && i.getInstanceLifecycle().equals("spot")) {
+           result++;
+         }
+       }
+     }
+ 
+     return result;
+     * */
+ }
 
   // get number of on-demand instances that are not yet terminated
   private int getNumberOfCurrentOnDemandInstances() {
     int result = 0;
-    DescribeInstancesRequest req = new DescribeInstancesRequest()
+   DescribeInstancesRequest req = null;
+    try {
+    req = new DescribeInstancesRequest()
             .withFilters(
                     new Filter().withName("tag:S3Bucket").withValues(s3Bucket),
                     new Filter().withName("tag:IncomingQueue").withValues(incoming_url),
                     new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url)
             );
+    } catch (Exception ex) {
+      System.out.println("foo");
+    }
 
     DescribeInstancesResult res = ec2.describeInstances(req);
     for (Reservation r : res.getReservations()) {
@@ -490,6 +539,165 @@ public class Main {
       createTags(sir.getSpotInstanceRequestId());
     }
   }
+
+  
+   public void createSpotfleet (int targetcap) {
+     
+      System.err.println(String.format("Creating %d spot instances", targetcap));
+      List<String> SubnetsList = Arrays.asList(Subnets.split("\\s*/\\s*"));
+      Collection<Tag> tags = new ArrayList<Tag>();
+      Collection<SpotFleetTagSpecification> tagspeclist = new ArrayList<SpotFleetTagSpecification>();
+      //Collection<groupidentifier> identgroups = new ArrayList<groupidentifier>();
+      tags.add(new Tag("Name", String.format("Worker [%s]", s3Bucket)));
+      tags.add(new Tag("S3Bucket", s3Bucket));
+      tags.add(new Tag("IncomingQueue", incoming_url));
+      tags.add(new Tag("OutgoingQueue", outgoing_url));
+      System.out.println(SubnetsList);
+      if (dryRun)
+        return;
+      //***************Cleaning up the code for spot fleet*******************
+      RequestSpotFleetRequest request = new RequestSpotFleetRequest();
+        SpotFleetRequestConfigData fleetconfig = new SpotFleetRequestConfigData();
+        fleetconfig.setIamFleetRole(SpotfleetRole);
+        fleetconfig.setSpotPrice(Double.toString(spotPrice));
+        fleetconfig.setTargetCapacity(targetcap);
+        fleetconfig.setType("request");
+        fleetconfig.setAllocationStrategy("diversified");
+        Collection<SpotFleetLaunchSpecification> LaunchSpecs = new ArrayList<SpotFleetLaunchSpecification>();
+       
+
+        GroupIdentifier groupidf = new GroupIdentifier();
+        groupidf.setGroupId("sg-05cbec8d1f38ef449");
+        Collection<GroupIdentifier> identgroups = new ArrayList<GroupIdentifier>();
+        identgroups.add(groupidf);
+
+       
+        for (String sp : SubnetsList)
+        {
+        SpotFleetLaunchSpecification fleetspec = new SpotFleetLaunchSpecification();
+        fleetspec.setKeyName(key);
+        fleetspec.setImageId(ami);
+        fleetspec.setInstanceType(instanceType);
+        fleetspec.setUserData(getUserData());
+        fleetspec.setSubnetId(sp);
+
+        IamInstanceProfileSpecification profilespec = new IamInstanceProfileSpecification();
+        profilespec.setName(role);
+        fleetspec.setIamInstanceProfile(profilespec);
+
+        fleetspec.setSecurityGroups(identgroups);
+
+        SpotFleetTagSpecification fleettagsspec = new SpotFleetTagSpecification();
+        fleettagsspec.setTags(tags);
+        fleettagsspec.setResourceType("instance");
+        tagspeclist.add(fleettagsspec);
+        fleetspec.setTagSpecifications(tagspeclist);
+
+        LaunchSpecs.add(fleetspec);
+        }
+        
+        fleetconfig.setLaunchSpecifications(LaunchSpecs);
+        request.setSpotFleetRequestConfig(fleetconfig);
+
+        RequestSpotFleetResult response = ec2.requestSpotFleet(request);
+        
+
+       ////////////////////////////////////////////////////////////////////
+     
+      String fleetID = response.getSpotFleetRequestId();
+       //int result = 0;
+       try {
+       Thread.sleep(30000);
+     } catch (Exception e) {
+     }
+      System.out.println(String.format("Spot fleet request ID %s",fleetID));
+
+
+     ///////////////////////////////////////////////////////////
+     /* for(Regions region: regions) {
+        AmazonEC2Client _ec2 = new AmazonEC2Client();
+        _ec2.setRegion(Region.getRegion(region));
+        DescribeFleetInstancesRequest sfreq = new DescribeFleetInstancesRequest()
+                .withSpotFleetRequestId(fleetID)
+                .withFilters(
+                        new Filter().withName("tag:S3Bucket").withValues(s3Bucket),
+                        new Filter().withName("tag:IncomingQueue").withValues(incoming_url),
+                        new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url),
+                        new Filter().withName("state").withValues("open", "active")
+                );
+        DescribeSpotFleetInstancesResult sfres = _ec2.describeSpotFleetInstances(sfreq);
+      }
+      //return result;
+      System.out.println(sfres);*/
+
+    /////////////////////////////////////////////////////////////////////  
+   //EC2fleet code
+    
+     /*  CreateFleetRequest fleetreq = new CreateFleetRequest();
+     //capacity
+       TargetCapacitySpecificationRequest targetcapacity = new TargetCapacitySpecificationRequest();
+       targetcapacity.setDefaultTargetCapacityType("spot");
+       targetcapacity.setTotalTargetCapacity(targetcap);
+       fleetreq.setTargetCapacitySpecification(targetcapacity);
+
+       fleetreq.setType("request");
+
+       fleetreq.setTerminateInstancesWithExpiration(true);
+
+
+     //spot config
+       SpotOptionsRequest spotopt = new SpotOptionsRequest() ;
+       spotopt.setAllocationStrategy("diversified");
+     //spotopt.setAllocationStrategy("lowestPrice");
+     //spotopt.setInstancePoolsToUseCount(3);
+
+       fleetreq.setSpotOptions(spotopt);
+
+     //tagging
+       Collection<TagSpecification> tagSpecifications = new ArrayList<TagSpecification>();
+       TagSpecification tagspec = new TagSpecification();
+       tagspec.setResourceType("instance");
+       tagspec.setTags(tags);
+       tagSpecifications.add(tagspec);
+       fleetreq.setTagSpecifications(tagSpecifications);
+
+     //launch template
+       Collection<FleetLaunchTemplateConfigRequest> fleetlaunchConfReqs = new ArrayList<FleetLaunchTemplateConfigRequest>();
+       FleetLaunchTemplateConfigRequest fleettempconf = new FleetLaunchTemplateConfigRequest() ;
+
+       FleetLaunchTemplateSpecificationRequest launchTempSpec = new FleetLaunchTemplateSpecificationRequest();
+
+       launchTempSpec.setLaunchTemplateId("lt-059e1e3a4dc07d519");
+     //launchTempSpec.setVersion(1);
+
+       fleettempconf.setLaunchTemplateSpecification(launchTempSpec);
+
+     //launch template overrides
+       Collection<FleetLaunchTemplateOverridesRequest> tempoverrides = new ArrayList<FleetLaunchTemplateOverridesRequest>();
+       for (String sb : SubnetsList)
+       {
+     
+        FleetLaunchTemplateOverridesRequest launchoverride = new FleetLaunchTemplateOverridesRequest();
+        launchoverride.setInstanceType(instanceType);
+        launchoverride.setSubnetId(sb);
+        launchoverride.setMaxPrice(Double.toString(spotPrice));
+
+        tempoverrides.add(launchoverride); 
+    
+     }
+       fleettempconf.setOverrides(tempoverrides);
+       fleetlaunchConfReqs.add(fleettempconf);
+       fleetreq.setLaunchTemplateConfigs(fleetlaunchConfReqs);
+       
+       CreateFleetResult fleetresponse =((AmazonEC2Client) ec2).createFleet(fleetreq);
+
+       String fleetID = fleetresponse.getFleetId();
+        try {
+        Thread.sleep(30000);
+      } catch (Exception e) {
+      }
+       System.out.println(String.format("EC2 fleet request ID %s",fleetID));*/
+   } 
 
   public static void main(String args[]) {
     parseArgs(args);
