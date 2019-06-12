@@ -245,7 +245,75 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
+             },
+             {
+               "Action": [
+                 "cloudwatch:PutMetricData"
+               ],
+               "Effect": "Allow",
+               "Resource": "*"
+             },
+             {
+               "Action": [
+                   "cloudwatch:GetMetricStatistics"
+               ],
+               "Effect": "Allow",
+               "Resource": "*"
+             },
+             {
+               "Action": [
+                "cloudwatch:ListMetrics"
+               ],
+               "Effect": "Allow",
+               "Resource": "*"
+             },
+             {
+               "Action": [
+                 "ec2:DescribeTags"
+               ],
+                "Effect": "Allow",
+                "Resource": "*"
+
             }
+          ]
+        }
+      '';
+    };
+  resources.iamRoles.keyserver-role =
+    { resources, ... }:
+    {
+      accessKeyId = account;
+      policy = ''
+        {
+          "Statement": [
+            {
+                 "Action": [
+                   "cloudwatch:PutMetricData"
+                 ],
+                 "Effect": "Allow",
+                 "Resource": "*"
+               },
+               {
+                 "Action": [
+                  "cloudwatch:GetMetricStatistics"
+                 ],
+                 "Effect": "Allow",
+                 "Resource": "*"
+               },
+               {
+                 "Action": [
+                  "cloudwatch:ListMetrics"
+                 ],
+                 "Effect": "Allow",
+                 "Resource": "*"
+               },
+               {
+                 "Action": [
+                   "ec2:DescribeTags"
+                 ],
+                  "Effect": "Allow",
+                  "Resource": "*" 
+               }
           ]
         }
       '';
@@ -285,6 +353,35 @@ with pkgs.lib;
                 "arn:aws:s3:::${s3Name}",
                 "arn:aws:s3:::${s3Name}/*"
               ]
+             },
+             {
+               "Action": [
+                 "cloudwatch:PutMetricData"
+               ],
+               "Effect": "Allow",
+               "Resource": "*"
+             },
+             {
+               "Action": [
+                   "cloudwatch:GetMetricStatistics"
+               ],
+               "Effect": "Allow",
+               "Resource": "*"
+             },
+             {
+               "Action": [
+                "cloudwatch:ListMetrics"
+               ],
+               "Effect": "Allow",
+               "Resource": "*"
+             },
+             {
+               "Action": [
+                 "ec2:DescribeTags"
+               ],
+                "Effect": "Allow",
+                "Resource": "*"
+
             }
           ]
         }
@@ -330,6 +427,34 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
+             },
+             {
+              "Action": [
+                 "cloudwatch:PutMetricData"
+               ],
+               "Effect": "Allow",
+               "Resource": "*"
+             },
+             {
+               "Action": [
+                   "cloudwatch:GetMetricStatistics"
+               ],
+               "Effect": "Allow",
+               "Resource": "*"
+             },
+             {
+               "Action": [
+                "cloudwatch:ListMetrics"
+               ],
+               "Effect": "Allow",
+               "Resource": "*"
+             },
+             {
+               "Action": [
+                 "ec2:DescribeTags"
+               ],
+                "Effect": "Allow",
+                "Resource": "*"
             }
           ]
         }
@@ -378,6 +503,34 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
+            },
+            {
+              "Action": [
+                "cloudwatch:PutMetricData"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+                  "cloudwatch:GetMetricStatistics"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+               "cloudwatch:ListMetrics"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+                "ec2:DescribeTags"
+              ],
+               "Effect": "Allow",
+               "Resource": "*"
             }
           ]
         }
@@ -531,7 +684,7 @@ with pkgs.lib;
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
       deployment.ec2.elasticIPv4 = resources.elasticIPs.key-server-ip;
-
+      deployment.ec2.instanceProfile = resources.iamRoles.keyserver-role.name;
       imports = [
         <lbdevops/logicblox/production.nix>
         ./keyserver.nix
@@ -877,7 +1030,7 @@ with pkgs.lib;
 
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> ];
+    { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"
