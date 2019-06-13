@@ -32,6 +32,7 @@ bin_program('lb-steve-worker')
 bin_program('lb-steve-provisioner')
 
 classpath = [
+  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.560.jar',     
   '$(protocols)/lib/java/lb-steve-protocols.jar',
 
   '$(lb_web)/lib/java/joda-time-2.8.1.jar',
@@ -46,8 +47,6 @@ classpath = [
   '$(lb_web)/lib/java/httpclient-4.5.2.jar',
   '$(lb_web)/lib/java/httpcore-4.4.4.jar',
   '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
-
-  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.560.jar',
 
   '$(commons_exec)/lib/java/commons-exec.jar',
   '$(commons_cli)/lib/java/commons-cli.jar',

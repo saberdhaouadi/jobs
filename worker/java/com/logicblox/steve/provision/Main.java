@@ -52,6 +52,7 @@ public class Main {
   private static String Subnets = "";
   private static String SecGrpId = "";
   private static Regions[] regions = new Regions[]{ Regions.US_EAST_1, Regions.US_EAST_2, Regions.US_WEST_1, Regions.US_WEST_2 };
+  
 
   public Main() {
     setupAmazon();
@@ -374,7 +375,7 @@ public class Main {
      DescribeInstancesResult res = ec2.describeInstances(req);
      for (Reservation r : res.getReservations()) {
        for (Instance i : r.getInstances()) {
-         if (!i.getState().getName().equals("terminated") && i.getInstanceLifecycle().equals("spot")) {
+       if (!i.getState().getName().equals("terminated") && i.getInstanceLifecycle().equals("spot") == true) {
            result++;
          }
        }
@@ -572,6 +573,9 @@ public class Main {
         fleetconfig.setTargetCapacity(targetcap);
         fleetconfig.setType("request");
         fleetconfig.setAllocationStrategy("diversified");
+        //fleetconfig.setAllocationStrategy("lowestPrice");
+        //fleetconfig.setInstancePoolsToUseCount(3);
+
         Collection<SpotFleetLaunchSpecification> LaunchSpecs = new ArrayList<SpotFleetLaunchSpecification>();
        
 
@@ -579,6 +583,11 @@ public class Main {
         groupidf.setGroupId(SecGrpId);
         Collection<GroupIdentifier> identgroups = new ArrayList<GroupIdentifier>();
         identgroups.add(groupidf);
+        
+        SpotFleetTagSpecification fleettagsspec = new SpotFleetTagSpecification();
+        fleettagsspec.setTags(tags);
+        fleettagsspec.setResourceType("instance");
+        tagspeclist.add(fleettagsspec);
 
        
         for (String sp : SubnetsList)
@@ -596,11 +605,11 @@ public class Main {
 
         fleetspec.setSecurityGroups(identgroups);
 
-        SpotFleetTagSpecification fleettagsspec = new SpotFleetTagSpecification();
-        fleettagsspec.setTags(tags);
-        fleettagsspec.setResourceType("instance");
-        tagspeclist.add(fleettagsspec);
-        //fleetspec.setTagSpecifications(tagspeclist);
+        //SpotFleetTagSpecification fleettagsspec = new SpotFleetTagSpecification();
+        //fleettagsspec.setTags(tags);
+        //fleettagsspec.setResourceType("instance");
+        //tagspeclist.add(fleettagsspec);
+        fleetspec.setTagSpecifications(tagspeclist);
 
         LaunchSpecs.add(fleetspec);
         }
@@ -642,7 +651,7 @@ public class Main {
     /////////////////////////////////////////////////////////////////////  
    //EC2fleet code
     
-     /*  CreateFleetRequest fleetreq = new CreateFleetRequest();
+      /* CreateFleetRequest fleetreq = new CreateFleetRequest();
      //capacity
        TargetCapacitySpecificationRequest targetcapacity = new TargetCapacitySpecificationRequest();
        targetcapacity.setDefaultTargetCapacityType("spot");
@@ -698,9 +707,9 @@ public class Main {
        fleetlaunchConfReqs.add(fleettempconf);
        fleetreq.setLaunchTemplateConfigs(fleetlaunchConfReqs);
        
-       CreateFleetResult fleetresponse =((AmazonEC2Client) ec2).createFleet(fleetreq);
+       CreateFleetResult fleetresponse =ec2.createFleet(fleetreq);
 
-       String fleetID = fleetresponse.getFleetId();
+      /* String fleetID = fleetresponse.getFleetId();
         try {
         Thread.sleep(30000);
       } catch (Exception e) {
