@@ -304,8 +304,8 @@ public class Main {
     }
 
     int spotCurrent = getNumberOfCurrentSpotInstances();
-    //int odCurrent = getNumberOfCurrentOnDemandInstances();
-   int odCurrent = 0;
+    int odCurrent = getNumberOfCurrentOnDemandInstances();
+    //int odCurrent = 0;
 
     int newNeeded = totalNeeded - spotCurrent - odCurrent;
     if (maxDelta != -1) {
@@ -321,8 +321,8 @@ public class Main {
     if (spotNeeded > 0)
       //createSpotInstances(spotNeeded);
       createSpotfleet(spotNeeded);
-   /* if (odNeeded > 0)
-      createOnDemandInstances(odNeeded);*/
+    if (odNeeded > 0)
+      createOnDemandInstances(odNeeded);
   }
 
   private String getUserData() {
@@ -339,7 +339,7 @@ public class Main {
   // get number of spot instances that are not yet terminated
   private int getNumberOfCurrentSpotInstances() {
     
-    int result = 0;
+   /* int result = 0;
 
     for(Regions region: regions) {
       AmazonEC2Client _ec2 = new AmazonEC2Client();
@@ -357,9 +357,9 @@ public class Main {
         result++;
       }
     }
-    return result;
+    return result;*/
     //alternative count for spot
-    /*int result = 0;
+    int result = 0;
     DescribeInstancesRequest req = null;
      try { 
      req = new DescribeInstancesRequest()
@@ -380,9 +380,8 @@ public class Main {
          }
        }
      }
- 
      return result;
-     * */
+    
  }
 
   // get number of on-demand instances that are not yet terminated
