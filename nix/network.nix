@@ -135,7 +135,7 @@ let
       env_credentials = false
       sqs_endpoint = sqs.${region}.amazonaws.com
       sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsName t}
-      ${if (t == "c3.xlarge") then "default = true" else ""}
+      ${if (t == "c5.xlarge") then "default = true" else ""}
       '') instanceTypes}
 
       [status-queue]
@@ -680,7 +680,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "c3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "c5.large" else "c3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
       deployment.ec2.elasticIPv4 = resources.elasticIPs.key-server-ip;
@@ -823,7 +823,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "r4.2xlarge" else "r3.2xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "c5.2xlarge" else "r3.2xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
@@ -861,7 +861,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.frontend-sg.name ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.large" else "c3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "c5.large" else "c3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       deployment.ec2.elasticIPv4 = env.elasticIPv4 or "";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
