@@ -650,7 +650,7 @@ public class Main {
     /////////////////////////////////////////////////////////////////////  
    //EC2fleet code
     
-      /* CreateFleetRequest fleetreq = new CreateFleetRequest();
+     /*  CreateFleetRequest fleetreq = new CreateFleetRequest();
      //capacity
        TargetCapacitySpecificationRequest targetcapacity = new TargetCapacitySpecificationRequest();
        targetcapacity.setDefaultTargetCapacityType("spot");
@@ -708,7 +708,7 @@ public class Main {
        
        CreateFleetResult fleetresponse =ec2.createFleet(fleetreq);
 
-      /* String fleetID = fleetresponse.getFleetId();
+       String fleetID = fleetresponse.getFleetId();
         try {
         Thread.sleep(30000);
       } catch (Exception e) {

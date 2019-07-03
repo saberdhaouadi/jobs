@@ -24,8 +24,7 @@ let
   nat-gateways-ips = import ./nat-ips.nix;
   natips = nat-gateways-ips.nat;
 
-  deployment-params = import ./regions-subnets.nix;
-  dep-region = deployment-params.region;
+  dep-region = env.region;
 
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
@@ -135,7 +134,7 @@ let
       env_credentials = false
       sqs_endpoint = sqs.${region}.amazonaws.com
       sqs_queue_url = https://sqs.${region}.amazonaws.com/${accountId}/${sqsName t}
-      ${if (t == "c5.xlarge") then "default = true" else ""}
+      ${if (t == "i2.2xlarge") then "default = true" else ""}
       '') instanceTypes}
 
       [status-queue]
@@ -159,6 +158,8 @@ let
       [realm-config:default-signature]
       mechanism_option_credential_service = http://database-${name}:55183/admin/credentials
     '';
+    
+    getDeviceName = import <lbdevops/nixops/generic/device-name.nix>;
 
 in
 with pkgs.lib;
@@ -170,9 +171,10 @@ with pkgs.lib;
 
   resources.elasticIPs.key-ip-us-west-2 = { region = "us-west-2" ; accessKeyId = account; };
   "key-proxy-${name}-us-west-2" = key-proxy "us-west-2"; */
-  resources.elasticIPs.key-server-ip = { inherit region ; accessKeyId = account ; };
+  #resources.elasticIPs.key-server-ip = { inherit region ; accessKeyId = account ; };
 
   resources.ec2KeyPairs.worker-kp = { inherit region ; accessKeyId = account; };
+  resources.ec2KeyPairs.worker-kp-us-east-1 = { region = "us-east-1"; accessKeyId = account; };
   resources.ec2KeyPairs.worker-kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
   resources.ec2KeyPairs.worker-kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
   resources.ec2KeyPairs.kp = { inherit region ; accessKeyId = account; };
@@ -545,7 +547,6 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         } ;
-      #ips = if production then builtins.fromJSON (builtins.readFile ./prod-ips.json) else builtins.fromJSON (builtins.readFile ./dev-ips.json);
       ips = if production then prodips else devips ;
       accountEntry = account:
         {
@@ -605,23 +606,23 @@ with pkgs.lib;
   "provisioner-${name}" =
     { config, resources, nodes, lib, ...}:
     let
-      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}"
+      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != (env.workers."${t}".defaultRegion or "us-east-2")) "-${r}"}"
         ''
           #! /bin/sh
           source /etc/profile
           exec lb-steve-provisioner $@ \
-                 --region ${region} \
-                 --ami ${dep-region.${region}.amis} \
-                 --key-service https://${resources.elasticIPs.key-server-ip.address}/keys \
+                 --region ${r} \
+                 --ami ${if env.workers."${t}" ? diskSize then dep-region.${r}.ebs-amis else dep-region.${r}.s3-amis} \
+                 --key-service https://${if r == region then nodes."key-server-${name}".config.networking.privateIPv4 else env.key-server-elastic-ip}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
-                 --key ${resources.ec2KeyPairs.worker-kp.name} \
+                 --key ${if r == "us-east-2" then resources.ec2KeyPairs.worker-kp.name else resources.ec2KeyPairs."worker-kp-${r}".name} \
                  --incoming ${sqsURL t} \
                  --outgoing ${sqsStatusURL} \
                  --role ${resources.iamRoles.worker-role.name} \
                  --instance-type ${env.workers."${t}".instanceType or t} \
-                 --deployment-subnets ${concatStringsSep "/" dep-region.${region}.Subnets} \
-                 --security-group-ids ${concatStrings dep-region.${region}.securityGroupsIDs} \
+                 --deployment-subnets ${concatStringsSep "/" dep-region.${r}.Subnets} \
+                 --security-group-ids ${concatStrings dep-region.${r}.securityGroupsIDs} \
                  --security-group ${env.workers."${t}".securityGroup or "admin"} \
                  ${lib.optionalString (env.workers."${t}" ? subnetId) "--subnet-id ${env.workers."${t}".subnetId}"} \
                  --disk-size ${env.workers."${t}".diskSize or "0"} \
@@ -633,7 +634,7 @@ with pkgs.lib;
                  --min ${env.workers."${t}".min or "0"}
         '';
       provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
-      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or region)}/bin/run-provisioner-${workerName t}";
+      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or "us-east-2")}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
         path = [ pkgs.jdk ];
@@ -680,11 +681,13 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c5.large" else "c3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "c3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
-      deployment.ec2.elasticIPv4 = resources.elasticIPs.key-server-ip;
+      #deployment.ec2.elasticIPv4 = resources.elasticIPs.key-server-ip;
+      deployment.ec2.elasticIPv4 = env.key-server-elastic-ip;
       deployment.ec2.instanceProfile = resources.iamRoles.keyserver-role.name;
+      deployment.ec2.ebsInitialRootDiskSize = 5;
       imports = [
         <lbdevops/logicblox/production.nix>
         ./keyserver.nix
@@ -693,7 +696,7 @@ with pkgs.lib;
       fileSystems."/keys" =
         { autoFormat = true;
           fsType = "xfs";
-          device = "/dev/xvdf";
+          device = getDeviceName config.deployment.ec2.instanceType false; #"/dev/xvdf";
           options = [ "noatime" ];
           ec2.size = 20;
           ec2.encrypt = true;
@@ -719,6 +722,8 @@ with pkgs.lib;
                 stub_status         on;
                 access_log         off;
                 allow        127.0.0.1;
+                deny               all;
+            }
         }
         server {
           server_name ${env.hostName};
@@ -823,7 +828,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c5.2xlarge" else "r3.2xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "r3.2xlarge" else "c3.2xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
@@ -840,7 +845,7 @@ with pkgs.lib;
       fileSystems."/data" =
         { autoFormat = true;
           fsType = "xfs";
-          device = "/dev/xvdf";
+          device = getDeviceName config.deployment.ec2.instanceType false; #"/dev/xvdf";
           options = [ "noatime" ];
           ec2.size = 1000;
           ec2.volumeType = "gp2";
@@ -861,7 +866,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.frontend-sg.name ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c5.large" else "c3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.large" else "c3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
       deployment.ec2.elasticIPv4 = env.elasticIPv4 or "";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
@@ -1030,7 +1035,8 @@ with pkgs.lib;
 
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
+    #{ imports = [ <lbdevops/logicblox/config/logging/logentries.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
+    { imports = [ <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"
