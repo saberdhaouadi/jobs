@@ -85,7 +85,7 @@ let
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB (attrs // {
       inherit name;
-      buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl pkgs.pythonPackages.requests2 ] ++ (attrs.buildInputs or []);
+      buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl pkgs.pythonPackages.requests ] ++ (attrs.buildInputs or []);
       requiredSystemFeatures = ["perf"];
       # LB_CONFIG = ./config/perf;
       buildCommand = ''
@@ -277,6 +277,7 @@ let
         "--with-protocols=${protocols}"
         "--with-frontend-database=${database.build}"
         "--with-commons-cli=${deps.commons-cli}"
+        "--with-aws-java-sdk=${deps.aws-java-sdk}"
       ];
       doCheck = true;
       inherit postInstall;
@@ -307,6 +308,9 @@ let
       src = ./protocols;
       buildInputs = [ logicblox lb_web pkgs.findbugs ];
       enableLBservices = false;
+      configureFlags = [
+         "--with-aws-java-sdk=${deps.aws-java-sdk}"
+      ];
       inherit postInstall;
     };
 
@@ -376,6 +380,7 @@ let
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-commons-cli=${deps.commons-cli}"
+        "--with-aws-java-sdk=${deps.aws-java-sdk}"
       ];
       inherit postInstall;
     };

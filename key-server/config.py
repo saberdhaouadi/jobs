@@ -9,12 +9,14 @@ lbconfig_package(
 
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
 commons_cli_dep = ( "commons_cli", {'default_path': "/opt/logicblox/deps/commons-cli-1.2"})
+aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
 
 depends_on(
   logicblox_dep,
   lb_web_dep,
   protocols_dep,
-  commons_cli_dep)
+  commons_cli_dep,
+  aws_java_sdk_dep)
 
 bin_program('lb-steve-key-server')
 
@@ -61,7 +63,7 @@ classpath = [
 
   '$(lb_web)/lib/java/cloudstore-0.2.jar',
   '$(logicblox)/lib/java/commons-io-2.4.jar',
-  '$(lb_web)/lib/java/aws-java-sdk-1.11.102.jar',
+  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.560.jar',
 
   '$(logicblox)/lib/java/lb-connectblox.jar',
 

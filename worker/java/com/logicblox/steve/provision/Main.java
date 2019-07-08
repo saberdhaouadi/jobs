@@ -161,7 +161,21 @@ public class Main {
             .hasArg()
             .withArgName("project")
             .create());
-
+    options.addOption(OptionBuilder.withLongOpt("deployment-subnets")
+            .withDescription("Deployment Subnets")
+            .hasArg()
+            .withArgName("deployment subnets")
+            .create());
+    options.addOption(OptionBuilder.withLongOpt("security-group-ids")
+            .withDescription("Deployment Security-groups")
+            .hasArg()
+            .withArgName("deployment security-groups")
+            .create());
+    options.addOption(OptionBuilder.withLongOpt("spotfleet-role")
+            .withDescription("Spot fleet arn role ")
+            .hasArg()
+            .withArgName("spotfleet role")
+            .create());
     options.addOption(OptionBuilder.withLongOpt("dry-run")
             .withDescription("Whether to actually create the requested instances")
             .create());
@@ -216,6 +230,15 @@ public class Main {
         cmdArgs.setBackend(_cmdline.getOptionValue("backend"));
       if (_cmdline.hasOption("project"))
         cmdArgs.setProject(_cmdline.getOptionValue("project"));
+
+      if (_cmdline.hasOption("deployment-subnets"))
+        cmdArgs.setSubnets(_cmdline.getOptionValue("deployment-subnets"));
+      if (_cmdline.hasOption("security-group-ids"))
+        cmdArgs.setSecGrpId(_cmdline.getOptionValue("security-group-ids"));
+      if (_cmdline.hasOption("spotfleet-role"))
+        cmdArgs.setSpotFleetRole(_cmdline.getOptionValue("spotfleet-role"));
+
+
 
       if (cmdArgs.getMaxInstances() < cmdArgs.getTotalNeeded()) {
          cmdArgs.setMaxInstances(cmdArgs.getTotalNeeded());

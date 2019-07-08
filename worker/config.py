@@ -39,6 +39,7 @@ bin_program('lb-steve-provisioner')
 config_file('$(lb_web)/config/lb-web-client.config')
 
 classpath = [
+  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.560.jar',      
   '$(protocols)/lib/java/lb-steve-protocols.jar',
   '$(lb_web)/lib/java/joda-time-2.8.1.jar',
   '$(lb_web)/lib/java/jcommander-1.29.jar',
@@ -56,7 +57,6 @@ classpath = [
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
   '$(lb_web)/lib/java/commons-configuration-1.8.jar',
   '$(lb_web)/lib/java/commons-lang-2.6.jar',
-  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
 
   '$(commons_exec)/lib/java/commons-exec.jar',
   '$(commons_cli)/lib/java/commons-cli.jar',

@@ -5,14 +5,26 @@
 , logToken ? ""
 , vpcId ? ""
 , production ? false
+, ...
 }:
 let
   environments = import ./environments.nix;
   env = environments."${name}";
 
   instanceTypes = builtins.attrNames env.workers;
-
+ 
   amis = import ./amis.nix;
+
+  dev-ips = import ./dev-ips.nix;
+  devips =  dev-ips.dev;  
+
+  prod-ips = import ./prod-ips.nix;
+  prodips = prod-ips.prod;
+
+  nat-gateways-ips = import ./nat-ips.nix;
+  natips = nat-gateways-ips.nat;
+
+  dep-region = env.region;
 
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
@@ -47,33 +59,6 @@ let
     '';
   };
 
-  key-proxy = region:
-    { config, pkgs, resources, nodes, ... }:
-    {
-      deployment.targetEnv = "ec2";
-      deployment.ec2.accessKeyId = account;
-      deployment.ec2.keyPair = resources.ec2KeyPairs."kp-${region}".name;
-      deployment.ec2.securityGroups = [ "admin" ];
-      deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.large" else "c3.large";
-      deployment.ec2.elasticIPv4 = resources.elasticIPs."key-ip-${region}";
-
-      networking.firewall.allowedTCPPorts = [ 443 ];
-
-      services.haproxy.enable = true;
-      services.haproxy.config = ''
-        listen l1
-            bind 0.0.0.0:443
-            mode tcp
-            clitimeout 180000
-            srvtimeout 180000
-            contimeout 4000
-            server srv1 ${nodes."key-server-${name}".config.networking.publicIPv4}:443
-
-        global
-            user haproxy
-      '';
-    };
 
   worker = queue: type:
     { config, pkgs, resources, nodes, lib, ... }:
@@ -147,23 +132,21 @@ let
       mechanism_option_credential_service = http://database-${name}:55183/admin/credentials
     '';
 
+    getDeviceName = import <lbdevops/nixops/generic/device-name.nix>;
+
 in
 with pkgs.lib;
 {
   network.description = "Steve Jobs [${name}]";
+  require = [ <lbdevops/nixops/generic/tags.nix> ];
 
-  resources.elasticIPs.key-ip-us-west-1 = { region = "us-west-1" ; accessKeyId = account; };
-  "key-proxy-${name}-us-west-1" = key-proxy "us-west-1";
-
-  resources.elasticIPs.key-ip-us-west-2 = { region = "us-west-2" ; accessKeyId = account; };
-  "key-proxy-${name}-us-west-2" = key-proxy "us-west-2";
 
   resources.ec2KeyPairs.worker-kp = { inherit region ; accessKeyId = account; };
-  resources.ec2KeyPairs.worker-kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
   resources.ec2KeyPairs.worker-kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
+  resources.ec2KeyPairs.worker-kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
+  resources.ec2KeyPairs.worker-kp-us-east-1 = { region = "us-east-1"; accessKeyId = account; };
+
   resources.ec2KeyPairs.kp = { inherit region ; accessKeyId = account; };
-  resources.ec2KeyPairs.kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
-  resources.ec2KeyPairs.kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
 
   resources.sqsQueues = sqsQueues // { "${sqsStatusName}" = sqsStatusQueue;  };
   resources.s3Buckets."${s3Name}-bucket" = { inherit region ; accessKeyId = account; name = s3Name; };
@@ -232,11 +215,87 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
+            },
+            {
+              "Action": [
+                "sqs:ListQueues"
+              ],
+              "Effect": "Allow",
+              "Resource": [ "*" ]
+            },
+            {
+              "Action": [
+                "cloudwatch:PutMetricData"
+              ],
+                 "Effect": "Allow",
+                 "Resource": "*"
+            },
+            {
+              "Action": [
+                "cloudwatch:GetMetricStatistics"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+                "cloudwatch:ListMetrics"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+                "ec2:DescribeTags"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+  
             }
           ]
         }
       '';
     };
+  
+  resources.iamRoles.keyserver-role =
+     { resources, ... }:
+     {
+       accessKeyId = account;
+       policy = ''
+         {
+           "Statement": [
+             {
+                  "Action": [
+                    "cloudwatch:PutMetricData"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "*"
+                },
+                {
+                  "Action": [
+                   "cloudwatch:GetMetricStatistics"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "*"
+                },
+                {
+                  "Action": [
+                   "cloudwatch:ListMetrics"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "*"
+                },
+                {
+                  "Action": [
+                    "ec2:DescribeTags"
+                  ],
+                   "Effect": "Allow",
+                   "Resource": "*"
+                }
+           ]
+         }
+       '';
+     };
 
   resources.iamRoles.database-role =
     { resources, ... }:
@@ -272,7 +331,35 @@ with pkgs.lib;
                 "arn:aws:s3:::${s3Name}",
                 "arn:aws:s3:::${s3Name}/*"
               ]
-            }
+            },
+            {
+              "Action": [
+                "cloudwatch:PutMetricData"
+               ],
+               "Effect": "Allow",
+               "Resource": "*"
+             },
+             {
+             "Action": [
+                   "cloudwatch:GetMetricStatistics"
+               ],
+             "Effect": "Allow",
+             "Resource": "*"
+             },
+             {
+             "Action": [
+              "cloudwatch:ListMetrics"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+             },
+             {
+              "Action": [
+               "ec2:DescribeTags"
+              ],
+               "Effect": "Allow",
+               "Resource": "*"
+             }
           ]
         }
       '';
@@ -305,11 +392,46 @@ with pkgs.lib;
                 "ec2:TerminateInstances",
                 "ec2:RequestSpotInstances",
                 "ec2:CreateTags",
+                "ec2:RequestSpotFleet",
+                "ec2:DescribeSpotFleetRequests",
+                "ec2:CancelSpotFleetRequests",
+                "ec2:DescribeSpotFleetInstances",
+                "ec2:DescribeSpotFleetRequestHistory",
+                "ec2:ModifySpotFleetRequest",
+                "ec2:CreateLaunchTemplateVersion",
                 "iam:PassRole",
                 "iam:CreateServiceLinkedRole"
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
+            },
+            {
+             "Action": [
+               "cloudwatch:PutMetricData"
+             ],
+             "Effect": "Allow",
+             "Resource": "*"
+            },
+            {
+             "Action": [
+              "cloudwatch:GetMetricStatistics"
+             ],
+             "Effect": "Allow",
+             "Resource": "*"
+            },
+            {
+             "Action": [
+               "cloudwatch:ListMetrics"
+             ],
+             "Effect": "Allow",
+             "Resource": "*"
+            },
+            {
+             "Action": [
+              "ec2:DescribeTags"
+             ],
+             "Effect": "Allow",
+             "Resource": "*"
             }
           ]
         }
@@ -358,6 +480,34 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
+            },
+            {
+              "Action": [
+               "cloudwatch:PutMetricData"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+               "cloudwatch:GetMetricStatistics"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+               "cloudwatch:ListMetrics"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+              "ec2:DescribeTags"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
             }
           ]
         }
@@ -372,7 +522,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         } ;
-      ips = if production then builtins.fromJSON (builtins.readFile ./prod-ips.json) else builtins.fromJSON (builtins.readFile ./dev-ips.json);
+      ips = if production then prodips else devips ;
       accountEntry = account:
         {
           fromPort = 443;
@@ -389,21 +539,67 @@ with pkgs.lib;
         description = "Security group for frontend";
         rules = map entry ips ++ map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; 
       };
+    resources.ec2SecurityGroups.database-sg =
+    let 
+      accountEntry = account:
+        {
+          fromPort = 8080;
+          toPort = 8080;
+          sourceGroup.ownerId = account;
+          sourceGroup.groupName = "admin";
+        } ;
+    in
+      { config, resources, ... }:
+      {
+        inherit region;
+        accessKeyId = account;
+        vpcId = mkIf (vpcId != "") vpcId;
+        description = "Security group for database";
+        rules = map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = "admin"; } ]; 
+      };
+   
+ 
+    resources.ec2SecurityGroups.key-server-nats-sg =
+    let
+
+      entry = ip:
+      {
+        fromPort = 443;
+        toPort = 443;
+        sourceIp = "${ip}/32";
+      } ;
+      ips = natips;
+        accountEntry = account:
+        {
+          fromPort = 443;
+          toPort = 443;
+          sourceGroup.ownerId = account;
+          sourceGroup.groupName = "admin";
+        };
+    in
+      { config, resources, ... }:
+      {
+        inherit region;
+        accessKeyId = account;
+        vpcId = mkIf (vpcId != "") vpcId;
+        description = "Security group for the key server ";
+        rules = map entry ips ++ map accountEntry(singleton accountId) ;
+      };
 
   "provisioner-${name}" =
     { config, resources, nodes, lib, ...}:
     let
-      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != (env.workers."${t}".defaultRegion or "us-east-1")) "-${r}"}"
+      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != (env.workers."${t}".defaultRegion or "us-east-2")) "-${r}"}"
         ''
           #! /bin/sh
           source /etc/profile
           exec lb-steve-provisioner $@ \
                  --region ${r} \
-                 --ami ${if env.workers."${t}" ? ami then env.workers."${t}".ami else (if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3)} \
-                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else (if nodes ? "key-proxy-${name}-${r}" then nodes."key-proxy-${name}-${r}".config.networking.privateIPv4 else "localhost")}/keys \
+                 --ami ${if env.workers."${t}" ? ami then env.workers."${t}".ami else (if env.workers."${t}" ? diskSize then dep-region.${r}.ebs-amis else dep-region.${r}.s3-amis)} \
+                 --key-service https://${if r == "us-east-2" then nodes."key-server-${name}".config.networking.privateIPv4 else env.key-server-elastic-ip}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
-                 --key ${if r == "us-east-1" then resources.ec2KeyPairs.worker-kp.name else (if resources.ec2KeyPairs ? "worker-kp-${r}" then resources.ec2KeyPairs."worker-kp-${r}".name else "nokey")} \
+                 --key ${if r == "us-east-2" then resources.ec2KeyPairs.worker-kp.name else (if resources.ec2KeyPairs ? "worker-kp-${r}" then resources.ec2KeyPairs."worker-kp-${r}".name else "nokey")} \
                  --incoming ${sqsURL t} \
                  --outgoing ${sqsStatusURL} \
                  --role ${resources.iamRoles.worker-role.name} \
@@ -418,10 +614,13 @@ with pkgs.lib;
                  --max ${env.workers."${t}".max or "300"} \
                  --min ${env.workers."${t}".min or "0"}\
                  --backend ${env.workers."${t}".backend or "aws"} \
-                 --project ${env.workers."${t}".project or "project"}
+                 --project ${env.workers."${t}".project or "project"} \
+                 --deployment-subnets ${concatStringsSep "/" dep-region.${r}.Subnets} \
+                 --security-group-ids ${concatStrings dep-region.${r}.securityGroupsIDs} \
+                 --spotfleet-role ${env.spotfleetRole}
         '';
       provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
-      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or "us-east-1")}/bin/run-provisioner-${workerName t}";
+      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or "us-east-2")}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
         path = [ pkgs.jdk ];
@@ -464,17 +663,20 @@ with pkgs.lib;
     };
 
   "key-server-${name}" =
-    { config, resources, ...}:
+    { config, pkgs, resources, lib, ...}:
     {
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" ];
+      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "c5.large" else "r3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
 
+      deployment.ec2.elasticIPv4 = env.key-server-elastic-ip;
+      deployment.ec2.instanceProfile = resources.iamRoles.keyserver-role.name;
+      #deployment.ec2.ebsInitialRootDiskSize = 10;
       imports = [
         <lbdevops/logicblox/production.nix>
         ./keyserver.nix
@@ -483,7 +685,7 @@ with pkgs.lib;
       fileSystems."/keys" =
         { autoFormat = true;
           fsType = "xfs";
-          device = "/dev/xvdf";
+          device = getDeviceName config.deployment.ec2.instanceType false; #"/dev/xvdf";
           options = [ "noatime" ];
           ec2.size = 20;
           ec2.encrypt = true;
@@ -613,7 +815,7 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" ];
+      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.database-sg.name ];
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "c4.8xlarge" else "c3.8xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
@@ -632,7 +834,7 @@ with pkgs.lib;
       fileSystems."/data" =
         { autoFormat = true;
           fsType = "xfs";
-          device = "/dev/xvdf";
+          device = getDeviceName config.deployment.ec2.instanceType false; #"/dev/xvdf";
           options = [ "noatime" ];
           ec2.size = 1000;
           ec2.volumeType = "gp2";
@@ -827,11 +1029,11 @@ with pkgs.lib;
     {
       deployment.targetEnv = "gce";
       deployment.gce = {
-       canIpForward = true;
-       region =  "us-central1-a";
-       # ipAddress = "35.188.70.240";
-      };
-      networking.nat.enable = true;
+      canIpForward = true;
+      region =  "us-central1-a";
+      # ipAddress = "35.188.70.240";
+    };
+     networking.nat.enable = true;
     };
 
   resources.gceRoutes."route-key-server-${name}" = {resources, ...}: {
@@ -850,7 +1052,8 @@ with pkgs.lib;
 
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> ];
+    { #imports = [ <lbdevops/logicblox/config/logging/logentries.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
+      imports = [ <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"

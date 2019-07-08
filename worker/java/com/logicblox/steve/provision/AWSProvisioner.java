@@ -7,12 +7,13 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 
+import java.util.*;
 import java.util.ArrayList;
 import java.util.Collection;
 
 public class AWSProvisioner implements ProvisionerInterface {
 
-    private static Regions[] regions = new Regions[]{ Regions.US_EAST_1, Regions.US_WEST_1, Regions.US_WEST_2 };
+    private static Regions[] regions = new Regions[]{ Regions.US_EAST_1, Regions.US_EAST_2, Regions.US_WEST_1, Regions.US_WEST_2 };
     private AmazonEC2 ec2;
 
     public AWSProvisioner(CommandLineArguments cmdArgs){
@@ -24,7 +25,7 @@ public class AWSProvisioner implements ProvisionerInterface {
     CommandLineArguments cmdArgs;
 
     public void createSpotInstances(int nr) {
-        System.err.println(String.format("Creating %d spot instances", nr));
+        /*System.err.println(String.format("Creating %d spot instances", nr));
 
         if (cmdArgs.isDryRun())
             return;
@@ -75,7 +76,169 @@ public class AWSProvisioner implements ProvisionerInterface {
         }
         for (SpotInstanceRequest sir : res.getSpotInstanceRequests()) {
             createTags(sir.getSpotInstanceRequestId());
+        }*/
+       
+        
+        //*************** Spot fleet *******************
+
+        System.err.println(String.format("Creating %d spot instances", nr));
+
+        List<String> SubnetsList = Arrays.asList(cmdArgs.getSubnets().split("\\s*/\\s*"));
+        Collection<Tag> tags = new ArrayList<Tag>();
+        Collection<SpotFleetTagSpecification> tagspeclist = new ArrayList<SpotFleetTagSpecification>();
+        //Collection<groupidentifier> identgroups = new ArrayList<groupidentifier>();
+        tags.add(new Tag("Name", String.format("Worker [%s]", cmdArgs.getS3Bucket())));
+        tags.add(new Tag("S3Bucket", cmdArgs.getS3Bucket()));
+        tags.add(new Tag("IncomingQueue", cmdArgs.getIncoming_url()));
+        tags.add(new Tag("OutgoingQueue", cmdArgs.getOutgoing_url()));
+
+        System.out.println(SubnetsList);
+
+        if (cmdArgs.isDryRun())
+        return;
+
+        RequestSpotFleetRequest request = new RequestSpotFleetRequest();
+
+        SpotFleetRequestConfigData fleetconfig = new SpotFleetRequestConfigData();
+
+        //fix spot fleet role argument
+        fleetconfig.setIamFleetRole(cmdArgs.getSpotFleetRole());
+        fleetconfig.setSpotPrice(Double.toString(cmdArgs.getSpotPrice()));
+        fleetconfig.setTargetCapacity(nr);
+        fleetconfig.setType("request");
+
+        fleetconfig.setAllocationStrategy("diversified");
+        //fleetconfig.setAllocationStrategy("lowestPrice");
+        //fleetconfig.setInstancePoolsToUseCount(3);
+
+        Collection<SpotFleetLaunchSpecification> LaunchSpecs = new ArrayList<SpotFleetLaunchSpecification>();
+       
+        GroupIdentifier groupidf = new GroupIdentifier();
+        groupidf.setGroupId(cmdArgs.getSecGrpId());
+
+        Collection<GroupIdentifier> identgroups = new ArrayList<GroupIdentifier>();
+        identgroups.add(groupidf);
+        
+
+        SpotFleetTagSpecification fleettagsspec = new SpotFleetTagSpecification();
+        fleettagsspec.setTags(tags);
+        fleettagsspec.setResourceType("instance");
+        tagspeclist.add(fleettagsspec);       
+
+        for (String sp : SubnetsList)
+
+        {       
+         SpotFleetLaunchSpecification fleetspec = new SpotFleetLaunchSpecification();
+
+         //fix user data
+         fleetspec.setKeyName(cmdArgs.getKey());
+         fleetspec.setImageId(cmdArgs.getAmi());
+         fleetspec.setInstanceType(cmdArgs.getInstanceType());
+         fleetspec.setUserData(getUserData());
+         fleetspec.setSubnetId(sp);
+
+         IamInstanceProfileSpecification profilespec = new IamInstanceProfileSpecification();
+         profilespec.setName(cmdArgs.getRole());
+         fleetspec.setIamInstanceProfile(profilespec);
+
+         fleetspec.setSecurityGroups(identgroups);
+
+         fleetspec.setTagSpecifications(tagspeclist);
+
+         LaunchSpecs.add(fleetspec);
+
         }
+        
+        fleetconfig.setLaunchSpecifications(LaunchSpecs);
+
+        request.setSpotFleetRequestConfig(fleetconfig);
+
+        RequestSpotFleetResult response = ec2.requestSpotFleet(request);
+            
+        String fleetID = response.getSpotFleetRequestId();
+
+       //int result = 0;
+
+        try {
+
+        Thread.sleep(10000);
+
+        } catch (Exception e) {
+
+        }
+
+        System.out.println(String.format("Spot fleet request ID %s",fleetID));
+
+    
+    //********************EC2fleet code*************************
+  
+       /* CreateFleetRequest fleetreq = new CreateFleetRequest();
+
+       //capacity
+       TargetCapacitySpecificationRequest targetcapacity = new TargetCapacitySpecificationRequest();
+       targetcapacity.setDefaultTargetCapacityType("spot");
+       targetcapacity.setTotalTargetCapacity(targetcap);
+       fleetreq.setTargetCapacitySpecification(targetcapacity);
+
+       //requestType
+       fleetreq.setType("request");
+
+       fleetreq.setTerminateInstancesWithExpiration(true);
+
+       //spot config
+       SpotOptionsRequest spotopt = new SpotOptionsRequest() ;
+       spotopt.setAllocationStrategy("diversified");
+       //spotopt.setAllocationStrategy("lowestPrice");
+       //spotopt.setInstancePoolsToUseCount(3);
+
+       fleetreq.setSpotOptions(spotopt);
+
+       //tagging
+       Collection<TagSpecification> tagSpecifications = new ArrayList<TagSpecification>();
+       TagSpecification tagspec = new TagSpecification();
+       tagspec.setResourceType("instance");
+       tagspec.setTags(tags);
+       tagSpecifications.add(tagspec);
+       fleetreq.setTagSpecifications(tagSpecifications);
+
+       //launch template
+       Collection<FleetLaunchTemplateConfigRequest> fleetlaunchConfReqs = new ArrayList<FleetLaunchTemplateConfigRequest>();
+
+       FleetLaunchTemplateConfigRequest fleettempconf = new FleetLaunchTemplateConfigRequest() ;
+
+       FleetLaunchTemplateSpecificationRequest launchTempSpec = new FleetLaunchTemplateSpecificationRequest();
+
+       launchTempSpec.setLaunchTemplateId("lt-059e1e3a4dc07d519");
+       //launchTempSpec.setVersion(1);
+
+       fleettempconf.setLaunchTemplateSpecification(launchTempSpec);
+
+       //launch template overrides
+       Collection<FleetLaunchTemplateOverridesRequest> tempoverrides = new ArrayList<FleetLaunchTemplateOverridesRequest>();
+       for (String sb : SubnetsList)
+       {     
+        FleetLaunchTemplateOverridesRequest launchoverride = new FleetLaunchTemplateOverridesRequest();
+        launchoverride.setInstanceType(instanceType);
+        launchoverride.setSubnetId(sb);
+        launchoverride.setMaxPrice(Double.toString(spotPrice));
+
+        tempoverrides.add(launchoverride); 
+    
+       }
+       fleettempconf.setOverrides(tempoverrides);
+       fleetlaunchConfReqs.add(fleettempconf);
+       fleetreq.setLaunchTemplateConfigs(fleetlaunchConfReqs);
+       
+       CreateFleetResult fleetresponse =ec2.createFleet(fleetreq);
+
+      /* String fleetID = fleetresponse.getFleetId();
+
+        try {
+        Thread.sleep(30000);
+      } catch (Exception e) {
+      }
+       System.out.println(String.format("EC2 fleet request ID %s",fleetID));*/  
+          
     }
 
     public void createOnDemandInstances(int nr) {
@@ -158,7 +321,7 @@ public class AWSProvisioner implements ProvisionerInterface {
 
     // get number of spot instances that are not yet terminated
    public int getNumberOfCurrentSpotInstances() {
-        int result = 0;
+       /* int result = 0;
 
         for(Regions region: regions) {
             AmazonEC2Client _ec2 = new AmazonEC2Client();
@@ -176,7 +339,32 @@ public class AWSProvisioner implements ProvisionerInterface {
                 result++;
             }
         }
-        return result;
+        return result;*/
+        /////new spot instances count
+        int result = 0;
+        DescribeInstancesRequest req = null;
+        try {
+        req = new DescribeInstancesRequest()
+              .withFilters(
+                     new Filter().withName("tag:S3Bucket").withValues(cmdArgs.getS3Bucket()),
+                     new Filter().withName("tag:IncomingQueue").withValues(cmdArgs.getIncoming_url()),
+                     new Filter().withName("tag:OutgoingQueue").withValues(cmdArgs.getOutgoing_url())
+              );
+        } catch (Exception ex) {
+          System.out.println("Cannot filter spot instances");
+        }
+
+        DescribeInstancesResult res = ec2.describeInstances(req);
+        for (Reservation r : res.getReservations()) {
+        for (Instance i : r.getInstances()) {
+        if (!i.getState().getName().equals("terminated") && i.getInstanceLifecycle().equals("spot") == true) {
+            result++;
+          }
+        }
+      }
+      return result;
+
+        
     }
 
     String getUserData() {

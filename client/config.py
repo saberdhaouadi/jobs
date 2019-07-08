@@ -33,7 +33,7 @@ classpath = [
   '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
   '$(lb_web)/lib/java/netty-all-4.1.22.Final.jar',
 
-  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
+  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.560.jar',
 
   '$(lb_web)/lib/java/annotations.jar',
   '$(lb_web)/lib/java/bloxweb-credentials.jar',

@@ -4,10 +4,10 @@
     ./worker.nix
     ./boot.nix
     <nixpkgs/nixos/modules/virtualisation/amazon-image.nix>
-    <lbdevops/logicblox/config/logging/logentries.nix>
+   # <lbdevops/logicblox/config/logging/logentries.nix>
   ];
 
-  logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
+  #logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
 
   ec2.hvm = true;
   networking.hostName = pkgs.lib.mkForce "i-worker";

@@ -20,13 +20,12 @@ let
 
     };
 
-
   aws-java-sdk =
     with pkgs; stdenv.mkDerivation rec {
-      name = "aws-java-sdk-1.11.102";
+      name = "aws-java-sdk-1.11.560";
       src = fetchurl {
-        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.11.102.zip;
-        sha256 = "c06a529b86c08d73b840adc6fe103d49d7ff3eea011977267f0f350a333c2fb3";
+        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.11.560.zip;
+         sha256 = "6ce540cbeefc4bd411dd4aaa936f4a3f55f68f7584206ddf8dcc0a98d6fbc2a8";
       };
       buildInputs = [ pkgs.unzip ];
       buildCommand = ''
