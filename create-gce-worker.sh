@@ -8,7 +8,7 @@ gcloud beta compute --project "manifest-canto-796" \
         --zone "us-central1-f" \
         --machine-type "n1-standard-2" \
         --network "default" \
-        --metadata "sshKeys=root:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDGdFLqvogt79Gj+8oiqHK7f+NqnVV/d8AN1nMImk+IoK+IqVcOh434v8UNEH3YqbFOVy1eFkbpD9oSeYkdANZAWYXQyqYgD27jG9zOCXfNIMrsZhbB83pAEGVhiRKCdajrEF4L9z3/25u3nCBRFnQDsp62CjMZ3P7LHfLnzLPI/wghF/vnr3icDXm8CNVW3H+8fdFUshjIvOtWyJ25zpYJ2RldcM6DmZkwH2UbNoWWuMKzEM/dDoJ5rLHlMF/+F+bSSTGdn1U5Oc6iM03b6+hPUg6nT4nMeoR99yQQXvIY01IKPaDZQ3UqTGh5HgkLqTTD2T5HkYIpcyX57LQBj81x aminechikhaoui@PDXL0711-LatE6530" \
+        --metadata "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCunr4txUxeXVeaEkLm06vjFceW71ciwf3vPtGQNRPa3mRIxWxRvtaSXj8djNn9g9Lc/Rqjhz2LuGfi9rQVeynpglmicSmt6Ge3UpQL+Z4QibY95movUTb+yvjIFTOHGbeRBGholpfvCK1vd/ZCzv9/21X2Mbg8N1X2/pxGdsmtv6dG9tOuF4Bv47uZA4pzMUC16XxriJN9WKBcrUwv5tPqP0uQoSWnnuU/RIMnZIiZUxi16jKTdMWRUFjx69s/lHkgUdnkAim7ZahhWOCsFAQTq65RdNsi40c/6N7MenWIWWiPIqQ59VpV7E9sxXa4Kbj7W/v4wqEzTcOFuG3EHuGx ahmed.samti@infor.com" \
         --no-restart-on-failure \
         --maintenance-policy "TERMINATE" \
         --preemptible \

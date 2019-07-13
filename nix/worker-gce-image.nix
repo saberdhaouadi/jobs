@@ -5,7 +5,7 @@ let
       environment.AWS_ACCESS_KEY_ID = builtins.readFile <global_creds/gce-access>;
       environment.AWS_SECRET_ACCESS_KEY = builtins.readFile <global_creds/gce-secret>;
       environment.AWS_SECRET_KEY = builtins.readFile <global_creds/gce-secret>;
-      environment.AWS_REGION = "us-east-1";
+      environment.AWS_REGION = "us-east-2";
       environment.GCS_XML_ACCESS_KEY = builtins.readFile <global_creds/gcs-access>;
       environment.GCS_XML_SECRET_KEY = builtins.readFile <global_creds/gcs-secret>;
       environment.GOOGLE_APPLICATION_CREDENTIALS = "/etc/google_application_credentials.json";
@@ -37,7 +37,12 @@ in
     ./worker.nix
     ./boot.nix
     <nixpkgs/nixos/modules/virtualisation/google-compute-config.nix>
-  ];
+    <lbdevops/logicblox/config/logging/logentries.nix>
+    ];
+   
+  logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
+
+ 
   boot.initrd.kernelModules = [ "af_packet" ];
   boot.initrd.preLVMCommands = lib.mkBefore ''
             if [ -z "$hasNetwork" ]; then

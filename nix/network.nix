@@ -5,7 +5,10 @@
 , logToken ? ""
 , vpcId ? ""
 , production ? false
-, ...
+, gcpProject                     # (required) GCE project to deploy to
+#, serviceAccount                 # (required) GCE service account email
+, accessKey                      # (required) path to GCE Access Key
+,...
 }:
 let
   environments = import ./environments.nix;
@@ -25,6 +28,7 @@ let
   natips = nat-gateways-ips.nat;
 
   dep-region = env.region;
+  google-nat-ip = env.google-nat-elastic-ip;
 
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
@@ -82,6 +86,10 @@ let
       deployment.ec2.tags.S3Bucket = s3Name;
       deployment.ec2.tags.IncomingQueue = sqsURL queue;
       deployment.ec2.tags.OutgoingQueue = sqsStatusURL;
+
+      users.extraUsers.root.openssh.authorizedKeys.keys = [
+      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCunr4txUxeXVeaEkLm06vjFceW71ciwf3vPtGQNRPa3mRIxWxRvtaSXj8djNn9g9Lc/Rqjhz2LuGfi9rQVeynpglmicSmt6Ge3UpQL+Z4QibY95movUTb+yvjIFTOHGbeRBGholpfvCK1vd/ZCzv9/21X2Mbg8N1X2/pxGdsmtv6dG9tOuF4Bv47uZA4pzMUC16XxriJN9WKBcrUwv5tPqP0uQoSWnnuU/RIMnZIiZUxi16jKTdMWRUFjx69s/lHkgUdnkAim7ZahhWOCsFAQTq65RdNsi40c/6N7MenWIWWiPIqQ59VpV7E9sxXa4Kbj7W/v4wqEzTcOFuG3EHuGx ahmed.samti@infor.com"
+      ];
 
     };
 
@@ -399,6 +407,9 @@ with pkgs.lib;
                 "ec2:DescribeSpotFleetRequestHistory",
                 "ec2:ModifySpotFleetRequest",
                 "ec2:CreateLaunchTemplateVersion",
+                "ec2:DescribeImages",
+                "ec2:DescribeInstanceStatus",
+                "ec2:DescribeSubnets",
                 "iam:PassRole",
                 "iam:CreateServiceLinkedRole"
               ],
@@ -589,17 +600,17 @@ with pkgs.lib;
   "provisioner-${name}" =
     { config, resources, nodes, lib, ...}:
     let
-      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != (env.workers."${t}".defaultRegion or "us-east-2")) "-${r}"}"
+      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != (env.workers."${t}".defaultRegion or region)  ) "-${r}"}"
         ''
           #! /bin/sh
           source /etc/profile
           exec lb-steve-provisioner $@ \
                  --region ${r} \
                  --ami ${if env.workers."${t}" ? ami then env.workers."${t}".ami else (if env.workers."${t}" ? diskSize then dep-region.${r}.ebs-amis else dep-region.${r}.s3-amis)} \
-                 --key-service https://${if r == "us-east-2" then nodes."key-server-${name}".config.networking.privateIPv4 else env.key-server-elastic-ip}/keys \
+                 --key-service https://${if r == region then nodes."key-server-${name}".config.networking.privateIPv4 else env.key-server-elastic-ip}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
-                 --key ${if r == "us-east-2" then resources.ec2KeyPairs.worker-kp.name else (if resources.ec2KeyPairs ? "worker-kp-${r}" then resources.ec2KeyPairs."worker-kp-${r}".name else "nokey")} \
+                 --key ${if r == region then resources.ec2KeyPairs.worker-kp.name else (if resources.ec2KeyPairs ? "worker-kp-${r}" then resources.ec2KeyPairs."worker-kp-${r}".name else "nokey")} \
                  --incoming ${sqsURL t} \
                  --outgoing ${sqsStatusURL} \
                  --role ${resources.iamRoles.worker-role.name} \
@@ -615,12 +626,12 @@ with pkgs.lib;
                  --min ${env.workers."${t}".min or "0"}\
                  --backend ${env.workers."${t}".backend or "aws"} \
                  --project ${env.workers."${t}".project or "project"} \
-                 --deployment-subnets ${concatStringsSep "/" dep-region.${r}.Subnets} \
-                 --security-group-ids ${concatStrings dep-region.${r}.securityGroupsIDs} \
+                 --deployment-subnets ${if r != "us-central1-f" then concatStringsSep "/" dep-region.${r}.Subnets else "test"} \
+                 --security-group-ids ${if r != "us-central1-f" then concatStrings dep-region.${r}.securityGroupsIDs else "test"} \
                  --spotfleet-role ${env.spotfleetRole}
         '';
-      provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
-      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or "us-east-2")}/bin/run-provisioner-${workerName t}";
+      provisionScripts = lib.concatMap (  r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
+      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or region )}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
         path = [ pkgs.jdk ];
@@ -630,6 +641,7 @@ with pkgs.lib;
         };
         startAt = "*:0/5";
       };
+     
       terminate-impaired = {
         description = "Terminating impaired workers";
         path = [ pkgs.pythonFull ];
@@ -670,7 +682,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c5.large" else "r3.large";
+      deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
 
@@ -1022,16 +1034,20 @@ with pkgs.lib;
       '';
     };
 
-  "google-nat-${name}" =
+  "google-nat-asamti" =
     { config, pkgs, resources, lib, ... }:
     let
     in
     {
       deployment.targetEnv = "gce";
       deployment.gce = {
+      project = gcpProject;
+      serviceAccount = "716753782997-compute@developer.gserviceaccount.com";
+      accessKey = builtins.readFile accessKey;
       canIpForward = true;
       region =  "us-central1-a";
       # ipAddress = "35.188.70.240";
+      ipAddress = google-nat-ip;
     };
      networking.nat.enable = true;
     };
@@ -1039,14 +1055,22 @@ with pkgs.lib;
   resources.gceRoutes."route-key-server-${name}" = {resources, ...}: {
     destination =  resources.machines."key-server-${name}";
     name = "route-key-server-${name}";
-    nextHop = resources.machines."google-nat-${name}";
+    project = gcpProject;
+    serviceAccount = "716753782997-compute@developer.gserviceaccount.com";
+    accessKey = builtins.readFile accessKey;
+    #nextHop = resources.machines."google-nat-${name}";
+    nextHop = resources.machines."google-nat-asamti";
     tags =  [ "worker" ];
   };
 
   resources.gceRoutes."route-gurobi-${name}" = {resources, ...}: {
     destination = "54.83.193.103/32" ;
     name = "route-gurobi-${name}";
-    nextHop = resources.machines."google-nat-${name}";
+    project = gcpProject;
+    serviceAccount = "716753782997-compute@developer.gserviceaccount.com";
+    accessKey = builtins.readFile accessKey;
+    #nextHop = resources.machines."google-nat-${name}";
+    nextHop = resources.machines."google-nat-asamti";
     tags =  [ "worker" ];
   };
 
@@ -1054,7 +1078,7 @@ with pkgs.lib;
     { config, lib, ... }:
     { #imports = [ <lbdevops/logicblox/config/logging/logentries.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       imports = [ <lbdevops/nixos/local-modules/cloudwatch.nix> ];
-      logging.logentries.logToken = lib.mkOverride 0 logToken;
+      #logging.logentries.logToken = lib.mkOverride 0 logToken;
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"
           "uuid:${config.deployment.uuid}"

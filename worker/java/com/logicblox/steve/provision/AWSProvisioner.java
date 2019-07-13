@@ -109,7 +109,7 @@ public class AWSProvisioner implements ProvisionerInterface {
 
         fleetconfig.setAllocationStrategy("diversified");
         //fleetconfig.setAllocationStrategy("lowestPrice");
-        //fleetconfig.setInstancePoolsToUseCount(3);
+        //fleetconfig.setInstancePoolsToUseCount(2);
 
         Collection<SpotFleetLaunchSpecification> LaunchSpecs = new ArrayList<SpotFleetLaunchSpecification>();
        
@@ -172,12 +172,12 @@ public class AWSProvisioner implements ProvisionerInterface {
     
     //********************EC2fleet code*************************
   
-       /* CreateFleetRequest fleetreq = new CreateFleetRequest();
+        /*CreateFleetRequest fleetreq = new CreateFleetRequest();
 
        //capacity
        TargetCapacitySpecificationRequest targetcapacity = new TargetCapacitySpecificationRequest();
        targetcapacity.setDefaultTargetCapacityType("spot");
-       targetcapacity.setTotalTargetCapacity(targetcap);
+       targetcapacity.setTotalTargetCapacity(nr);
        fleetreq.setTargetCapacitySpecification(targetcapacity);
 
        //requestType
@@ -218,9 +218,9 @@ public class AWSProvisioner implements ProvisionerInterface {
        for (String sb : SubnetsList)
        {     
         FleetLaunchTemplateOverridesRequest launchoverride = new FleetLaunchTemplateOverridesRequest();
-        launchoverride.setInstanceType(instanceType);
+        launchoverride.setInstanceType(cmdArgs.getInstanceType());
         launchoverride.setSubnetId(sb);
-        launchoverride.setMaxPrice(Double.toString(spotPrice));
+        launchoverride.setMaxPrice(Double.toString(cmdArgs.getSpotPrice()));
 
         tempoverrides.add(launchoverride); 
     
@@ -231,13 +231,13 @@ public class AWSProvisioner implements ProvisionerInterface {
        
        CreateFleetResult fleetresponse =ec2.createFleet(fleetreq);
 
-      /* String fleetID = fleetresponse.getFleetId();
+       String fleetID = fleetresponse.getFleetId();
 
         try {
         Thread.sleep(30000);
       } catch (Exception e) {
       }
-       System.out.println(String.format("EC2 fleet request ID %s",fleetID));*/  
+       System.out.println(String.format("EC2 fleet request ID %s",fleetID)); */ 
           
     }
 
