@@ -34,7 +34,7 @@ rec {
         "i3.xlarge" = { number = 0; price = "0.312"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; diskSize = "10"; inherit subnetId securityGroup; };
       };
      region = {
-          "us-east-1" = { securityGroupsIDs = []; Subnets = ["subnet-08b8db33704bbbb8b" "subnet-063462c1d875f2d0f" "subnet-0a827b78d9497e579" "subnet-0d0c56d1c1439c527" "subnet-0d84a23d487ca13e9" "subnet-0465f94bf0b58b02d"]; s3-amis = "ami-42cacc38"; ebs-amis = "ami-6dc1c717";};
+          "us-east-1" = { securityGroupsIDs = ["sg-0c2e6ec0b43370a41"]; Subnets = ["subnet-08b8db33704bbbb8b" "subnet-063462c1d875f2d0f" "subnet-0a827b78d9497e579" "subnet-0d0c56d1c1439c527" "subnet-0d84a23d487ca13e9" "subnet-0465f94bf0b58b02d"]; s3-amis = "ami-42cacc38"; ebs-amis = "ami-6dc1c717";};
           "us-east-2" = { securityGroupsIDs = ["sg-05cbec8d1f38ef449"]; Subnets = ["subnet-a61d13de" "subnet-a78a7ece" "subnet-e7250bad"]; s3-amis = "ami-042fe64f79c92036d"; ebs-amis = "ami-0e7ec0b87551a4b73"; }; 
           "us-west-1" = { securityGroupsIDs = []; Subnets = []; s3-amis = "ami-ee545b8e"; ebs-amis = "ami-fb56599b";};
           "us-west-2" = { securityGroupsIDs = ["sg-06cc07f1e42fb423e"]; Subnets = ["subnet-0bca92cc49a00de8f" "subnet-09902f91c13df8ea3" "subnet-022f7226559497063" "subnet-0382caf37bde1ca84"]; s3-amis = "ami-ab1ea5d3"; ebs-amis = "ami-681ea510";};
