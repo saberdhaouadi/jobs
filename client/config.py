@@ -62,6 +62,11 @@ jar(
    findbugs = True,
    classpath = classpath)
 
+rule(output="findbugs",
+     phony=True,
+     input="jars"
+     )
+
 link_libs(classpath)
 
 install_files(classpath, 'lib/java')
