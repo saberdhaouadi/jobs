@@ -40,7 +40,7 @@ rec {
 
   dev =
     { hostName = "steve-dev.logicblox.com";
-      elasticIPv4 = "54.163.249.223";
+      elasticIPv4 = "3.226.198.225";
       inherit (prod) workers;
     };
 
