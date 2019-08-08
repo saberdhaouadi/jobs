@@ -17,7 +17,7 @@ let
   inherit (builder_config) pkgs;
   version = builder_config.version;
 
-  mitmproxy = (import (if nixpkgs_1703 != null then nixpkgs_1703 else <nixpkgs>) {}).pythonPackages.mitmproxy; 
+  mitmproxy = (import (if nixpkgs_1703 != null then nixpkgs_1703 else <nixpkgs>) {}).mitmproxy; 
 
   deps =
     import ./deps.nix {
