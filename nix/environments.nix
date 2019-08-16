@@ -7,7 +7,7 @@ let
       (lib.filterAttrs (n: v: (v.onDemand or false)) queues)
     );
   
-  subnetId = "subnet-01c31086f64d5d173";
+  subnetId = "subnet-062fba8acc7b8ed99";
   securityGroup = "sg-0763799058c74c1ec";
 
 in
@@ -23,16 +23,16 @@ rec {
         "hi1.4xlarge" = { number = 0; price = "3.3"; percentageSpot = "1.0"; max = "100"; percentageQueue = "1.0"; min = "50"; defaultRegion = "us-west-2"; };
         "r3.xlarge" = { number = 0; price = "0.40"; percentageSpot = "1.0"; max = "500"; };
         "r3.2xlarge" = { number = 0; price = "0.75"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "650"; onDemand = true; maxDelta = "100"; };
-        "r3.4xlarge" = { number = 0; price = "1.5"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; };
-        "r3.8xlarge" = { number = 0; price = "3.00"; percentageSpot = "1.0"; percentageQueue = "1.0"; min = "50"; max = "500"; onDemand = true; maxDelta = "100"; };
+        "r3.4xlarge" = { number = 0; price = "1.5"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; maxDelta = "50"; keyService = "https://54.167.63.233/keys"; diskSize = "10"; instanceType = "i3.4xlarge"; subnetId = "subnet-01c31086f64d5d173"; inherit securityGroup; };
+        "r3.8xlarge" = { number = 0; price = "3.00"; percentageSpot = "1.0"; percentageQueue = "1.0"; min = "50"; max = "500"; onDemand = true; maxDelta = "50"; keyService = "https://54.167.63.233/keys"; diskSize = "10"; instanceType = "i3.8xlarge"; subnetId = "subnet-a61d13de"; ami = "ami-099745e806b9a7878"; defaultRegion = "us-east-2"; securityGroup="sg-05cbec8d1f38ef449";};
         "i2.xlarge" = { number = 0; price = "0.86"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; };
         "i2.2xlarge" = { number = 0; price = "1.88"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "500"; min = "75"; onDemand = true; maxDelta = "100";};
         "i2.4xlarge" = { number = 0; price = "3.72"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "300"; min = "75"; };
-        "i2.8xlarge" = { number = 0; price = "7.44"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "50"; };
+        "i2.8xlarge" = { number = 0; price = "3.00"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "50"; keyService = "https://54.167.63.233/keys"; diskSize = "10"; instanceType = "i3.8xlarge"; subnetId = "subnet-062fba8acc7b8ed99"; inherit securityGroup; };
         "i3.8xlarge" = { number = 0; price = "2.50"; keyService = "https://54.167.63.233/keys"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; diskSize = "10"; inherit subnetId securityGroup; };
         "i3.4xlarge" = { number = 0; price = "1.25"; keyService = "https://54.167.63.233/keys"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; diskSize = "10"; inherit subnetId securityGroup; };
         "i3.2xlarge" = { number = 0; price = "0.625"; keyService = "https://54.167.63.233/keys"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; diskSize = "10"; inherit subnetId securityGroup; };
-        "i3.xlarge" = { number = 0; price = "2.50"; keyService = "https://54.167.63.233/keys"; instanceType = "i3.8xlarge"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; diskSize = "10"; inherit subnetId securityGroup; };
+        "i3.xlarge" = { number = 0; price = "0.312"; keyService = "https://54.167.63.233/keys"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; diskSize = "10"; inherit subnetId securityGroup; };
       };
     };
 
