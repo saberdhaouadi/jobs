@@ -1,26 +1,47 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -I nixpkgs=channel:nixos-17.09 -i bash -p qemu ec2_ami_tools jq ec2_api_tools awscli
+#! nix-shell -i bash -p qemu ec2_ami_tools jq ec2_api_tools awscli -I nixpkgs=channel:nixos-17.09
 
 # To start with do: nix-shell -p awscli --run "aws configure"
-
 
 set -eo pipefail
 set -x
 
+# parse args
+while [[ $# -gt 0 ]]; do
+    op="$1"
+    case $op in
+        -b|--bucket)
+	bucket="$2"
+	shift 2
+	;;
+	-i|--build-id)
+	build="$2"
+	shift 2
+	;;
+	*)
+	shift
+	;;
+    esac
+done
+
+if [[ -z "$bucket" ]]; then
+    bucket="steve-jobs-worker"
+fi
+
 stateDir=/tmp/ec2-image
+amisFile=nix/amis.nix
+
 echo "keeping state in $stateDir"
 mkdir -p $stateDir/hvm
 
-build=$1
 if [[ "$build" == "" ]]; then 
     curl -o build.json -H 'Content-Type: application/json' -L -s https://bob.logicblox.com/job/jobs/default/worker_image.ec2/latest
+    build=$(cat build.json | jq -r ".id")
 else
     curl -o build.json -H 'Content-Type: application/json' -L -s https://bob.logicblox.com/build/$build
 fi
 
-build=$(cat build.json | json id)
-export version=$(date +%Y%m%d%H%M)
-
+version=$(date +%Y%m%d%H%M)
 arch="x86_64"
 
 echo "downloading image..."
@@ -28,8 +49,9 @@ curl -L https://bob.logicblox.com/build/$build/download-by-type/file/img | xz -d
 
 echo "NixOS version is $version"
 
-echo "{" > nix/amis.nix
+echo "{" > $amisFile
 
+lbJobsDevAccountId="202226491534"
 types="hvm"
 stores="ebs s3"
 regions="us-east-1 us-west-1 us-west-2"
@@ -42,7 +64,6 @@ for type in $types; do
 
     for store in $stores; do
 
-        bucket=steve-jobs-worker
         bucketDir="$version-$type-$store"
 
         prevAmi=
@@ -111,6 +132,11 @@ for type in $types; do
                             qemu-img convert -f qcow2 -O vpc $imageFile $vhdFile.tmp
                             mv $vhdFile.tmp $vhdFile
                         fi
+                        
+                        # upload VHD file to S3
+                        vhdS3Object=s3://$bucket/vhd/$version/$type.vhd
+                        vhdObjectKey=vhd/$version/$type.vhd
+                        aws s3 cp $vhdFile s3://$bucket/$vhdObjectKey
 
                         vhdFileLogicalBytes="$(qemu-img info "$vhdFile" | grep ^virtual\ size: | cut -f 2 -d \(  | cut -f 1 -d \ )"
                         vhdFileLogicalGigaBytes=$(((vhdFileLogicalBytes-1)/1024/1024/1024+1)) # Round to the next GB
@@ -118,70 +144,26 @@ for type in $types; do
                         echo "Disk size is $vhdFileLogicalBytes bytes. Will be registered as $vhdFileLogicalGigaBytes GB."
 
                         taskId=$(cat $stateDir/$region.$type.task-id 2> /dev/null || true)
-                        volId=$(cat $stateDir/$region.$type.vol-id 2> /dev/null || true)
                         snapId=$(cat $stateDir/$region.$type.snap-id 2> /dev/null || true)
 
-                        # Import the VHD file.
-                        if [ -z "$snapId" -a -z "$volId" -a -z "$taskId" ]; then
-                            echo "importing $vhdFile..."
-                            taskId=$(ec2-import-volume $vhdFile --no-upload -f vhd \
-                                -O "$AWS_ACCESS_KEY_ID" -W "$AWS_SECRET_ACCESS_KEY" \
-                                -o "$AWS_ACCESS_KEY_ID" -w "$AWS_SECRET_ACCESS_KEY" \
-                                --region "$region" -z "${region}a" \
-                                --bucket "$bucket" --prefix "$bucketDir/" \
-                                | sed 's/.*\(import-vol-[0-9a-z]\+\).*/\1/ ; t ; d')
-                            echo -n "$taskId" > $stateDir/$region.$type.task-id
-                        fi
+                        echo "importing snapshot from VHD file..."
+                        diskDescription="steve-jobs-worker VHD Disk - $type.$store - $version"
+                        taskId=$(aws ec2 import-snapshot \
+                                --region "$region" \
+                                --disk-container "Description="''"$diskDescription"''",Format=vhd"''",UserBucket={S3Bucket=$bucket,S3Key=$vhdObjectKey}" | jq -r ".ImportTaskId" )
 
-                        if [ -z "$snapId" -a -z "$volId" ]; then
-                            ec2-resume-import  $vhdFile -t "$taskId" --region "$region" \
-                                -O "$AWS_ACCESS_KEY_ID" -W "$AWS_SECRET_ACCESS_KEY" \
-                                -o "$AWS_ACCESS_KEY_ID" -w "$AWS_SECRET_ACCESS_KEY"
-                        fi
+                        echo -n "$taskId" > $stateDir/$region.$type.task-id
 
-                        # Wait for the volume creation to finish.
-                        if [ -z "$snapId" -a -z "$volId" ]; then
-                            echo "waiting for import to finish..."
-                            while true; do
-                                volId=$(aws ec2 describe-conversion-tasks --conversion-task-ids "$taskId" --region "$region" | jq -r .ConversionTasks[0].ImportVolume.Volume.Id)
-                                if [ "$volId" != null ]; then break; fi
-                                sleep 10
-                            done
-
-                            echo -n "$volId" > $stateDir/$region.$type.vol-id
-                        fi
-
-                        # Delete the import task.
-                        if [ -n "$volId" -a -n "$taskId" ]; then
-                            echo "removing import task..."
-                            ec2-delete-disk-image -t "$taskId" --region "$region" \
-                                -O "$AWS_ACCESS_KEY_ID" -W "$AWS_SECRET_ACCESS_KEY" \
-                                -o "$AWS_ACCESS_KEY_ID" -w "$AWS_SECRET_ACCESS_KEY" || true
-                            rm -f $stateDir/$region.$type.task-id
-                        fi
-
-                        # Create a snapshot.
-                        if [ -z "$snapId" ]; then
-                            echo "creating snapshot..."
-                            snapId=$(aws ec2 create-snapshot --volume-id "$volId" --region "$region" --description "$description" | jq -r .SnapshotId)
-                            if [ "$snapId" = null ]; then exit 1; fi
-                            echo -n "$snapId" > $stateDir/$region.$type.snap-id
-                        fi
-
-                        # Wait for the snapshot to finish.
-                        echo "waiting for snapshot to finish..."
                         while true; do
-                            status=$(aws ec2 describe-snapshots --snapshot-ids "$snapId" --region "$region" | jq -r .Snapshots[0].State)
-                            if [ "$status" = completed ]; then break; fi
-                            sleep 10
+                            importTaskDesc=$(aws ec2 describe-import-snapshot-tasks --import-task-ids $taskId --region $region)
+                            taskStatus=$(echo $importTaskDesc | jq -r ".ImportSnapshotTasks[0].SnapshotTaskDetail.Status")
+                            if [ "$taskStatus" == "completed" ]; then break; fi
+                            sleep 30
                         done
 
-                        # Delete the volume.
-                        if [ -n "$volId" ]; then
-                            echo "deleting volume..."
-                            aws ec2 delete-volume --volume-id "$volId" --region "$region" || true
-                            rm -f $stateDir/$region.$type.vol-id
-                        fi
+                        # get snapshot ID and cancel the import task
+                        snapId=$(echo $importTaskDesc | jq -r ".ImportSnapshotTasks[0].SnapshotTaskDetail.SnapshotId")
+                        aws ec2 cancel-import-task --import-task-id "$taskId" --region "$region"
 
                         blockDeviceMappings="DeviceName=/dev/sda1,Ebs={SnapshotId=$snapId,VolumeSize=$vhdFileLogicalGigaBytes,DeleteOnTermination=true,VolumeType=gp2}"
                         extraFlags=""
@@ -268,10 +250,13 @@ for type in $types; do
             done
             echo
 
-            echo "  $region.$store = \"$ami\";" >> nix/amis.nix
+            aws ec2 modify-image-attribute \
+                --image-id "$ami" --region "$region" --launch-permission "Add=[{UserId=${lbJobsDevAccountId}}]"
+
+            echo "  $region.$store = \"$ami\";" >> $amisFile 
         done
 
     done
 
 done
-echo "}" >> nix/amis.nix
+echo "}" >> $amisFile
