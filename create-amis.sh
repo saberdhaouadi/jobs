@@ -161,9 +161,8 @@ for type in $types; do
                             sleep 30
                         done
 
-                        # get snapshot ID and cancel the import task
+                        # get snapshot ID
                         snapId=$(echo $importTaskDesc | jq -r ".ImportSnapshotTasks[0].SnapshotTaskDetail.SnapshotId")
-                        aws ec2 cancel-import-task --import-task-id "$taskId" --region "$region"
 
                         blockDeviceMappings="DeviceName=/dev/sda1,Ebs={SnapshotId=$snapId,VolumeSize=$vhdFileLogicalGigaBytes,DeleteOnTermination=true,VolumeType=gp2}"
                         extraFlags=""
