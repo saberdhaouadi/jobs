@@ -108,6 +108,7 @@ public class AWSProvisioner implements ProvisionerInterface {
         fleetconfig.setType("request");
 
         fleetconfig.setAllocationStrategy("diversified");
+        //fleetconfig.setAllocationStrategy("capacityOptimized");    
         //fleetconfig.setAllocationStrategy("lowestPrice");
         //fleetconfig.setInstancePoolsToUseCount(2);
 
