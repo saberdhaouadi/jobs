@@ -55,16 +55,17 @@ rec {
 
   dev =
     { hostName = "steve-dev.logicblox.com";
-      elasticIPv4 = "54.163.249.223";
-      key-server-elastic-ip = "";
+      #elasticIPv4 = "54.163.249.223";
+      elasticIPv4 = "3.226.198.225";
+      key-server-elastic-ip = "34.232.108.153";
       inherit (prod) google-nat-elastic-ip;
       inherit (prod) workers;
       spotfleetRole = "";
       region = {
-          "us-east-1" = { securityGroupsIDs = []; Subnets = []; s3-amis = ""; ebs-amis = "";};
+          "us-east-1" = { securityGroupsIDs = ["sg-4daea13f"]; Subnets = ["subnet-7451b329" "subnet-883299c3" "subnet-99ce6ea6" "subnet-b850b997" ]; s3-amis = "ami-42cacc38"; ebs-amis = "ami-6dc1c717";};
           "us-east-2" = { securityGroupsIDs = []; Subnets = []; s3-amis = ""; ebs-amis = ""; };
-          "us-west-1" = { securityGroupsIDs = []; Subnets = []; s3-amis = ""; ebs-amis = "";};
-          "us-west-2" = { securityGroupsIDs = []; Subnets = []; s3-amis = ""; ebs-amis = "";};
+          "us-west-1" = { securityGroupsIDs = []; Subnets = []; s3-amis = "ami-ee545b8e"; ebs-amis = "ami-fb56599b";};
+          "us-west-2" = { securityGroupsIDs = []; Subnets = []; s3-amis = "ami-ab1ea5d3"; ebs-amis = "ami-681ea510";};
        };
 
     };
