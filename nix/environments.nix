@@ -3,7 +3,7 @@ let
 
   addOnDemandQueues = queues:
     ( queues // lib.mapAttrs'
-      (n: v: lib.nameValuePair "${n}-ondemand" ( v // { percentageSpot = "0"; instanceType = n; } ))
+      (n: v: lib.nameValuePair "${n}-ondemand" ( v // { percentageSpot = "0"; instanceType = (v.instanceType or n); } ))
       (lib.filterAttrs (n: v: (v.onDemand or false)) queues)
     );
   
@@ -19,7 +19,7 @@ rec {
         "c3.xlarge" = { number = 0; price = "0.25"; percentageSpot = "1.0"; onDemand = true; };
         "c3.xlarge-online" = { number = 1; price = "0.25"; percentageSpot = "0"; instanceType = "c3.xlarge"; };
         "c3.2xlarge" = { number = 0; price = "0.25"; percentageSpot = "1.0"; max = "600"; maxDelta = "100"; percentageQueue = "1.0"; };
-        "c3.4xlarge" = { number = 0; price = "0.84"; percentageSpot = "1.0"; percentageQueue = "1.0"; min = "75"; maxDelta = "100"; };
+        "c3.4xlarge" = { number = 0; price = "0.84"; percentageSpot = "1.0"; percentageQueue = "1.0"; min = "75"; maxDelta = "100"; instanceType = "i3.4xlarge"; subnetId = "subnet-01c31086f64d5d173"; inherit securityGroup; };
         "hi1.4xlarge" = { number = 0; price = "3.3"; percentageSpot = "1.0"; max = "100"; percentageQueue = "1.0"; min = "50"; defaultRegion = "us-west-2"; };
         "r3.xlarge" = { number = 0; price = "0.40"; percentageSpot = "1.0"; max = "500"; };
         "r3.2xlarge" = { number = 0; price = "0.75"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "650"; onDemand = true; maxDelta = "100"; };
