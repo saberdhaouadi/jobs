@@ -19,7 +19,7 @@ rec {
       workers = addOnDemandQueues {
         "c3.xlarge" = { number = 0; price = "0.25"; percentageSpot = "1.0"; onDemand = true; };
         "n1-standard-2" = { number = 0; price = "0.25"; percentageSpot = "1.0"; onDemand = false; instanceType = "n1-standard-2"; backend ="gcp"; ami = "lb-jobs-3174373"; defaultRegion = "us-central1-f"; project = "manifest-canto-796";};
-        "c3.xlarge-online" = { number = 1; price = "0.25"; percentageSpot = "0"; instanceType = "c3.xlarge"; };
+        #"c3.xlarge-online" = { number = 1; price = "0.25"; percentageSpot = "0"; instanceType = "c3.xlarge"; };
         "c3.2xlarge" = { number = 0; price = "0.25"; percentageSpot = "1.0"; max = "500"; maxDelta = "100"; percentageQueue = "1.0"; };
         "c3.4xlarge" = { number = 0; price = "0.84"; percentageSpot = "1.0"; percentageQueue = "1.0"; min = "75"; maxDelta = "100"; };
         "r3.xlarge" = { number = 0; price = "0.40"; percentageSpot = "1.0"; max = "500"; };
@@ -68,6 +68,7 @@ rec {
           "us-east-2" = { securityGroupsIDs = ["sg-c6cbb6ae"]; Subnets = ["subnet-ce3b63b5" "subnet-23c4df4a" "subnet-f01983bd"]; s3-amis = "ami-0144a27be0cbec24f"; ebs-amis = "ami-05f8c29b555607ada"; };
           "us-west-1" = { securityGroupsIDs = ["sg-80237be6"]; Subnets = ["subnet-2e933749" "subnet-8639d3dd"]; s3-amis = "ami-02adf6c0efd853c18"; ebs-amis = "ami-07911b546dca4dc7e";};
           "us-west-2" = { securityGroupsIDs = ["sg-13527a6e"]; Subnets = ["subnet-406f6268" "subnet-7424102f" "subnet-95149cdd" "subnet-fc43289a"]; s3-amis = "ami-009e51f24ba468f53"; ebs-amis = "ami-098929c8e459cf9e5";};
+          "us-central1-f" = { securityGroupsIDs = []; Subnets = []; s3-amis = ""; ebs-amis = "";};
        };
 
     };
