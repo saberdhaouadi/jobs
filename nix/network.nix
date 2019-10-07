@@ -5,6 +5,7 @@
 , logToken ? ""
 , vpcId ? ""
 , production ? false
+, allowedGroups ? [ "admins" ]
 , gcpProject                     # (required) GCE project to deploy to
 #, serviceAccount                 # (required) GCE service account email
 , accessKey                      # (required) path to GCE Access Key
@@ -652,7 +653,7 @@ with pkgs.lib;
         startAt = "*:0";
       };
     in
-    {
+    { 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
@@ -660,6 +661,7 @@ with pkgs.lib;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
+      deployment.ec2.ebsInitialRootDiskSize = 10;
       deployment.keys.google.keyFile = /home/deploy-lb-jobs/google.json;
 
 
@@ -676,7 +678,7 @@ with pkgs.lib;
 
   "key-server-${name}" =
     { config, pkgs, resources, lib, ...}:
-    {
+    { 
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
@@ -688,7 +690,7 @@ with pkgs.lib;
 
       deployment.ec2.elasticIPv4 = env.key-server-elastic-ip;
       deployment.ec2.instanceProfile = resources.iamRoles.keyserver-role.name;
-      #deployment.ec2.ebsInitialRootDiskSize = 10;
+      deployment.ec2.ebsInitialRootDiskSize = 10;
       imports = [
         <lbdevops/logicblox/production.nix>
         ./keyserver.nix
@@ -820,7 +822,7 @@ with pkgs.lib;
         <lbdevops/nixos/logicblox/datadog/all.nix>
         ./datadog/database.nix
       ];
-
+      
       # pass s3Name
       system.build.s3Name = s3Name;
 
@@ -1076,13 +1078,17 @@ with pkgs.lib;
 
   defaults =
     { config, lib, ... }:
-    { #imports = [ <lbdevops/logicblox/config/logging/logentries.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
-      imports = [ <lbdevops/nixos/local-modules/cloudwatch.nix> ];
-      #logging.logentries.logToken = lib.mkOverride 0 logToken;
+    { imports = [ <lbdevops/nixos/local-modules/freeipa.nix> <lbdevops/nixos/base/user-env.nix> ];
+      #imports = [ <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"
           "uuid:${config.deployment.uuid}"
         ];
+      freeipa.enable = true;
+      freeipa.allowedGroups = allowedGroups;
+      freeipa.caCertificate = <global_creds/freeipa-creds/ca.crt>;
+      freeipa.tlsCertificatePem = <global_creds/freeipa-creds/ldap_tls.pem>;
+      freeipa.tlsCertificateKey = <global_creds/freeipa-creds/ldap_tls.key>;
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
