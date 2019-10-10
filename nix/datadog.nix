@@ -176,7 +176,7 @@ in
         ({
           name = "Queued builds (${q}/${name}) longer than ${toString queuedThreshold}s";
           type = "metric alert";
-          message = "@lb-jobs@logicblox.com @opsgenie-lb_jobs";
+          message = "@lb-jobs@logicblox.com @opsgenie-OPS @jira-ops-bug";
           query = "avg(last_5m):max:lb.steve.queued_time.${dash-to-underscore q}.max{host:database-${name}} > ${toString queuedThreshold}";
           monitorOptions = builtins.toJSON {
             no_data_timeframe = 10;
@@ -190,12 +190,26 @@ in
         (creds // {
            name = "SQS messages and lb-jobs database out of sync for queue ${q}/${name}";
            type = "metric alert";
-           message = "@amine.chikhaoui@infor.com";
+           message = "@amine.chikhaoui@infor.com @opsgenie-OPS @jira-ops-bug";
            query = "min(last_1h):( avg:aws.sqs.approximate_number_of_messages_visible{queuename:steve-jobs-${name}-${q}} + avg:aws.sqs.approximate_number_of_messages_not_visible{queuename:steve-jobs-${name}-${q}} ) - ( avg:lb.steve.queued.${dash-to-underscore q}{host:database-${name}} + avg:lb.steve.running.${dash-to-underscore q}{host:database-${name}} ) > 0";
            monitorOptions = builtins.toJSON {
              thresholds.critical = 0;
            };
         })
-    ) queues));
+    ) queues))
+    //
+    {
+      "server-reboot" = 
+        ({
+          name = "Server {{host.name}} rebooted";
+          type = "metric alert";
+          message = "@opsgenie-lb_jobs";
+          query = "min(last_1m):diff(avg:system.uptime{deployment:lb-jobs-${name}} by {host}) < 0";
+          monitorOptions = builtins.toJSON {
+            no_data_timeframe = 10;
+            thresholds.critical = 0;
+          };
+        } // creds);
+    };
 
 }
