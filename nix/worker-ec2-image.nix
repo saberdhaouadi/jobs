@@ -37,7 +37,7 @@
         };
     };
 
-
+  boot.kernelParams = lib.mkForce [ "boot.trace" "console=ttyS0" ];
   boot.initrd.availableKernelModules = [ "nmve" ];
   boot.initrd.extraUtilsCommands =
     ''
