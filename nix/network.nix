@@ -553,7 +553,7 @@ with pkgs.lib;
           ExecStart = "${./scripts/terminate-impaired} ${instanceProfileArn resources.iamRoles.worker-role.name}";
         };
         environment.PYTHONPATH = "${pkgs.pythonPackages.boto}/lib/python2.7/site-packages";
-        startAt = "*:0";
+        startAt = "*:0/30";
       };
     in
     {
