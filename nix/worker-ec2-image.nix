@@ -76,7 +76,6 @@
 
   system.build.amazonImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
     inherit pkgs lib config;
-    partitioned = config.ec2.hvm;
     diskSize = 8192;
     format = "qcow2";
     configFile = pkgs.writeText "configuration.nix"
