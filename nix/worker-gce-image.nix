@@ -96,7 +96,7 @@ in
 
   system.build.googleComputeImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
     inherit pkgs lib config;
-    diskSize = 4096;
+    diskSize = 1024 * 8; # FIXME: investigate why the closure size of the image is growing
     format = "raw";
     configFile = pkgs.writeText "configuration.nix"
       ''
