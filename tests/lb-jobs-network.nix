@@ -115,7 +115,7 @@ in
         '';
 
         systemd.services.minio-s3 =
-          { config, pkgs, ...}:
+          { config, ...}:
           {
             environment = {
               MINIO_ACCESS_KEY=awsAccessKey;
