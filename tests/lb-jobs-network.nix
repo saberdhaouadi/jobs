@@ -1,5 +1,5 @@
 { builds ? import ../. {},
-  platform,
+  platform ? ((import <config> {}).getLB (import ../lb-version.nix)),
   paperboat ? null
 }:
 (import <nixpkgs> {}).lib.overrideDerivation (
@@ -123,7 +123,7 @@ in
             };
             wantedBy = [ "multi-user.target" ];
             script = ''
-              ${pkgs.minio}/bin/minio server aws-s3
+              ${pkgs.minio}/bin/minio server aws-s3 --config-dir .
             '';
           };
 
@@ -146,6 +146,8 @@ in
         virtualisation.writableStore = true;
         virtualisation.memorySize = 6*1024;
         virtualisation.diskSize = 8192;
+
+        deployment.targetEnv = "worker";
 
         boot.kernel.sysctl."vm.panic_on_oom" = 0;
 
@@ -179,6 +181,8 @@ in
     frontend =
       { config, pkgs, ... }:
       {
+        virtualisation.memorySize = 2*1024;
+
         imports = [ common ../nix/frontend.nix ];
         logicblox.jobs.builds = builds;
 
@@ -239,7 +243,7 @@ in
       {
         imports = [ common ../nix/database.nix ];
         logicblox.jobs.builds = builds;
-        logicblox.jobs.platform  =  platform;
+        logicblox.jobs.platform = platform;
         systemd.services.lb-web-server.environment = awsEnvironment;
         virtualisation.memorySize = 4096;
         virtualisation.diskSize = 8192;

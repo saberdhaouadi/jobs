@@ -3,7 +3,7 @@ with pkgs.lib;
 let
   builder-config = import <config> {};
   builds = import ../. { platform_release = builder-config.getLB (import ../lb-version.nix ); };
-  
+
   cfg = config.lb-steve-worker;
   workerScript =
     pkgs.writeScriptBin "worker" ''
@@ -82,22 +82,25 @@ in
 
     # The jobs and their data cannot reasonably be passed in a pure
     # way, as the input and output data can be very big.
-    nix.sandboxPaths = [
-      "/tmp/job"
-      "/sockets=/run/sockets"
-      "/usr/bin/env=${pkgs.coreutils}/bin/env"
-      "/lib64/ld-linux-x86-64.so.2=${pkgs.glibc}/lib64/ld-linux-x86-64.so.2"
-      "/bin/bash=${pkgs.bash}/bin/bash"
-    ];
-    nix.extraOptions = ''
-      build-compress-log = false
-      user-agent-suffix = lb-jobs
-      sandbox-dev-shm-size = 75%
-      signed-binary-caches =
-    '';
-    nix.useSandbox = true;
-    nix.package = pkgs.nixUnstable;
-    nix.trustedBinaryCaches = [ "s3://logicblox-cache" ];
+    nix = {
+      sandboxPaths = [
+        "/tmp/job"
+        "/sockets=/run/sockets"
+        "/usr/bin/env=${pkgs.coreutils}/bin/env"
+        "/lib64/ld-linux-x86-64.so.2=${pkgs.glibc}/lib64/ld-linux-x86-64.so.2"
+        "/bin/bash=${pkgs.bash}/bin/bash"
+      ];
+      extraOptions = ''
+        build-compress-log = false
+        user-agent-suffix = lb-jobs
+        sandbox-dev-shm-size = 75%
+      '';
+      binaryCachePublicKeys = [ "bob.logicblox.com-1:pvQBnviKJObXHv3ZWBeCQ22pDFduyFTEb2XoJn3aOtI=" ];
+      useSandbox = true;
+      package = pkgs.nixUnstable;
+      binaryCaches = [ "s3://logicblox-cache" ];
+      trustedBinaryCaches = [ "s3://logicblox-cache" ];
+    };
 
     systemd.extraConfig = ''
       DefaultCPUAccounting=true
@@ -117,6 +120,7 @@ in
           '';
         postStart =
           ''
+            sleep 10
             chmod go+w-x /run/sockets/gurobi
           '';
         serviceConfig = {
