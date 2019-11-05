@@ -89,7 +89,7 @@ in
     '';
 
   networking.hostName = pkgs.lib.mkForce "";
-  environment.etc."google_application_credentials.json".text = builtins.readFile <global_creds/gcp-creds.json>;
+  environment.etc."google_application_credentials.json".text = builtins.readFile <global_creds/google_application_credentials.json>;
 
   lb-steve-worker.shutdownOnIdle = true;
   users.mutableUsers = lib.mkOverride 0 false;
