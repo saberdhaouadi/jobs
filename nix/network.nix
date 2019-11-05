@@ -1,10 +1,15 @@
 { region ? "us-east-1"
 , account ? "lb-jobs"
 , accountId ? "826045886586"
+, gcpProject
+, serviceAccount
+, accessKey
 , name
 , logToken ? ""
 , vpcId ? ""
 , production ? false
+, provisionVpc ? true
+, ...
 }:
 let
   environments = import ./environments.nix;
@@ -151,6 +156,7 @@ in
 with pkgs.lib;
 {
   network.description = "Steve Jobs [${name}]";
+  require = optionals provisionVpc [ ./vpc.nix ];
 
   resources.elasticIPs.key-ip-us-west-1 = { region = "us-west-1" ; accessKeyId = account; };
   "key-proxy-${name}-us-west-1" = key-proxy "us-west-1";
@@ -387,7 +393,8 @@ with pkgs.lib;
         accessKeyId = account;
         vpcId = mkIf (vpcId != "") vpcId;
         description = "Security group for frontend";
-        rules = map entry ips ++ map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; 
+        rules = map entry ips ++ [] /*map accountEntry (singleton accountId)*/ ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]
+        ++  [ { fromPort = 8080; toPort = 8080; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
       };
 
   "provisioner-${name}" =
@@ -449,8 +456,7 @@ with pkgs.lib;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
-      deployment.keys.google.keyFile = /home/deploy-lb-jobs/google.json;
-
+      deployment.keys.google.keyFile = <global_creds/gcp-creds.json>;
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -615,7 +621,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.8xlarge" else "c3.8xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.8xlarge" else "r3.4xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
@@ -820,37 +826,52 @@ with pkgs.lib;
       '';
     };
 
-  "google-nat-${name}" =
-    { config, pkgs, resources, lib, ... }:
-    let
-    in
+   "google-nat-${name}" =
+     { config, pkgs, resources, lib, ... }:
+     let
+     in
+     {
+       deployment.targetEnv = "gce";
+       deployment.gce = {
+         instanceType = "n1-standard-2";
+         project = gcpProject;
+         accessKey = builtins.readFile accessKey;
+         inherit serviceAccount;
+         canIpForward = true;
+         region =  "us-central1-a";
+         rootDiskSize = 50;
+      # ipAddress = "35.188.70.240";
+    };
+    networking.nat.enable = true;
+  };
+
+  resources.gceRoutes."route-key-server-${name}" =
+    { resources, ... }:
     {
-      deployment.targetEnv = "gce";
-      deployment.gce = {
-       canIpForward = true;
-       region =  "us-central1-a";
-       # ipAddress = "35.188.70.240";
-      };
-      networking.nat.enable = true;
+      project = gcpProject;
+      accessKey = builtins.readFile accessKey;
+      inherit serviceAccount;
+      destination =  resources.machines."key-server-${name}";
+      name = "route-key-server-${name}";
+      nextHop = resources.machines."google-nat-${name}";
+      tags =  [ "worker" ];
     };
 
-  resources.gceRoutes."route-key-server-${name}" = {resources, ...}: {
-    destination =  resources.machines."key-server-${name}";
-    name = "route-key-server-${name}";
-    nextHop = resources.machines."google-nat-${name}";
-    tags =  [ "worker" ];
-  };
-
-  resources.gceRoutes."route-gurobi-${name}" = {resources, ...}: {
-    destination = "54.83.193.103/32" ;
-    name = "route-gurobi-${name}";
-    nextHop = resources.machines."google-nat-${name}";
-    tags =  [ "worker" ];
-  };
+  resources.gceRoutes."route-gurobi-${name}" =
+    { resources, ... }:
+    {
+      project = gcpProject;
+      accessKey = builtins.readFile accessKey;
+      inherit serviceAccount;
+      destination = "54.83.193.103/32" ;
+      name = "route-gurobi-${name}";
+      nextHop = resources.machines."google-nat-${name}";
+      tags =  [ "worker" ];
+    };
 
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> ];
+    { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"

@@ -4,7 +4,7 @@
     ./worker.nix
     ./boot.nix
     <nixpkgs/nixos/modules/virtualisation/amazon-image.nix>
-    <lbdevops/logicblox/config/logging/logentries.nix>
+    <lbdevops/logicblox/config/logging/rsyslogd.nix>
   ];
 
   logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
