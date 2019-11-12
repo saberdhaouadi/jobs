@@ -1,6 +1,7 @@
 package com.logicblox.steve.worker;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
@@ -214,7 +215,12 @@ public class Main {
 
     try{
       AWSCredentialsProvider gcsXMLProvider = Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
-      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
+
+      // make the AWS interfaces use V2 signatures for authentication
+      ClientConfiguration config = new ClientConfiguration();
+      config.setSignerOverride("S3SignerType");
+
+      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider, config);
       this.gcsClient = new GCSClientBuilder().setInternalS3Client(s3Client)
               .createGCSClient();
     } catch (Exception e) {
