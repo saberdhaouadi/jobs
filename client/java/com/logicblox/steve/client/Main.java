@@ -129,8 +129,8 @@ public class Main {
   protected URI createUniqueURI(String option, String base) throws URISyntaxException, UsageException {
     String id = UUID.randomUUID().toString();
     String optionValue = _config.getStringError(option);
-    if(! optionValue.startsWith("s3://") ) {
-       throw new UsageException("Incorrect option '"+option+" = "+optionValue+"', should be a S3 URL.");
+    if(!(optionValue.startsWith("s3://") || optionValue.startsWith("gs://"))) {
+       throw new UsageException("Incorrect option '"+option+" = "+optionValue+"', should be a S3 or GCS URL.");
     }
     return URI.create(optionValue + "/" + id + (base != null ? "/" + base : ""));
   }
@@ -149,7 +149,7 @@ public class Main {
   protected ListenableFuture<List<Frontend.File>> createInput(String input, String _inputEncryptionKey) throws Exception {
     // TODO support hashes as parameters or lookup in S3
     // TODO should we delete the input or rely on an automatic retention policy on the bucket?
-    if (input.startsWith("s3://")) {
+    if (input.startsWith("s3://") || input.startsWith("gs://")) {
       Frontend.File.Builder fileBuilder =
               Frontend.File.newBuilder()
                       .setUrl(input);

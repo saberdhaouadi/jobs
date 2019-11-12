@@ -61,11 +61,7 @@ jar(
    srcdir = 'java',
    findbugs = True,
    classpath = classpath)
-
-rule(output="findbugs",
-     phony=True,
-     input="jars"
-     )
+core.g_rules['findbugs'].input = set()
 
 link_libs(classpath)
 
