@@ -329,7 +329,7 @@ public class SteveJob {
     last = last.substring(last.lastIndexOf('/') + 1);
 
     File f = new File(_inputPath, last);
-    DownloadOptions options = _client.getOptionsBuilderFactory()
+    DownloadOptions options = client.getOptionsBuilderFactory()
                                   .newDownloadOptionsBuilder()
                                   .setFile(f)
                                   .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(inputUri))
