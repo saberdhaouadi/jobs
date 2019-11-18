@@ -116,6 +116,7 @@ provision_classpath = [
 jar(
    name = 'lb-steve-worker',
    srcdir = 'java/com/logicblox/steve/worker',
+   javac_flags = "-g",
    findbugs = True,
     classpath = worker_classpath + classpath)
 

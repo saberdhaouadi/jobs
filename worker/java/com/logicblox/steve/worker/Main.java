@@ -213,8 +213,9 @@ public class Main {
       this.client.setEndpoint(_s3Endpoint);
     }
 
-    try{
+    try {
       AWSCredentialsProvider gcsXMLProvider = Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
+      gcsXMLProvider.getCredentials();
 
       // make the AWS interfaces use V2 signatures for authentication
       ClientConfiguration config = new ClientConfiguration();
