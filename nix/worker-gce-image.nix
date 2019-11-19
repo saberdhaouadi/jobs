@@ -98,14 +98,20 @@ in
     { pkgs, ... }:
     {
       description = "download the credentials for AWS/GCS access from the key-server";
+      wantedBy = [ "multi-user.target" ];
       script = ''
-        keyserver=$(grep -o key-service.* /etc/ec2-metadata/user-data | awk '{print $2}' | sed 's/"//g')
+        keyserver=$(grep -o key-service.* /etc/ec2-metadata/user-data | ${pkgs.awk}/bin/awk '{print $2}' | sed 's/"//g')
         ${pkgs.curl}/bin/curl -XPOST \
           -k -H "Content-Type: application/json" \
           -d '{"account": "google-worker-creds"}' \
           https://$keyserver/keys \
           | ${pkgs.jq}/bin/jq -r '.key|.[]|select(.name=="credentials")|.contents' > /run/keys/credentials
       '';
+    };
+  systemd.services.lb-steve-worker =
+    {
+      after = [ "pull-credentials.service" ];
+      wants = [ "pull-credentials.service" ];
     };
 
   lb-steve-worker.shutdownOnIdle = true;
