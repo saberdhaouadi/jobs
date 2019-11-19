@@ -99,7 +99,7 @@ in
       description = "download the credentials for AWS/GCS access from the key-server";
       wantedBy = [ "multi-user.target" ];
       script = ''
-        keyserver=$(grep -o key-service.* /etc/ec2-metadata/user-data | ${pkgs.awk}/bin/awk '{print $2}' | sed 's/"//g')
+        keyserver=$(grep -o key-service.* /etc/ec2-metadata/user-data | ${pkgs.gawk}/bin/awk '{print $2}' | sed 's/"//g')
         ${pkgs.curl}/bin/curl -XPOST \
           -k -H "Content-Type: application/json" \
           -d '{"account": "google-worker-creds"}' \
