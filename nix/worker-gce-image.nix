@@ -99,6 +99,7 @@ in
       description = "download the credentials for AWS/GCS access from the key-server";
       wantedBy = [ "multi-user.target" ];
       script = ''
+        set -e
         keyserver=$(grep -o key-service.* /etc/ec2-metadata/user-data | ${pkgs.gawk}/bin/awk '{print $2}' | sed 's/"//g')
         ${pkgs.curl}/bin/curl -XPOST \
           -k -H "Content-Type: application/json" \
@@ -110,9 +111,11 @@ in
   lb-steve-worker.shutdownOnIdle = true;
   users.mutableUsers = lib.mkOverride 0 false;
 
-  # FIXME: temporarily set an ssh key for debugging
   users.extraUsers.root.openssh.authorizedKeys.keys = [
-    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDJyDNZrv9TduFS+yo0R2C4Iac10i+5PfxSOeJguFCpT5gnTfAKktaHrx83mD7Ypo8lsUy09DyGV0KWHNvAOneKjKIX1/eHw0M0NEJvRClpM26gy4DKzTs3mwc7JLFMobYgtvI4WsmwGow8fi8T/S749r7CFrwtF33hEzwUNa55+k82+pM554mi2iOAiIKTflVUXUIu89P08yVK2R5ttEv/A43VEAUrsPjYXRTRqF3ANvxCuzqwUVzc6707+6vaup/Qx2bJ9Muz/fZzLgMDrLVuZVxr4hQeEtesQK6+iWLSkQA4NbFt/22jyWffzQMVHBJrZIdmH+KHaoPGjDwMQ/owNOTRlWBKcLqazlPT3IKa6Tlwfeo+Hs/2bUZhs7tEs9UyS3o1c04HxIQStzTaV77DI0t+JggIm42RFKAZlM2S0X+g8Z/uGLrZ8zbxQhxRnUZq+5ZfBO+PsqSysf/tiimyEzQy5mdEKIgJtFgzEC4lg3h8RVGhexo/VPzkkLQPIJK+H6HGvVAZD2CtCmycryGPlmQe5Lkf7vALLAZxvyt8QzuwOKCU35tFFwez/VGH7iAxLlADWYwKt2Ei/fcmqt8XQyFTbIHFMj82SfkMHDftdn5UKW8NuyXpvumL8Tu+Sp+abaatmuD8ofD3TWdq5HMlL8ZfKfTohvzcs6iD9WQTbw== cardno:00061136155"
+    # NOTE: Amine's ssh key
+    # TODO: make it possible to grab ssh-keys from the metadata service while the instance
+    # is running which will make it possible to add a public key from the cloud console.
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGLj6b2NxWaTh2epvC7DynHu//LKb8HOoXW03o2Q1DW8 amine@nixos"
   ];
 
   system.build.googleComputeImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
