@@ -108,11 +108,6 @@ in
           | ${pkgs.jq}/bin/jq -r '.key|.[]|select(.name=="credentials")|.contents' > /run/keys/credentials
       '';
     };
-  systemd.services.lb-steve-worker =
-    {
-      after = [ "pull-credentials.service" ];
-      wants = [ "pull-credentials.service" ];
-    };
 
   lb-steve-worker.shutdownOnIdle = true;
   users.mutableUsers = lib.mkOverride 0 false;
@@ -140,7 +135,11 @@ in
 
   systemd.services.nix-daemon = awsCreds;
 
-  systemd.services.lb-steve-worker = awsCreds;
+  systemd.services.lb-steve-worker =
+    {
+      after = [ "pull-credentials.service" ];
+      wants = [ "pull-credentials.service" ];
+    } // awsCreds;
 
   systemd.services.sqs-return = awsCreds;
 
