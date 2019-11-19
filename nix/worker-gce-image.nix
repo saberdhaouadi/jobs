@@ -95,7 +95,6 @@ in
   *   GCS_XML_SECRET_KEY=<secret>
   */
   systemd.services.pull-credentials =
-    { pkgs, ... }:
     {
       description = "download the credentials for AWS/GCS access from the key-server";
       wantedBy = [ "multi-user.target" ];
