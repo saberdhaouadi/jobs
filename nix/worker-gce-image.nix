@@ -102,8 +102,7 @@ in
         keyserver=$(grep -o key-service.* /etc/ec2-metadata/user-data | ${pkgs.gawk}/bin/awk '{print $2}' | sed 's/"//g')
         ${pkgs.curl}/bin/curl -XPOST \
           -k -H "Content-Type: application/json" \
-          -d '{"account": "google-worker-creds"}' \
-          https://$keyserver/keys \
+          -d '{"account": "google-worker-creds"}' $keyserver \
           | ${pkgs.jq}/bin/jq -r '.key|.[]|select(.name=="credentials")|.contents' > /run/keys/credentials
       '';
     };
