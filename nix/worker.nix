@@ -23,14 +23,6 @@ let
       ${config.logicblox.jobs.builds.worker}/bin/lb-steve-worker ${cfg.arguments} $@
     '';
 
-  shutdown-self =
-    pkgs.writeScriptBin "shutdown-self"
-      ''
-        #! /bin/sh
-        aws ec2 terminate-instances --region us-east-1 --instance-ids $(curl -s --retry 5 --retry-delay 5 -m 10 http://169.254.169.254/latest/meta-data/instance-id)
-        systemctl poweroff
-      '';
-
   platform3 = builder-config.releases.platform."3.10.15";
 
 in
@@ -77,7 +69,6 @@ in
       config.logicblox.jobs.builds.worker
       pkgs.stdenv
       pkgs.awscli
-      shutdown-self
     ];
 
     # The jobs and their data cannot reasonably be passed in a pure

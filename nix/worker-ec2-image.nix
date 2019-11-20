@@ -7,6 +7,18 @@
     <lbdevops/logicblox/config/logging/rsyslogd.nix>
   ];
 
+  environment.systemPackages =
+    let
+
+      shutdown-self =
+        pkgs.writeScriptBin "shutdown-self"
+          ''
+            #! /bin/sh
+            aws ec2 terminate-instances --region us-east-1 --instance-ids $(curl -s --retry 5 --retry-delay 5 -m 10 http://169.254.169.254/latest/meta-data/instance-id)
+            systemctl poweroff
+          '';
+    in [ shutdown-self ];
+
   logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
 
   ec2.hvm = true;

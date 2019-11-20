@@ -371,6 +371,7 @@ with pkgs.lib;
     };
 
   resources.ec2SecurityGroups.frontend-sg =
+    { config, lib, resources, ... }:
     let
       entry = ip:
         {
@@ -385,17 +386,27 @@ with pkgs.lib;
           toPort = 443;
           sourceGroup.ownerId = account;
           sourceGroup.groupName = "admin";
-        } ;
+        };
+      accountEntryPort = port: sg:
+        { fromPort = port;
+          toPort = port;
+          sourceGroup.ownerId = accountId;
+          sourceGroup.groupName = sg.name;
+        };
     in
-      { config, resources, ... }:
-      {
-        inherit region;
-        accessKeyId = account;
-        vpcId = mkIf (vpcId != "") vpcId;
-        description = "Security group for frontend";
-        rules = map entry ips ++ [] /*map accountEntry (singleton accountId)*/ ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]
-        ++  [ { fromPort = 8080; toPort = 8080; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
-      };
+    {
+      inherit region;
+      accessKeyId = account;
+      vpcId = mkIf (vpcId != "") vpcId;
+      description = "Security group for frontend";
+      rules =
+        map entry ips
+#        ++ (lib.optionals (!provisionVpc) (map accountEntry (singleton accountId)))
+        ++ map (port: accountEntryPort port resources.ec2SecurityGroups.frontend-sg)
+        [ 8080
+          55183
+        ];
+    };
 
   "provisioner-${name}" =
     { config, resources, nodes, lib, ...}:
@@ -407,7 +418,7 @@ with pkgs.lib;
           exec lb-steve-provisioner $@ \
                  --region ${r} \
                  --ami ${if env.workers."${t}" ? ami then env.workers."${t}".ami else (if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3)} \
-                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else (if nodes ? "key-proxy-${name}-${r}" then nodes."key-proxy-${name}-${r}".config.networking.privateIPv4 else "localhost")}/keys \
+                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else (if nodes ? "key-proxy-${name}-${r}" then nodes."key-proxy-${name}-${r}".config.networking.privateIPv4 else nodes."key-server-${name}".config.networking.publicIPv4)}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
                  --key ${if r == "us-east-1" then resources.ec2KeyPairs.worker-kp.name else (if resources.ec2KeyPairs ? "worker-kp-${r}" then resources.ec2KeyPairs."worker-kp-${r}".name else "nokey")} \
@@ -425,6 +436,7 @@ with pkgs.lib;
                  --max ${env.workers."${t}".max or "300"} \
                  --min ${env.workers."${t}".min or "0"}\
                  --backend ${env.workers."${t}".backend or "aws"} \
+                 --service-account ${env.workers."${t}".serviceAccount or "unknown"} \
                  --project ${env.workers."${t}".project or "project"}
         '';
       provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
@@ -826,23 +838,27 @@ with pkgs.lib;
       '';
     };
 
-   "google-nat-${name}" =
-     { config, pkgs, resources, lib, ... }:
-     let
-     in
-     {
-       deployment.targetEnv = "gce";
-       deployment.gce = {
-         instanceType = "n1-standard-2";
-         project = gcpProject;
-         accessKey = builtins.readFile accessKey;
-         inherit serviceAccount;
-         canIpForward = true;
-         region =  "us-central1-a";
-         rootDiskSize = 50;
-      # ipAddress = "35.188.70.240";
-    };
-    networking.nat.enable = true;
+  "google-nat-${name}" =
+    { config, pkgs, resources, lib, ... }:
+    let
+    in
+    {
+      deployment.targetEnv = "gce";
+      deployment.gce = {
+        instanceType = "n1-standard-2";
+        project = gcpProject;
+        accessKey = builtins.readFile accessKey;
+        inherit serviceAccount;
+        canIpForward = true;
+        region =  "us-central1-a";
+        rootDiskSize = 50;
+      };
+
+      # NAT setup
+      networking.firewall.extraCommands = ''
+        iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+      '';
+      boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
   };
 
   resources.gceRoutes."route-key-server-${name}" =
@@ -858,12 +874,12 @@ with pkgs.lib;
     };
 
   resources.gceRoutes."route-gurobi-${name}" =
-    { resources, ... }:
+    { nodes, resources, ... }:
     {
       project = gcpProject;
       accessKey = builtins.readFile accessKey;
       inherit serviceAccount;
-      destination = "54.83.193.103/32" ;
+      destination = resources.machines."key-server-${name}";
       name = "route-gurobi-${name}";
       nextHop = resources.machines."google-nat-${name}";
       tags =  [ "worker" ];

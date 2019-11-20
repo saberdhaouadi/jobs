@@ -84,6 +84,17 @@ public class GCEProvisioner implements ProvisionerInterface {
         metadata.setItems(Collections.singletonList(startupScript));
         instance.setMetadata(metadata);
 
+        // Setup service account for the instance with scopes allowing
+        // self deletion which is needed when the instance is idle.
+
+        ServiceAccount serviceAccount = new ServiceAccount();
+        //FIXME: make configurable
+        serviceAccount.setEmail("nixops-dashboard-dev@infor-faroi-dev.iam.gserviceaccount.com");
+        serviceAccount.setScopes(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
+        List<ServiceAccount> serviceAccounts = new ArrayList<>();
+        serviceAccounts.add(serviceAccount);
+        instance.setServiceAccounts(serviceAccounts);
+
         // Labels
         Map<String, String> labels = new HashMap<String, String>();
         labels.put("queue", this.cmdArgs.getInstanceType());

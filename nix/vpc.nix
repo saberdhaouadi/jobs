@@ -90,16 +90,15 @@ with (import <nixpkgs/lib>);
       )
     );
 
-  resources.elasticIPs.nat-eip =
-    {
-      inherit region accessKeyId;
-      vpc = true;
-    };
-
-  resources.elasticIPs.frontend-eip =
-    {
-      inherit region accessKeyId;
-      vpc = true;
+  resources.elasticIPs =
+    let
+      eip = {
+        inherit region accessKeyId;
+        vpc = true;
+      };
+    in
+    { nat-eip = eip;
+      frontend-eip = eip;
     };
 
   resources.vpcNatGateways.nat =
@@ -198,10 +197,14 @@ with (import <nixpkgs/lib>);
     in
     { resources, ... }:
     {
+      name = "admin";
       inherit region accessKeyId;
       vpcId = resources.vpc.lb-jobs-vpc;
       description = "Admin Security Group";
-      rules = (map httpRule httpIps) ++ (map httpsRule httpIps) ++ (map sshRule sshIps);
+      rules =
+        (map httpRule httpIps)
+        ++ (map httpsRule (httpIps ++ [ "34.67.38.255" ])) # Allow the GCP nat server to access the key-server
+        ++ (map sshRule sshIps);
     };
   };
   "provisioner-${name}" = overrideEc2Vpc "r4.xlarge";

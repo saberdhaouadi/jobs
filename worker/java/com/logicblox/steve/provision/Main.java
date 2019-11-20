@@ -161,6 +161,11 @@ public class Main {
             .hasArg()
             .withArgName("project")
             .create());
+    options.addOption(OptionBuilder.withLongOpt("service-account")
+            .withDescription("service account to use in the worker (required when using GCP backend)")
+            .hasArg()
+            .withArgName("service account")
+            .create());
 
     options.addOption(OptionBuilder.withLongOpt("dry-run")
             .withDescription("Whether to actually create the requested instances")
@@ -216,12 +221,14 @@ public class Main {
         cmdArgs.setBackend(_cmdline.getOptionValue("backend"));
       if (_cmdline.hasOption("project"))
         cmdArgs.setProject(_cmdline.getOptionValue("project"));
+      if (_cmdline.hasOption("service-account"))
+        cmdArgs.setServiceAccount(_cmdline.getOptionValue("service-account"));
 
       if (cmdArgs.getMaxInstances() < cmdArgs.getTotalNeeded()) {
          cmdArgs.setMaxInstances(cmdArgs.getTotalNeeded());
       }
 
-      if (cmdArgs.getBackend().toLowerCase() == "gcp" && cmdArgs.getProject().isEmpty() )
+      if (cmdArgs.getBackend().toLowerCase() == "gcp" && cmdArgs.getProject().isEmpty() && cmdArgs.getServiceAccount.isEmpty())
           throw new MissingOptionException("You need to specify the name of the project when using GCP backend");
 
       cmdArgs.setDryRun(_cmdline.hasOption("dry-run"));

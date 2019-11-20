@@ -33,6 +33,21 @@ in
     ./boot.nix
     <nixpkgs/nixos/modules/virtualisation/google-compute-config.nix>
   ];
+
+  environment.systemPackages =
+    let
+      shutdown-self =
+        let curl = "curl -H 'Metadata-Flavor:Google' -s --retry 5 --retry-delay 5 -m 10";
+        in pkgs.writeScriptBin "shutdown-self"
+        ''
+          #! /usr/bin/env bash
+          instance=$(${curl} http://169.254.169.254/computeMetadata/v1/instance/name)
+          zone=$(${curl} http://169.254.169.254/computeMetadata/v1/instance/zone | cut -d\/ -f4)
+          ${pkgs.google-cloud-sdk-gce}/bin/gcloud compute instances delete $instance --zone=$zone
+          systemctl poweroff
+        '';
+    in [ shutdown-self ];
+
   boot.initrd.kernelModules = [ "af_packet" ];
   boot.initrd.preLVMCommands = lib.mkBefore ''
             if [ -z "$hasNetwork" ]; then

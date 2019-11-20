@@ -20,6 +20,7 @@ public class CommandLineArguments {
     private static String serviceUri = "http://localhost:8082/keys";
     private static String subnetId = null;
     private static String securityGroup = "admin";
+    private static String serviceAccount = ""; // used for auto shutdown of the worker
 
     private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
     private static double pctSpot = 0.9;
@@ -224,5 +225,12 @@ public class CommandLineArguments {
         CommandLineArguments.backend = backend;
     }
 
+    public static String getServiceAccount() {
+        return serviceAccount;
+    }
+
+    public static void setServiceAccount(String serviceAccount) {
+        CommandLineArguments.serviceAccount = serviceAccount;
+    }
 
 }
