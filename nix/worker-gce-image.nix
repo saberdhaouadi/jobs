@@ -43,7 +43,7 @@ in
           #! /usr/bin/env bash
           instance=$(${curl} http://169.254.169.254/computeMetadata/v1/instance/name)
           zone=$(${curl} http://169.254.169.254/computeMetadata/v1/instance/zone | cut -d\/ -f4)
-          ${pkgs.google-cloud-sdk-gce}/bin/gcloud compute instances delete $instance --zone=$zone
+          ${pkgs.google-cloud-sdk-gce}/bin/gcloud compute instances delete $instance --zone=$zone --quiet
           systemctl poweroff
         '';
     in [ shutdown-self ];
