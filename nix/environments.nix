@@ -21,19 +21,6 @@ in rec {
         percentageSpot = "1.0";
         onDemand = true;
       };
-      "n1-standard-2" = {
-        number = 0;
-        price = "0.25";
-        percentageSpot = "1.0";
-        onDemand = false;
-        instanceType = "n1-standard-2";
-        backend = "gcp";
-        ami = "lb-jobs-4743560";
-        defaultRegion = "us-central1-f";
-        project = "infor-faroi-dev";
-        serviceAccount =
-          "nixops-dashboard-dev@infor-faroi-dev.iam.gserviceaccount.com";
-      };
       "c3.xlarge-online" = {
         number = 1;
         price = "0.25";
@@ -140,6 +127,27 @@ in rec {
         diskSize = "10";
         inherit subnetId securityGroup;
       };
+
+      /** Google cloud queues
+      * TODO:
+      *   - add more instance types
+      *   - replace references to infor-faroi-dev with an lb-jobs
+      *      account (project/serviceAccount/ami)
+      */
+      "n1-standard-2" = {
+        number = 0;
+        price = "0.25";
+        percentageSpot = "1.0";
+        onDemand = false;
+        instanceType = "n1-standard-2";
+        backend = "gcp";
+        ami = "lb-jobs-4743560";
+        defaultRegion = "us-central1-f";
+        project = "infor-faroi-dev";
+        serviceAccount =
+          "nixops-dashboard-dev@infor-faroi-dev.iam.gserviceaccount.com";
+      };
+
     };
   };
 

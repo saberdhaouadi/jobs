@@ -228,7 +228,7 @@ public class Main {
          cmdArgs.setMaxInstances(cmdArgs.getTotalNeeded());
       }
 
-      if (cmdArgs.getBackend().toLowerCase() == "gcp" && cmdArgs.getProject().isEmpty() && cmdArgs.getServiceAccount.isEmpty())
+      if (cmdArgs.getBackend().toLowerCase() == "gcp" && cmdArgs.getProject().isEmpty() && cmdArgs.getServiceAccount().isEmpty())
           throw new MissingOptionException("You need to specify the name of the project when using GCP backend");
 
       cmdArgs.setDryRun(_cmdline.hasOption("dry-run"));
