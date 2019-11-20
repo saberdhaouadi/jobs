@@ -79,6 +79,11 @@ in
       if ! [ -e "$metaDir/user-data" ]; then
         wget -q --header='Metadata-Flavor: Google' -O "$metaDir/user-data" http://169.254.169.254/computeMetadata/v1/instance/attributes/startup-script
       fi
+
+      if ! [ -e "$metaDir/hostname" ]; then
+        wget -q --header='Metadata-Flavor: Google' -O "$metaDir/hostname" http://169.254.169.254/computeMetadata/v1/instance/id
+      fi
+
     '';
 
   lb-steve-worker.initrd.deviceDiscovery =
@@ -120,6 +125,17 @@ in
           -k -H "Content-Type: application/json" \
           -d '{"account": "google-worker-creds"}' $keyserver \
           | ${pkgs.jq}/bin/jq -r '.key|.[]|select(.name=="credentials")|.contents' > /run/keys/credentials
+      '';
+    };
+
+  systemd.services.set-hostname =
+    {
+      description = "set the instance hostname";
+      wantedBy = [ "multi-user.target" ];
+      script = ''
+        if [ -s /etc/ec2-metadata/hostname ]; then
+          ${pkgs.nettools}/bin/hostname $(cat /etc/ec2-metadata/hostname)
+        fi
       '';
     };
 
