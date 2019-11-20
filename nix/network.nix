@@ -633,7 +633,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroups = [ "admin" ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.8xlarge" else "r3.4xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.8xlarge" else "c3.8xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
