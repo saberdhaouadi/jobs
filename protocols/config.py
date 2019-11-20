@@ -74,6 +74,9 @@ jar(
    findbugs = True,
    classpath = classpath)
 
-core.g_rules['findbugs'].input = set()
+rule(output="findbugs",
+     phony=True,
+     input="jars"
+     )
 
 link_libs(classpath)
