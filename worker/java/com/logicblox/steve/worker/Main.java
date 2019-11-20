@@ -215,7 +215,6 @@ public class Main {
 
     try {
       AWSCredentialsProvider gcsXMLProvider = Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
-      gcsXMLProvider.getCredentials();
 
       // make the AWS interfaces use V2 signatures for authentication
       ClientConfiguration config = new ClientConfiguration();
