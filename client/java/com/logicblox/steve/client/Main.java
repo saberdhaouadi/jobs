@@ -282,7 +282,7 @@ public class Main {
     @Parameter(
             names = {"-o", "--output"},
             description = "Output of job, to be stored in either a local directory, single output file, " +
-                    "or S3 output prefix (S3 files use s3://bucket/key URLs). If local output is requested, " +
+                    "or S3/GCS output prefix (S3/GCS files use s3://bucket/key or gs://bucket/key URLs). If local output is requested, " +
                     "then the S3 default_output_prefix will be used to store the outputs")
     String _output;
 
@@ -320,7 +320,7 @@ public class Main {
         _output = createUniqueOutputPrefixURI().toString();
 
       URI outputPrefix;
-      final boolean autoDownload = !_output.startsWith("s3://");
+      final boolean autoDownload = !(_output.startsWith("s3://") || _output.startsWith("gs://"));
       if (autoDownload) {
         outputPrefix = createUniqueOutputPrefixURI();
 
