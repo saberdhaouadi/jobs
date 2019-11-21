@@ -47,59 +47,65 @@
 
   boot.initrd.postMountCommands = pkgs.lib.mkOverride 0
     ''
-      metaDir=$targetRoot/etc/ec2-metadata
-      mkdir -m 0755 -p "$metaDir"
+     metaDir=${targetRoot}etc/ec2-metadata
+     mkdir -m 0755 -p "$metaDir"
+     echo "getting EC2 instance metadata..."
+     if ! [ -e "$metaDir/ami-manifest-path" ]; then
+       wget -q -O "$metaDir/ami-manifest-path" http://169.254.169.254/1.0/meta-data/ami-manifest-path
+     fi
+     if ! [ -e "$metaDir/user-data" ]; then
+       wget -q -O "$metaDir/user-data" http://169.254.169.254/1.0/user-data && chmod 600 "$metaDir/user-data"
+     fi
+     if ! [ -e "$metaDir/hostname" ]; then
+       wget -q -O "$metaDir/hostname" http://169.254.169.254/1.0/meta-data/hostname
+     fi
+     if ! [ -e "$metaDir/public-keys-0-openssh-key" ]; then
+       wget -q -O "$metaDir/public-keys-0-openssh-key" http://169.254.169.254/1.0/meta-data/public-keys/0/openssh-key
+     fi
 
-      echo "getting EC2 instance metadata..."
-
-      if ! [ -e "$metaDir/ami-manifest-path" ]; then
-        wget -q -O "$metaDir/ami-manifest-path" http://169.254.169.254/1.0/meta-data/ami-manifest-path
-      fi
-
-      if ! [ -e "$metaDir/user-data" ]; then
-        wget -q -O "$metaDir/user-data" http://169.254.169.254/1.0/user-data && chmod 600 "$metaDir/user-data"
-      fi
-
-      if ! [ -e "$metaDir/hostname" ]; then
-        wget -q -O "$metaDir/hostname" http://169.254.169.254/1.0/meta-data/hostname
-      fi
-
-      if ! [ -e "$metaDir/public-keys-0-openssh-key" ]; then
-        wget -q -O "$metaDir/public-keys-0-openssh-key" http://169.254.169.254/1.0/meta-data/public-keys/0/openssh-key
-      fi
-      diskNr=0
-      diskForUnionfs=
-      for device in /dev/xvd[abcde]*; do
-          if [ "$device" = /dev/xvda -o "$device" = /dev/xvda1 ]; then continue; fi
-          fsType=$(blkid -o value -s TYPE "$device" || true)
-          if [ "$fsType" = swap ]; then
-              echo "activating swap device $device..."
-              swapon "$device" || true
-          elif [ "$fsType" = ext3 ]; then
-              mp="/disk$diskNr"
-              diskNr=$((diskNr + 1))
-              if mountFS "$device" "$mp" "" ext3; then
-                  if [ -z "$diskForUnionfs" ]; then diskForUnionfs="$mp"; fi
-              fi
-          else
-              echo "skipping unknown device type $device"
-          fi
+     devices=""
+     nr=0
+     mkdir -p /var/lock/lvm
+     for device in /dev/xvd[bcdef]* /dev/nvme[0-9]n[0-9]*; do
+       echo $device
+       if [ -e "$device" ]; then
+         lvm pvcreate -f $device
+         devices="$devices $device"
+         nr=$((nr+1))
+       fi
       done
-      if [ -n "$diskForUnionfs" ]; then
-          mkdir -m 755 -p $targetRoot/$diskForUnionfs/root
-          mkdir -m 1777 -p $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
-          mount --bind $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
-          if [ "$(cat "$metaDir/ami-manifest-path")" != "(unknown)" ]; then
-              mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/var $targetRoot/var
-              mount --bind $targetRoot/$diskForUnionfs/root/var $targetRoot/var
-              mkdir -p /unionfs-chroot/ro-nix
-              mount --rbind $targetRoot/nix /unionfs-chroot/ro-nix
-              mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/nix
-              mkdir -p /unionfs-chroot/rw-nix
-              mount --rbind $targetRoot/$diskForUnionfs/root/nix /unionfs-chroot/rw-nix
-              unionfs -o allow_other,cow,nonempty,chroot=/unionfs-chroot,max_files=32768 /rw-nix=RW:/ro-nix=RO $targetRoot/nix
-          fi
-      fi
+
+     set -x
+     if [ -n "$devices" ]; then
+       echo "vgcreate"
+       lvm vgcreate raid $devices
+       echo "lvcreate"
+       lvm lvcreate -vvv --noudevsync --zero n raid --name raid --extents '100%FREE' --stripes $nr
+       echo "vgchange"
+       lvm vgchange --noudevsync -ay raid
+
+       diskForUnionfs=/disk0
+       echo "Creating ext4 filesystem on /dev/dm-0"
+       mke2fs -t ext4 /dev/dm-0
+       echo "Mounting /dev/dm-0 to $diskForUnionfs"
+       mountFS /dev/dm-0 $diskForUnionfs "" ext4
+
+       mkdir -m 755 -p $targetRoot/$diskForUnionfs/root
+       mkdir -m 1777 -p $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
+       mount --bind $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
+
+       mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/var $targetRoot/var
+       mount --bind $targetRoot/$diskForUnionfs/root/var $targetRoot/var
+
+       mkdir -p /unionfs-chroot/ro-nix
+       mount --rbind $targetRoot/nix /unionfs-chroot/ro-nix
+
+       mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/nix
+       mkdir -p /unionfs-chroot/rw-nix
+       mount --rbind $targetRoot/$diskForUnionfs/root/nix /unionfs-chroot/rw-nix
+
+       unionfs -o allow_other,cow,nonempty,chroot=/unionfs-chroot,max_files=32768 /rw-nix=RW:/ro-nix=RO $targetRoot/nix
+
      set +x
     '';
 
