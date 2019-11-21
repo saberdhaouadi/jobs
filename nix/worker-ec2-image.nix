@@ -47,7 +47,7 @@
 
   boot.initrd.postMountCommands = pkgs.lib.mkOverride 0
     ''
-     metaDir=${targetRoot}etc/ec2-metadata
+     metaDir=$targetRoot/etc/ec2-metadata
      mkdir -m 0755 -p "$metaDir"
      echo "getting EC2 instance metadata..."
      if ! [ -e "$metaDir/ami-manifest-path" ]; then
