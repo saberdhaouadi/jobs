@@ -86,7 +86,7 @@ public class OutgoingQueueHelper {
     sendResult(msgBuilder.build());
   }
 
-  public void notifySuccess(List<StoreFile> result, long cpuUsage, long maxMemory, long maxDiskUsage) {
+  public void notifySuccess(List<StoreFile> result, String scheme, long cpuUsage, long maxMemory, long maxDiskUsage) {
     Backend.JobStatus.Builder msgBuilder = getBuilder();
     msgBuilder.setStatusCode(Backend.StatusCode.SUCCEEDED);
 
@@ -94,7 +94,7 @@ public class OutgoingQueueHelper {
     for (StoreFile f : result) {
       details.addOutput(
               Backend.File.newBuilder()
-                      .setUrl("s3://" + f.getBucketName() + "/" + f.getObjectKey())
+                      .setUrl(scheme + f.getBucketName() + "/" + f.getObjectKey())
                       .setHash("etag:" + f.getETag()));
     }
 

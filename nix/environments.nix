@@ -10,6 +10,8 @@ let
 
   subnetId = "subnet-dc1a4194";
   securityGroup = "sg-b3ac49c3";
+  lbJobsImage = "lb-jobs-4754909";
+
 in rec {
   prod = {
     hostName = "steve.logicblox.com";
@@ -141,7 +143,21 @@ in rec {
         onDemand = false;
         instanceType = "n1-standard-2";
         backend = "gcp";
-        ami = "lb-jobs-4743560";
+        ami = lbJobsImage;
+        defaultRegion = "us-central1-f";
+        project = "infor-faroi-dev";
+        serviceAccount =
+          "nixops-dashboard-dev@infor-faroi-dev.iam.gserviceaccount.com";
+      };
+
+      "n1-highmem-8" = {
+        number = 0;
+        price = "0.25";
+        percentageSpot = "1.0";
+        onDemand = false;
+        instanceType = "n1-highmem-8";
+        backend = "gcp";
+        ami = lbJobsImage;
         defaultRegion = "us-central1-f";
         project = "infor-faroi-dev";
         serviceAccount =
