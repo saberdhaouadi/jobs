@@ -94,7 +94,7 @@ public class OutgoingQueueHelper {
     for (StoreFile f : result) {
       details.addOutput(
               Backend.File.newBuilder()
-                      .setUrl(scheme + f.getBucketName() + "/" + f.getObjectKey())
+                      .setUrl(scheme + "://" + f.getBucketName() + "/" + f.getObjectKey())
                       .setHash("etag:" + f.getETag()));
     }
 
