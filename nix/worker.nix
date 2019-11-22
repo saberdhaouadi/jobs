@@ -147,6 +147,30 @@ in
       '';
     };
 
+    /**
+    * Recent versions of LB web-client does more strict checking of the
+    * host SSL certificate so we need to make sure that there is a
+    * *.logicblox.com domain name that can be resolved for the key-server.
+    */
+    systemd.services.replace-etc-hosts =
+      { description = "add a record for the key-server to /etc/hosts";
+        wantedBy = [ "multi-user.target" "lb-steve-worker.service" ];
+        before = [ "lb-steve-worker.service" ];
+        script =
+          ''
+            etcHosts=$(mktemp)
+            keyserver=$(grep KEYSERVICE /etc/ec2-metadata/user-data | cut -d\= -f2 | cut -d\/ -f3)
+            cat /etc/hosts > $etcHosts
+            echo "$keyserver keyserver.logicblox.com" >> $etcHosts
+            rm /etc/hosts
+            cat $etcHosts > /etc/hosts
+          '';
+        serviceConfig =
+          { Type = "oneshot";
+            RemainAfterExit = true;
+          };
+      };
+
     systemd.services.lb-steve-worker = {
       description = "LB Steve Worker";
       after = [ "network.target" "fetch-ec2-data.service" "gurobi-socket.service" ];

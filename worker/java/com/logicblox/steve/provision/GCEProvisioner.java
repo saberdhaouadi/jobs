@@ -238,10 +238,12 @@ public class GCEProvisioner implements ProvisionerInterface {
   public void setCmdArgs(CommandLineArguments cmdArgs) {
     this.cmdArgs = cmdArgs;
   }
+
   public String getMetadata() {
     return String.format(
-        "WORKERARGS=\"--bucket %s --incoming %s --outgoing %s --key-service %s\"",
+        "WORKERARGS=\"--bucket %s --incoming %s --outgoing %s --key-service %s\"\nKEYSERVICE=\"%s\"",
         cmdArgs.getS3Bucket(), cmdArgs.getIncoming_url(),
-        cmdArgs.getOutgoing_url(), cmdArgs.getServiceUri().toString());
+        cmdArgs.getOutgoing_url(), cmdArgs.getServiceUri().toString(),
+        cmdArgs.getServiceUri().toString());
   }
 }
