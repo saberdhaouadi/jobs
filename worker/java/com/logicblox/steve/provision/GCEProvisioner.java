@@ -194,7 +194,7 @@ public class GCEProvisioner implements ProvisionerInterface {
     filtersBuilder
         .append(String.format("(labels.queue = %s)",
                               this.cmdArgs.getInstanceType()))
-        .append(String.format(" AND (scheduling.preemptible = %s)",
+        .append(String.format(" (scheduling.preemptible = %s) (status = RUNNING)",
                               preemptible ? "true" : "false"));
     return filtersBuilder.toString();
   }

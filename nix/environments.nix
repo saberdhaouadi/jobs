@@ -10,7 +10,7 @@ let
 
   subnetId = "subnet-dc1a4194";
   securityGroup = "sg-b3ac49c3";
-  lbJobsImage = "lb-jobs-4754909";
+  lbJobsImage = "lb-jobs-4758394";
 
 in rec {
   prod = {
