@@ -11,6 +11,8 @@ import com.google.api.services.compute.model.*;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.List;
 
@@ -53,7 +55,7 @@ public class GCEProvisioner implements ProvisionerInterface {
 
   private Instance createInstance(String project, String zone,
                                   String machineType, String image,
-                                  String serviceAccountEmail, boolean preemptible) {
+                                  String serviceAccountEmail, boolean preemptible) throws URISyntaxException {
 
     final String IMAGE_URI =
         GOOGLE_API_ENDPOINT + project + "/global/images/" + image;
@@ -104,7 +106,7 @@ public class GCEProvisioner implements ProvisionerInterface {
 
     // Labels
     Map<String, String> labels = new HashMap<String, String>();
-    labels.put("queue", this.cmdArgs.getInstanceType());
+    labels.put("queue", formatQueue(this.cmdArgs.getIncoming_url()));
     instance.setLabels(labels);
 
     // Add attached Persistent Disk to be used by VM Instance, also add one
@@ -145,6 +147,11 @@ public class GCEProvisioner implements ProvisionerInterface {
     return instance;
   };
 
+  private String formatQueue(String queue) throws URISyntaxException {
+    URI queueUri = new URI(queue);
+    return queueUri.getPath().replace("/", "_");
+  }
+
   private void createInstances(int nr, boolean preemptible) {
 
     for (int i = 0; i < nr; i++) {
@@ -160,7 +167,7 @@ public class GCEProvisioner implements ProvisionerInterface {
 
         Operation response = request.execute();
 
-      } catch (IOException e) {
+      } catch (IOException | URISyntaxException e) {
         e.printStackTrace();
       }
     }
@@ -186,12 +193,12 @@ public class GCEProvisioner implements ProvisionerInterface {
     this.createInstances(nr, false);
   }
 
-  private String getFilters(Boolean preemptible) {
+  private String getFilters(Boolean preemptible) throws URISyntaxException {
     StringBuilder filtersBuilder = new StringBuilder();
     // Always filter by the queue
     filtersBuilder
         .append(String.format("(labels.queue = %s)",
-                              this.cmdArgs.getInstanceType()))
+                              formatQueue(this.cmdArgs.getIncoming_url())))
         .append(String.format(" (scheduling.preemptible = %s) (status = RUNNING)",
                               preemptible ? "true" : "false"));
     return filtersBuilder.toString();
@@ -215,7 +222,7 @@ public class GCEProvisioner implements ProvisionerInterface {
       // through all pages in order to get correct number of running instances.
       return instances.size();
 
-    } catch (IOException e) {
+    } catch (IOException | URISyntaxException e) {
       e.printStackTrace();
     }
     return 0;
