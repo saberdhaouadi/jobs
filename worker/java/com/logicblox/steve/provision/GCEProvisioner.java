@@ -160,8 +160,6 @@ public class GCEProvisioner implements ProvisionerInterface {
 
         Operation response = request.execute();
 
-        // TODO: Log when we fail creating an instance.
-        System.out.println(response.getStatus());
       } catch (IOException e) {
         e.printStackTrace();
       }
