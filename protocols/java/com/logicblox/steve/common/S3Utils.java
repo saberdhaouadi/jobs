@@ -17,6 +17,7 @@ import com.logicblox.cloudstore.Metadata;
 import com.logicblox.bloxweb.config.ConfigMap;
 
 import java.io.File;
+import java.net.MalformedURLException;
 import java.util.concurrent.Executors;
 
 public class S3Utils {
@@ -41,7 +42,7 @@ public class S3Utils {
   /**
    * Create an S3Client from a configuration
    */
-  public static S3Client createS3Client(ConfigMap config) {
+  public static S3Client createS3Client(ConfigMap config) throws MalformedURLException {
     // TODO make retry count configurable
     int retryCount = 7;
 
