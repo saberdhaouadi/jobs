@@ -18,7 +18,7 @@ rec {
       workers = addOnDemandQueues {
         "c3.xlarge" = { number = 0; price = "0.625"; percentageSpot = "1.0"; onDemand = true; };
         "c3.xlarge-online" = { number = 1; price = "0.25"; percentageSpot = "0"; instanceType = "c3.xlarge"; };
-        "c3.2xlarge" = { number = 0; price = "1.25"; percentageSpot = "1.0"; max = "600"; maxDelta = "100"; percentageQueue = "1.0"; };
+        "c3.2xlarge" = { number = 0; price = "1.25"; percentageSpot = "1.0"; max = "650"; maxDelta = "100"; percentageQueue = "1.0"; };
         "c3.4xlarge" = { number = 0; price = "1.25"; percentageSpot = "1.0"; percentageQueue = "1.0"; min = "75"; maxDelta = "100"; };
         "r3.xlarge" = { number = 0; price = "0.40"; percentageSpot = "1.0"; max = "500"; };
         "r3.2xlarge" = { number = 0; price = "0.625"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "650"; onDemand = true; maxDelta = "100"; keyService = "https://54.167.63.233/keys"; diskSize = "10"; instanceType = "i3.2xlarge"; subnetId = "subnet-04b4129d5184e8a0f"; inherit securityGroup; };
