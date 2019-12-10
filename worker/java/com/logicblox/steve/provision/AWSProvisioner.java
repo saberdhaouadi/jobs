@@ -181,11 +181,10 @@ public class AWSProvisioner implements ProvisionerInterface {
 
     String getUserData() {
         return Base64.encodeBase64String(
-                String.format("WORKERARGS=\"--bucket %s --incoming %s --outgoing %s --key-service %s\"\nKEYSERVICE=\"%s\"",
+                String.format("WORKERARGS=\"--bucket %s --incoming %s --outgoing %s\"\nKEYSERVICE=\"%s\"",
                         cmdArgs.getS3Bucket(),
                         cmdArgs.getIncoming_url(),
                         cmdArgs.getOutgoing_url(),
-                        cmdArgs.getServiceUri(),
                         cmdArgs.getServiceUri()
                 ).getBytes()
         );

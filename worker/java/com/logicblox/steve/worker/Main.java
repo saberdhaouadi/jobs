@@ -116,7 +116,7 @@ public class Main {
   private static String _s3Endpoint = null;
   private static boolean _returnJob = false;
   private static boolean _shutdownOnIdle = false;
-  private static String _keyService = "http://127.0.0.1:8080/keys";
+  private static String _keyService = "https://keyserver.logicblox.com/keys";
 
   private String _jobTag = "unknown-account";
 
