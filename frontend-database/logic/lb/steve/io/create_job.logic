@@ -148,7 +148,7 @@ block(`create_job) {
       +proto:Param_value[p] != "true".
 
     // Check timeout value
-    +service_support:export_error(index, "INVALID_TIMEOUT", "Timeout should be between 0 and 40000 seconds.") <-
+    +service_support:export_error(index, "INVALID_TIMEOUT", "Timeout should be between 0 and 50500 seconds.") <-
       +proto:RequestEnvelope_request[_, index] = union,
       +proto:Request_create_job[union] = req,
       +proto:CreateJobRequest_metadata(req, qp),
@@ -158,8 +158,8 @@ block(`create_job) {
       +proto:Param_key[p] = "timeout",
       +proto:Param_value[p] = t,
       string:int:convert[t] = timeout,
-      (timeout < 0 ; timeout > 40000),
-      // For Walgreens, we allow timeouts > 40000s for the time being.
+      (timeout < 0 ; timeout > 50500),
+      // For Walgreens, we allow timeouts > 50500s for the time being.
       q != "i2-2xlarge",
       q != "i2-2xlarge-ondemand".
   })

@@ -62,7 +62,7 @@ public class Main {
       int error_count = 0;
 
       while (!Thread.currentThread().isInterrupted()) {
-        if ( System.currentTimeMillis() - start <= 40000000) {
+        if ( System.currentTimeMillis() - start <= 50500000) {
           try {
             sqs.changeMessageVisibility(_incomingUrl, _handle, 180);
             error_count = 0;
@@ -77,8 +77,8 @@ public class Main {
           }
         }
         else {
-          // For Walgreens, we allow timeouts > 40000s for the time being. We delete the message
-          // after 40000s, which means they lose the recoverability in case of instance termination.
+          // For Walgreens, we allow timeouts > 50500s for the time being. We delete the message
+          // after 50500s, which means they lose the recoverability in case of instance termination.
           // The timeout is only allowed for the i2-2xlarge queue, which uses on-demand instances
           // only, which means they do not suffer from spot instance termination, like other queues.
           try {
