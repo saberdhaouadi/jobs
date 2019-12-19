@@ -3,6 +3,7 @@
 , accountId ? "826045886586"
 , name
 , logToken ? ""
+, latestLb ? true
 }:
 let
   environments = import ./environments.nix;
@@ -100,7 +101,7 @@ let
 
   builds = import ../. { platform_release = builder-config.getLB (import ../lb-version.nix); };
   s3Name = "steve-jobs-${name}";
-  frontendConfig = pkgs.writeText "lb-steve-frontend.config" 
+  frontendConfig = pkgs.writeText "lb-steve-frontend.config"
     ''
       [global]
       jvm_dump_dir = /tmp
@@ -346,7 +347,7 @@ with pkgs.lib;
               "Effect": "Allow",
               "Resource": [ "*" ]
             },
-            { 
+            {
               "Action": [
                 "s3:Get*",
                 "s3:Put*",
@@ -361,7 +362,7 @@ with pkgs.lib;
     };
 
   resources.ec2SecurityGroups.frontend-sg =
-    let 
+    let
       entry = ip:
         {
           fromPort = 443;
@@ -567,7 +568,7 @@ with pkgs.lib;
             - host: 127.0.0.1
               name: jmx_instance
               port: 7199
- 
+
           init_config:
             conf:
               - include:
@@ -626,6 +627,17 @@ with pkgs.lib;
         '';
         startAt = "*:15";
       };
+
+      systemd.services.add-latest-lb-version = {
+        enable = latestLb;
+        description = "Add support for the latest LogicBlox versions in the LB Jobs cluster.";
+        script = ''
+          source /etc/profile
+          /run/current-system/sw/bin/update-lb-versions
+        '';
+        startAt = "Mon,Thu 04:00";
+      };
+
 
       fileSystems."/data" =
         { autoFormat = true;
@@ -800,7 +812,7 @@ with pkgs.lib;
             - host: 127.0.0.1
               name: jmx_instance
               port: 7199
- 
+
           init_config:
             conf:
               - include:
@@ -810,7 +822,7 @@ with pkgs.lib;
                   domain: java.lang
                   type: GarbageCollector
           '';
- 
+
       services.dd-agent.nginxConfig = ''
         init_config:
         instances:
