@@ -1078,7 +1078,7 @@ with pkgs.lib;
 
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/nixos/local-modules/freeipa.nix> <lbdevops/nixos/base/user-env.nix> ];
+    { imports = [ <lbdevops/nixos/local-modules/freeipa.nix> <lbdevops/nixos/base/user-env.nix> <lbdevops/logicblox/config/logging/rsyslogd.nix> ];
       #imports = [ <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"
