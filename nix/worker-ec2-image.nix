@@ -90,7 +90,7 @@
 
         diskForUnionfs=/disk0
         echo "Creating ext4 filesystem on /dev/dm-0"
-        mke2fs -t ext4 /dev/dm-0
+        mke2fs -F -t ext4 /dev/dm-0
         echo "Mounting /dev/dm-0 to $diskForUnionfs"
         mountFS /dev/dm-0 $diskForUnionfs "" ext4
 
