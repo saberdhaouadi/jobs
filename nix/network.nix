@@ -9,6 +9,7 @@
 , gcpProject                     # (required) GCE project to deploy to
 #, serviceAccount                 # (required) GCE service account email
 , accessKey                      # (required) path to GCE Access Key
+, latestLb ? true
 ,...
 }:
 let
@@ -844,6 +845,18 @@ with pkgs.lib;
         '';
         startAt = "*:15";
       };
+
+      systemd.services.add-latest-lb-version = {
+        enable = latestLb;
+        description = "Add support for the latest LogicBlox versions in the LB Jobs cluster.";
+        script = ''
+          source /etc/profile
+          /run/current-system/sw/bin/update-lb-versions
+        '';
+        startAt = "Mon,Thu 04:00";
+      };
+
+
 
       fileSystems."/data" =
         { autoFormat = true;
