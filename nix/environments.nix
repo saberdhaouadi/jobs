@@ -64,7 +64,7 @@ rec {
       inherit (prod) workers;
       spotfleetRole = "arn:aws:iam::202226491534:role/aws-ec2-spot-fleet-role";
       region = {
-          "us-east-1" = { securityGroupsIDs = ["sg-4daea13f"]; Subnets = ["subnet-7451b329" "subnet-883299c3" "subnet-99ce6ea6" "subnet-b850b997" ]; s3-amis = "ami-01bd7cd6594a1816f"; ebs-amis = "ami-0142865c78c1ca071";};
+          "us-east-1" = { securityGroupsIDs = ["sg-4daea13f"]; Subnets = ["subnet-7451b329" "subnet-883299c3" "subnet-99ce6ea6" "subnet-b850b997" ]; s3-amis = "ami-07184a7650460d6db"; ebs-amis = "ami-0d246ae35f95bd215";};
           "us-east-2" = { securityGroupsIDs = ["sg-c6cbb6ae"]; Subnets = ["subnet-ce3b63b5" "subnet-23c4df4a" "subnet-f01983bd"]; s3-amis = "ami-0144a27be0cbec24f"; ebs-amis = "ami-05f8c29b555607ada"; };
           "us-west-1" = { securityGroupsIDs = ["sg-80237be6"]; Subnets = ["subnet-2e933749" "subnet-8639d3dd"]; s3-amis = "ami-079f6b5eade1739d0"; ebs-amis = "ami-07824e380e946b56d";};
           "us-west-2" = { securityGroupsIDs = ["sg-13527a6e"]; Subnets = ["subnet-406f6268" "subnet-7424102f" "subnet-95149cdd" "subnet-fc43289a"]; s3-amis = "ami-0152d71b5816141c5"; ebs-amis = "ami-0f51cf8d09df06b3d";};
