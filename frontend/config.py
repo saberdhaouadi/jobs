@@ -37,7 +37,6 @@ else:
 classpath = [
   '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.560.jar',      
   '$(protocols)/lib/java/lb-steve-protocols.jar',
-
   '$(lb_web)/lib/java/annotations.jar',
   '$(lb_web)/lib/java/bloxweb-credentials.jar',
   '$(lb_web)/lib/java/bloxweb-email.jar',
@@ -65,12 +64,8 @@ classpath = [
   '$(lb_web)/lib/java/google-http-client-jackson2-1.19.0.jar',
   '$(lb_web)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
   '$(lb_web)/lib/java/google-oauth-client-1.19.0.jar',
-
   '$(lb_web)/lib/java/cloudstore-0.2.jar',
   '$(logicblox)/lib/java/commons-io-2.4.jar',
-
-
-
   '$(lb_web)/lib/java/httpclient-4.5.2.jar',
   '$(lb_web)/lib/java/httpcore-4.4.4.jar',
   '$(lb_web)/lib/java/jackson-annotations-2.6.0.jar',
@@ -101,7 +96,6 @@ classpath = [
   '$(lb_web)/lib/java/stax-api-1.0-2.jar',
   '$(lb_web)/lib/java/woodstox-core-asl-4.4.1.jar',
   '$(lb_web)/lib/java/xmlsec-2.0.5.jar',
-
   '$(commons_cli)/lib/java/commons-cli.jar'
 ]
 

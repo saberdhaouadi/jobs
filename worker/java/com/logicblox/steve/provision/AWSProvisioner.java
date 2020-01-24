@@ -25,75 +25,27 @@ public class AWSProvisioner implements ProvisionerInterface {
     CommandLineArguments cmdArgs;
 
     public void createSpotInstances(int nr) {
-        /*System.err.println(String.format("Creating %d spot instances", nr));
-
-        if (cmdArgs.isDryRun())
-            return;
-
-        RequestSpotInstancesRequest req = new RequestSpotInstancesRequest();
-        req.setInstanceCount(nr);
-        req.setSpotPrice(Double.toString(cmdArgs.getSpotPrice()));
-        LaunchSpecification spec = new LaunchSpecification();
-        spec.setImageId(cmdArgs.getAmi());
-        spec.setInstanceType(cmdArgs.getInstanceType());
-        spec.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(cmdArgs.getRole()));
-        spec.setKeyName(cmdArgs.getKey());
-        spec.setUserData(getUserData());
-
-        if(cmdArgs.getSubnetId() == null) {
-            Collection<String> groups = new ArrayList<String>();
-            groups.add(cmdArgs.getSecurityGroup());
-            spec.setSecurityGroups(groups);
-        } else {
-            Collection<GroupIdentifier> groups = new ArrayList<GroupIdentifier>();
-            groups.add(new GroupIdentifier().withGroupId(cmdArgs.getSecurityGroup()));
-            spec.setAllSecurityGroups(groups);
-        }
-
-        if(cmdArgs.getSubnetId() != null) {
-            spec.setSubnetId(cmdArgs.getSubnetId());
-        }
-        if(cmdArgs.getDiskSize() != 0) {
-            BlockDeviceMapping blockDeviceMapping = new BlockDeviceMapping();
-            blockDeviceMapping.setDeviceName("/dev/sda1");
-
-            EbsBlockDevice ebs = new EbsBlockDevice();
-            ebs.setVolumeSize(cmdArgs.getDiskSize());
-            blockDeviceMapping.setEbs(ebs);
-
-            ArrayList<BlockDeviceMapping> blockList = new ArrayList<BlockDeviceMapping>();
-            blockList.add(blockDeviceMapping);
-
-            spec.setBlockDeviceMappings(blockList);
-        }
-
-        req.setLaunchSpecification(spec);
-
-        RequestSpotInstancesResult res = ec2.requestSpotInstances(req);
-        try {
-            Thread.sleep(60000);
-        } catch (Exception e) {
-        }
-        for (SpotInstanceRequest sir : res.getSpotInstanceRequests()) {
-            createTags(sir.getSpotInstanceRequestId());
-        }*/
-       
-        
-        //*************** Spot fleet *******************
 
         System.err.println(String.format("Creating %d spot instances", nr));
 
         List<String> SubnetsList = Arrays.asList(cmdArgs.getSubnets().split("\\s*/\\s*"));
         Collection<Tag> tags = new ArrayList<Tag>();
         Collection<SpotFleetTagSpecification> tagspeclist = new ArrayList<SpotFleetTagSpecification>();
-        //Collection<groupidentifier> identgroups = new ArrayList<groupidentifier>();
         tags.add(new Tag("Name", String.format("Worker [%s]", cmdArgs.getS3Bucket())));
         tags.add(new Tag("S3Bucket", cmdArgs.getS3Bucket()));
         tags.add(new Tag("IncomingQueue", cmdArgs.getIncoming_url()));
         tags.add(new Tag("OutgoingQueue", cmdArgs.getOutgoing_url()));
 
         System.out.println(SubnetsList);
-
+        /*
+        //Getting admin security group Id
+        DescribeSecurityGroupsRequest securitygroupsrequest = new DescribeSecurityGroupsRequest().withGroupNames(cmdArgs.getSecGrpId());
+        DescribeSecurityGroupsResult securitygroupsresult = ec2.describeSecurityGroups(securitygroupsrequest);
+        Collection <SecurityGroup> adminsecuritygroups = securitygroupsresult.getSecurityGroups();
+        for (SecurityGroup g : adminsecuritygroups) {
+          System.out.println(String.format("List of Admin security", g));
+        }
+        */
         if (cmdArgs.isDryRun())
         return;
 
@@ -107,10 +59,8 @@ public class AWSProvisioner implements ProvisionerInterface {
         fleetconfig.setTargetCapacity(nr);
         fleetconfig.setType("request");
 
-        //fleetconfig.setAllocationStrategy("diversified");
         fleetconfig.setAllocationStrategy("capacityOptimized");    
         
-
         Collection<SpotFleetLaunchSpecification> LaunchSpecs = new ArrayList<SpotFleetLaunchSpecification>();
        
         GroupIdentifier groupidf = new GroupIdentifier();
@@ -140,110 +90,23 @@ public class AWSProvisioner implements ProvisionerInterface {
          IamInstanceProfileSpecification profilespec = new IamInstanceProfileSpecification();
          profilespec.setName(cmdArgs.getRole());
          fleetspec.setIamInstanceProfile(profilespec);
-
          fleetspec.setSecurityGroups(identgroups);
-
          fleetspec.setTagSpecifications(tagspeclist);
-
          LaunchSpecs.add(fleetspec);
 
         }
         
         fleetconfig.setLaunchSpecifications(LaunchSpecs);
-
         request.setSpotFleetRequestConfig(fleetconfig);
-
         RequestSpotFleetResult response = ec2.requestSpotFleet(request);
-            
         String fleetID = response.getSpotFleetRequestId();
-
-       //int result = 0;
-
-        try {
-
-        Thread.sleep(10000);
-
-        } catch (Exception e) {
-
-        }
-
         System.out.println(String.format("Spot fleet request ID %s",fleetID));
 
-    
-    //********************EC2fleet code*************************
-  
-        /*CreateFleetRequest fleetreq = new CreateFleetRequest();
-
-       //capacity
-       TargetCapacitySpecificationRequest targetcapacity = new TargetCapacitySpecificationRequest();
-       targetcapacity.setDefaultTargetCapacityType("spot");
-       targetcapacity.setTotalTargetCapacity(nr);
-       fleetreq.setTargetCapacitySpecification(targetcapacity);
-
-       //requestType
-       fleetreq.setType("request");
-
-       fleetreq.setTerminateInstancesWithExpiration(true);
-
-       //spot config
-       SpotOptionsRequest spotopt = new SpotOptionsRequest() ;
-       spotopt.setAllocationStrategy("diversified");
-       //spotopt.setAllocationStrategy("lowestPrice");
-       //spotopt.setInstancePoolsToUseCount(3);
-
-       fleetreq.setSpotOptions(spotopt);
-
-       //tagging
-       Collection<TagSpecification> tagSpecifications = new ArrayList<TagSpecification>();
-       TagSpecification tagspec = new TagSpecification();
-       tagspec.setResourceType("instance");
-       tagspec.setTags(tags);
-       tagSpecifications.add(tagspec);
-       fleetreq.setTagSpecifications(tagSpecifications);
-
-       //launch template
-       Collection<FleetLaunchTemplateConfigRequest> fleetlaunchConfReqs = new ArrayList<FleetLaunchTemplateConfigRequest>();
-
-       FleetLaunchTemplateConfigRequest fleettempconf = new FleetLaunchTemplateConfigRequest() ;
-
-       FleetLaunchTemplateSpecificationRequest launchTempSpec = new FleetLaunchTemplateSpecificationRequest();
-
-       launchTempSpec.setLaunchTemplateId("lt-059e1e3a4dc07d519");
-       //launchTempSpec.setVersion(1);
-
-       fleettempconf.setLaunchTemplateSpecification(launchTempSpec);
-
-       //launch template overrides
-       Collection<FleetLaunchTemplateOverridesRequest> tempoverrides = new ArrayList<FleetLaunchTemplateOverridesRequest>();
-       for (String sb : SubnetsList)
-       {     
-        FleetLaunchTemplateOverridesRequest launchoverride = new FleetLaunchTemplateOverridesRequest();
-        launchoverride.setInstanceType(cmdArgs.getInstanceType());
-        launchoverride.setSubnetId(sb);
-        launchoverride.setMaxPrice(Double.toString(cmdArgs.getSpotPrice()));
-
-        tempoverrides.add(launchoverride); 
-    
-       }
-       fleettempconf.setOverrides(tempoverrides);
-       fleetlaunchConfReqs.add(fleettempconf);
-       fleetreq.setLaunchTemplateConfigs(fleetlaunchConfReqs);
-       
-       CreateFleetResult fleetresponse =ec2.createFleet(fleetreq);
-
-       String fleetID = fleetresponse.getFleetId();
-
-        try {
-        Thread.sleep(30000);
-      } catch (Exception e) {
-      }
-       System.out.println(String.format("EC2 fleet request ID %s",fleetID)); */ 
-          
+        //TODO: Work on EC2fleet code
     }
 
     public void createOnDemandInstances(int nr) {
         System.err.println(String.format("Creating %d on-demand instances", nr));
-
         if (cmdArgs.isDryRun())
             return;
 
@@ -265,7 +128,6 @@ public class AWSProvisioner implements ProvisionerInterface {
             groups.add(cmdArgs.getSecurityGroup());
             req.setSecurityGroupIds(groups);
         }
-
         if(cmdArgs.getSubnetId() != null) {
             req.setSubnetId(cmdArgs.getSubnetId());
         }
@@ -289,11 +151,9 @@ public class AWSProvisioner implements ProvisionerInterface {
             Thread.sleep(60000);
         } catch (Exception e) {
         }
-
         for (Instance instance : res.getReservation().getInstances()) {
             createTags(instance.getInstanceId());
         }
-
     }
 
     // get number of on-demand instances that are not yet terminated
@@ -321,26 +181,7 @@ public class AWSProvisioner implements ProvisionerInterface {
 
     // get number of spot instances that are not yet terminated
    public int getNumberOfCurrentSpotInstances() {
-       /* int result = 0;
-
-        for(Regions region: regions) {
-            AmazonEC2Client _ec2 = new AmazonEC2Client();
-            _ec2.setRegion(Region.getRegion(region));
-
-            DescribeSpotInstanceRequestsRequest spreq = new DescribeSpotInstanceRequestsRequest()
-                    .withFilters(
-                            new Filter().withName("tag:S3Bucket").withValues(cmdArgs.getS3Bucket()),
-                            new Filter().withName("tag:IncomingQueue").withValues(cmdArgs.getIncoming_url()),
-                            new Filter().withName("tag:OutgoingQueue").withValues(cmdArgs.getOutgoing_url()),
-                            new Filter().withName("state").withValues("open", "active")
-                    );
-            DescribeSpotInstanceRequestsResult spres = _ec2.describeSpotInstanceRequests(spreq);
-            for (SpotInstanceRequest r : spres.getSpotInstanceRequests()) {
-                result++;
-            }
-        }
-        return result;*/
-        /////new spot instances count
+        //New spot instances count
         int result = 0;
         DescribeInstancesRequest req = null;
         try {
@@ -356,15 +197,13 @@ public class AWSProvisioner implements ProvisionerInterface {
 
         DescribeInstancesResult res = ec2.describeInstances(req);
         for (Reservation r : res.getReservations()) {
-        for (Instance i : r.getInstances()) {
-        if (!i.getState().getName().equals("terminated") && i.getInstanceLifecycle().equals("spot") == true) {
-            result++;
-          }
+            for (Instance i : r.getInstances()) {
+                if (!i.getState().getName().equals("terminated") && i.getInstanceLifecycle().equals("spot") == true) {
+                   result++;
+                }
+            }
         }
-      }
-      return result;
-
-        
+      return result;    
     }
 
     String getUserData() {

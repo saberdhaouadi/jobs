@@ -19,17 +19,13 @@ let
  
   amis = import ./amis.nix;
 
-  dev-ips = import ./dev-ips.nix;
-  devips =  dev-ips.dev;  
-
-  prod-ips = import ./prod-ips.nix;
-  prodips = prod-ips.prod;
-
-  nat-gateways-ips = import ./nat-ips.nix;
-  natips = nat-gateways-ips.nat;
+  devips = import ./dev-ips.nix;  
+  prodips = import ./prod-ips.nix;
+  natips = import ./nat-ips.nix;
 
   dep-region = env.region;
   google-nat-ip = env.google-nat-elastic-ip;
+  #googlename =''testing'';  
 
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
@@ -43,6 +39,16 @@ let
   pkgs = import <nixpkgs> { config.allowUnfree = true; config.allowBroken = true; };
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
+  
+  cloudwatchpolicy = ''
+    { "Action": [ "cloudwatch:PutMetricData",
+                  "cloudwatch:GetMetricStatistics",
+                  "cloudwatch:ListMetrics",
+                  "ec2:DescribeTags"],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+   ''; 
 
   instanceProfileArn = name: "arn:aws:iam::${accountId}:instance-profile/${name}";
 
@@ -224,42 +230,6 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
-            },
-            {
-              "Action": [
-                "sqs:ListQueues"
-              ],
-              "Effect": "Allow",
-              "Resource": [ "*" ]
-            },
-            {
-              "Action": [
-                "cloudwatch:PutMetricData"
-              ],
-                 "Effect": "Allow",
-                 "Resource": "*"
-            },
-            {
-              "Action": [
-                "cloudwatch:GetMetricStatistics"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            },
-            {
-              "Action": [
-                "cloudwatch:ListMetrics"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            },
-            {
-              "Action": [
-                "ec2:DescribeTags"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-  
             }
           ]
         }
@@ -273,34 +243,7 @@ with pkgs.lib;
        policy = ''
          {
            "Statement": [
-             {
-                  "Action": [
-                    "cloudwatch:PutMetricData"
-                  ],
-                  "Effect": "Allow",
-                  "Resource": "*"
-                },
-                {
-                  "Action": [
-                   "cloudwatch:GetMetricStatistics"
-                  ],
-                  "Effect": "Allow",
-                  "Resource": "*"
-                },
-                {
-                  "Action": [
-                   "cloudwatch:ListMetrics"
-                  ],
-                  "Effect": "Allow",
-                  "Resource": "*"
-                },
-                {
-                  "Action": [
-                    "ec2:DescribeTags"
-                  ],
-                   "Effect": "Allow",
-                   "Resource": "*"
-                }
+             ${cloudwatchpolicy}
            ]
          }
        '';
@@ -341,34 +284,7 @@ with pkgs.lib;
                 "arn:aws:s3:::${s3Name}/*"
               ]
             },
-            {
-              "Action": [
-                "cloudwatch:PutMetricData"
-               ],
-               "Effect": "Allow",
-               "Resource": "*"
-             },
-             {
-             "Action": [
-                   "cloudwatch:GetMetricStatistics"
-               ],
-             "Effect": "Allow",
-             "Resource": "*"
-             },
-             {
-             "Action": [
-              "cloudwatch:ListMetrics"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-             },
-             {
-              "Action": [
-               "ec2:DescribeTags"
-              ],
-               "Effect": "Allow",
-               "Resource": "*"
-             }
+            ${cloudwatchpolicy}
           ]
         }
       '';
@@ -417,34 +333,7 @@ with pkgs.lib;
               "Effect": "Allow",
               "Resource": [ "*" ]
             },
-            {
-             "Action": [
-               "cloudwatch:PutMetricData"
-             ],
-             "Effect": "Allow",
-             "Resource": "*"
-            },
-            {
-             "Action": [
-              "cloudwatch:GetMetricStatistics"
-             ],
-             "Effect": "Allow",
-             "Resource": "*"
-            },
-            {
-             "Action": [
-               "cloudwatch:ListMetrics"
-             ],
-             "Effect": "Allow",
-             "Resource": "*"
-            },
-            {
-             "Action": [
-              "ec2:DescribeTags"
-             ],
-             "Effect": "Allow",
-             "Resource": "*"
-            }
+            ${cloudwatchpolicy}
           ]
         }
       '';
@@ -493,34 +382,7 @@ with pkgs.lib;
               "Effect": "Allow",
               "Resource": [ "*" ]
             },
-            {
-              "Action": [
-               "cloudwatch:PutMetricData"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            },
-            {
-              "Action": [
-               "cloudwatch:GetMetricStatistics"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            },
-            {
-              "Action": [
-               "cloudwatch:ListMetrics"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            },
-            {
-              "Action": [
-              "ec2:DescribeTags"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            }
+            ${cloudwatchpolicy}
           ]
         }
       '';
@@ -573,7 +435,6 @@ with pkgs.lib;
  
     resources.ec2SecurityGroups.key-server-nats-sg =
     let
-
       entry = ip:
       {
         fromPort = 443;
@@ -581,13 +442,13 @@ with pkgs.lib;
         sourceIp = "${ip}/32";
       } ;
       ips = natips;
-        accountEntry = account:
-        {
-          fromPort = 443;
-          toPort = 443;
-          sourceGroup.ownerId = account;
-          sourceGroup.groupName = "admin";
-        };
+      accountEntry = account:
+      {
+        fromPort = 443;
+        toPort = 443;
+        sourceGroup.ownerId = account;
+        sourceGroup.groupName = "admin";
+      };
     in
       { config, resources, ... }:
       {
@@ -607,7 +468,7 @@ with pkgs.lib;
           source /etc/profile
           exec lb-steve-provisioner $@ \
                  --region ${r} \
-                 --ami ${if env.workers."${t}" ? ami then env.workers."${t}".ami else (if env.workers."${t}" ? diskSize then dep-region.${r}.ebs-amis else dep-region.${r}.s3-amis)} \
+                 --ami ${if env.workers."${t}" ? ami then env.workers."${t}".ami else (if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3)} \
                  --key-service https://${if r == region then nodes."key-server-${name}".config.networking.privateIPv4 else env.key-server-elastic-ip}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
@@ -631,7 +492,7 @@ with pkgs.lib;
                  --security-group-ids ${if r != "us-central1-f" then concatStrings dep-region.${r}.securityGroupsIDs else "test"} \
                  --spotfleet-role ${env.spotfleetRole}
         '';
-      provisionScripts = lib.concatMap (  r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
+      provisionScripts = lib.concatMap (  r: map (i: script i r) instanceTypes) (builtins.attrNames dep-region);
       run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or region )}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
@@ -1036,7 +897,7 @@ with pkgs.lib;
       '';
     };
 
-  "google-nat-asamti" =
+  "google-nat-${name}" =
     { config, pkgs, resources, lib, ... }:
     let
     in
@@ -1048,8 +909,7 @@ with pkgs.lib;
       accessKey = builtins.readFile accessKey;
       canIpForward = true;
       region =  "us-central1-a";
-      # ipAddress = "35.188.70.240";
-      ipAddress = google-nat-ip;
+      #ipAddress = google-nat-ip;
     };
      networking.nat.enable = true;
     };
@@ -1060,8 +920,7 @@ with pkgs.lib;
     project = gcpProject;
     serviceAccount = "716753782997-compute@developer.gserviceaccount.com";
     accessKey = builtins.readFile accessKey;
-    #nextHop = resources.machines."google-nat-${name}";
-    nextHop = resources.machines."google-nat-asamti";
+    nextHop = resources.machines."google-nat-${name}";
     tags =  [ "worker" ];
   };
 
@@ -1071,15 +930,16 @@ with pkgs.lib;
     project = gcpProject;
     serviceAccount = "716753782997-compute@developer.gserviceaccount.com";
     accessKey = builtins.readFile accessKey;
-    #nextHop = resources.machines."google-nat-${name}";
-    nextHop = resources.machines."google-nat-asamti";
+    nextHop = resources.machines."google-nat-${name}";
     tags =  [ "worker" ];
   };
 
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/nixos/local-modules/freeipa.nix> <lbdevops/nixos/base/user-env.nix> <lbdevops/logicblox/config/logging/rsyslogd.nix> ];
-      #imports = [ <lbdevops/nixos/local-modules/cloudwatch.nix> ];
+    { imports = [ <lbdevops/nixos/local-modules/freeipa.nix>
+                  <lbdevops/nixos/base/user-env.nix>
+                  <lbdevops/logicblox/config/logging/rsyslogd.nix>
+                  <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"
           "uuid:${config.deployment.uuid}"
