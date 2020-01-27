@@ -19,6 +19,7 @@ let
   instanceTypes = builtins.attrNames env.workers;
  
   amis = import ./amis.nix;
+  bootstrap-images = import ./bootstrap-images.nix;
 
   devips = import ./dev-ips.nix;  
   prodips = import ./prod-ips.nix;
@@ -469,7 +470,7 @@ with pkgs.lib;
           source /etc/profile
           exec lb-steve-provisioner $@ \
                  --region ${r} \
-                 --ami ${if env.workers."${t}" ? ami then env.workers."${t}".ami else (if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3)} \
+                 --ami ${bootstrap-images."${r}" or (if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3)} \
                  --key-service https://${if r == region then nodes."key-server-${name}".config.networking.privateIPv4 else env.key-server-elastic-ip}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
@@ -489,8 +490,8 @@ with pkgs.lib;
                  --min ${env.workers."${t}".min or "0"}\
                  --backend ${env.workers."${t}".backend or "aws"} \
                  --project ${env.workers."${t}".project or "project"} \
-                 --deployment-subnets ${if r != "us-central1-f" then concatStringsSep "/" dep-region.${r}.Subnets else "test"} \
-                 --security-group-ids ${if r != "us-central1-f" then concatStrings dep-region.${r}.securityGroupsIDs else "test"} \
+                 --deployment-subnets ${if bootstrap-images ? "${r}" then "test" else concatStringsSep "/" dep-region.${r}.Subnets} \
+                 --security-group-ids ${if bootstrap-images ? "${r}" then "test" else concatStrings dep-region.${r}.securityGroupsIDs} \
                  --spotfleet-role ${env.spotfleetRole}
         '';
       provisionScripts = lib.concatMap (  r: map (i: script i r) instanceTypes) (builtins.attrNames dep-region);
