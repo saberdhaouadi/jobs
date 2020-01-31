@@ -6,3 +6,4 @@
   us-west-1.s3 = "ami-ee545b8e";
   us-west-2.s3 = "ami-ab1ea5d3";
 }
+

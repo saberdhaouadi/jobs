@@ -518,7 +518,7 @@ with pkgs.lib;
           source /etc/profile
           exec lb-steve-provisioner $@ \
                  --region ${r} \
-                 --ami ${if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3} \
+                 --ami ${if env.workers."${t}" ? ami then env.workers."${t}".ami else (if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3)} \
                  --key-service ${env.workers."${t}".keyService or "https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys"} \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
