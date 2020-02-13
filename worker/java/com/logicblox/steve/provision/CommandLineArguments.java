@@ -33,9 +33,6 @@ public class CommandLineArguments {
     private static int diskSize = 0;
 
     private static String spotFleetRole = "arn:aws:iam::826045886586:role/aws-ec2-spot-fleet-role";
-    private static String subnets = "";
-    private static String secGrpId = "";
-
 
     public static String getQueue() {
         return queue;
@@ -236,21 +233,4 @@ public class CommandLineArguments {
     public static void setSpotFleetRole(String spotFleetRole) {
         CommandLineArguments.spotFleetRole = spotFleetRole;
     }
-
-    public static String getSubnets() {
-        return  subnets;
-    }
- 
-    public static void setSubnets(String subnets) {
-        CommandLineArguments.subnets = subnets;
-    }
-
-    public static String getSecGrpId() {
-        return  secGrpId;
-    }
- 
-    public static void setSecGrpId(String secGrpId) {
-        CommandLineArguments.secGrpId = secGrpId;
-    }
-
 }

@@ -27,8 +27,8 @@ public class AWSProvisioner implements ProvisionerInterface {
     public void createSpotInstances(int nr) {
 
         System.err.println(String.format("Creating %d spot instances", nr));
+        String workersvpcId = "";
 
-        List<String> SubnetsList = Arrays.asList(cmdArgs.getSubnets().split("\\s*/\\s*"));
         Collection<Tag> tags = new ArrayList<Tag>();
         Collection<SpotFleetTagSpecification> tagspeclist = new ArrayList<SpotFleetTagSpecification>();
         tags.add(new Tag("Name", String.format("Worker [%s]", cmdArgs.getS3Bucket())));
@@ -36,16 +36,36 @@ public class AWSProvisioner implements ProvisionerInterface {
         tags.add(new Tag("IncomingQueue", cmdArgs.getIncoming_url()));
         tags.add(new Tag("OutgoingQueue", cmdArgs.getOutgoing_url()));
 
-        System.out.println(SubnetsList);
-        /*
+        DescribeVpcsRequest vpcsrequest = new DescribeVpcsRequest().withFilters(new Filter().withName("tag:Name").withValues("Workers VPC"));
+        DescribeVpcsResult vpcsresult = ec2.describeVpcs(vpcsrequest);
+        List<Vpc> vpcresults = vpcsresult.getVpcs();
+        for (Vpc v : vpcresults) {
+          workersvpcId = v.getVpcId();
+          System.out.println(workersvpcId);
+        }
+
+        List<String> WorkersSubnetsList = new ArrayList<String>();
+        DescribeSubnetsRequest subnetsrequest = new DescribeSubnetsRequest()
+                    .withFilters(
+                            new Filter().withName("vpc-id").withValues(workersvpcId),
+                            new Filter().withName("tag:Name").withValues("workers")
+                    );
+        DescribeSubnetsResult subnetsresult = ec2.describeSubnets(subnetsrequest);
+        List<Subnet> workerssubnets = subnetsresult.getSubnets();
+        for (Subnet sub : workerssubnets) {
+            WorkersSubnetsList.add(sub.getSubnetId());
+          }
+        System.out.println(WorkersSubnetsList);
+
         //Getting admin security group Id
-        DescribeSecurityGroupsRequest securitygroupsrequest = new DescribeSecurityGroupsRequest().withGroupNames(cmdArgs.getSecGrpId());
+        DescribeSecurityGroupsRequest securitygroupsrequest = new DescribeSecurityGroupsRequest().withGroupNames(cmdArgs.getSecurityGroup());
         DescribeSecurityGroupsResult securitygroupsresult = ec2.describeSecurityGroups(securitygroupsrequest);
         Collection <SecurityGroup> adminsecuritygroups = securitygroupsresult.getSecurityGroups();
+        GroupIdentifier groupidf = new GroupIdentifier();
         for (SecurityGroup g : adminsecuritygroups) {
-          System.out.println(String.format("List of Admin security", g));
+            groupidf.setGroupId(g.getGroupId());
         }
-        */
+
         if (cmdArgs.isDryRun())
         return;
 
@@ -59,25 +79,21 @@ public class AWSProvisioner implements ProvisionerInterface {
         fleetconfig.setTargetCapacity(nr);
         fleetconfig.setType("request");
 
-        fleetconfig.setAllocationStrategy("capacityOptimized");    
-        
+        fleetconfig.setAllocationStrategy("capacityOptimized");
+
         Collection<SpotFleetLaunchSpecification> LaunchSpecs = new ArrayList<SpotFleetLaunchSpecification>();
-       
-        GroupIdentifier groupidf = new GroupIdentifier();
-        groupidf.setGroupId(cmdArgs.getSecGrpId());
 
         Collection<GroupIdentifier> identgroups = new ArrayList<GroupIdentifier>();
         identgroups.add(groupidf);
-        
 
         SpotFleetTagSpecification fleettagsspec = new SpotFleetTagSpecification();
         fleettagsspec.setTags(tags);
         fleettagsspec.setResourceType("instance");
-        tagspeclist.add(fleettagsspec);       
+        tagspeclist.add(fleettagsspec);
 
-        for (String sp : SubnetsList)
+        for (String sp : WorkersSubnetsList)
 
-        {       
+        {
          SpotFleetLaunchSpecification fleetspec = new SpotFleetLaunchSpecification();
 
          //fix user data
@@ -95,13 +111,12 @@ public class AWSProvisioner implements ProvisionerInterface {
          LaunchSpecs.add(fleetspec);
 
         }
-        
+
         fleetconfig.setLaunchSpecifications(LaunchSpecs);
         request.setSpotFleetRequestConfig(fleetconfig);
         RequestSpotFleetResult response = ec2.requestSpotFleet(request);
         String fleetID = response.getSpotFleetRequestId();
         System.out.println(String.format("Spot fleet request ID %s",fleetID));
-
         //TODO: Work on EC2fleet code
     }
 
@@ -203,7 +218,7 @@ public class AWSProvisioner implements ProvisionerInterface {
                 }
             }
         }
-      return result;    
+      return result;
     }
 
     String getUserData() {

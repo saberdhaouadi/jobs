@@ -176,7 +176,7 @@ in
         ({
           name = "Queued builds (${q}/${name}) longer than ${toString queuedThreshold}s";
           type = "metric alert";
-          message = "@lb-jobs@logicblox.com @opsgenie-lb_jobs @DL-PDX-OpsSystemSupport@infor.com";
+          message = "@DL-PDX-OpsSystemSupport@infor.com";
           query = "avg(last_5m):max:lb.steve.queued_time.${dash-to-underscore q}.max{host:database-${name}} > ${toString queuedThreshold}";
           monitorOptions = builtins.toJSON {
             no_data_timeframe = 10;

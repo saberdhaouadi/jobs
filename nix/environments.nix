@@ -18,7 +18,7 @@ rec {
       google-nat-elastic-ip = "";
       workers = addOnDemandQueues {
         "c3.xlarge" = { number = 0; price = "0.25"; percentageSpot = "1.0"; onDemand = true; };
-        "n1-standard-2" = { number = 0; price = "0.25"; percentageSpot = "1.0"; onDemand = false; instanceType = "n1-standard-2"; backend ="gcp"; defaultRegion = "us-central1-f"; project = "manifest-canto-796";};
+        "n1-standard-2" = { number = 0; price = "0.25"; percentageSpot = "1.0"; onDemand = false; instanceType = "n1-standard-2"; backend ="gcp"; defaultRegion = "us-central1-f"; project = "lb-jobs";};
         #"c3.xlarge-online" = { number = 1; price = "0.25"; percentageSpot = "0"; instanceType = "c3.xlarge"; };
         "c3.2xlarge" = { number = 0; price = "0.25"; percentageSpot = "1.0"; max = "500"; maxDelta = "100"; percentageQueue = "1.0"; };
         "c3.4xlarge" = { number = 0; price = "0.84"; percentageSpot = "1.0"; percentageQueue = "1.0"; min = "75"; maxDelta = "100"; };
@@ -36,22 +36,10 @@ rec {
         "i3.xlarge" = { number = 0; price = "0.312"; percentageSpot = "1.0"; percentageQueue = "1.0"; max = "200"; min = "75"; diskSize = "10";};
       };
      region = {
-          "us-east-1" = { vpcID = ""; 
-                          securityGroupsIDs = ["sg-0c2e6ec0b43370a41"]; 
-                          Subnets = ["subnet-08b8db33704bbbb8b" "subnet-063462c1d875f2d0f" "subnet-0a827b78d9497e579" "subnet-0d0c56d1c1439c527" "subnet-0d84a23d487ca13e9" "subnet-0465f94bf0b58b02d"];
-                        };
-          "us-east-2" = { vpcID = "";
-                          securityGroupsIDs = ["sg-05cbec8d1f38ef449"];
-                          Subnets = ["subnet-a61d13de" "subnet-a78a7ece" "subnet-e7250bad"];
-                        };
-          "us-west-1" = { vpcID = "";
-                          securityGroupsIDs = [];
-                          Subnets = [];
-                        };
-          "us-west-2" = { vpcID = "";
-                          securityGroupsIDs = ["sg-06cc07f1e42fb423e"]; 
-                          Subnets = ["subnet-0bca92cc49a00de8f" "subnet-09902f91c13df8ea3" "subnet-022f7226559497063" "subnet-0382caf37bde1ca84"];
-                        };
+          "us-east-1" = {};
+          "us-east-2" = {};
+          "us-west-1" = {};
+          "us-west-2" = {};
           "us-central1-f" = {};
              };
      spotfleetRole = "arn:aws:iam::826045886586:role/aws-ec2-spot-fleet-role";
@@ -73,36 +61,18 @@ rec {
       key-server-elastic-ip = "34.232.108.153";
       google-nat-elastic-ip = "nat-eip";
       inherit (prod) workers;
+      inherit (prod) region;
       spotfleetRole = "arn:aws:iam::202226491534:role/aws-ec2-spot-fleet-role";
-      region = {
-          "us-east-1" = { vpcID = "";
-                          securityGroupsIDs = ["sg-4daea13f"];
-                          Subnets = ["subnet-7451b329" "subnet-883299c3" "subnet-99ce6ea6" "subnet-b850b997" ];
-                        };
-          "us-east-2" = { vpcID = "";
-                          securityGroupsIDs = ["sg-c6cbb6ae"];
-                          Subnets = ["subnet-ce3b63b5" "subnet-23c4df4a" "subnet-f01983bd"];
-                        };
-          "us-west-1" = { vpcID = "";
-                          securityGroupsIDs = ["sg-80237be6"];
-                          Subnets = ["subnet-2e933749" "subnet-8639d3dd"];
-                        };
-          "us-west-2" = { vpcID = "";
-                          securityGroupsIDs = ["sg-13527a6e"];
-                          Subnets = ["subnet-406f6268" "subnet-7424102f" "subnet-95149cdd" "subnet-fc43289a"];
-                        };
-          "us-central1-f" = {};
-               };
     };
 
   dev-2 =
     { hostName = "steve-dev-2.logicblox.com";
       elasticIPv4 = "34.231.25.40";
-      key-server-elastic-ip = "";
+      key-server-elastic-ip = "3.209.190.228";
       google-nat-elastic-ip = "";
       inherit (prod) workers;
+      inherit (prod) region;
       inherit (dev) spotfleetRole;
-      inherit (dev) region;
     };
 
   integration =
@@ -110,8 +80,8 @@ rec {
       elasticIPv4 = "18.233.197.187";
       key-server-elastic-ip = "";
       inherit (prod) workers;
-      inherit (prod) spotfleetRole;
       inherit (prod) region;
+      inherit (prod) spotfleetRole;
     };
 
 asamtitraining=
@@ -120,7 +90,7 @@ asamtitraining=
       key-server-elastic-ip = "3.13.42.130";
       google-nat-elastic-ip = "";
       inherit (prod) workers;
-      inherit (prod) spotfleetRole;
       inherit (prod) region;
+      inherit (prod) spotfleetRole;
     };
 }

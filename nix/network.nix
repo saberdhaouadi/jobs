@@ -17,17 +17,16 @@ let
   env = environments."${name}";
 
   instanceTypes = builtins.attrNames env.workers;
- 
+
   amis = import ./amis.nix;
   bootstrap-images = import ./bootstrap-images.nix;
 
-  devips = import ./dev-ips.nix;  
+  devips = import ./dev-ips.nix;
   prodips = import ./prod-ips.nix;
   natips = import ./nat-ips.nix;
 
   dep-region = env.region;
   google-nat-ip = env.google-nat-elastic-ip;
-  #googlename =''testing'';  
 
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
@@ -41,7 +40,7 @@ let
   pkgs = import <nixpkgs> { config.allowUnfree = true; config.allowBroken = true; };
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
-  
+
   cloudwatchpolicy = ''
     { "Action": [ "cloudwatch:PutMetricData",
                   "cloudwatch:GetMetricStatistics",
@@ -431,10 +430,8 @@ with pkgs.lib;
         accessKeyId = account;
         vpcId = mkIf (vpcId != "") vpcId;
         description = "Security group for database";
-        rules = map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = "admin"; } ]; 
+        rules = map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = "admin"; } ];
       };
-   
- 
     resources.ec2SecurityGroups.key-server-nats-sg =
     let
       entry = ip:
@@ -490,8 +487,6 @@ with pkgs.lib;
                  --min ${env.workers."${t}".min or "0"}\
                  --backend ${env.workers."${t}".backend or "aws"} \
                  --project ${env.workers."${t}".project or "project"} \
-                 --deployment-subnets ${if bootstrap-images ? "${r}" then "test" else concatStringsSep "/" dep-region.${r}.Subnets} \
-                 --security-group-ids ${if bootstrap-images ? "${r}" then "test" else concatStrings dep-region.${r}.securityGroupsIDs} \
                  --spotfleet-role ${env.spotfleetRole}
         '';
       provisionScripts = lib.concatMap (  r: map (i: script i r) instanceTypes) (builtins.attrNames dep-region);
@@ -505,7 +500,7 @@ with pkgs.lib;
         };
         startAt = "*:0/5";
       };
-     
+
       terminate-impaired = {
         description = "Terminating impaired workers";
         path = [ pkgs.pythonFull ];
@@ -516,7 +511,7 @@ with pkgs.lib;
         startAt = "*:0";
       };
     in
-    { 
+    {
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
@@ -541,7 +536,7 @@ with pkgs.lib;
 
   "key-server-${name}" =
     { config, pkgs, resources, lib, ...}:
-    { 
+    {
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
@@ -685,7 +680,7 @@ with pkgs.lib;
         <lbdevops/nixos/logicblox/datadog/all.nix>
         ./datadog/database.nix
       ];
-      
+
       # pass s3Name
       system.build.s3Name = s3Name;
 
@@ -919,7 +914,7 @@ with pkgs.lib;
       deployment.targetEnv = "gce";
       deployment.gce = {
       project = gcpProject;
-      serviceAccount = "716753782997-compute@developer.gserviceaccount.com";
+      serviceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
       accessKey = builtins.readFile accessKey;
       canIpForward = true;
       region =  "us-central1-a";
@@ -932,7 +927,7 @@ with pkgs.lib;
     destination =  resources.machines."key-server-${name}";
     name = "route-key-server-${name}";
     project = gcpProject;
-    serviceAccount = "716753782997-compute@developer.gserviceaccount.com";
+    serviceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
     accessKey = builtins.readFile accessKey;
     nextHop = resources.machines."google-nat-${name}";
     tags =  [ "worker" ];
@@ -942,7 +937,7 @@ with pkgs.lib;
     destination = "54.83.193.103/32" ;
     name = "route-gurobi-${name}";
     project = gcpProject;
-    serviceAccount = "716753782997-compute@developer.gserviceaccount.com";
+    serviceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
     accessKey = builtins.readFile accessKey;
     nextHop = resources.machines."google-nat-${name}";
     tags =  [ "worker" ];
