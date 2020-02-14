@@ -724,8 +724,6 @@ with pkgs.lib;
         startAt = "Mon,Thu 04:00";
       };
 
-
-
       fileSystems."/data" =
         { autoFormat = true;
           fsType = "xfs";
