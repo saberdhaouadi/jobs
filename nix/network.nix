@@ -1,16 +1,17 @@
 { region ? "us-east-1"
 , account ? "lb-jobs"
 , accountId ? "826045886586"
+, accessKey
 , name
 , logToken ? ""
 , vpcId ? ""
 , production ? false
 , allowedGroups ? [ "admins" ]
 , gcpProject                     # (required) GCE project to deploy to
-#, serviceAccount                 # (required) GCE service account email
-, accessKey                      # (required) path to GCE Access Key
+, serviceAccount ? "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com" # (required) GCE service account email
 , latestLb ? true
-,...
+, provisionVpc ? false
+, ...
 }:
 let
   environments = import ./environments.nix;
@@ -154,8 +155,9 @@ in
 with pkgs.lib;
 {
   network.description = "Steve Jobs [${name}]";
-  require = [ <lbdevops/nixops/generic/tags.nix> ];
-
+  require =
+    [ <lbdevops/nixops/generic/tags.nix> ];
+   # ++ (optionals provisionVpc [ ./vpc.nix ]);
 
   resources.ec2KeyPairs.worker-kp = { inherit region ; accessKeyId = account; };
   resources.ec2KeyPairs.worker-kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
@@ -396,7 +398,7 @@ with pkgs.lib;
           fromPort = 443;
           toPort = 443;
           sourceIp = "${ip}/32";
-        } ;
+        };
       ips = if production then prodips else devips ;
       accountEntry = account:
         {
@@ -404,7 +406,13 @@ with pkgs.lib;
           toPort = 443;
           sourceGroup.ownerId = account;
           sourceGroup.groupName = "admin";
-        } ;
+        };
+      accountEntryPort = port: sg:
+        { fromPort = port;
+          toPort = port;
+          sourceGroup.ownerId = accountId;
+          sourceGroup.groupName = sg.name;
+        };
     in
       { config, resources, ... }:
       {
@@ -412,51 +420,53 @@ with pkgs.lib;
         accessKeyId = account;
         vpcId = mkIf (vpcId != "") vpcId;
         description = "Security group for frontend";
-        rules = map entry ips ++ map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; 
+        rules = map entry ips ++ map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
       };
+
     resources.ec2SecurityGroups.database-sg =
-    let 
-      accountEntry = account:
+      let
+        accountEntry = account:
+          {
+            fromPort = 8080;
+            toPort = 8080;
+            sourceGroup.ownerId = account;
+            sourceGroup.groupName = "admin";
+          };
+      in
+        { config, resources, ... }:
         {
-          fromPort = 8080;
-          toPort = 8080;
+          inherit region;
+          accessKeyId = account;
+          vpcId = mkIf (vpcId != "") vpcId;
+          description = "Security group for database";
+          rules = map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = "admin"; } ];
+        };
+
+    resources.ec2SecurityGroups.key-server-nats-sg =
+      let
+        entry = ip:
+        {
+          fromPort = 443;
+          toPort = 443;
+          sourceIp = "${ip}/32";
+        };
+        ips = natips;
+        accountEntry = account:
+        {
+          fromPort = 443;
+          toPort = 443;
           sourceGroup.ownerId = account;
           sourceGroup.groupName = "admin";
-        } ;
-    in
-      { config, resources, ... }:
-      {
-        inherit region;
-        accessKeyId = account;
-        vpcId = mkIf (vpcId != "") vpcId;
-        description = "Security group for database";
-        rules = map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = "admin"; } ];
-      };
-    resources.ec2SecurityGroups.key-server-nats-sg =
-    let
-      entry = ip:
-      {
-        fromPort = 443;
-        toPort = 443;
-        sourceIp = "${ip}/32";
-      } ;
-      ips = natips;
-      accountEntry = account:
-      {
-        fromPort = 443;
-        toPort = 443;
-        sourceGroup.ownerId = account;
-        sourceGroup.groupName = "admin";
-      };
-    in
-      { config, resources, ... }:
-      {
-        inherit region;
-        accessKeyId = account;
-        vpcId = mkIf (vpcId != "") vpcId;
-        description = "Security group for the key server ";
-        rules = map entry ips ++ map accountEntry(singleton accountId) ;
-      };
+        };
+      in
+        { config, resources, ... }:
+        {
+          inherit region;
+          accessKeyId = account;
+          vpcId = mkIf (vpcId != "") vpcId;
+          description = "Security group for the key server ";
+          rules = map entry ips ++ map accountEntry (singleton accountId);
+        };
 
   "provisioner-${name}" =
     { config, resources, nodes, lib, ...}:
@@ -488,6 +498,7 @@ with pkgs.lib;
                  --backend ${env.workers."${t}".backend or "aws"} \
                  --project ${env.workers."${t}".project or "project"} \
                  --spotfleet-role ${env.spotfleetRole}
+                 --service-account ${env.workers."${t}".serviceAccount or "unknown"} \
         '';
       provisionScripts = lib.concatMap (  r: map (i: script i r) instanceTypes) (builtins.attrNames dep-region);
       run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or region )}/bin/run-provisioner-${workerName t}";
@@ -520,8 +531,8 @@ with pkgs.lib;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 10;
-      deployment.keys.google.keyFile = /home/deploy-lb-jobs/google.json;
 
+      deployment.keys.google.keyFile = <global_creds/gcp-creds.json>;
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -540,7 +551,7 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg ];
+      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg.name ];
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
@@ -913,31 +924,39 @@ with pkgs.lib;
     {
       deployment.targetEnv = "gce";
       deployment.gce = {
-      project = gcpProject;
-      serviceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
-      accessKey = builtins.readFile accessKey;
-      canIpForward = true;
-      region =  "us-central1-a";
-      #ipAddress = google-nat-ip;
-    };
-     networking.nat.enable = true;
-    };
+        instanceType = "n1-standard-2";
+        project = gcpProject;
+        accessKey = builtins.readFile accessKey;
+        inherit serviceAccount;
+        canIpForward = true;
+        region =  "us-central1-a";
+        rootDiskSize = 50;
+      };
 
-  resources.gceRoutes."route-key-server-${name}" = {resources, ...}: {
-    destination =  resources.machines."key-server-${name}";
-    name = "route-key-server-${name}";
-    project = gcpProject;
-    serviceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
-    accessKey = builtins.readFile accessKey;
-    nextHop = resources.machines."google-nat-${name}";
-    tags =  [ "worker" ];
+      # NAT setup
+      networking.firewall.extraCommands = ''
+        iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+      '';
+      boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
   };
+
+  resources.gceRoutes."route-key-server-${name}" =
+    { resources, ... }:
+    {
+      project = gcpProject;
+      accessKey = builtins.readFile accessKey;
+      inherit serviceAccount;
+      destination =  resources.machines."key-server-${name}";
+      name = "route-key-server-${name}";
+      nextHop = resources.machines."google-nat-${name}";
+      tags =  [ "worker" ];
+    };
 
   resources.gceRoutes."route-gurobi-${name}" = {resources, ...}: {
     destination = "54.83.193.103/32" ;
     name = "route-gurobi-${name}";
     project = gcpProject;
-    serviceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
+    inherit serviceAccount;
     accessKey = builtins.readFile accessKey;
     nextHop = resources.machines."google-nat-${name}";
     tags =  [ "worker" ];

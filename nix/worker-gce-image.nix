@@ -2,16 +2,11 @@
 let
   awsCreds =
     {
-      environment.AWS_ACCESS_KEY_ID = builtins.readFile <global_creds/gce-access>;
-      environment.AWS_SECRET_ACCESS_KEY = builtins.readFile <global_creds/gce-secret>;
-      environment.AWS_SECRET_KEY = builtins.readFile <global_creds/gce-secret>;
       environment.AWS_REGION = "us-east-1";
-      environment.GCS_XML_ACCESS_KEY = builtins.readFile <global_creds/gcs-access>;
-      environment.GCS_XML_SECRET_KEY = builtins.readFile <global_creds/gcs-secret>;
-      environment.GOOGLE_APPLICATION_CREDENTIALS = "/etc/google_application_credentials.json";
-
+      serviceConfig.EnvironmentFile = "/run/keys/credentials";
     };
-      udhcpcScript = pkgs.writeScript "udhcp-script"
+
+  udhcpcScript = pkgs.writeScript "udhcp-script"
     ''
       #! /bin/sh
       if [ "$1" = bound ]; then
@@ -39,10 +34,23 @@ in
     <nixpkgs/nixos/modules/virtualisation/google-compute-config.nix>
     <lbdevops/logicblox/config/logging/logentries.nix>
     ];
-   
+
   logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
 
- 
+  environment.systemPackages =
+    let
+      shutdown-self =
+        let curl = "curl -H 'Metadata-Flavor:Google' -s --retry 5 --retry-delay 5 -m 10";
+        in pkgs.writeScriptBin "shutdown-self"
+        ''
+          #! /usr/bin/env bash
+          instance=$(${curl} http://169.254.169.254/computeMetadata/v1/instance/name)
+          zone=$(${curl} http://169.254.169.254/computeMetadata/v1/instance/zone | cut -d\/ -f4)
+          ${pkgs.google-cloud-sdk-gce}/bin/gcloud compute instances delete $instance --zone=$zone --quiet
+          systemctl poweroff
+        '';
+    in [ shutdown-self ];
+
   boot.initrd.kernelModules = [ "af_packet" ];
   boot.initrd.preLVMCommands = lib.mkBefore ''
             if [ -z "$hasNetwork" ]; then
@@ -74,6 +82,11 @@ in
       if ! [ -e "$metaDir/user-data" ]; then
         wget -q --header='Metadata-Flavor: Google' -O "$metaDir/user-data" http://169.254.169.254/computeMetadata/v1/instance/attributes/startup-script
       fi
+
+      if ! [ -e "$metaDir/hostname" ]; then
+        wget -q --header='Metadata-Flavor: Google' -O "$metaDir/hostname" http://169.254.169.254/computeMetadata/v1/instance/id
+      fi
+
     '';
 
   lb-steve-worker.initrd.deviceDiscovery =
@@ -94,14 +107,54 @@ in
     '';
 
   networking.hostName = pkgs.lib.mkForce "";
-  environment.etc."google_application_credentials.json".text = builtins.readFile <global_creds/google_application_credentials.json>;
+
+  /**
+  * It is expected that the key-server has a file credentials.pem under
+  * a fake account "google-worker-creds" which we use to pull the necessary
+  * credentials for AWS/GCS access. The file should have the following structure:
+  *   AWS_ACCESS_KEY_ID=<secret>
+  *   AWS_SECRET_ACCESS_KEY=<secret>
+  *   GCS_XML_ACCESS_KEY=<secret>
+  *   GCS_XML_SECRET_KEY=<secret>
+  */
+  systemd.services.pull-credentials =
+    {
+      description = "download the credentials for AWS/GCS access from the key-server";
+      wantedBy = [ "multi-user.target" ];
+      script = ''
+        set -e
+        keyserver=$(grep -o key-service.* /etc/ec2-metadata/user-data | ${pkgs.gawk}/bin/awk '{print $2}' | sed 's/"//g')
+        ${pkgs.curl}/bin/curl -XPOST \
+          -k -H "Content-Type: application/json" \
+          -d '{"account": "google-worker-creds"}' $keyserver \
+          | ${pkgs.jq}/bin/jq -r '.key|.[]|select(.name=="credentials")|.contents' > /run/keys/credentials
+      '';
+    };
+
+  systemd.services.set-hostname =
+    {
+      description = "set the instance hostname";
+      wantedBy = [ "multi-user.target" ];
+      script = ''
+        if [ -s /etc/ec2-metadata/hostname ]; then
+          ${pkgs.nettools}/bin/hostname $(cat /etc/ec2-metadata/hostname)
+        fi
+      '';
+    };
 
   lb-steve-worker.shutdownOnIdle = true;
   users.mutableUsers = lib.mkOverride 0 false;
 
+  users.extraUsers.root.openssh.authorizedKeys.keys = [
+    # NOTE: Amine's ssh key
+    # TODO: make it possible to grab ssh-keys from the metadata service while the instance
+    # is running which will make it possible to add a public key from the cloud console.
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGLj6b2NxWaTh2epvC7DynHu//LKb8HOoXW03o2Q1DW8 amine@nixos"
+  ];
+
   system.build.googleComputeImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
     inherit pkgs lib config;
-    diskSize = 4096;
+    diskSize = 1024 * 8; # FIXME: investigate why the closure size of the image is growing
     format = "raw";
     configFile = pkgs.writeText "configuration.nix"
       ''
@@ -117,7 +170,11 @@ in
 
   systemd.services.nix-daemon = awsCreds;
 
-  systemd.services.lb-steve-worker = awsCreds;
+  systemd.services.lb-steve-worker =
+    {
+      after = [ "pull-credentials.service" ];
+      wants = [ "pull-credentials.service" ];
+    } // awsCreds;
 
   systemd.services.sqs-return = awsCreds;
 

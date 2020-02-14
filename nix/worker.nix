@@ -3,7 +3,7 @@ with pkgs.lib;
 let
   builder-config = import <config> {};
   builds = import ../. { platform_release = builder-config.getLB (import ../lb-version.nix ); };
-  
+
   cfg = config.lb-steve-worker;
   workerScript =
     pkgs.writeScriptBin "worker" ''
@@ -22,14 +22,6 @@ let
       ''}
       ${config.logicblox.jobs.builds.worker}/bin/lb-steve-worker ${cfg.arguments} $@
     '';
-
-  shutdown-self =
-    pkgs.writeScriptBin "shutdown-self"
-      ''
-        #! /bin/sh
-        aws ec2 terminate-instances --region us-east-1 --instance-ids $(curl -s --retry 5 --retry-delay 5 -m 10 http://169.254.169.254/latest/meta-data/instance-id)
-        systemctl poweroff
-      '';
 
   platform3 = builder-config.releases.platform."3.10.15";
 
@@ -77,27 +69,29 @@ in
       config.logicblox.jobs.builds.worker
       pkgs.stdenv
       pkgs.awscli
-      shutdown-self
     ];
 
     # The jobs and their data cannot reasonably be passed in a pure
     # way, as the input and output data can be very big.
-    nix.sandboxPaths = [
-      "/tmp/job"
-      "/sockets=/run/sockets"
-      "/usr/bin/env=${pkgs.coreutils}/bin/env"
-      "/lib64/ld-linux-x86-64.so.2=${pkgs.glibc}/lib64/ld-linux-x86-64.so.2"
-      "/bin/bash=${pkgs.bash}/bin/bash"
-    ];
-    nix.extraOptions = ''
-      build-compress-log = false
-      user-agent-suffix = lb-jobs
-      sandbox-dev-shm-size = 75%
-      signed-binary-caches =
-    '';
-    nix.useSandbox = true;
-    nix.package = pkgs.nixUnstable;
-    nix.trustedBinaryCaches = [ "s3://logicblox-cache" ];
+    nix = {
+      sandboxPaths = [
+        "/tmp/job"
+        "/sockets=/run/sockets"
+        "/usr/bin/env=${pkgs.coreutils}/bin/env"
+        "/lib64/ld-linux-x86-64.so.2=${pkgs.glibc}/lib64/ld-linux-x86-64.so.2"
+        "/bin/bash=${pkgs.bash}/bin/bash"
+      ];
+      extraOptions = ''
+        build-compress-log = false
+        user-agent-suffix = lb-jobs
+        sandbox-dev-shm-size = 75%
+      '';
+      binaryCachePublicKeys = [ "bob.logicblox.com-1:pvQBnviKJObXHv3ZWBeCQ22pDFduyFTEb2XoJn3aOtI=" ];
+      useSandbox = true;
+      package = pkgs.nixUnstable;
+      binaryCaches = [ "s3://logicblox-cache" ];
+      trustedBinaryCaches = [ "s3://logicblox-cache" ];
+    };
 
     systemd.extraConfig = ''
       DefaultCPUAccounting=true
@@ -117,6 +111,7 @@ in
           '';
         postStart =
           ''
+            sleep 10
             chmod go+w-x /run/sockets/gurobi
           '';
         serviceConfig = {
@@ -151,6 +146,30 @@ in
         done
       '';
     };
+
+    /**
+    * Recent versions of LB web-client does more strict checking of the
+    * host SSL certificate so we need to make sure that there is a
+    * *.logicblox.com domain name that can be resolved for the key-server.
+    */
+    systemd.services.replace-etc-hosts =
+      { description = "add a record for the key-server to /etc/hosts";
+        wantedBy = [ "multi-user.target" "lb-steve-worker.service" ];
+        before = [ "lb-steve-worker.service" ];
+        script =
+          ''
+            etcHosts=$(mktemp)
+            keyserver=$(grep KEYSERVICE /etc/ec2-metadata/user-data | cut -d\= -f2 | cut -d\/ -f3)
+            cat /etc/hosts > $etcHosts
+            echo "$keyserver keyserver.logicblox.com" >> $etcHosts
+            rm /etc/hosts
+            cat $etcHosts > /etc/hosts
+          '';
+        serviceConfig =
+          { Type = "oneshot";
+            RemainAfterExit = true;
+          };
+      };
 
     systemd.services.lb-steve-worker = {
       description = "LB Steve Worker";
@@ -187,7 +206,7 @@ in
           };
       };
 
-    time.timeZone = "UTC";
+    time.timeZone = mkForce "UTC";
 
     nixpkgs.config.allowUnfree = true;
     nixpkgs.config.allowBroken = true;

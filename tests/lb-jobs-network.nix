@@ -1,5 +1,5 @@
 { builds ? import ../. {},
-  platform,
+  platform ? ((import <config> {}).getLB (import ../lb-version.nix)),
   paperboat ? null
 }:
 (import <nixpkgs> {}).lib.overrideDerivation (
@@ -12,17 +12,7 @@ let
     url = "https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.13.8.jar";
     sha256 = "1qb93r97ndplp230vfzw3hfr188617p1n8alpgj4aqgk86hmylj1";
   };
-  minio = pkgs.buildGoPackage rec {
-    name = "minio";
-    goPackagePath = "github.com/minio/minio";
-    rev = "e2aba9196f849c458303aff42d2d6ea3e3ea8904";
 
-    src = pkgs.fetchgit {
-      inherit rev;
-      url = "https://github.com/minio/minio.git";
-      sha256 = "1iixpxcyhfa1lln3qd4xpnmjpbkf0zicj1irk21wqjqkac3rar0s";
-    };
-  };
   # fake AWS creds for the AWS cli to use
   awsAccessKey = "9NLZKB4SPH2OP5L845XE";
   awsSecretKey = "rvzui7pQS0PI1aAOhtTHWVmJvhMY+b9xSw7arAbC";
@@ -133,7 +123,7 @@ in
             };
             wantedBy = [ "multi-user.target" ];
             script = ''
-              ${minio}/bin/minio server aws-s3
+              ${pkgs.minio}/bin/minio server aws-s3 --config-dir .
             '';
           };
 
@@ -156,6 +146,8 @@ in
         virtualisation.writableStore = true;
         virtualisation.memorySize = 6*1024;
         virtualisation.diskSize = 8192;
+
+        deployment.targetEnv = "worker";
 
         boot.kernel.sysctl."vm.panic_on_oom" = 0;
 
@@ -189,6 +181,8 @@ in
     frontend =
       { config, pkgs, ... }:
       {
+        virtualisation.memorySize = 2*1024;
+
         imports = [ common ../nix/frontend.nix ];
         logicblox.jobs.builds = builds;
 
@@ -249,7 +243,7 @@ in
       {
         imports = [ common ../nix/database.nix ];
         logicblox.jobs.builds = builds;
-        logicblox.jobs.platform  =  platform;
+        logicblox.jobs.platform = platform;
         systemd.services.lb-web-server.environment = awsEnvironment;
         virtualisation.memorySize = 4096;
         virtualisation.diskSize = 8192;

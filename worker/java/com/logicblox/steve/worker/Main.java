@@ -1,6 +1,7 @@
 package com.logicblox.steve.worker;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
@@ -115,7 +116,7 @@ public class Main {
   private static String _s3Endpoint = null;
   private static boolean _returnJob = false;
   private static boolean _shutdownOnIdle = false;
-  private static String _keyService = "http://127.0.0.1:8080/keys";
+  private static String _keyService = "https://keyserver.logicblox.com/keys";
 
   private String _jobTag = "unknown-account";
 
@@ -212,9 +213,14 @@ public class Main {
       this.client.setEndpoint(_s3Endpoint);
     }
 
-    try{
+    try {
       AWSCredentialsProvider gcsXMLProvider = Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
-      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
+
+      // make the AWS interfaces use V2 signatures for authentication
+      ClientConfiguration config = new ClientConfiguration();
+      config.setSignerOverride("S3SignerType");
+
+      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider, config);
       this.gcsClient = new GCSClientBuilder().setInternalS3Client(s3Client)
               .createGCSClient();
     } catch (Exception e) {

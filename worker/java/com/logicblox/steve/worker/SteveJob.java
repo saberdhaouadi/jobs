@@ -158,7 +158,8 @@ public class SteveJob {
       // Do not upload files when previous log already exists.
       if(!previousLogExists()) {
         List<StoreFile> output = uploadOutput();
-        _outgoing.notifySuccess(output, _cpuUsage, _maxMemory, _maxDiskUsage);
+        String scheme = _output.getScheme();
+        _outgoing.notifySuccess(output, scheme, _cpuUsage, _maxMemory, _maxDiskUsage);
         log("Successfully uploaded output files for job " + _id);
       }
       teardown();
@@ -329,7 +330,7 @@ public class SteveJob {
     last = last.substring(last.lastIndexOf('/') + 1);
 
     File f = new File(_inputPath, last);
-    DownloadOptions options = _client.getOptionsBuilderFactory()
+    DownloadOptions options = client.getOptionsBuilderFactory()
                                   .newDownloadOptionsBuilder()
                                   .setFile(f)
                                   .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(inputUri))

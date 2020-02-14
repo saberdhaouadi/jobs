@@ -4,8 +4,20 @@
     ./worker.nix
     ./boot.nix
     <nixpkgs/nixos/modules/virtualisation/amazon-image.nix>
-    <lbdevops/logicblox/config/logging/logentries.nix>
+    <lbdevops/logicblox/config/logging/rsyslogd.nix>
   ];
+
+  environment.systemPackages =
+    let
+
+      shutdown-self =
+        pkgs.writeScriptBin "shutdown-self"
+          ''
+            #! /bin/sh
+            aws ec2 terminate-instances --region us-east-1 --instance-ids $(curl -s --retry 5 --retry-delay 5 -m 10 http://169.254.169.254/latest/meta-data/instance-id)
+            systemctl poweroff
+          '';
+    in [ shutdown-self ];
 
   logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
 
@@ -76,7 +88,6 @@
 
   system.build.amazonImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
     inherit pkgs lib config;
-    partitioned = config.ec2.hvm;
     diskSize = 8192;
     format = "qcow2";
     configFile = pkgs.writeText "configuration.nix"
