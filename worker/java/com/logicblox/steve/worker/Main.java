@@ -205,7 +205,11 @@ public class Main {
   public Main() {
 
     // TODO pass in a configuration for S3
-    this.client = S3Utils.createS3Client(null);
+    try {
+      this.client = S3Utils.createS3Client(null);
+    } catch (Exception e) {
+      System.err.println("Exception while creating S3 client" + e);
+    }
     this.ec2Client = AmazonEC2ClientBuilder.standard().build();
 
 
@@ -214,14 +218,7 @@ public class Main {
     }
 
     try {
-      AWSCredentialsProvider gcsXMLProvider = Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
-
-      // make the AWS interfaces use V2 signatures for authentication
-      ClientConfiguration config = new ClientConfiguration();
-      config.setSignerOverride("S3SignerType");
-
-      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider, config);
-      this.gcsClient = new GCSClientBuilder().setInternalS3Client(s3Client)
+      this.gcsClient = new GCSClientBuilder()
               .createGCSClient();
     } catch (Exception e) {
       System.err.println("Exception while creating Google Storage Client" + e);

@@ -83,7 +83,11 @@ public class SteveHandler extends ProtoBufHandler {
     String dbPrefix = handlerConfig.getStringError("database_prefix");
     _db = new LBDatabase(dbPrefix);
 
-    _s3client = S3Utils.createS3Client(handlerConfig);
+    try {
+      _s3client = S3Utils.createS3Client(handlerConfig);
+    } catch (Exception e) {
+      System.err.println("Exception while creating S3 client" + e);
+    }
     _tmpDir = handlerConfig.getFileError("tmpdir");
 
     _maintenanceFile = handlerConfig.getStringError("logdir")+"/maintenance";

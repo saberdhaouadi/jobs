@@ -85,7 +85,7 @@ worker_classpath = [
   '$(lb_web)/lib/java/httpcore-4.4.4.jar',
   '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
 
-  '$(lb_web)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
+  '$(lb_web)/lib/java/google-api-services-storage-v1-rev20190910-1.30.3.jar'
 
 ]
 
