@@ -39,7 +39,7 @@ let
         networking.firewall.enable = false;
 
         networking.extraHosts = ''
-          ${(lib.head nodes.aws.config.networking.interfaces.eth1.ip4).address} lb-jobs.aws
+          ${(lib.head nodes.aws.config.networking.interfaces.eth1.ipv4.addresses).address} lb-jobs.aws
         '';
 
         environment.systemPackages = with pkgs; [ awscli jq curl openssl ];
