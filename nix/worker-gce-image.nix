@@ -123,7 +123,7 @@ in
       wantedBy = [ "multi-user.target" ];
       script = ''
         set -e
-        keyserver=$(grep -o key-service.* /etc/ec2-metadata/user-data | ${pkgs.gawk}/bin/awk '{print $2}' | sed 's/"//g')
+        keyserver=$(grep KEYSERVICE /etc/ec2-metadata/user-data | cut -d\= -f2)
         ${pkgs.curl}/bin/curl -XPOST \
           -k -H "Content-Type: application/json" \
           -d '{"account": "google-worker-creds"}' $keyserver \

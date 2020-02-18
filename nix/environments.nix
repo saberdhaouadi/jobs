@@ -10,7 +10,8 @@ let
 
   subnetId = "subnet-dc1a4194";
   securityGroup = "sg-b3ac49c3";
-  lbJobsImage = "lb-jobs-4758394";
+  lbJobsImage = "lb-jobs-4997373";
+  gcpServiceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
 
 in rec {
   prod = {
@@ -145,8 +146,7 @@ in rec {
         ami = lbJobsImage;
         defaultRegion = "us-central1-f";
         project = "infor-faroi-dev";
-        serviceAccount =
-          "nixops-dashboard-dev@infor-faroi-dev.iam.gserviceaccount.com";
+        serviceAccount = gcpServiceAccount;
       };
 
       "n1-highmem-8" = {
@@ -159,8 +159,7 @@ in rec {
         ami = lbJobsImage;
         defaultRegion = "us-central1-f";
         project = "infor-faroi-dev";
-        serviceAccount =
-          "nixops-dashboard-dev@infor-faroi-dev.iam.gserviceaccount.com";
+        serviceAccount = gcpServiceAccount;
       };
     };
 

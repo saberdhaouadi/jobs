@@ -450,7 +450,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         };
-        ips = natips;
+        ips = natips ++ [ "34.70.86.128" ];
         accountEntry = account:
         {
           fromPort = 443;
