@@ -12,6 +12,11 @@ in
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       path = [ pkgs.jdk pkgs.bash config.logicblox.jobs.builds.frontend ];
+      environment = {
+        GOOGLE_APPLICATION_CREDENTIALS = "/run/keys/google";
+        GCS_XML_ACCESS_KEY = builtins.readFile <global_creds/GCS_XML_ACCESS_KEY>;
+        GCS_XML_SECRET_KEY = builtins.readFile <global_creds/GCS_XML_SECRET_KEY>;
+      };
       preStart = ''
         mkdir -p /var/log/lb-steve-worker
       '';

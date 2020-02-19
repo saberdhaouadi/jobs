@@ -450,7 +450,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         };
-        ips = natips ++ [ "34.70.86.128" ];
+        ips = natips ++ [ "34.66.55.179" ];
         accountEntry = account:
         {
           fromPort = 443;
@@ -532,7 +532,7 @@ with pkgs.lib;
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 10;
 
-      deployment.keys.google.keyFile = <global_creds/gcp-creds.json>;
+      deployment.keys.google.keyFile = <global_creds/lb-jobs-gcp.json>;
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -753,6 +753,8 @@ with pkgs.lib;
       deployment.ec2.elasticIPv4 = env.elasticIPv4 or "";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
+      deployment.keys.google.keyFile = <global_creds/lb-jobs-gcp.json>;
+
       deployment.ec2.ebsInitialRootDiskSize = 100;
 
       imports = [ <lbdevops/logicblox/production.nix> ./frontend.nix ];
@@ -928,7 +930,6 @@ with pkgs.lib;
         inherit serviceAccount;
         canIpForward = true;
         region =  "us-central1-a";
-        rootDiskSize = 50;
       };
 
       # NAT setup

@@ -18,6 +18,9 @@ import com.logicblox.bloxweb.service.ServiceConfig;
 import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.concurrent.MoreFutures;
 import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.GCSClient;
+import com.logicblox.cloudstore.GCSClientBuilder;
+import com.logicblox.cloudstore.CloudStoreClient;
 import com.logicblox.cloudstore.StoreFile;
 import com.logicblox.cloudstore.CopyOptions;
 import com.logicblox.cloudstore.CopyOptionsBuilder;
@@ -63,6 +66,7 @@ public class SteveHandler extends ProtoBufHandler {
   private Database _db;
   private Map<String, JobQueueClient> _jobQueues = new HashMap<String, JobQueueClient>();
   private S3Client _s3client;
+  private GCSClient _gcsclient;
   private File _tmpDir;
   private String _jobImplPrefix;
   private String _jobLogPrefix;
@@ -87,6 +91,13 @@ public class SteveHandler extends ProtoBufHandler {
       _s3client = S3Utils.createS3Client(handlerConfig);
     } catch (Exception e) {
       System.err.println("Exception while creating S3 client" + e);
+    }
+
+    try {
+      _gcsclient = new GCSClientBuilder()
+          .createGCSClient();
+    } catch (Exception e) {
+      System.err.println("Exception while creating Google Storage Client" + e);
     }
     _tmpDir = handlerConfig.getFileError("tmpdir");
 
@@ -585,8 +596,10 @@ public class SteveHandler extends ProtoBufHandler {
 
     final URI inputUrl = tmpUrl;
 
-    ListenableFuture<Metadata> metadata = _s3client.exists(
-        _s3client.getOptionsBuilderFactory()
+    CloudStoreClient client = inputUrl.toString().startsWith("s3") ? _s3client : _gcsclient;
+
+    ListenableFuture<Metadata> metadata = client.exists(
+        client.getOptionsBuilderFactory()
             .newExistsOptionsBuilder()
             .setBucketName(
                 com.logicblox.cloudstore.Utils.getBucketName(inputUrl))
@@ -612,8 +625,8 @@ public class SteveHandler extends ProtoBufHandler {
                           new SimpleErrorCode("MAX_SIZE_EXCEEDED", 400, "Implementation is too big"));
 
                 // TODO check the account of the encryption key used.
-                return _s3client.download(
-                    _s3client.getOptionsBuilderFactory()
+                return client.download(
+                    client.getOptionsBuilderFactory()
                         .newDownloadOptionsBuilder()
                         .setFile(tmpFile)
                         .setBucketName(

@@ -10,7 +10,8 @@ let
 
   subnetId = "subnet-dc1a4194";
   securityGroup = "sg-b3ac49c3";
-  lbJobsImage = "lb-jobs-4997373";
+  lbJobsImage = "lb-jobs-5003150";
+  gcpProject = "lb-jobs";
   gcpServiceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
 
 in rec {
@@ -145,7 +146,7 @@ in rec {
         backend = "gcp";
         ami = lbJobsImage;
         defaultRegion = "us-central1-f";
-        project = "infor-faroi-dev";
+        project = gcpProject;
         serviceAccount = gcpServiceAccount;
       };
 
@@ -158,7 +159,7 @@ in rec {
         backend = "gcp";
         ami = lbJobsImage;
         defaultRegion = "us-central1-f";
-        project = "infor-faroi-dev";
+        project = gcpProject;
         serviceAccount = gcpServiceAccount;
       };
     };
