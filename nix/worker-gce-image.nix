@@ -122,8 +122,8 @@ in
       description = "download the credentials for AWS/GCS access from the key-server";
       wantedBy = [ "multi-user.target" ];
       script = ''
-        set -e
-        keyserver=$(grep KEYSERVICE /etc/ec2-metadata/user-data | cut -d\= -f2)
+        set -eo pipefail
+        keyserver=$(grep KEYSERVICE /etc/ec2-metadata/user-data | cut -d\= -f2 | tr -d '"')
         ${pkgs.curl}/bin/curl -XPOST \
           -k -H "Content-Type: application/json" \
           -d '{"account": "google-worker-creds"}' $keyserver \
