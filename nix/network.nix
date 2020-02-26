@@ -497,8 +497,8 @@ with pkgs.lib;
                  --min ${env.workers."${t}".min or "0"}\
                  --backend ${env.workers."${t}".backend or "aws"} \
                  --project ${env.workers."${t}".project or "project"} \
-                 --spotfleet-role ${env.spotfleetRole}
-                 --service-account ${env.workers."${t}".serviceAccount or "unknown"} \
+                 --spotfleet-role ${env.spotfleetRole} \
+                 --service-account ${env.workers."${t}".serviceAccount or "unknown"}
         '';
       provisionScripts = lib.concatMap (  r: map (i: script i r) instanceTypes) (builtins.attrNames dep-region);
       run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or region )}/bin/run-provisioner-${workerName t}";
