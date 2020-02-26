@@ -47,6 +47,9 @@
         };
     };
 
+  systemd.services.replace-etc-hosts.after =
+    [ "set-hostname.service" ];
+
   lb-steve-worker.initrd.metadataServiceSetup =
     ''
       metaDir=$targetRoot/etc/ec2-metadata
