@@ -18,7 +18,7 @@ else
     curl -o build.json -H 'Content-Type: application/json' -L -s https://bob.logicblox.com/build/$build
 fi
 
-build=$(cat build.json | json id)
+build=$(cat build.json | jq .id)
 export version=$(date +%Y%m%d%H%M)
 
 arch="x86_64"
