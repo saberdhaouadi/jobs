@@ -10,7 +10,7 @@ let
 
   subnetId = "subnet-dc1a4194";
   securityGroup = "sg-b3ac49c3";
-  lbJobsImage = "lb-jobs-5003332";
+  lbJobsImage = "lb-jobs-5086500";
   gcpProject = "lb-jobs";
   gcpServiceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
 
