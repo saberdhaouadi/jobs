@@ -162,6 +162,33 @@ in rec {
         project = gcpProject;
         serviceAccount = gcpServiceAccount;
       };
+
+      "n1-highmem-32" = {
+        number = 0;
+        price = "0.25";
+        percentageSpot = "1.0";
+        onDemand = false;
+        instanceType = "n1-highmem-32";
+        backend = "gcp";
+        ami = lbJobsImage;
+        defaultRegion = "us-central1-f";
+        project = gcpProject;
+        serviceAccount = gcpServiceAccount;
+      };
+
+      "n2-highmem-32" = {
+        number = 0;
+        price = "0.25";
+        percentageSpot = "1.0";
+        onDemand = false;
+        instanceType = "n2-highmem-32";
+        backend = "gcp";
+        ami = lbJobsImage;
+        defaultRegion = "us-central1-f";
+        project = gcpProject;
+        serviceAccount = gcpServiceAccount;
+      };
+
     };
 
     region = {
