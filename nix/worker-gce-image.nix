@@ -32,10 +32,11 @@ in
     ./worker.nix
     ./boot.nix
     <nixpkgs/nixos/modules/virtualisation/google-compute-config.nix>
-    <lbdevops/logicblox/config/logging/logentries.nix>
+    <lbdevops/logicblox/config/logging/rsyslogd.nix>
     ];
 
   logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
+  logging.sumologic.sumoToken = builtins.readFile <global_creds/sumologic-lb-jobs>;
 
   environment.systemPackages =
     let

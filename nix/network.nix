@@ -4,6 +4,7 @@
 , accessKey
 , name
 , logToken ? ""
+, sumoToken ? ""
 , vpcId ? ""
 , production ? false
 , allowedGroups ? [ "admins" ]
@@ -967,6 +968,8 @@ with pkgs.lib;
                   <lbdevops/nixos/base/user-env.nix>
                   <lbdevops/logicblox/config/logging/rsyslogd.nix>
                   <lbdevops/nixos/local-modules/cloudwatch.nix> ];
+
+      logging.sumologic.sumoToken = sumoToken;
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"
           "uuid:${config.deployment.uuid}"
