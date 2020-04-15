@@ -151,6 +151,8 @@ in
     # TODO: make it possible to grab ssh-keys from the metadata service while the instance
     # is running which will make it possible to add a public key from the cloud console.
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGLj6b2NxWaTh2epvC7DynHu//LKb8HOoXW03o2Q1DW8 amine@nixos"
+    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDfWqNlFX5VwJ/hq5vcmL8x1gxfr8aRKhaV/G+2oB1OvMAqv8DihER61beE1rgYTgnGvq74PshqVGTtJT+gTF8JMxYvZ76A/VOazPHrsprZQULctBNC5jQiHZ1pfEH9MXIMhQIq4nFx3jkC8eQzGwNk4hYEAbyQ9atq2T+Ig/9Wt/a7xPD+58QpkIpRRhdUBjW4e6NueTxZBLhRWjkQkugW8eoE7K7tmeIJQRAfbG0nS5pu96eNHyiraBJZdX7ZG2cqV8KEHLh6urRKFkoOybvyZwP7P6iZ7OkSxPPK65gA7BUa7ZRNMfW6240cB9Wwx0ZHuNmzZaHhNO/SOBh9a621 ahmedsamti@TNTNLASAMTI19"
+    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCoyra8oase8mnMQQTp8PbmqThqGdy1+k3tT4SHNqm8rA4ZNE022JkuFCUVqhzweNHLuQS6vJY5WpJRRWQ12UBqdadq/tuvCOCS3/SqihS2rKde6ul2jeeuxDxOwLkEXUZ6dzrxr2aUsof9mTHd703D3gBtAVccb5SBoJZkQIH80nBR8zWXq/VOkxHIC97X7u2hBGjvNeWBFmevyusJytjOcxr2ihbKkqwDfwPVFoPsKIdN/WuK3/T8yK9vmSxJFWnGCtPWDqgeV+TNRDL2Qpc/xX7Kr97ltADUxprzNfYxf/EbEJ6HQs/RPDn1Y2hoSJfbToweGZEAO8IRpeEHDdpWt/4WqpUDSywDKzXywumX9++kT+n4S5xyfsb1eAjstpaf41xIyvTiqapSIfZdq+XEu/mfe5ghffedApDjFsLmuH1Dv8bKCUDW3KV3EewvJEEa+2w2nB3S0xgGVxkkI0yj+Oji5VGNs4O8tOOg6dPJcY/T7GZozuy4imaDlGn8wzhFYWoE/5PoB4l1d1iTeWtZGBM5mHeOc01OgeI8uUTdXsVBkK0pib6KnS2d5RqHOgM8Zln/YY/uceUsFW3thS199TRis5Sq7nPE76wZWaKSJ7PAdlvahVIkHBNZ3pfgSk4WVa44VkzmNk/tra4MnYGGqJD0iH0n9yCaJdcMseh8HQ== tewfik.ghariani@infor.com"
   ];
 
   system.build.googleComputeImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
