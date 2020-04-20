@@ -569,7 +569,13 @@ with pkgs.lib;
       imports = [
         <lbdevops/logicblox/production.nix>
         ./datadog/provisioner.nix
+        <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
       ] ;
+
+      # Monocle setup
+      telegraf.enable = true;
+      telegraf.kafkaSaslPassword = if true then builtins.readFile (<global_creds/monocle/kafkaProdPassword>) else "";
+      telegraf.enableWorkflowMonitors = false;
 
       environment.systemPackages = [ builds.worker pkgs.linuxPackages.sysdig ] ++ provisionScripts;
       systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes) // { inherit terminate-impaired; };
@@ -592,7 +598,13 @@ with pkgs.lib;
       imports = [
         <lbdevops/logicblox/production.nix>
         ./keyserver.nix
+        <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
       ] ;
+
+      # Monocle setup
+      telegraf.enable = true ;
+      telegraf.kafkaSaslPassword = if true then builtins.readFile (<global_creds/monocle/kafkaProdPassword>) else "";
+      telegraf.enableWorkflowMonitors = false;
 
       fileSystems."/keys" =
         { autoFormat = true;
@@ -719,7 +731,14 @@ with pkgs.lib;
         <lbdevops/logicblox/production.nix>
         <lbdevops/nixos/logicblox/datadog/all.nix>
         ./datadog/database.nix
+        <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
       ];
+
+      # Monocle setup
+      telegraf.enable = true;
+      telegraf.enableSteveDatabaseMetrics = true;
+      telegraf.kafkaSaslPassword = if true then builtins.readFile (<global_creds/monocle/kafkaProdPassword>) else "";
+      telegraf.enableWorkflowMonitors = false;
 
       # pass s3Name
       system.build.s3Name = s3Name;
@@ -784,7 +803,17 @@ with pkgs.lib;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
       deployment.ec2.ebsInitialRootDiskSize = 100;
 
-      imports = [ <lbdevops/logicblox/production.nix> ./frontend.nix ];
+      imports = [
+          <lbdevops/logicblox/production.nix>
+          ./frontend.nix
+          <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
+        ];
+
+      # Monocle setup
+      telegraf.enable = true;
+      telegraf.kafkaSaslPassword = if true then builtins.readFile (<global_creds/monocle/kafkaProdPassword>) else "";
+      telegraf.enableWorkflowMonitors = false;
+      telegraf.enableSteveDatabaseMetrics = true;
 
       system.build.frontendConfig = frontendConfig;
 
@@ -946,7 +975,7 @@ with pkgs.lib;
 
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
+    { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"
