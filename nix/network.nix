@@ -51,7 +51,7 @@ let
       "Effect": "Allow",
       "Resource": "*"
     }
-   ''; 
+   '';
 
   instanceProfileArn = name: "arn:aws:iam::${accountId}:instance-profile/${name}";
 
@@ -239,7 +239,7 @@ with pkgs.lib;
         }
       '';
     };
-  
+
   resources.iamRoles.keyserver-role =
      { resources, ... }:
      {
@@ -928,6 +928,7 @@ with pkgs.lib;
         instanceType = "n1-standard-2";
         project = gcpProject;
         accessKey = builtins.readFile accessKey;
+        ipAddress = google-nat-ip;
         inherit serviceAccount;
         canIpForward = true;
         region =  "us-central1-a";

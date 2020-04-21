@@ -10,7 +10,7 @@ let
 
   subnetId = "subnet-dc1a4194";
   securityGroup = "sg-b3ac49c3";
-  lbJobsImage = "lb-jobs-5155924";
+  lbJobsImage = "lb-jobs-5170039";
   gcpProject = "lb-jobs";
   gcpServiceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
 
@@ -224,7 +224,7 @@ in rec {
     { hostName = "steve-dev-2.logicblox.com";
       elasticIPv4 = "34.231.25.40";
       key-server-elastic-ip = "3.209.190.228";
-      google-nat-elastic-ip = "";
+      google-nat-elastic-ip = "google-nat";
       inherit (prod) workers;
       inherit (prod) region;
       inherit (dev) spotfleetRole;
