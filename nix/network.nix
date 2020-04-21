@@ -574,7 +574,7 @@ with pkgs.lib;
 
       # Monocle setup
       telegraf.enable = true;
-      telegraf.kafkaSaslPassword = if true then builtins.readFile (<global_creds/monocle/kafkaProdPassword>) else "";
+      telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
 
       environment.systemPackages = [ builds.worker pkgs.linuxPackages.sysdig ] ++ provisionScripts;
@@ -603,7 +603,7 @@ with pkgs.lib;
 
       # Monocle setup
       telegraf.enable = true ;
-      telegraf.kafkaSaslPassword = if true then builtins.readFile (<global_creds/monocle/kafkaProdPassword>) else "";
+      telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
 
       fileSystems."/keys" =
@@ -737,7 +737,7 @@ with pkgs.lib;
       # Monocle setup
       telegraf.enable = true;
       telegraf.enableSteveDatabaseMetrics = true;
-      telegraf.kafkaSaslPassword = if true then builtins.readFile (<global_creds/monocle/kafkaProdPassword>) else "";
+      telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
 
       # pass s3Name
@@ -811,7 +811,7 @@ with pkgs.lib;
 
       # Monocle setup
       telegraf.enable = true;
-      telegraf.kafkaSaslPassword = if true then builtins.readFile (<global_creds/monocle/kafkaProdPassword>) else "";
+      telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
       telegraf.enableSteveDatabaseMetrics = true;
 
