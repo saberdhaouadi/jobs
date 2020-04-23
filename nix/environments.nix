@@ -72,6 +72,8 @@ in rec {
         maxDelta = "100";
       };
       "r3.4xlarge" = {
+        instanceType = "i3.4xlarge";
+        diskSize = "10";
         number = 0;
         price = "1.5";
         percentageSpot = "1.0";
@@ -79,6 +81,8 @@ in rec {
         max = "200";
       };
       "r3.8xlarge" = {
+        instanceType = "i3.8xlarge";
+        diskSize = "10";
         number = 0;
         price = "3.00";
         percentageSpot = "1.0";
@@ -115,8 +119,10 @@ in rec {
         min = "75";
       };
       "i2.8xlarge" = {
+        instanceType = "i3.8xlarge";
+        diskSize = "10";
         number = 0;
-        price = "7.44";
+        price = "3.00";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "50";
@@ -129,7 +135,33 @@ in rec {
         max = "200";
         min = "75";
         diskSize = "10";
-        inherit subnetId securityGroup;
+      };
+      "i3.2xlarge" = {
+        number = 0;
+        price = "0.625";
+        percentageSpot = "1.0";
+        percentageQueue = "1.0";
+        max = "200";
+        min = "75";
+        diskSize = "10";
+      };
+      "i3.4xlarge" = {
+        number = 0;
+        price = "1.25";
+        percentageSpot = "1.0";
+        percentageQueue = "1.0";
+        max = "200";
+        min = "75";
+        diskSize = "10";
+      };
+      "i3.8xlarge" = {
+        number = 0;
+        price = "2.50";
+        percentageSpot = "1.0";
+        percentageQueue = "1.0";
+        max = "200";
+        min = "75";
+        diskSize = "10";
       };
       /** Google cloud queues
       * TODO:
@@ -214,7 +246,7 @@ in rec {
     { hostName = "steve-dev.logicblox.com";
       elasticIPv4 = "3.226.198.225";
       key-server-elastic-ip = "34.232.108.153";
-      google-nat-elastic-ip = "nat-eip";
+      google-nat-elastic-ip = "google-nat-dev";
       inherit (prod) workers;
       inherit (prod) region;
       spotfleetRole = "arn:aws:iam::202226491534:role/aws-ec2-spot-fleet-role";

@@ -722,7 +722,7 @@ with pkgs.lib;
           source /etc/profile
           /run/current-system/sw/bin/update-lb-versions
         '';
-        startAt = "Mon,Thu 04:00";
+        startAt = "04:00";
       };
 
       fileSystems."/data" =
@@ -935,9 +935,12 @@ with pkgs.lib;
       };
 
       # NAT setup
-      networking.firewall.extraCommands = ''
-        iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-      '';
+      networking.firewall = {
+        enable =  true;
+        extraCommands = ''
+          iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+        '';
+      };
       boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
   };
 
