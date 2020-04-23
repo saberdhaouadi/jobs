@@ -742,7 +742,7 @@ with pkgs.lib;
       telegraf.enableJolokiaAgent = false;
       telegraf.extraConfig = {
         procstat = {
-            process_name = "lb-server";
+            systemd_unit = "lb-server";
         };
         statsd = {
           service_address = ":8125";
@@ -994,10 +994,7 @@ with pkgs.lib;
     { config, lib, ... }:
     { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
-      services.dd-agent.tags = [
-          "deployment:${config.deployment.name}"
-          "uuid:${config.deployment.uuid}"
-        ];
+      services.dd-agent.enable = mkForce false;
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
