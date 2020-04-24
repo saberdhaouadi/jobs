@@ -3,6 +3,7 @@
 , accountId ? "826045886586"
 , name
 , logToken ? ""
+, sumoToken ? ""
 , latestLb ? true
 , ...
 }:
@@ -994,6 +995,7 @@ with pkgs.lib;
     { config, lib, ... }:
     { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
+      logging.sumologic.sumoToken = sumoToken;
       services.dd-agent.enable = mkForce false;
     };
 
