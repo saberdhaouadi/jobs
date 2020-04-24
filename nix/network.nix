@@ -996,6 +996,7 @@ with pkgs.lib;
     { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
       logging.sumologic.sumoToken = sumoToken;
+      logging.sumologic.collectorHost = "syslog.collection.us1.sumologic.com";
       services.dd-agent.enable = mkForce false;
     };
 
