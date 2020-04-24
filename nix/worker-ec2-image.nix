@@ -3,13 +3,14 @@
   imports = [
     ./worker.nix
     <nixpkgs/nixos/modules/virtualisation/amazon-image.nix>
-    <lbdevops/logicblox/config/logging/logentries.nix>
+    <lbdevops/logicblox/config/logging/rsyslogd.nix>
   ];
 
   #FIXME revert once DEVOPS-43/LB-3068 are fixed
   boot.kernelPackages = pkgs.linuxPackages_4_14;
 
   logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
+  logging.sumologic.sumoToken = builtins.readFile <global_creds/sumologic-lb-jobs-prod-workers>;
 
   ec2.hvm = true;
   networking.hostName = pkgs.lib.mkForce "i-worker";
