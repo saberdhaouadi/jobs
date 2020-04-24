@@ -568,7 +568,6 @@ with pkgs.lib;
 
       imports = [
         <lbdevops/logicblox/production.nix>
-        ./datadog/provisioner.nix
         <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
       ] ;
 
@@ -576,6 +575,7 @@ with pkgs.lib;
       telegraf.enable = true;
       telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
+      telegraf.enableJolokiaAgent = false;
 
       environment.systemPackages = [ builds.worker pkgs.linuxPackages.sysdig ] ++ provisionScripts;
       systemd.services = listToAttrs (map (t: nameValuePair "run-provisioner-${workerName t}" (provisioner-service t) ) instanceTypes) // { inherit terminate-impaired; };
@@ -605,6 +605,8 @@ with pkgs.lib;
       telegraf.enable = true ;
       telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
+      telegraf.enableJolokiaAgent = false;
+      telegraf.nginxInputUrl = "http://127.0.0.1/nginx_status";
 
       fileSystems."/keys" =
         { autoFormat = true;
@@ -729,8 +731,6 @@ with pkgs.lib;
       imports = [
         ./database.nix
         <lbdevops/logicblox/production.nix>
-        <lbdevops/nixos/logicblox/datadog/all.nix>
-        ./datadog/database.nix
         <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
       ];
 
@@ -739,6 +739,16 @@ with pkgs.lib;
       telegraf.enableSteveDatabaseMetrics = true;
       telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
+      telegraf.enableJolokiaAgent = false;
+      telegraf.extraConfig = {
+        procstat = {
+            systemd_unit = "lb-server";
+        };
+        statsd = {
+          service_address = ":8125";
+          datadog_extensions = true;
+        };
+      };
 
       # pass s3Name
       system.build.s3Name = s3Name;
@@ -813,7 +823,14 @@ with pkgs.lib;
       telegraf.enable = true;
       telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
-      telegraf.enableSteveDatabaseMetrics = true;
+      telegraf.enableJolokiaAgent = false;
+      telegraf.nginxInputUrl = "http://127.0.0.1/nginx_status";
+      telegraf.extraConfig = {
+        statsd = {
+          service_address = ":8125";
+          datadog_extensions = true;
+        };
+      };
 
       system.build.frontendConfig = frontendConfig;
 
@@ -977,10 +994,8 @@ with pkgs.lib;
     { config, lib, ... }:
     { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
-      services.dd-agent.tags = [
-          "deployment:${config.deployment.name}"
-          "uuid:${config.deployment.uuid}"
-        ];
+      services.dd-agent.enable = mkForce false;
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
+
