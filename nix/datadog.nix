@@ -201,9 +201,9 @@ in
     {
       "server-reboot" = 
         ({
-          name = "Server {{host.name}} rebooted";
+          name = "[lb-jobs-${name}]Server {{host.name}} rebooted";
           type = "metric alert";
-          message = "@opsgenie-lb_jobs";
+          message = "@lb-jobs@logicblox.com @opsgenie-OPS @jira-ops-bug";
           query = "min(last_1m):diff(avg:system.uptime{deployment:lb-jobs-${name}} by {host}) < 0";
           monitorOptions = builtins.toJSON {
             no_data_timeframe = 10;
