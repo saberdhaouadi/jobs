@@ -974,6 +974,7 @@ with pkgs.lib;
                   <lbdevops/nixos/local-modules/cloudwatch.nix> ];
 
       logging.sumologic.sumoToken = sumoToken;
+      logging.sumologic.collectorHost = "syslog.collection.us1.sumologic.com";
       services.dd-agent.tags = [
           "deployment:${config.deployment.name}"
           "uuid:${config.deployment.uuid}"

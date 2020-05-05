@@ -19,8 +19,8 @@
           '';
     in [ shutdown-self ];
 
-  logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
-  logging.sumologic.sumoToken = builtins.readFile <global_creds/sumologic-lb-jobs>;
+  logging.sumologic.sumoToken = builtins.readFile <global_creds/sumologic-lb-jobs-dev-workers>;
+  logging.sumologic.collectorHost = "syslog.collection.us1.sumologic.com";
 
   ec2.hvm = true;
   networking.hostName = pkgs.lib.mkForce "i-worker";
