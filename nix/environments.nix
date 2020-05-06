@@ -10,7 +10,7 @@ let
 
   subnetId = "subnet-dc1a4194";
   securityGroup = "sg-b3ac49c3";
-  lbJobsImage = "lb-jobs-5170039";
+  lbJobsImage = "lb-jobs-5201168";
   gcpProject = "lb-jobs";
   gcpServiceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
 
@@ -24,12 +24,6 @@ in rec {
         price = "0.25";
         percentageSpot = "1.0";
         onDemand = true;
-      };
-      "c3.xlarge-online" = {
-        number = 1;
-        price = "0.25";
-        percentageSpot = "0";
-        instanceType = "c3.xlarge";
       };
       "c3.2xlarge" = {
         number = 0;
