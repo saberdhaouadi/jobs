@@ -5,6 +5,7 @@
 , logToken ? ""
 , sumoToken ? ""
 , latestLb ? true
+, allowedGroups ? [ ]
 , ...
 }:
 let
@@ -993,11 +994,21 @@ with pkgs.lib;
 
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
+    { imports = [
+         <lbdevops/logicblox/config/logging/rsyslogd.nix>
+         <lbdevops/nixos/local-modules/cloudwatch.nix>
+         <lbdevops/nixos/local-modules/freeipa.nix>
+         <lbdevops/nixos/base/user-env.nix>
+        ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
       logging.sumologic.sumoToken = sumoToken;
       logging.sumologic.collectorHost = "syslog.collection.us1.sumologic.com";
       services.dd-agent.enable = mkForce false;
+      freeipa.enable = true;
+      freeipa.allowedGroups = allowedGroups;
+      freeipa.caCertificate = <global_creds/freeipa-creds/ca.crt>;
+      freeipa.tlsCertificatePem = <global_creds/freeipa-creds/ldap_tls.pem>;
+      freeipa.tlsCertificateKey = <global_creds/freeipa-creds/ldap_tls.key>;
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
