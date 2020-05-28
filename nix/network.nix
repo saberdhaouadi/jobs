@@ -537,7 +537,6 @@ with pkgs.lib;
 
       imports = [
         <lbdevops/logicblox/production.nix>
-        ./datadog/provisioner.nix
       ] ;
 
       environment.systemPackages = [ builds.worker pkgs.linuxPackages.sysdig ] ++ provisionScripts;
@@ -565,6 +564,9 @@ with pkgs.lib;
         <lbdevops/logicblox/production.nix>
         ./keyserver.nix
       ] ;
+
+      # Monocle setup
+      telegraf.nginxInputUrl = "http://127.0.0.1/nginx_status";
 
       fileSystems."/keys" =
         { autoFormat = true;
@@ -689,9 +691,19 @@ with pkgs.lib;
       imports = [
         ./database.nix
         <lbdevops/logicblox/production.nix>
-        <lbdevops/nixos/logicblox/datadog/all.nix>
-        ./datadog/database.nix
       ];
+
+      # Monocle setup
+      telegraf.enableSteveDatabaseMetrics = true;
+      telegraf.extraConfig = {
+        procstat = {
+            systemd_unit = "lb-server";
+        };
+        statsd = {
+          service_address = ":8125";
+          datadog_extensions = true;
+        };
+      };
 
       # pass s3Name
       system.build.s3Name = s3Name;
@@ -758,7 +770,18 @@ with pkgs.lib;
 
       deployment.ec2.ebsInitialRootDiskSize = 100;
 
-      imports = [ <lbdevops/logicblox/production.nix> ./frontend.nix ];
+      imports = [ <lbdevops/logicblox/production.nix>
+                  ./frontend.nix
+                ];
+
+      # Monocle setup
+      telegraf.nginxInputUrl = "http://127.0.0.1/nginx_status";
+      telegraf.extraConfig = {
+        statsd = {
+          service_address = ":8125";
+          datadog_extensions = true;
+        };
+      };
 
       system.build.frontendConfig = frontendConfig;
 
@@ -971,19 +994,27 @@ with pkgs.lib;
     { imports = [ <lbdevops/nixos/local-modules/freeipa.nix>
                   <lbdevops/nixos/base/user-env.nix>
                   <lbdevops/logicblox/config/logging/rsyslogd.nix>
-                  <lbdevops/nixos/local-modules/cloudwatch.nix> ];
+                  <lbdevops/nixos/local-modules/cloudwatch.nix>
+                  <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
+                ];
 
       logging.sumologic.sumoToken = sumoToken;
       logging.sumologic.collectorHost = "syslog.collection.us1.sumologic.com";
-      services.dd-agent.tags = [
-          "deployment:${config.deployment.name}"
-          "uuid:${config.deployment.uuid}"
-        ];
+      services.datadog-agent.enable = mkForce false;
+
+      # Freeipa setup
       freeipa.enable = true;
       freeipa.allowedGroups = allowedGroups;
       freeipa.caCertificate = <global_creds/freeipa-creds/ca.crt>;
       freeipa.tlsCertificatePem = <global_creds/freeipa-creds/ldap_tls.pem>;
       freeipa.tlsCertificateKey = <global_creds/freeipa-creds/ldap_tls.key>;
+
+      # Monocle setup
+      telegraf.enable = true ;
+      telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
+      telegraf.enableWorkflowMonitors = false;
+      telegraf.enableJolokiaAgent = false;
+
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
