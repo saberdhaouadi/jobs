@@ -5,7 +5,8 @@ lbconfig_package(
   'lb-steve-protocols',
   version='1.0',
   default_prefix='/opt/logicblox/lb-steve-protocols',
-  default_targets=['jars', 'lb-libraries', 'java_protobufs', 'findbugs'])
+  default_targets=['jars', 'lb-libraries', 'java_protobufs'])
+  #default_targets=['jars', 'lb-libraries', 'java_protobufs', 'findbugs'])
 
 depends_on(
   logicblox_dep,
@@ -71,12 +72,12 @@ jar(
       java_protobuf_file('database', 'com.logicblox.steve.protocol'),
       java_protobuf_file('keys', 'com.logicblox.steve.protocol'),
    ],
-   findbugs = True,
+   #findbugs = True,
    classpath = classpath)
 
-rule(output="findbugs",
-     phony=True,
-     input="jars"
-     )
+#rule(output="findbugs",
+#     phony=True,
+#     input="jars"
+#     )
 
 link_libs(classpath)

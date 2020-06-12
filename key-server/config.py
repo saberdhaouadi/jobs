@@ -5,7 +5,8 @@ lbconfig_package(
   'lb-key-server',
   version='1.0',
   default_prefix='/opt/logicblox/lb-steve-key-server',
-  default_targets=['jars', 'findbugs'])
+  default_targets=['jars'])
+  #default_targets=['jars', 'findbugs'])
 
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
 commons_cli_dep = ( "commons_cli", {'default_path': "/opt/logicblox/deps/commons-cli-1.2"})
@@ -76,9 +77,9 @@ classpath = [
 jar(
   name = 'lb-steve-key-server',
   srcdir = 'java',
-  findbugs = True,
+  #findbugs = True,
   classpath = classpath)
-core.g_rules['findbugs'].input = set()
+#core.g_rules['findbugs'].input = set()
 
 link_libs(classpath)
 

@@ -5,7 +5,8 @@ lbconfig_package(
   'lb-steve-client',
   version='1.0',
   default_prefix='/opt/logicblox/lb-steve-client',
-  default_targets=['jars', 'findbugs'])
+  default_targets=['jars'])
+  #default_targets=['jars', 'findbugs'])
 
 protocols_dep = ("protocols", {'default_path': "/opt/logicblox/lb-steve-protocols"})
 aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/cloud-store"})
@@ -59,9 +60,9 @@ classpath = [
 jar(
    name = 'lb-steve-client',
    srcdir = 'java',
-   findbugs = True,
+   #findbugs = True,
    classpath = classpath)
-core.g_rules['findbugs'].input = set()
+#core.g_rules['findbugs'].input = set()
 
 link_libs(classpath)
 

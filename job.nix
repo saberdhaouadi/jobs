@@ -260,8 +260,8 @@ let
     }));
 
   postInstall = ''
-    mkdir $out/findbugs
-    cp build/*-findbugs.html $out/findbugs
+    #mkdir $out/findbugs
+    #cp build/*-findbugs.html $out/findbugs
   '';
 
   jobs = rec {
@@ -272,7 +272,9 @@ let
      builder_config.buildLBConfig {
       name = "jobs-frontend";
       src = ./frontend;
-      buildInputs = [ logicblox makeWrapper client.build worker pkgs.jq scala pkgs.findbugs ];
+      buildInputs = [ logicblox makeWrapper client.build worker pkgs.jq scala ];
+      # buildInputs = [ logicblox makeWrapper client.build worker pkgs.jq scala pkgs.findbugs ];
+      # buildInputs = [ logicblox makeWrapper client.build worker pkgs.jq scala ];
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-frontend-database=${database.build}"
@@ -286,7 +288,8 @@ let
     builder_config.buildLBConfig {
       name = "lb-steve-client";
       src = ./client;
-      buildInputs = [ logicblox lb_web pkgs.findbugs ];
+      buildInputs = [ logicblox lb_web ];
+      # buildInputs = [ logicblox lb_web pkgs.findbugs ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
@@ -305,7 +308,8 @@ let
     builder_config.buildLBConfig {
       name = "jobs-protocols";
       src = ./protocols;
-      buildInputs = [ logicblox lb_web pkgs.findbugs ];
+      buildInputs = [ logicblox lb_web ];
+      #buildInputs = [ logicblox lb_web pkgs.findbugs ];
       enableLBservices = false;
       inherit postInstall;
     };
@@ -314,7 +318,8 @@ let
     builder_config.buildLBConfig {
       name = "jobs-worker";
       src = ./worker;
-      buildInputs = [ logicblox makeWrapper pkgs.findbugs ];
+      buildInputs = [ logicblox makeWrapper ];
+      # buildInputs = [ logicblox makeWrapper pkgs.findbugs ];
       enableLBservices = false;
       configureFlags = [
         "--with-commons-exec=${deps.commons-exec}"
@@ -365,7 +370,8 @@ let
      builder_config.buildLBConfig {
       name = "lb-steve-key-server";
       src = ./key-server;
-      buildInputs = [ logicblox makeWrapper pkgs.jq scala pkgs.findbugs ];
+      buildInputs = [ logicblox makeWrapper pkgs.jq scala ];
+      # buildInputs = [ logicblox makeWrapper pkgs.jq scala pkgs.findbugs ];
       enableLBservices = false;
       configureFlags = [
         "--with-protocols=${protocols}"
@@ -384,18 +390,18 @@ let
 
   used-dependencies = import ./used-deps.nix { inherit pkgs; };
 
-  findbugs = pkgs.runCommand "findbugs-combine" {} ''
-    mkdir -p $out/nix-support
-    cp ${worker}/findbugs/*.html $out
-    cp ${client.build}/findbugs/*.html $out
-    cp ${key-server}/findbugs/*.html $out
-    cp ${frontend}/findbugs/*.html $out
-    cp ${protocols}/findbugs/*.html $out
-
-    for f in $out/*.html; do
-      echo "report $(basename $f .html) $f" >> $out/nix-support/hydra-build-products
-    done
-  '';
+  #findbugs = pkgs.runCommand "findbugs-combine" {} ''
+  #  mkdir -p $out/nix-support
+  #  cp ${worker}/findbugs/*.html $out
+  #  cp ${client.build}/findbugs/*.html $out
+  #  cp ${key-server}/findbugs/*.html $out
+  #  cp ${frontend}/findbugs/*.html $out
+  #  cp ${protocols}/findbugs/*.html $out
+  #
+  #  for f in $out/*.html; do
+  #    echo "report $(basename $f .html) $f" >> $out/nix-support/hydra-build-products
+  #  done
+  #'';
 
   } // ( pkgs.lib.optionalAttrs (benchmarks != null) {
 
