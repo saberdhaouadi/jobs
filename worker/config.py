@@ -47,7 +47,7 @@ classpath = [
   '$(lb_web)/lib/java/httpclient-4.5.2.jar',
   '$(lb_web)/lib/java/httpcore-4.4.4.jar',
   '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
-  '$(lb_web)/lib/java/netty-all-4.1.22.Final.jar',
+  '$(lb_web)/lib/java/netty-all-4.1.46.Final.jar',
   '$(lb_web)/lib/java/commons-codec-1.9.jar',
   '$(lb_web)/lib/java/commons-configuration-1.8.jar',
   '$(lb_web)/lib/java/commons-lang-2.6.jar',

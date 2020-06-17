@@ -30,7 +30,7 @@ config_file('$(lb_web)/config/lb-web-client.config')
 if subprocess.check_output(["lb", "version"]).strip() == "4.4.4":
     netty = '$(lb_web)/lib/java/netty-all-4.1.8.Final.jar'
 else:
-    netty = '$(lb_web)/lib/java/netty-all-4.1.22.Final.jar'
+    netty = '$(lb_web)/lib/java/netty-all-4.1.46.Final.jar'
 
 classpath = [
   '$(protocols)/lib/java/lb-steve-protocols.jar',
