@@ -73,9 +73,9 @@ classpath = [
   '$(lb_web)/lib/java/aws-java-sdk-1.11.102.jar',
   '$(lb_web)/lib/java/httpclient-4.5.2.jar',
   '$(lb_web)/lib/java/httpcore-4.4.4.jar',
-  '$(lb_web)/lib/java/jackson-annotations-2.6.0.jar',
-  '$(lb_web)/lib/java/jackson-core-2.6.6.jar',
-  '$(lb_web)/lib/java/jackson-databind-2.6.6.jar',
+  '$(lb_web)/lib/java/jackson-annotations-2.10.4.jar',
+  '$(lb_web)/lib/java/jackson-core-2.10.4.jar',
+  '$(lb_web)/lib/java/jackson-databind-2.10.4.jar',
   '$(lb_web)/lib/java/commons-logging-1.1.3.jar',
 
   #opensamlv3 dependencies
