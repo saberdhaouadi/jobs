@@ -62,7 +62,7 @@ classpath = [
   '$(lb_web)/lib/java/opencensus-api-0.24.0.jar',
   '$(lb_web)/lib/java/opencensus-contrib-http-util-0.24.0.jar',
   '$(lb_web)/lib/java/jsr305-3.0.2.jar',
-  '$(lb_web)/lib/java/netty-all-4.1.22.Final.jar',
+  '$(lb_web)/lib/java/netty-all-4.1.46.Final.jar',
 
   '$(lb_web)/lib/java/cloudstore-0.2.jar',
   '$(logicblox)/lib/java/commons-io-2.4.jar',
