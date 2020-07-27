@@ -157,6 +157,15 @@ in rec {
         min = "75";
         diskSize = "10";
       };
+      "r5ad.4xlarge" = {
+        number = 0;
+        price = "1.04";
+        percentageSpot = "1.0";
+        percentageQueue = "1.0";
+        max = "200";
+        min = "75";
+        diskSize = "10";
+      };
       /** Google cloud queues
       * TODO:
       *   - add more instance types
