@@ -7,14 +7,17 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
-import com.logicblox.s3lib.DirectoryKeyProvider;
-import com.logicblox.s3lib.KeyProvider;
-import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.Utils;
+import com.logicblox.cloudstore.DirectoryKeyProvider;
+import com.logicblox.cloudstore.KeyProvider;
+import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.S3ClientBuilder;
+import com.logicblox.cloudstore.Utils;
+import com.logicblox.cloudstore.Metadata;
 
 import com.logicblox.bloxweb.config.ConfigMap;
 
 import java.io.File;
+import java.net.MalformedURLException;
 import java.util.concurrent.Executors;
 
 public class S3Utils {
@@ -39,15 +42,15 @@ public class S3Utils {
   /**
    * Create an S3Client from a configuration
    */
-  public static S3Client createS3Client(ConfigMap config) {
+  public static S3Client createS3Client(ConfigMap config) throws MalformedURLException {
     // TODO make retry count configurable
     int retryCount = 7;
 
-    S3Client result = new S3Client(
-            (AWSCredentialsProvider)null,
-            getHttpExecutor(config),
-            getInternalExecutor(config),
-            getKeyProvider(config));
+    S3Client result = new S3ClientBuilder()
+      .setApiExecutor(getHttpExecutor(config))
+      .setInternalExecutor(getInternalExecutor(config))
+      .setKeyProvider(getKeyProvider(config))
+      .createS3Client();
 
     result.setRetryCount(retryCount);
     if(config != null && config.isSome("s3_endpoint")) {
@@ -60,7 +63,7 @@ public class S3Utils {
    * The hash needs to have the syntax "hash-type:hash-value", where
    * the supported hash-type is currently only 'etag'.
    */
-  public static boolean verifyHash(ObjectMetadata metadata, String hash) {
+  public static boolean verifyHash(Metadata metadata, String hash) {
     if (metadata == null)
       throw new IllegalArgumentException("metadata must not be null");
     if (hash == null)

@@ -1,7 +1,6 @@
 { config, pkgs, lib, resources, nodes, ... }:
 let
   builder-config = import <config> {};
-  logicblox = builder-config.getLB (import ../lb-version.nix);
   updateLBversions = pkgs.writeScriptBin "update-lb-versions" ''
     #! /usr/bin/env bash
     set -ex
@@ -20,18 +19,18 @@ let
       lb web-client import -i $CSV http://localhost:8080/tdx/platform_versions
     fi
   '';
-  builds = import ../. {};
 in
 {
   imports = [
     <lbdevops/nixos/logicblox/lb40-module.nix>
     <lbdevops/nixos/logicblox/installer.nix>
+    ./builds.nix
   ] ;
 
   environment.systemPackages = [ updateLBversions ];
 
   services.logicblox.enable = true;
-  services.logicblox.logicblox = logicblox;
+  services.logicblox.logicblox = config.logicblox.jobs.platform;
   services.logicblox.config.lb-server = ''
     [workspace]
     auto_backup_mode=none
@@ -44,7 +43,7 @@ in
     port = 8125
   '';
 
-  logicblox.application.installer = builds.database.build;
+  logicblox.application.installer = (config.logicblox.jobs.builds).database.build;
   services.nginx.enable = lib.mkOverride 0 false;
 
   networking.firewall.allowedTCPPorts = [ 8080 55183 80 ];

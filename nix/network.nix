@@ -1,10 +1,18 @@
 { region ? "us-east-1"
 , account ? "lb-jobs"
 , accountId ? "826045886586"
+, accessKey
 , name
 , logToken ? ""
+, sumoToken ? ""
 , vpcId ? ""
 , production ? false
+, allowedGroups ? [ "admins" ]
+, gcpProject                     # (required) GCE project to deploy to
+, serviceAccount ? "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com" # (required) GCE service account email
+, latestLb ? true
+, provisionVpc ? false
+, ...
 }:
 let
   environments = import ./environments.nix;
@@ -13,6 +21,14 @@ let
   instanceTypes = builtins.attrNames env.workers;
 
   amis = import ./amis.nix;
+  bootstrap-images = import ./bootstrap-images.nix;
+
+  devips = import ./dev-ips.nix;
+  prodips = import ./prod-ips.nix;
+  natips = import ./nat-ips.nix;
+
+  dep-region = env.region;
+  google-nat-ip = env.google-nat-elastic-ip;
 
   workerName = type : pkgs.lib.replaceChars ["."] ["-"] type;
   sqsName = type : "steve-jobs-${name}-${pkgs.lib.replaceChars ["."] ["-"] type}";
@@ -26,6 +42,16 @@ let
   pkgs = import <nixpkgs> { config.allowUnfree = true; config.allowBroken = true; };
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
+
+  cloudwatchpolicy = ''
+    { "Action": [ "cloudwatch:PutMetricData",
+                  "cloudwatch:GetMetricStatistics",
+                  "cloudwatch:ListMetrics",
+                  "ec2:DescribeTags"],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+   '';
 
   instanceProfileArn = name: "arn:aws:iam::${accountId}:instance-profile/${name}";
 
@@ -47,33 +73,6 @@ let
     '';
   };
 
-  key-proxy = region:
-    { config, pkgs, resources, nodes, ... }:
-    {
-      deployment.targetEnv = "ec2";
-      deployment.ec2.accessKeyId = account;
-      deployment.ec2.keyPair = resources.ec2KeyPairs."kp-${region}".name;
-      deployment.ec2.securityGroups = [ "admin" ];
-      deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.large" else "c3.large";
-      deployment.ec2.elasticIPv4 = resources.elasticIPs."key-ip-${region}";
-
-      networking.firewall.allowedTCPPorts = [ 443 ];
-
-      services.haproxy.enable = true;
-      services.haproxy.config = ''
-        listen l1
-            bind 0.0.0.0:443
-            mode tcp
-            clitimeout 180000
-            srvtimeout 180000
-            contimeout 4000
-            server srv1 ${nodes."key-server-${name}".config.networking.publicIPv4}:443
-
-        global
-            user haproxy
-      '';
-    };
 
   worker = queue: type:
     { config, pkgs, resources, nodes, lib, ... }:
@@ -97,6 +96,10 @@ let
       deployment.ec2.tags.S3Bucket = s3Name;
       deployment.ec2.tags.IncomingQueue = sqsURL queue;
       deployment.ec2.tags.OutgoingQueue = sqsStatusURL;
+
+      users.extraUsers.root.openssh.authorizedKeys.keys = [
+      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCunr4txUxeXVeaEkLm06vjFceW71ciwf3vPtGQNRPa3mRIxWxRvtaSXj8djNn9g9Lc/Rqjhz2LuGfi9rQVeynpglmicSmt6Ge3UpQL+Z4QibY95movUTb+yvjIFTOHGbeRBGholpfvCK1vd/ZCzv9/21X2Mbg8N1X2/pxGdsmtv6dG9tOuF4Bv47uZA4pzMUC16XxriJN9WKBcrUwv5tPqP0uQoSWnnuU/RIMnZIiZUxi16jKTdMWRUFjx69s/lHkgUdnkAim7ZahhWOCsFAQTq65RdNsi40c/6N7MenWIWWiPIqQ59VpV7E9sxXa4Kbj7W/v4wqEzTcOFuG3EHuGx ahmed.samti@infor.com"
+      ];
 
     };
 
@@ -147,27 +150,27 @@ let
       mechanism_option_credential_service = http://database-${name}:55183/admin/credentials
     '';
 
+    getDeviceName = import <lbdevops/nixops/generic/device-name.nix>;
+
 in
 with pkgs.lib;
 {
   network.description = "Steve Jobs [${name}]";
-
-  resources.elasticIPs.key-ip-us-west-1 = { region = "us-west-1" ; accessKeyId = account; };
-  "key-proxy-${name}-us-west-1" = key-proxy "us-west-1";
-
-  resources.elasticIPs.key-ip-us-west-2 = { region = "us-west-2" ; accessKeyId = account; };
-  "key-proxy-${name}-us-west-2" = key-proxy "us-west-2";
+  require =
+    [ <lbdevops/nixops/generic/tags.nix> ];
+   # ++ (optionals provisionVpc [ ./vpc.nix ]);
 
   resources.ec2KeyPairs.worker-kp = { inherit region ; accessKeyId = account; };
-  resources.ec2KeyPairs.worker-kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
   resources.ec2KeyPairs.worker-kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
+  resources.ec2KeyPairs.worker-kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
+  resources.ec2KeyPairs.worker-kp-us-east-1 = { region = "us-east-1"; accessKeyId = account; };
+
   resources.ec2KeyPairs.kp = { inherit region ; accessKeyId = account; };
-  resources.ec2KeyPairs.kp-us-west-1 = { region = "us-west-1"; accessKeyId = account; };
-  resources.ec2KeyPairs.kp-us-west-2 = { region = "us-west-2"; accessKeyId = account; };
 
   resources.sqsQueues = sqsQueues // { "${sqsStatusName}" = sqsStatusQueue;  };
   resources.s3Buckets."${s3Name}-bucket" = { inherit region ; accessKeyId = account; name = s3Name; };
   resources.s3Buckets."${s3Name}-logs-bucket" = { inherit region ; accessKeyId = account; name = "${s3Name}-logs"; };
+
 
   resources.iamRoles.worker-role =
     { resources, ... }:
@@ -237,6 +240,19 @@ with pkgs.lib;
       '';
     };
 
+  resources.iamRoles.keyserver-role =
+     { resources, ... }:
+     {
+       accessKeyId = account;
+       policy = ''
+         {
+           "Statement": [
+             ${cloudwatchpolicy}
+           ]
+         }
+       '';
+     };
+
   resources.iamRoles.database-role =
     { resources, ... }:
     {
@@ -271,7 +287,8 @@ with pkgs.lib;
                 "arn:aws:s3:::${s3Name}",
                 "arn:aws:s3:::${s3Name}/*"
               ]
-            }
+            },
+            ${cloudwatchpolicy}
           ]
         }
       '';
@@ -304,11 +321,23 @@ with pkgs.lib;
                 "ec2:TerminateInstances",
                 "ec2:RequestSpotInstances",
                 "ec2:CreateTags",
-                "iam:PassRole"
+                "ec2:RequestSpotFleet",
+                "ec2:DescribeSpotFleetRequests",
+                "ec2:CancelSpotFleetRequests",
+                "ec2:DescribeSpotFleetInstances",
+                "ec2:DescribeSpotFleetRequestHistory",
+                "ec2:ModifySpotFleetRequest",
+                "ec2:CreateLaunchTemplateVersion",
+                "ec2:DescribeImages",
+                "ec2:DescribeInstanceStatus",
+                "ec2:DescribeSubnets",
+                "iam:PassRole",
+                "iam:CreateServiceLinkedRole"
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
-            }
+            },
+            ${cloudwatchpolicy}
           ]
         }
       '';
@@ -356,7 +385,8 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
               "Resource": [ "*" ]
-            }
+            },
+            ${cloudwatchpolicy}
           ]
         }
       '';
@@ -369,15 +399,21 @@ with pkgs.lib;
           fromPort = 443;
           toPort = 443;
           sourceIp = "${ip}/32";
-        } ;
-      ips = if production then builtins.fromJSON (builtins.readFile ./prod-ips.json) else builtins.fromJSON (builtins.readFile ./dev-ips.json);
+        };
+      ips = if production then prodips else devips ;
       accountEntry = account:
         {
           fromPort = 443;
           toPort = 443;
           sourceGroup.ownerId = account;
           sourceGroup.groupName = "admin";
-        } ;
+        };
+      accountEntryPort = port: sg:
+        { fromPort = port;
+          toPort = port;
+          sourceGroup.ownerId = accountId;
+          sourceGroup.groupName = sg.name;
+        };
     in
       { config, resources, ... }:
       {
@@ -385,23 +421,68 @@ with pkgs.lib;
         accessKeyId = account;
         vpcId = mkIf (vpcId != "") vpcId;
         description = "Security group for frontend";
-        rules = map entry ips ++ map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ]; 
+        rules = map entry ips ++ map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = resources.ec2SecurityGroups.frontend-sg.name; } ];
       };
+
+    resources.ec2SecurityGroups.database-sg =
+      let
+        accountEntry = account:
+          {
+            fromPort = 8080;
+            toPort = 8080;
+            sourceGroup.ownerId = account;
+            sourceGroup.groupName = "admin";
+          };
+      in
+        { config, resources, ... }:
+        {
+          inherit region;
+          accessKeyId = account;
+          vpcId = mkIf (vpcId != "") vpcId;
+          description = "Security group for database";
+          rules = map accountEntry (singleton accountId) ++ [ { fromPort = 55183; toPort = 55183; sourceGroup.ownerId = accountId; sourceGroup.groupName = "admin"; } ];
+        };
+
+    resources.ec2SecurityGroups.key-server-nats-sg =
+      let
+        entry = ip:
+        {
+          fromPort = 443;
+          toPort = 443;
+          sourceIp = "${ip}/32";
+        };
+        ips = natips ++ [ "34.66.55.179" ];
+        accountEntry = account:
+        {
+          fromPort = 443;
+          toPort = 443;
+          sourceGroup.ownerId = account;
+          sourceGroup.groupName = "admin";
+        };
+      in
+        { config, resources, ... }:
+        {
+          inherit region;
+          accessKeyId = account;
+          vpcId = mkIf (vpcId != "") vpcId;
+          description = "Security group for the key server ";
+          rules = map entry ips ++ map accountEntry (singleton accountId);
+        };
 
   "provisioner-${name}" =
     { config, resources, nodes, lib, ...}:
     let
-      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != (env.workers."${t}".defaultRegion or "us-east-1")) "-${r}"}"
+      script = t: r: pkgs.writeScriptBin "run-provisioner-${workerName t}${lib.optionalString (r != (env.workers."${t}".defaultRegion or region)  ) "-${r}"}"
         ''
           #! /bin/sh
           source /etc/profile
           exec lb-steve-provisioner $@ \
                  --region ${r} \
-                 --ami ${if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3} \
-                 --key-service https://${if r == "us-east-1" then nodes."key-server-${name}".config.networking.privateIPv4 else nodes."key-proxy-${name}-${r}".config.networking.privateIPv4}/keys \
+                 --ami ${bootstrap-images."${r}" or (if env.workers."${t}" ? diskSize then amis."${r}".ebs else amis."${r}".s3)} \
+                 --key-service https://${if r == region then nodes."key-server-${name}".config.networking.privateIPv4 else env.key-server-elastic-ip}/keys \
                  --queue ${workerName t} \
                  --bucket ${s3Name} \
-                 --key ${if r == "us-east-1" then resources.ec2KeyPairs.worker-kp.name else resources.ec2KeyPairs."worker-kp-${r}".name} \
+                 --key ${if r == region then resources.ec2KeyPairs.worker-kp.name else (if resources.ec2KeyPairs ? "worker-kp-${r}" then resources.ec2KeyPairs."worker-kp-${r}".name else "nokey")} \
                  --incoming ${sqsURL t} \
                  --outgoing ${sqsStatusURL} \
                  --role ${resources.iamRoles.worker-role.name} \
@@ -414,18 +495,24 @@ with pkgs.lib;
                  --percentage-queue ${env.workers."${t}".percentageQueue or "0.6"} \
                  ${lib.optionalString (env.workers."${t}" ? maxDelta) "--max-delta ${env.workers."${t}".maxDelta}"} \
                  --max ${env.workers."${t}".max or "300"} \
-                 --min ${env.workers."${t}".min or "0"}
+                 --min ${env.workers."${t}".min or "0"}\
+                 --backend ${env.workers."${t}".backend or "aws"} \
+                 --project ${env.workers."${t}".project or "project"} \
+                 --spotfleet-role ${env.spotfleetRole} \
+                 --service-account ${env.workers."${t}".serviceAccount or "unknown"}
         '';
-      provisionScripts = lib.concatMap (r: map (i: script i r) instanceTypes) (builtins.attrNames amis);
-      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or "us-east-1")}/bin/run-provisioner-${workerName t}";
+      provisionScripts = lib.concatMap (  r: map (i: script i r) instanceTypes) (builtins.attrNames dep-region);
+      run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or region )}/bin/run-provisioner-${workerName t}";
       provisioner-service = t: {
         description = "Steve Provisioner";
         path = [ pkgs.jdk ];
+        environment.GOOGLE_APPLICATION_CREDENTIALS = "/run/keys/google";
         serviceConfig = {
           ExecStart = "${run-provisioner t}";
         };
         startAt = "*:0/5";
       };
+
       terminate-impaired = {
         description = "Terminating impaired workers";
         path = [ pkgs.pythonFull ];
@@ -444,10 +531,12 @@ with pkgs.lib;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
+      deployment.ec2.ebsInitialRootDiskSize = 10;
+
+      deployment.keys.google.keyFile = <global_creds/lb-jobs-gcp.json>;
 
       imports = [
         <lbdevops/logicblox/production.nix>
-        ./datadog/provisioner.nix
       ] ;
 
       environment.systemPackages = [ builds.worker pkgs.linuxPackages.sysdig ] ++ provisionScripts;
@@ -457,26 +546,32 @@ with pkgs.lib;
     };
 
   "key-server-${name}" =
-    { config, resources, ...}:
+    { config, pkgs, resources, lib, ...}:
     {
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" ];
+      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg.name ];
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
 
+      deployment.ec2.elasticIPv4 = env.key-server-elastic-ip;
+      deployment.ec2.instanceProfile = resources.iamRoles.keyserver-role.name;
+      deployment.ec2.ebsInitialRootDiskSize = 10;
       imports = [
         <lbdevops/logicblox/production.nix>
         ./keyserver.nix
       ] ;
 
+      # Monocle setup
+      telegraf.nginxInputUrl = "http://127.0.0.1/nginx_status";
+
       fileSystems."/keys" =
         { autoFormat = true;
           fsType = "xfs";
-          device = "/dev/xvdf";
+          device = getDeviceName config.deployment.ec2.instanceType false; #"/dev/xvdf";
           options = [ "noatime" ];
           ec2.size = 20;
           ec2.encrypt = true;
@@ -596,9 +691,19 @@ with pkgs.lib;
       imports = [
         ./database.nix
         <lbdevops/logicblox/production.nix>
-        <lbdevops/nixos/logicblox/datadog/all.nix>
-        ./datadog/database.nix
       ];
+
+      # Monocle setup
+      telegraf.enableSteveDatabaseMetrics = true;
+      telegraf.extraConfig = {
+        procstat = {
+            systemd_unit = "lb-server";
+        };
+        statsd = {
+          service_address = ":8125";
+          datadog_extensions = true;
+        };
+      };
 
       # pass s3Name
       system.build.s3Name = s3Name;
@@ -606,9 +711,9 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" ];
+      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.database-sg.name ];
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.8xlarge" else "c3.8xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.4xlarge" else "c3.8xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
@@ -622,10 +727,20 @@ with pkgs.lib;
         startAt = "*:15";
       };
 
+      systemd.services.add-latest-lb-version = {
+        enable = latestLb;
+        description = "Add support for the latest LogicBlox versions in the LB Jobs cluster.";
+        script = ''
+          source /etc/profile
+          /run/current-system/sw/bin/update-lb-versions
+        '';
+        startAt = "04:00";
+      };
+
       fileSystems."/data" =
         { autoFormat = true;
           fsType = "xfs";
-          device = "/dev/xvdf";
+          device = getDeviceName config.deployment.ec2.instanceType false; #"/dev/xvdf";
           options = [ "noatime" ];
           ec2.size = 1000;
           ec2.volumeType = "gp2";
@@ -651,9 +766,22 @@ with pkgs.lib;
       deployment.ec2.elasticIPv4 = env.elasticIPv4 or "";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
+      deployment.keys.google.keyFile = <global_creds/lb-jobs-gcp.json>;
+
       deployment.ec2.ebsInitialRootDiskSize = 100;
 
-      imports = [ <lbdevops/logicblox/production.nix> ./frontend.nix ];
+      imports = [ <lbdevops/logicblox/production.nix>
+                  ./frontend.nix
+                ];
+
+      # Monocle setup
+      telegraf.nginxInputUrl = "http://127.0.0.1/nginx_status";
+      telegraf.extraConfig = {
+        statsd = {
+          service_address = ":8125";
+          datadog_extensions = true;
+        };
+      };
 
       system.build.frontendConfig = frontendConfig;
 
@@ -813,14 +941,80 @@ with pkgs.lib;
       '';
     };
 
+  "google-nat-${name}" =
+    { config, pkgs, resources, lib, ... }:
+    let
+    in
+    {
+      deployment.targetEnv = "gce";
+      deployment.gce = {
+        instanceType = "n1-standard-2";
+        project = gcpProject;
+        accessKey = builtins.readFile accessKey;
+        ipAddress = google-nat-ip;
+        inherit serviceAccount;
+        canIpForward = true;
+        region =  "us-central1-a";
+      };
+
+      # NAT setup
+      networking.firewall = {
+        enable =  true;
+        extraCommands = ''
+          iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+        '';
+      };
+      boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+  };
+
+  resources.gceRoutes."route-key-server-${name}" =
+    { resources, ... }:
+    {
+      project = gcpProject;
+      accessKey = builtins.readFile accessKey;
+      inherit serviceAccount;
+      destination =  resources.machines."key-server-${name}";
+      name = "route-key-server-${name}";
+      nextHop = resources.machines."google-nat-${name}";
+      tags =  [ "worker" ];
+    };
+
+  resources.gceRoutes."route-gurobi-${name}" = {resources, ...}: {
+    destination = "54.83.193.103/32" ;
+    name = "route-gurobi-${name}";
+    project = gcpProject;
+    inherit serviceAccount;
+    accessKey = builtins.readFile accessKey;
+    nextHop = resources.machines."google-nat-${name}";
+    tags =  [ "worker" ];
+  };
+
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/logicblox/config/logging/logentries.nix> ];
-      logging.logentries.logToken = lib.mkOverride 0 logToken;
-      services.dd-agent.tags = [
-          "deployment:${config.deployment.name}"
-          "uuid:${config.deployment.uuid}"
-        ];
+    { imports = [ <lbdevops/nixos/local-modules/freeipa.nix>
+                  <lbdevops/nixos/base/user-env.nix>
+                  <lbdevops/logicblox/config/logging/rsyslogd.nix>
+                  <lbdevops/nixos/local-modules/cloudwatch.nix>
+                  <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
+                ];
+
+      logging.sumologic.sumoToken = sumoToken;
+      logging.sumologic.collectorHost = "syslog.collection.us1.sumologic.com";
+      services.datadog-agent.enable = mkForce false;
+
+      # Freeipa setup
+      freeipa.enable = true;
+      freeipa.allowedGroups = allowedGroups;
+      freeipa.caCertificate = <global_creds/freeipa-creds/ca.crt>;
+      freeipa.tlsCertificatePem = <global_creds/freeipa-creds/ldap_tls.pem>;
+      freeipa.tlsCertificateKey = <global_creds/freeipa-creds/ldap_tls.key>;
+
+      # Monocle setup
+      telegraf.enable = true ;
+      telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
+      telegraf.enableWorkflowMonitors = false;
+      telegraf.enableJolokiaAgent = false;
+
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )

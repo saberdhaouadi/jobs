@@ -85,7 +85,7 @@ let
       bt = with pkgs; callPackage "${benchmarks}/benchmark-tools" {};
     in builder_config.buildLB (attrs // {
       inherit name;
-      buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl pkgs.pythonPackages.requests2 ] ++ (attrs.buildInputs or []);
+      buildInputs = [ logicblox bt pkgs.bc pkgs.gperftools pkgs.binutils pkgs.ghostscript pkgs.graphviz pkgs.perl pkgs.pythonPackages.requests ] ++ (attrs.buildInputs or []);
       requiredSystemFeatures = ["perf"];
       # LB_CONFIG = ./config/perf;
       buildCommand = ''
@@ -266,7 +266,7 @@ let
 
   jobs = rec {
 
-  tests = import ./tests/lb-jobs-network.nix { builds = jobs; };
+  tests = import ./tests/lb-jobs-network.nix { builds = jobs; platform = logicblox; };
 
   frontend =
      builder_config.buildLBConfig {
@@ -277,6 +277,7 @@ let
         "--with-protocols=${protocols}"
         "--with-frontend-database=${database.build}"
         "--with-commons-cli=${deps.commons-cli}"
+        "--with-aws-java-sdk=${deps.aws-java-sdk}"
       ];
       doCheck = true;
       inherit postInstall;
@@ -307,6 +308,9 @@ let
       src = ./protocols;
       buildInputs = [ logicblox lb_web pkgs.findbugs ];
       enableLBservices = false;
+      configureFlags = [
+         "--with-aws-java-sdk=${deps.aws-java-sdk}"
+      ];
       inherit postInstall;
     };
 
@@ -321,6 +325,7 @@ let
         "--with-commons-cli=${deps.commons-cli}"
         "--with-protocols=${protocols}"
         "--with-aws-java-sdk=${deps.aws-java-sdk}"
+        "--with-google-java-sdk=${deps.google-java-sdk}"
       ];
       postInstall = postInstall + ''
         for b in lb-steve-worker lb-steve-provisioner; do 
@@ -329,15 +334,28 @@ let
       '';
     };
 
-  worker_image.ec2 =
+  worker_image =
     let
-      image = (import <nixpkgs/nixos> { system = "x86_64-linux"; configuration = ./nix/worker-ec2-image.nix; }).config.system.build.amazonImage;
-    in 
-      runCommand "worker-ec2-image" { preferLocalBuild = true; } ''
-        mkdir -p $out/nix-support
-        xz -z -c ${image}/nixos.qcow2  > $out/worker.qcow2.xz
-        echo "file img $out/worker.qcow2.xz" > $out/nix-support/hydra-build-products
-      '';
+      base = configuration: (import <nixpkgs/nixos> { system = "x86_64-linux"; inherit configuration; }).config.system.build;
+      ec2Image = (base ./nix/worker-ec2-image.nix).amazonImage;
+      gceImage = (base ./nix/worker-gce-image.nix).googleComputeImage;
+    in
+    {
+      ec2 = runCommand "worker-ec2-image"
+        { preferLocalBuild = true; }
+        ''
+          mkdir -p $out/nix-support
+          xz -z -c ${ec2Image}/nixos.qcow2  > $out/worker.qcow2.xz
+          echo "file img $out/worker.qcow2.xz" > $out/nix-support/hydra-build-products
+        '';
+      gce = runCommand "worker-gce-image"
+        { preferLocalBuild = true; }
+        ''
+          mkdir -p $out/nix-support
+          tar -Sczf $out/worker-gce.tar.gz -C ${gceImage} disk.raw
+          echo "file img $out/worker-gce.tar.gz" > $out/nix-support/hydra-build-products
+        '';
+    }; 
 
   database =
     builder_config.genericAppJobset {
@@ -362,6 +380,7 @@ let
       configureFlags = [
         "--with-protocols=${protocols}"
         "--with-commons-cli=${deps.commons-cli}"
+        "--with-aws-java-sdk=${deps.aws-java-sdk}"
       ];
       inherit postInstall;
     };
@@ -370,6 +389,7 @@ let
     makeClosure (
       {config, pkgs, ...}:
       { imports = [ ./nix/worker.nix ];
+        logicblox.jobs.platform = logicblox;
       }
     );
 

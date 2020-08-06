@@ -16,7 +16,7 @@
   <body>
     <div class="jumbotron">
       <div class="container">
-        <img src="http://www.logicblox.com/images/logo2x.png" align="middle" />
+        <img src="https://developer.logicblox.com/wp-content/uploads/2017/12/logo2x.png" align="middle" />
         <p></p>
         <a href="/lb-steve-client.tgz" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-download"></span> Download client</a>
       </div>
@@ -36,17 +36,8 @@
       </p>
 
       <ul>        
-        <li>LogicBlox</li>
-        <ul>
-          <li>LogicBlox 3.10.15, including Gurobi</li>
-          <li>LogicBlox 4.3.0</li>
-          <li>LogicBlox 4.3.1</li>
-          <li>LogicBlox 4.3.2</li>
-          <li>LogicBlox 4.3.3</li>
-          <li>LogicBlox 4.3.4</li>
-          <li>LogicBlox 4.3.5</li>
-          <li>LogicBlox 4.3.6</li>
-        </ul>
+        <li>LogicBlox: All release versions should be available, if there is a missing version
+          please open a ticket under the Operation JIRA <a href="https://logicblox-jira.atlassian.net/projects/OPS">project</a></li>
         <li>pdxscience 4.0.0</li>
         <li>GNU grep, sed, coreutils, binutils, jq</li>
       </ul>
@@ -55,12 +46,24 @@
 
       <h4>Queues</h4>
       <ul>
-        <li><i>c3-xlarge</i> - Default, 4 vCPU, 7.5GB, 80GB SSD</li>
-        <li><i>c3-4xlarge</i> - 16 vCPU, 30GB, 320GB SSD</li>
-        <li><i>r3-xlarge</i> - 4 vCPU, 30.5GB, 80 GB SSD</li>
-        <li><i>r3-2xlarge</i> - 8 vCPU, 61GB, 160 GB SSD</li>
-        <li><i>r3-8xlarge</i> - 32 vCPU, 244GB, 640 GB SSD</li>
-        <li><i>i2-2xlarge</i> - 8 vCPU, 61GB, 1600 GB SSD</li>
+        <li><h5>EC2 queues:</h5></li>
+        <ul>
+          <li><i>c3-xlarge</i> - Default, 4 vCPU, 7.5GB, 80GB SSD</li>
+          <li><i>c3-2xlarge</i> </li>
+          <li><i>c3-4xlarge</i> - 16 vCPU, 30GB, 320GB SSD</li>
+          <li><i>r3-xlarge</i> - 4 vCPU, 30.5GB, 80 GB SSD</li>
+          <li><i>r3-2xlarge</i> - 8 vCPU, 61GB, 160 GB SSD</li>
+          <li><i>r3-4xlarge</i> </li>
+          <li><i>r3-8xlarge</i> - 32 vCPU, 244GB, 640 GB SSD</li>
+          <li><i>i2-2xlarge</i> - 8 vCPU, 61GB, 1600 GB SSD</li>
+          <li><i>i2-4xlarge</i> </li>
+          <li><i>i2-8xlarge</i> </li>
+        </ul>
+        <li><h5>Google cloud queues:</h5></li>
+        <ul>
+          <li><i>n1-standard-2</i> </li>
+          <li><i>n1-highmem-8</i> </li>
+        </ul>
       </ul>
 
       <p>You can use the different queues by setting the <i>job-queue</i> value to the identifier listed above, e.g. <i>-m job-queue=r3-2xlarge</i>.</p>
@@ -102,6 +105,8 @@
 	]
 }
 </pre>
+
+      <!-- TODO: add steps for configuring GCS buckets -->
 
       <p>
         You can find some trivial examples of job implementations at <a href="https://bitbucket.org/logicblox/jobs">https://bitbucket.org/logicblox/jobs</a>:

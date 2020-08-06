@@ -3,7 +3,9 @@
 # License: BSD 3 clause
 
 import sys
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
 import numpy as np
 from sklearn import datasets, linear_model
 

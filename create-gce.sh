@@ -1,15 +1,17 @@
 #! /bin/sh -e
+set -x
 
-export NIXOS_CONFIG=$(dirname $(readlink -f $0))/nix/worker-gce-image.nix
-export TIMESTAMP=$(date +%Y%m%d%H%M)
+build=$1
 
-buildAndUploadFor() {
-    system="$1"
-    arch="$2"
+bucket="lb-jobs-images"
 
-    echo "building $system image..."
-    nix-build '<nixpkgs/nixos>' \
-        -A config.system.build.googleComputeImage --argstr system "$system" -o gce --option extra-binary-caches http://hydra.nixos.org
-}
+if [[ "$build" == "" ]]; then
+    url=https://bob.logicblox.com/job/jobs/gcp-support/worker_image.gce/latest
+    curl -o build.json -H 'Content-Type: application/json' -L -s $url
+    build=$(jq -r .id build.json)
+fi
 
-buildAndUploadFor x86_64-linux x86_64
+curl -L https://bob.logicblox.com/build/$build/download-by-type/file/img > worker-gce.tar.gz
+
+gsutil cp worker-gce.tar.gz "gs://${bucket}/images/worker-gce-${build}.tar.gz"
+gcloud compute images create lb-jobs-$build --source-uri "gs://${bucket}/images/worker-gce-${build}.tar.gz"

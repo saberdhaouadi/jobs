@@ -5,7 +5,7 @@
 }:
 let
   builder_config = import <config> {};
-  inherit (builder_config) pkgs getLB;
+  inherit (builder_config) pkgs getLB; 
   platform = getLB platform_release;
 in
   import ./job.nix {

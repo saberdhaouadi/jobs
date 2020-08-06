@@ -7,7 +7,10 @@ lbconfig_package(
   default_prefix='/opt/logicblox/lb-steve-protocols',
   default_targets=['jars', 'lb-libraries', 'java_protobufs', 'findbugs'])
 
+aws_java_sdk_dep = ("aws_java_sdk", {'default_path': "/opt/logicblox/s3lib"})
+
 depends_on(
+  aws_java_sdk_dep,       
   logicblox_dep,
   lb_web_dep
 )
@@ -56,8 +59,8 @@ classpath = [
   '$(logicblox)/lib/java/protobuf-2.6.1.jar',
   '$(logicblox)/lib/java/guava-15.0.jar',
   '$(logicblox)/lib/java/lb-common.jar',
-  '$(lb_web)/lib/java/s3lib-0.2.jar',
-  '$(lb_web)/lib/java/aws-java-sdk-1.11.102.jar',
+  '$(lb_web)/lib/java/cloudstore-0.2.jar',
+  '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.560.jar',
   '$(lb_web)/lib/java/lb-web-client.jar',
   '$(lb_web)/lib/java/gson-2.2.4.jar'
 ]
@@ -74,6 +77,9 @@ jar(
    findbugs = True,
    classpath = classpath)
 
-core.g_rules['findbugs'].input = set()
+rule(output="findbugs",
+     phony=True,
+     input="jars"
+     )
 
 link_libs(classpath)

@@ -2,47 +2,20 @@ package com.logicblox.steve.provision;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.ec2.AmazonEC2;
-import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import org.apache.commons.cli.*;
-import org.apache.commons.codec.binary.Base64;
 
 import java.util.*;
-import java.lang.InterruptedException;
 
 public class Main {
   private AmazonSQS sqs;
-  private AmazonEC2 ec2;
 
-  // TODO: make into required arguments
-  private static String queue = "c3-xlarge";
-  private static String incoming_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs";
-  private static String outgoing_url = "https://sqs.us-east-1.amazonaws.com/297794765570/steve-jobs-results";
-  private static String ami = "ami-820c2af9";
-  private static String key = "rob";
-  private static String region = "us-east-1";
-  private static String s3Bucket = "steve-jobs";
-  private static String instanceType = "c3.xlarge";
-  private static String role = "steve-jobs-worker";
-  private static String serviceUri = "http://localhost:8082/keys";
-  private static String subnetId = null;
-  private static String securityGroup = "admin";
+  private static CommandLineArguments cmdArgs = new CommandLineArguments();
 
   private static List<String> attrs = Arrays.asList("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible");
-  private static double pctSpot = 0.9;
-  private static double pctQueue = 0.6;
-  private static double spotPrice = 0.6;
-  private static int totalNeeded = 0;
-  private static int maxDelta = -1;
   private static int maxInstances = 300;
-  private static int minInstances = 0;
-  private static boolean dryRun = true;
-  private static int diskSize = 0;
 
-  private static Regions[] regions = new Regions[]{ Regions.US_EAST_1, Regions.US_WEST_1, Regions.US_WEST_2 };
 
   public Main() {
     setupAmazon();
@@ -178,6 +151,26 @@ public class Main {
             .hasArg()
             .withArgName("security group")
             .create());
+    options.addOption(OptionBuilder.withLongOpt("backend")
+            .withDescription("Cloud provider to use, aws or gcp")
+            .hasArg()
+            .withArgName("backend")
+            .create());
+    options.addOption(OptionBuilder.withLongOpt("project")
+            .withDescription("Name of the project (required when using GCP backend)")
+            .hasArg()
+            .withArgName("project")
+            .create());
+    options.addOption(OptionBuilder.withLongOpt("spotfleet-role")
+            .withDescription("Spot fleet arn role ")
+            .hasArg()
+            .withArgName("spotfleet role")
+            .create());
+    options.addOption(OptionBuilder.withLongOpt("service-account")
+            .withDescription("service account to use in the worker (required when using GCP backend)")
+            .hasArg()
+            .withArgName("service account")
+            .create());
 
     options.addOption(OptionBuilder.withLongOpt("dry-run")
             .withDescription("Whether to actually create the requested instances")
@@ -187,53 +180,68 @@ public class Main {
     try {
       CommandLine _cmdline = parser.parse(options, args);
       if (_cmdline.hasOption("queue"))
-        queue = _cmdline.getOptionValue("queue");
+        cmdArgs.setQueue(_cmdline.getOptionValue("queue"));
       if (_cmdline.hasOption("bucket"))
-        s3Bucket = _cmdline.getOptionValue("bucket");
+        cmdArgs.setS3Bucket(_cmdline.getOptionValue("bucket"));
       if (_cmdline.hasOption("incoming"))
-        incoming_url = _cmdline.getOptionValue("incoming");
+        cmdArgs.setIncoming_url(_cmdline.getOptionValue("incoming"));
       if (_cmdline.hasOption("outgoing"))
-        outgoing_url = _cmdline.getOptionValue("outgoing");
+        cmdArgs.setOutgoing_url(_cmdline.getOptionValue("outgoing"));
       if (_cmdline.hasOption("ami"))
-        ami = _cmdline.getOptionValue("ami");
+        cmdArgs.setAmi(_cmdline.getOptionValue("ami"));
       if (_cmdline.hasOption("region"))
-        region = _cmdline.getOptionValue("region");
+        cmdArgs.setRegion(_cmdline.getOptionValue("region"));
       if (_cmdline.hasOption("key"))
-        key = _cmdline.getOptionValue("key");
+        cmdArgs.setKey(_cmdline.getOptionValue("key"));
       if (_cmdline.hasOption("role"))
-        role = _cmdline.getOptionValue("role");
+        cmdArgs.setRole(_cmdline.getOptionValue("role"));
       if (_cmdline.hasOption("instance-type"))
-        instanceType = _cmdline.getOptionValue("instance-type");
+        cmdArgs.setInstanceType(_cmdline.getOptionValue("instance-type"));
       if (_cmdline.hasOption("key-service"))
-        serviceUri = _cmdline.getOptionValue("key-service");
+        cmdArgs.setServiceUri(_cmdline.getOptionValue("key-service"));
       if (_cmdline.hasOption("subnet-id"))
-        subnetId = _cmdline.getOptionValue("subnet-id");
+        cmdArgs.setSubnetId(_cmdline.getOptionValue("subnet-id"));
       if (_cmdline.hasOption("security-group"))
-        securityGroup = _cmdline.getOptionValue("security-group");
+        cmdArgs.setSecurityGroup(_cmdline.getOptionValue("security-group"));
 
       if (_cmdline.hasOption("total"))
-        totalNeeded = ((Number) _cmdline.getParsedOptionValue("total")).intValue();
+        cmdArgs.setTotalNeeded(((Number) _cmdline.getParsedOptionValue("total")).intValue());
       if (_cmdline.hasOption("max"))
-        maxInstances = ((Number) _cmdline.getParsedOptionValue("max")).intValue();
+        cmdArgs.setMaxInstances(((Number) _cmdline.getParsedOptionValue("max")).intValue());
       if (_cmdline.hasOption("max-delta"))
-        maxDelta = ((Number) _cmdline.getParsedOptionValue("max-delta")).intValue();
+        cmdArgs.setMaxDelta(((Number) _cmdline.getParsedOptionValue("max-delta")).intValue());
       if (_cmdline.hasOption("min"))
-        minInstances = ((Number) _cmdline.getParsedOptionValue("min")).intValue();
+        cmdArgs.setMinInstances(((Number) _cmdline.getParsedOptionValue("min")).intValue());
       if (_cmdline.hasOption("disk-size"))
-        diskSize = ((Number) _cmdline.getParsedOptionValue("disk-size")).intValue();
+        cmdArgs.setDiskSize(((Number) _cmdline.getParsedOptionValue("disk-size")).intValue());
 
       if (_cmdline.hasOption("spot-price"))
-        spotPrice = ((Number) _cmdline.getParsedOptionValue("spot-price")).doubleValue();
+        cmdArgs.setSpotPrice(((Number) _cmdline.getParsedOptionValue("spot-price")).doubleValue());
       if (_cmdline.hasOption("percentage-spot"))
-        pctSpot = ((Number) _cmdline.getParsedOptionValue("percentage-spot")).doubleValue();
+        cmdArgs.setPctSpot(((Number) _cmdline.getParsedOptionValue("percentage-spot")).doubleValue());
       if (_cmdline.hasOption("percentage-queue"))
-        pctQueue = ((Number) _cmdline.getParsedOptionValue("percentage-queue")).doubleValue();
+        cmdArgs.setPctQueue(((Number) _cmdline.getParsedOptionValue("percentage-queue")).doubleValue());
 
-      if (maxInstances < totalNeeded) {
-        maxInstances = totalNeeded;
+      if (_cmdline.hasOption("backend"))
+        cmdArgs.setBackend(_cmdline.getOptionValue("backend"));
+      if (_cmdline.hasOption("project"))
+        cmdArgs.setProject(_cmdline.getOptionValue("project"));
+      if (_cmdline.hasOption("service-account"))
+        cmdArgs.setServiceAccount(_cmdline.getOptionValue("service-account"));
+
+      if (_cmdline.hasOption("spotfleet-role"))
+        cmdArgs.setSpotFleetRole(_cmdline.getOptionValue("spotfleet-role"));
+
+
+
+      if (cmdArgs.getMaxInstances() < cmdArgs.getTotalNeeded()) {
+         cmdArgs.setMaxInstances(cmdArgs.getTotalNeeded());
       }
 
-      dryRun = _cmdline.hasOption("dry-run");
+      if (cmdArgs.getBackend().toLowerCase() == "gcp" && cmdArgs.getProject().isEmpty() && cmdArgs.getServiceAccount().isEmpty())
+          throw new MissingOptionException("You need to specify the name of the project when using GCP backend");
+
+      cmdArgs.setDryRun(_cmdline.hasOption("dry-run"));
     } catch (ParseException exp) {
       System.err.println("Error: " + exp.getMessage());
       HelpFormatter formatter = new HelpFormatter();
@@ -247,12 +255,12 @@ public class Main {
     sqs = new AmazonSQSClient();
     sqs.setRegion(Region.getRegion(Regions.US_EAST_1));
 
-    ec2 = new AmazonEC2Client();
-    ec2.setRegion(Region.getRegion(Regions.fromName(region)));
   }
 
-  public void go() {
-    Map<String, String> result = sqs.getQueueAttributes(incoming_url, attrs).getAttributes();
+  public int CalculateTotalNeeded(){
+
+    int totalNeeded = cmdArgs.getTotalNeeded();
+    Map<String, String> result = sqs.getQueueAttributes(cmdArgs.getIncoming_url(), attrs).getAttributes();
 
     int waitingMsgs = Integer.parseInt(result.get("ApproximateNumberOfMessages"));
     int busyMsgs = Integer.parseInt(result.get("ApproximateNumberOfMessagesNotVisible"));
@@ -260,236 +268,58 @@ public class Main {
     // For workloads where only a few jobs are queued/running, start instance for each.
     // This will prevent the most common scenario, where we get notified by jobs that are
     // queued longer than an hour.
+    int minInstances = 0;
     if (busyMsgs + waitingMsgs <= 15) {
       minInstances = busyMsgs + waitingMsgs;
     }
 
     if (totalNeeded == 0) {
-      totalNeeded = (int) Math.ceil((busyMsgs + waitingMsgs) * pctQueue);
+      totalNeeded =  (int) Math.ceil((busyMsgs + waitingMsgs) * cmdArgs.getPctQueue());
     }
-    totalNeeded = Math.min(totalNeeded, maxInstances);
+    totalNeeded = Math.min(totalNeeded, cmdArgs.getMaxInstances());
 
     if (totalNeeded == 0) {
-      return;
+      return totalNeeded;
     }
 
     if (minInstances > totalNeeded) {
       totalNeeded = Math.min(totalNeeded, minInstances);
     }
+    return totalNeeded ;
+  }
 
-    int spotCurrent = getNumberOfCurrentSpotInstances();
-    int odCurrent = getNumberOfCurrentOnDemandInstances();
+  public void go() {
+
+
+    ProvisionerInterface backend;
+    if(cmdArgs.getBackend().toLowerCase().equals("aws")){
+      backend = new AWSProvisioner(cmdArgs);
+    } else {
+      backend = new GCEProvisioner(cmdArgs);
+    }
+
+    int totalNeeded = CalculateTotalNeeded();
+
+    int spotCurrent = backend.getNumberOfCurrentSpotInstances();
+    int odCurrent = backend.getNumberOfCurrentOnDemandInstances();
 
     int newNeeded = totalNeeded - spotCurrent - odCurrent;
-    if (maxDelta != -1) {
-      newNeeded = Math.min(newNeeded, maxDelta);
+    if (cmdArgs.getMaxDelta() != -1) {
+      newNeeded = Math.min(newNeeded, cmdArgs.getMaxDelta());
     }
 
-    int spotNeeded = (int) Math.ceil(pctSpot * newNeeded);
+    int spotNeeded = (int) Math.ceil(cmdArgs.getPctSpot() * newNeeded);
     int odNeeded = newNeeded - spotNeeded;
 
-    System.err.println(String.format("%s: Number of current spot instances      : %d", queue, spotCurrent));
-    System.err.println(String.format("%s: Number of current on-demand instances : %d", queue, odCurrent));
+    System.err.println(String.format("%s: Number of current spot instances      : %d", cmdArgs.getQueue(), spotCurrent));
+    System.err.println(String.format("%s: Number of current on-demand instances : %d", cmdArgs.getQueue(), odCurrent));
 
     if (spotNeeded > 0)
-      createSpotInstances(spotNeeded);
+      backend.createSpotInstances(spotNeeded);
     if (odNeeded > 0)
-      createOnDemandInstances(odNeeded);
+      backend.createOnDemandInstances(odNeeded);
   }
 
-  private String getUserData() {
-    return Base64.encodeBase64String(
-            String.format("WORKERARGS=\"--bucket %s --incoming %s --outgoing %s --key-service %s\"",
-                    s3Bucket,
-                    incoming_url,
-                    outgoing_url,
-                    serviceUri
-            ).getBytes()
-    );
-  }
-
-  // get number of spot instances that are not yet terminated
-  private int getNumberOfCurrentSpotInstances() {
-    int result = 0;
-
-    for(Regions region: regions) {
-      AmazonEC2Client _ec2 = new AmazonEC2Client();
-      _ec2.setRegion(Region.getRegion(region));
-
-      DescribeSpotInstanceRequestsRequest spreq = new DescribeSpotInstanceRequestsRequest()
-              .withFilters(
-                      new Filter().withName("tag:S3Bucket").withValues(s3Bucket),
-                      new Filter().withName("tag:IncomingQueue").withValues(incoming_url),
-                      new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url),
-                      new Filter().withName("state").withValues("open", "active")
-              );
-      DescribeSpotInstanceRequestsResult spres = _ec2.describeSpotInstanceRequests(spreq);
-      for (SpotInstanceRequest r : spres.getSpotInstanceRequests()) {
-        result++;
-      }
-    }
-    return result;
-  }
-
-  // get number of on-demand instances that are not yet terminated
-  private int getNumberOfCurrentOnDemandInstances() {
-    int result = 0;
-    DescribeInstancesRequest req = new DescribeInstancesRequest()
-            .withFilters(
-                    new Filter().withName("tag:S3Bucket").withValues(s3Bucket),
-                    new Filter().withName("tag:IncomingQueue").withValues(incoming_url),
-                    new Filter().withName("tag:OutgoingQueue").withValues(outgoing_url)
-            );
-
-    DescribeInstancesResult res = ec2.describeInstances(req);
-    for (Reservation r : res.getReservations()) {
-      for (Instance i : r.getInstances()) {
-        if (!i.getState().getName().equals("terminated") && i.getInstanceLifecycle() == null) {
-          result++;
-        }
-      }
-    }
-
-    return result;
-  }
-
-  public void createOnDemandInstances(int nr) {
-    System.err.println(String.format("Creating %d on-demand instances", nr));
-
-    if (dryRun)
-      return;
-
-    RunInstancesRequest req = new RunInstancesRequest();
-    req.setMinCount(1);
-    req.setMaxCount(nr);
-    req.setImageId(ami);
-    req.setInstanceType(instanceType);
-    req.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
-    req.setKeyName(key);
-    req.setUserData(getUserData());
-
-    if(subnetId == null) {
-      Collection<String> groups = new ArrayList<String>();
-      groups.add(securityGroup);
-      req.setSecurityGroups(groups);
-    } else {
-      Collection<String> groups = new ArrayList<String>();
-      groups.add(securityGroup);
-      req.setSecurityGroupIds(groups);
-    }
-
-    if(subnetId != null) {
-      req.setSubnetId(subnetId);
-    }
-    if(diskSize != 0) {
-      BlockDeviceMapping blockDeviceMapping = new BlockDeviceMapping();
-      blockDeviceMapping.setDeviceName("/dev/sda1");
-
-      EbsBlockDevice ebs = new EbsBlockDevice();
-      ebs.setVolumeSize(diskSize);
-      blockDeviceMapping.setEbs(ebs);
-
-      ArrayList<BlockDeviceMapping> blockList = new ArrayList<BlockDeviceMapping>();
-      blockList.add(blockDeviceMapping);
-
-      req.setBlockDeviceMappings(blockList);
-    }
-
-    RunInstancesResult res = ec2.runInstances(req);
-
-    try {
-      Thread.sleep(60000);
-    } catch (Exception e) {
-    }
-
-    for (Instance instance : res.getReservation().getInstances()) {
-      createTags(instance.getInstanceId());
-    }
-
-  }
-
-  private void createTags(String id) {
-    CreateTagsRequest createTagsRequest = new CreateTagsRequest();
-    createTagsRequest.withResources(id)
-            .withTags(new Tag("Name", String.format("Worker [%s]", s3Bucket)))
-            .withTags(new Tag("S3Bucket", s3Bucket))
-            .withTags(new Tag("IncomingQueue", incoming_url))
-            .withTags(new Tag("OutgoingQueue", outgoing_url))
-    ;
-
-    int retryCount = 0;
-    while(retryCount < 10) {
-      retryCount++;
-      try {
-        ec2.createTags(createTagsRequest);
-        return;
-      }
-      catch(Exception e) {
-        System.err.println("Error creating tags for "+id+" :"+e.getMessage());
-        e.printStackTrace();
-        try {
-          Thread.sleep(10000);
-        } catch (InterruptedException ie) {
-        }
-      }
-    }
-    System.err.println("Could not tag instance "+id);
-  }
-
-  public void createSpotInstances(int nr) {
-    System.err.println(String.format("Creating %d spot instances", nr));
-
-    if (dryRun)
-      return;
-
-    RequestSpotInstancesRequest req = new RequestSpotInstancesRequest();
-    req.setInstanceCount(nr);
-    req.setSpotPrice(Double.toString(spotPrice));
-    LaunchSpecification spec = new LaunchSpecification();
-    spec.setImageId(ami);
-    spec.setInstanceType(instanceType);
-    spec.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(role));
-    spec.setKeyName(key);
-    spec.setUserData(getUserData());
-
-    if(subnetId == null) {
-      Collection<String> groups = new ArrayList<String>();
-      groups.add(securityGroup);
-      spec.setSecurityGroups(groups);
-    } else {
-      Collection<GroupIdentifier> groups = new ArrayList<GroupIdentifier>();
-      groups.add(new GroupIdentifier().withGroupId(securityGroup));
-      spec.setAllSecurityGroups(groups);
-    }
-
-    if(subnetId != null) {
-      spec.setSubnetId(subnetId);
-    }
-    if(diskSize != 0) {
-      BlockDeviceMapping blockDeviceMapping = new BlockDeviceMapping();
-      blockDeviceMapping.setDeviceName("/dev/sda1");
-
-      EbsBlockDevice ebs = new EbsBlockDevice();
-      ebs.setVolumeSize(diskSize);
-      blockDeviceMapping.setEbs(ebs);
-
-      ArrayList<BlockDeviceMapping> blockList = new ArrayList<BlockDeviceMapping>();
-      blockList.add(blockDeviceMapping);
-
-      spec.setBlockDeviceMappings(blockList);
-    }
-
-    req.setLaunchSpecification(spec);
-
-    RequestSpotInstancesResult res = ec2.requestSpotInstances(req);
-    try {
-      Thread.sleep(60000);
-    } catch (Exception e) {
-    }
-    for (SpotInstanceRequest sir : res.getSpotInstanceRequests()) {
-      createTags(sir.getSpotInstanceRequestId());
-    }
-  }
 
   public static void main(String args[]) {
     parseArgs(args);

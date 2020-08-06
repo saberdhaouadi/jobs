@@ -3,10 +3,16 @@ package com.logicblox.steve.worker;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.sqs.model.Message;
 
-import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.S3File;
+import com.logicblox.cloudstore.CloudStoreClient;
+import com.logicblox.cloudstore.GCSClient;
+import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.StoreFile;
 import com.logicblox.steve.common.Data;
 import com.logicblox.concurrent.MoreFutures;
+import com.logicblox.cloudstore.DownloadOptions;
+import com.logicblox.cloudstore.UploadOptions;
+import com.logicblox.cloudstore.ExistsOptions;
+import com.logicblox.cloudstore.Metadata;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +54,7 @@ public class SteveJob {
   private URI _outputLbLogs;
 
   private S3Client _client;
+  private GCSClient _gcsClient;
 
   private File _jobPath = new File("/tmp/job");
   private File _inputPath = new File("/tmp/job/in");
@@ -72,18 +79,19 @@ public class SteveJob {
   private long _cpuUsage = 0;
   private long _maxMemory = 0;
 
-  private File _keyDir = new File(com.logicblox.s3lib.Utils.getDefaultKeyDirectory());
+  private File _keyDir = new File(com.logicblox.cloudstore.Utils.getDefaultKeyDirectory());
   private File _shellDir = new File("/tmp/shell");
   private SteveKeyServerHelper _keyHelper;
   private File _cpuacct = new File("/sys/fs/cgroup/cpu,cpuacct/system.slice/nix-daemon.service/cpuacct.usage");
   private File _memacct = new File("/sys/fs/cgroup/memory/system.slice/nix-daemon.service/memory.memsw.max_usage_in_bytes");
 
-  public SteveJob(S3Client client, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, String outputEncryptionKey, long timeout, Map<String, String> metadata, String account, int receiveCount, SteveKeyServerHelper keyHelper)
+  public SteveJob(S3Client client, GCSClient gcsClient, String s3Bucket, String outgoingUrl, String id, String impl, List<Data> inputs, String output, String outputEncryptionKey, long timeout, Map<String, String> metadata, String account, int receiveCount, SteveKeyServerHelper keyHelper)
           throws InternalException {
     _id = id;
     _impl = impl;
     _inputs = inputs;
     _client = client;
+    _gcsClient = gcsClient;
     _outgoing = new OutgoingQueueHelper(outgoingUrl, _id);
     _timeout = timeout;
     _s3Bucket = s3Bucket;
@@ -149,8 +157,9 @@ public class SteveJob {
 
       // Do not upload files when previous log already exists.
       if(!previousLogExists()) {
-        List<S3File> output = uploadOutput();
-        _outgoing.notifySuccess(output, _cpuUsage, _maxMemory, _maxDiskUsage);
+        List<StoreFile> output = uploadOutput();
+        String scheme = _output.getScheme();
+        _outgoing.notifySuccess(output, scheme, _cpuUsage, _maxMemory, _maxDiskUsage);
         log("Successfully uploaded output files for job " + _id);
       }
       teardown();
@@ -230,9 +239,9 @@ public class SteveJob {
 
     for (Data input : _inputs) {
       try {
-        List<S3File> fs = downloadInput(input).get();
+        List<StoreFile> fs = downloadInput(input).get();
         int failed = 0;
-        for(S3File f: fs) {
+        for(StoreFile f: fs) {
           if(f==null) {
             failed++;
           }
@@ -285,24 +294,32 @@ public class SteveJob {
     log(uri);
     URI jobImplUri;
     try {
-      jobImplUri = com.logicblox.s3lib.Utils.getURI(uri);
+      jobImplUri = com.logicblox.cloudstore.Utils.getURI(uri);
     } catch (URISyntaxException e) {
       throw new InternalException("Invalid URI '" + uri, e);
     }
 
     try {
-      _client.download(new File("/tmp/job/job.tar.gz"), jobImplUri, true).get();
+      DownloadOptions options = _client.getOptionsBuilderFactory()
+                                  .newDownloadOptionsBuilder()
+                                  .setFile(new File("/tmp/job/job.tar.gz"))
+                                  .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(jobImplUri))
+                                  .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(jobImplUri))
+                                  .setOverwrite(true)
+                                  .createOptions();
+      _client.download(options).get();
     } catch (Exception e) {
       e.printStackTrace();
       throw new InternalException("Could not download job implementation '" + _impl + "' from '" + uri + "'", e);
     }
   }
 
-  private ListenableFuture<List<S3File>> downloadInput(Data input) throws InternalException {
+  private ListenableFuture<List<StoreFile>> downloadInput(Data input) throws InternalException {
+    CloudStoreClient client = input.toString().startsWith("s3") ? this._client : this._gcsClient;
     log("Downloading input '" + input.toString() + "'");
     URI inputUri;
     try {
-      inputUri = com.logicblox.s3lib.Utils.getURI(input.getLocation());
+      inputUri = com.logicblox.cloudstore.Utils.getURI(input.getLocation());
     } catch (URISyntaxException e) {
       throw new InternalException("Invalid URI '" + input, e);
     }
@@ -313,32 +330,58 @@ public class SteveJob {
     last = last.substring(last.lastIndexOf('/') + 1);
 
     File f = new File(_inputPath, last);
+    DownloadOptions options = client.getOptionsBuilderFactory()
+                                  .newDownloadOptionsBuilder()
+                                  .setFile(f)
+                                  .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(inputUri))
+                                  .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(inputUri))
+                                  .setOverwrite(true)
+                                  .createOptions();
     try {
-      if (input.getLocation().endsWith("/"))
-        return _client.downloadDirectory(f, inputUri, true, true);
+      if (input.getLocation().endsWith("/")) {
+        return client.downloadRecursively(options);
+      }
       else {
-        List<ListenableFuture<S3File>> l = new ArrayList();
-        l.add(_client.download(f, inputUri, true));
-        return Futures.successfulAsList(l);
+        List<ListenableFuture<StoreFile>> l = new ArrayList();
+        l.add(client.download(options));
+        return Futures.allAsList(l);
       }
     } catch (Exception e) {
       return Futures.immediateFailedFuture(new InternalException("Error downloading input " + input.getLocation()));
     }
   }
 
-  private List<S3File> uploadOutput() throws UploadOutputFailedException {
+  private List<StoreFile> uploadOutput() throws UploadOutputFailedException {
+    CloudStoreClient client = _output.toString().startsWith("s3") ? this._client : this._gcsClient;
     try {
       log("Uploading output...");
-      return _client.uploadDirectory(_outputPath, _output, _outputEncryptionKey).get();
+      UploadOptions options =
+          client.getOptionsBuilderFactory()
+              .newUploadOptionsBuilder()
+              .setFile(_outputPath)
+              .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(_output))
+              // FIXME(@AmineChikhaoui): the "/" suffix was added to just fix the tests
+              // this needs to be properly fixed before switching the production deployment
+              // to default.
+              .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(_output)+"/")
+              .setEncKey(_outputEncryptionKey)
+              .createOptions();
+      return client.uploadRecursively(options).get();
     } catch (Exception e) {
       throw new UploadOutputFailedException("Error uploading output files to " + _output, e);
     }
   }
 
   private boolean previousLogExists() throws InternalException {
-    ObjectMetadata log = null;
+    Metadata log = null;
     try {
-      log = _client.exists(_s3Bucket, String.format("jobs/%s/log", _id)).get();
+      ExistsOptions options =
+          _client.getOptionsBuilderFactory()
+              .newExistsOptionsBuilder()
+              .setBucketName(_s3Bucket)
+              .setObjectKey(String.format("jobs/%s/log", _id))
+              .createOptions();
+      log = _client.exists(options).get();
       return (log != null);
     } catch (Exception e) {
       throw new InternalException("Could not determine if log file already exists in S3.", e);
@@ -346,9 +389,15 @@ public class SteveJob {
   }
 
   private boolean jobCancelled() throws InternalException {
-    ObjectMetadata cancelled = null;
+    Metadata cancelled = null;
     try {
-      cancelled = _client.exists(_s3Bucket, String.format("jobs/%s/cancelled", _id)).get();
+      ExistsOptions options =
+          _client.getOptionsBuilderFactory()
+              .newExistsOptionsBuilder()
+              .setBucketName(_s3Bucket)
+              .setObjectKey(String.format("jobs/%s/cancelled", _id))
+              .createOptions();
+      cancelled = _client.exists(options).get();
       return (cancelled != null);
     } catch (Exception e) {
       throw new InternalException("Could not determine if job was cancelled.", e);
@@ -373,15 +422,30 @@ public class SteveJob {
           // upload logs
           try {
             log("Uploading log...[%s/%s]".format(logPath.toString(), _outputLog));
-            _client.upload(logPath, _outputLog).get();
+            UploadOptions options =
+                    _client.getOptionsBuilderFactory()
+                        .newUploadOptionsBuilder()
+                        .setFile(logPath)
+                        .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(_outputLog))
+                        .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(_outputLog))
+                        .createOptions();
+            _client.upload(options).get();
             if(_lbDeploymentLogsPath.exists()) {
               ProcessBuilder pb = new ProcessBuilder("tar", "-C", _lbDeploymentHomePath.toString(), "-czf", _lbLogsPath.toString(), "logs");
               Process p = pb.start();
               p.waitFor();
               p.destroy();
               if(_lbLogsPath.exists()) {
-                log("Uploading LB logs...[%s/%s]".format(_lbLogsPath.toString(), _outputLbLogs));
-                _client.upload(_lbLogsPath, _outputLbLogs).get();
+                log("Uploading LB logs...[%s/%s]".format(_lbLogsPath.toString(),
+                                                         _outputLbLogs));
+                options =
+                    _client.getOptionsBuilderFactory()
+                        .newUploadOptionsBuilder()
+                        .setFile(_lbLogsPath)
+                        .setBucketName(com.logicblox.cloudstore.Utils.getBucketName(_outputLbLogs))
+                        .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(_outputLbLogs))
+                        .createOptions();
+                _client.upload(options).get();
               }
             }
           } catch (Exception e) {
@@ -402,12 +466,25 @@ public class SteveJob {
   private void runJob() throws Exception {
     log("Checking for platform-releases.nix override.");
 
-    ObjectMetadata platformOverride;
+    Metadata platformOverride;
     try {
       String key = "override/platform-releases.nix";
-      platformOverride = _client.exists(_s3Bucket, key).get();
+      ExistsOptions existsOptions =
+          _client.getOptionsBuilderFactory()
+              .newExistsOptionsBuilder()
+              .setBucketName(_s3Bucket)
+              .setObjectKey(key)
+              .createOptions();
+      platformOverride = _client.exists(existsOptions).get();
       if (platformOverride != null) {
-        _client.download(new File("/tmp/platform-releases.nix"), new URI(String.format("s3://%s/%s", _s3Bucket, key)), true).get();
+        DownloadOptions downloadOptions = _client.getOptionsBuilderFactory()
+                                  .newDownloadOptionsBuilder()
+                                  .setFile(new File("/tmp/platform-releases.nix"))
+                                  .setBucketName(_s3Bucket)
+                                  .setObjectKey(key)
+                                  .setOverwrite(true)
+                                  .createOptions();
+        _client.download(downloadOptions).get();
         log("Downloaded override for platform-releases.nix.");
       }
     } catch (Exception e) {

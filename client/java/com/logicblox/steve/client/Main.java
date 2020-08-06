@@ -1,19 +1,8 @@
 package com.logicblox.steve.client;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -22,12 +11,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Level;
 
 import com.beust.jcommander.JCommander;
@@ -35,57 +22,35 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.converters.IParameterSplitter;
-
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
-import com.google.protobuf.ByteString;
-import com.google.protobuf.ExtensionRegistry;
-import com.google.protobuf.Message;
-import com.google.protobuf.TextFormat;
-import com.googlecode.protobuf.format.JsonFormat;
-
-import com.logicblox.bloxweb.Encoding;
 import com.logicblox.bloxweb.UsageException;
-import com.logicblox.bloxweb.client.ClientConfigUtils;
-import com.logicblox.bloxweb.client.ProtobufServiceClient;
-import com.logicblox.bloxweb.client.ServiceConnector;
-import com.logicblox.bloxweb.client.Transport;
-import com.logicblox.bloxweb.client.Transports;
 import com.logicblox.bloxweb.client.SignUtils;
 import com.logicblox.bloxweb.config.Config;
 import com.logicblox.bloxweb.config.ConfigLocator;
-import com.logicblox.bloxweb.client.ServiceClientException;
-
 import com.logicblox.common.logging.Logger;
-import com.logicblox.common.logging.SystemDAppender;
-import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
 import com.logicblox.concurrent.MoreFutures;
 
-import com.logicblox.s3lib.S3Client;
-import com.logicblox.s3lib.S3File;
+import com.logicblox.cloudstore.DownloadOptions;
+import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.StoreFile;
+import com.logicblox.cloudstore.UploadOptions;
+import com.logicblox.cloudstore.Utils;
 
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.S3Utils;
 import com.logicblox.steve.protocol.Frontend;
-
-import java.security.PrivateKey;
+import com.logicblox.web.Client.ContentEncoding;
+import com.logicblox.web.client.service.ServiceClientOptions;
 
 public class Main {
   public static void main(String[] args) {
@@ -164,8 +129,8 @@ public class Main {
   protected URI createUniqueURI(String option, String base) throws URISyntaxException, UsageException {
     String id = UUID.randomUUID().toString();
     String optionValue = _config.getStringError(option);
-    if(! optionValue.startsWith("s3://") ) {
-       throw new UsageException("Incorrect option '"+option+" = "+optionValue+"', should be a S3 URL.");
+    if(!(optionValue.startsWith("s3://") || optionValue.startsWith("gs://"))) {
+       throw new UsageException("Incorrect option '"+option+" = "+optionValue+"', should be a S3 or GCS URL.");
     }
     return URI.create(optionValue + "/" + id + (base != null ? "/" + base : ""));
   }
@@ -184,7 +149,7 @@ public class Main {
   protected ListenableFuture<List<Frontend.File>> createInput(String input, String _inputEncryptionKey) throws Exception {
     // TODO support hashes as parameters or lookup in S3
     // TODO should we delete the input or rely on an automatic retention policy on the bucket?
-    if (input.startsWith("s3://")) {
+    if (input.startsWith("s3://") || input.startsWith("gs://")) {
       Frontend.File.Builder fileBuilder =
               Frontend.File.newBuilder()
                       .setUrl(input);
@@ -199,18 +164,31 @@ public class Main {
 
       if (inputFile.isDirectory()) {
         URI tempURI = createUniqueInputURI(inputFile.getName());
+	UploadOptions options = _s3client.getOptionsBuilderFactory().newUploadOptionsBuilder()
+          .setFile(inputFile)
+          .setBucketName(Utils.getBucketName(tempURI))
+          .setObjectKey(Utils.getObjectKey(tempURI))
+          .setEncKey(_inputEncryptionKey)
+          .createOptions();
         return Futures.transform(
-                _s3client.uploadDirectory(inputFile, tempURI, _inputEncryptionKey),
-                new Function<List<S3File>, List<Frontend.File>>() {
-                  public List<Frontend.File> apply(List<S3File> files) {
+                _s3client.uploadRecursively(options),
+                new Function<List<StoreFile>, List<Frontend.File>>() {
+                  public List<Frontend.File> apply(List<StoreFile> files) {
                     return Collections.singletonList(Frontend.File.newBuilder().setUrl(tempURI.toString()+"/").build());
                   }
                 });
       } else {
+        URI tempURI = createUniqueInputURI(inputFile.getName());
+	UploadOptions options = _s3client.getOptionsBuilderFactory().newUploadOptionsBuilder()
+          .setFile(inputFile)
+          .setBucketName(Utils.getBucketName(tempURI))
+          .setObjectKey(Utils.getObjectKey(tempURI))
+          .setEncKey(_inputEncryptionKey)
+          .createOptions();
         return Futures.transform(
-                _s3client.upload(inputFile, createUniqueInputURI(inputFile.getName()), _inputEncryptionKey),
-                new Function<S3File, List<Frontend.File>>() {
-                  public List<Frontend.File> apply(S3File file) {
+                _s3client.upload(options),
+                new Function<StoreFile, List<Frontend.File>>() {
+                  public List<Frontend.File> apply(StoreFile file) {
                     return Collections.singletonList(Conversions.convertToFrontendFile(file));
                   }
                 });
@@ -224,35 +202,36 @@ public class Main {
     return _config.getSection("auth").getStringError(opt);
   }
 
-  protected ProtobufServiceClient getProtobufClient()
+  protected ServiceClientOptions getServiceClientOptions()
           throws URISyntaxException, UsageException {
-    String service = _config.getStringError("service");
-    URI serviceUri = new URI(service);
-    ServiceConnector connector = ServiceConnector.create(serviceUri.toString());
-
+    
     String user = _user;
-    String keyFile = _keyFile;
+    String keyFileName = _keyFile;
 
     if (user == null)
       user = getAuthOption("user");
-    if (keyFile == null)
-      keyFile = getAuthOption("key_file");
+    if (keyFileName == null)
+      keyFileName = getAuthOption("key_file");
 
-    PrivateKey key;
+    
+    ServiceClientOptions options = new ServiceClientOptions();
     try {
-      key = SignUtils.readPrivateKeyFromPEM(new FileReader(keyFile));
-      connector.setTransport(Transports.sign(Transports.tcp(), user, key));
-      connector.setEncoding(Encoding.JSON);
-      connector.setGZIP(true);
-      return connector.createProtobufClient();
+      File keyFile = new File(keyFileName);
+      options.signature(user, keyFile.getName(), keyFile.getParent());
+      
+      // The line below is no longer necessary, but I am leaving this
+      // here just to keep some validation before submitting the job
+      SignUtils.readPrivateKeyFromPEM(new FileReader(keyFileName));
+      return options.encoding(ContentEncoding.GZIP_ON_WIRE);
     } catch (Exception e) {
-      throw new UsageException("Could not load key file from " + keyFile + ": " + e.getMessage());
+      throw new UsageException("Could not load key file from " + keyFileName + ": " + e.getMessage());
     }
   }
 
   protected SteveClientInterface getSteveClient()
           throws URISyntaxException {
-    return new SteveClient(getProtobufClient(), Executors.newScheduledThreadPool(25));
+    URI service = new URI(_config.getStringError("service"));
+    return new SteveClient(service, getServiceClientOptions(), Executors.newScheduledThreadPool(25));
   }
 
   private static String formatJSON(String json) {
@@ -303,7 +282,7 @@ public class Main {
     @Parameter(
             names = {"-o", "--output"},
             description = "Output of job, to be stored in either a local directory, single output file, " +
-                    "or S3 output prefix (S3 files use s3://bucket/key URLs). If local output is requested, " +
+                    "or S3/GCS output prefix (S3/GCS files use s3://bucket/key or gs://bucket/key URLs). If local output is requested, " +
                     "then the S3 default_output_prefix will be used to store the outputs")
     String _output;
 
@@ -341,7 +320,7 @@ public class Main {
         _output = createUniqueOutputPrefixURI().toString();
 
       URI outputPrefix;
-      final boolean autoDownload = !_output.startsWith("s3://");
+      final boolean autoDownload = !(_output.startsWith("s3://") || _output.startsWith("gs://"));
       if (autoDownload) {
         outputPrefix = createUniqueOutputPrefixURI();
 
@@ -471,12 +450,19 @@ public class Main {
       else
         outputURI = URI.create(_output);
 
+      DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
+        .setFile(new File(_output))
+        .setBucketName(Utils.getBucketName(outputURI))
+        .setObjectKey(Utils.getObjectKey(outputURI))
+        .setOverwrite(true)
+        .createOptions();
+
       Futures.transform(client.getLBLogs(_ids.get(0), outputURI),
               new AsyncFunction<String, Object>() {
                 @Override
                 public ListenableFuture<Object> apply(String id) throws Exception {
                   if(autoDownload)
-                    return (ListenableFuture) _s3client.download(new File(_output),outputURI, true);
+                    return (ListenableFuture) _s3client.download(options);
                   else
                     return Futures.immediateFuture((Object) id);
                 }
@@ -558,20 +544,34 @@ public class Main {
     Path p = Paths.get(output);
     if (Files.isDirectory(p) || output.endsWith("/") || files.size() > 1) {
       // Assume that we want to download the list of files to a directory.
-      List<ListenableFuture<S3File>> downloads = new ArrayList<ListenableFuture<S3File>>();
+      List<ListenableFuture<StoreFile>> downloads = new ArrayList<ListenableFuture<StoreFile>>();
 
       for (Frontend.File file : files) {
         Path targetFile = p.resolve(Conversions.getBasename(file));
-        downloads.add(_s3client.download(targetFile.toFile(), URI.create(file.getUrl()), true));
+        URI uri = URI.create(file.getUrl());
+        DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
+          .setFile(targetFile.toFile())
+          .setBucketName(Utils.getBucketName(uri))
+          .setObjectKey(Utils.getObjectKey(uri))
+          .setOverwrite(true)
+          .createOptions();
+        downloads.add(_s3client.download(options));
       }
 
       return Futures.transform(Futures.allAsList(downloads), Functions.constant(files));
     } else {
       // Assume that we want to download to a single file
       // TOOD check the ETag from the download
+      URI uri = URI.create(files.get(0).getUrl());
+      DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
+          .setFile(p.toFile())
+          .setBucketName(Utils.getBucketName(uri))
+          .setObjectKey(Utils.getObjectKey(uri))
+          .setOverwrite(true)
+          .createOptions();
       return
               Futures.transform(
-                      _s3client.download(p.toFile(), URI.create(files.get(0).getUrl()), true),
+                      _s3client.download(options),
                       Functions.constant(files));
     }
   }
@@ -674,12 +674,18 @@ public class Main {
       else
         outputURI = URI.create(_output);
 
+      DownloadOptions options = _s3client.getOptionsBuilderFactory().newDownloadOptionsBuilder()
+          .setFile(new File(_output))
+          .setBucketName(Utils.getBucketName(outputURI))
+          .setObjectKey(Utils.getObjectKey(outputURI))
+          .setOverwrite(true)
+          .createOptions();
       Futures.transform(client.copyJobImpl(_impl, outputURI),
               new AsyncFunction<String, Object>() {
                 @Override
                 public ListenableFuture<Object> apply(String id) throws Exception {
                   if(autoDownload)
-                    return (ListenableFuture) _s3client.download(new File(_output),outputURI, true);
+                    return (ListenableFuture) _s3client.download(options);
                   else
                     return Futures.immediateFuture((Object) id);
                 }

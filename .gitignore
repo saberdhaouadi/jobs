@@ -14,6 +14,7 @@ lb-stage
 frontend/build/*
 \.idea
 worker/lib/*
+worker/worker.iml
 worker/build/*
 frontend/build/*
 frontend/lib/*

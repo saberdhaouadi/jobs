@@ -176,7 +176,7 @@ in
         ({
           name = "Queued builds (${q}/${name}) longer than ${toString queuedThreshold}s";
           type = "metric alert";
-          message = "@lb-jobs@logicblox.com @opsgenie-lb_jobs";
+          message = "@DL-PDX-OpsSystemSupport@infor.com";
           query = "avg(last_5m):max:lb.steve.queued_time.${dash-to-underscore q}.max{host:database-${name}} > ${toString queuedThreshold}";
           monitorOptions = builtins.toJSON {
             no_data_timeframe = 10;
@@ -190,7 +190,7 @@ in
         (creds // {
            name = "SQS messages and lb-jobs database out of sync for queue ${q}/${name}";
            type = "metric alert";
-           message = "@amine.chikhaoui@infor.com";
+           message = "@amine.chikhaoui@infor.com @DL-PDX-OpsSystemSupport@infor.com";
            query = "min(last_1h):( avg:aws.sqs.approximate_number_of_messages_visible{queuename:steve-jobs-${name}-${q}} + avg:aws.sqs.approximate_number_of_messages_not_visible{queuename:steve-jobs-${name}-${q}} ) - ( avg:lb.steve.queued.${dash-to-underscore q}{host:database-${name}} + avg:lb.steve.running.${dash-to-underscore q}{host:database-${name}} ) > 0";
            monitorOptions = builtins.toJSON {
              thresholds.critical = 0;

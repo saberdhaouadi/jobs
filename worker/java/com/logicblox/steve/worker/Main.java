@@ -1,6 +1,8 @@
 package com.logicblox.steve.worker;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.*;
@@ -15,7 +17,11 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.googlecode.protobuf.format.JsonFormat;
 import com.amazonaws.util.EC2MetadataUtils;
 
-import com.logicblox.s3lib.S3Client;
+import com.logicblox.cloudstore.S3Client;
+import com.logicblox.cloudstore.GCSClient;
+import com.logicblox.cloudstore.GCSClientBuilder;
+import com.logicblox.cloudstore.Utils;
+import com.logicblox.cloudstore.AmazonS3ClientForGCS;
 import com.logicblox.steve.protocol.Backend;
 import com.logicblox.steve.common.Conversions;
 import com.logicblox.steve.common.S3Utils;
@@ -57,7 +63,7 @@ public class Main {
       int error_count = 0;
 
       while (!Thread.currentThread().isInterrupted()) {
-        if ( System.currentTimeMillis() - start <= 40000000) {
+        if ( System.currentTimeMillis() - start <= 50500000) {
           try {
             sqs.changeMessageVisibility(_incomingUrl, _handle, 180);
             error_count = 0;
@@ -72,8 +78,8 @@ public class Main {
           }
         }
         else {
-          // For Walgreens, we allow timeouts > 40000s for the time being. We delete the message
-          // after 40000s, which means they lose the recoverability in case of instance termination.
+          // For Walgreens, we allow timeouts > 50500s for the time being. We delete the message
+          // after 50500s, which means they lose the recoverability in case of instance termination.
           // The timeout is only allowed for the i2-2xlarge queue, which uses on-demand instances
           // only, which means they do not suffer from spot instance termination, like other queues.
           try {
@@ -97,6 +103,7 @@ public class Main {
 
   private S3Client client;
   private AmazonEC2 ec2Client;
+  private GCSClient gcsClient;
   AmazonSQS sqs;
 
   // Settings
@@ -109,7 +116,7 @@ public class Main {
   private static String _s3Endpoint = null;
   private static boolean _returnJob = false;
   private static boolean _shutdownOnIdle = false;
-  private static String _keyService = "http://127.0.0.1:8080/keys";
+  private static String _keyService = "https://keyserver.logicblox.com/keys";
 
   private String _jobTag = "unknown-account";
 
@@ -196,12 +203,25 @@ public class Main {
   }
 
   public Main() {
+
     // TODO pass in a configuration for S3
-    this.client = S3Utils.createS3Client(null);
+    try {
+      this.client = S3Utils.createS3Client(null);
+    } catch (Exception e) {
+      System.err.println("Exception while creating S3 client" + e);
+    }
     this.ec2Client = AmazonEC2ClientBuilder.standard().build();
+
 
     if (_s3Endpoint != null) {
       this.client.setEndpoint(_s3Endpoint);
+    }
+
+    try {
+      this.gcsClient = new GCSClientBuilder()
+              .createGCSClient();
+    } catch (Exception e) {
+      System.err.println("Exception while creating Google Storage Client" + e);
     }
 
     setupSQS();
@@ -284,6 +304,7 @@ public class Main {
 
       SteveJob steve = new SteveJob(
               this.client,
+              this.gcsClient,
               _s3Bucket,
               _outgoingUrl,
               msg.getJob(),

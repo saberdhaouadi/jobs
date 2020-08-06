@@ -2,14 +2,25 @@
 {
   imports = [
     ./worker.nix
+    ./boot.nix
     <nixpkgs/nixos/modules/virtualisation/amazon-image.nix>
-    <lbdevops/logicblox/config/logging/logentries.nix>
+    <lbdevops/logicblox/config/logging/rsyslogd.nix>
   ];
 
-  #FIXME revert once DEVOPS-43/LB-3068 are fixed
-  boot.kernelPackages = pkgs.linuxPackages_4_14;
+  environment.systemPackages =
+    let
 
-  logging.logentries.logToken = builtins.readFile <global_creds/logentries-lb-jobs>;
+      shutdown-self =
+        pkgs.writeScriptBin "shutdown-self"
+          ''
+            #! /bin/sh
+            aws ec2 terminate-instances --region us-east-1 --instance-ids $(curl -s --retry 5 --retry-delay 5 -m 10 http://169.254.169.254/latest/meta-data/instance-id)
+            systemctl poweroff
+          '';
+    in [ shutdown-self ];
+
+  logging.sumologic.sumoToken = builtins.readFile <global_creds/sumologic-lb-jobs-dev-workers>;
+  logging.sumologic.collectorHost = "syslog.collection.us1.sumologic.com";
 
   ec2.hvm = true;
   networking.hostName = pkgs.lib.mkForce "i-worker";
@@ -37,14 +48,10 @@
         };
     };
 
+  systemd.services.replace-etc-hosts.after =
+    [ "set-hostname.service" ];
 
-  boot.initrd.availableKernelModules = [ "nmve" ];
-  boot.initrd.extraUtilsCommands =
-    ''
-      cp --remove-destination ${pkgs.e2fsprogs}/sbin/mke2fs $out/bin
-    '';
-
-  boot.initrd.postMountCommands = pkgs.lib.mkOverride 0
+  lb-steve-worker.initrd.metadataServiceSetup =
     ''
       metaDir=$targetRoot/etc/ec2-metadata
       mkdir -m 0755 -p "$metaDir"
@@ -66,7 +73,10 @@
       if ! [ -e "$metaDir/public-keys-0-openssh-key" ]; then
         wget -q -O "$metaDir/public-keys-0-openssh-key" http://169.254.169.254/1.0/meta-data/public-keys/0/openssh-key
       fi
+    '';
 
+  lb-steve-worker.initrd.deviceDiscovery =
+    ''
       devices=""
       nr=0
       mkdir -p /var/lock/lvm
@@ -78,46 +88,11 @@
           nr=$((nr+1))
         fi
       done
-
-      set -x
-      if [ -n "$devices" ]; then
-        echo "vgcreate"
-        lvm vgcreate raid $devices
-        echo "lvcreate"
-        lvm lvcreate -vvv --noudevsync --zero n raid --name raid --extents '100%FREE' --stripes $nr
-        echo "vgchange"
-        lvm vgchange --noudevsync -ay raid
-
-        diskForUnionfs=/disk0
-        echo "Creating ext4 filesystem on /dev/dm-0"
-        mke2fs -t ext4 /dev/dm-0
-        echo "Mounting /dev/dm-0 to $diskForUnionfs"
-        mountFS /dev/dm-0 $diskForUnionfs "" ext4
-
-        mkdir -m 755 -p $targetRoot/$diskForUnionfs/root
-        mkdir -m 1777 -p $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
-        mount --bind $targetRoot/$diskForUnionfs/root/tmp $targetRoot/tmp
-
-        mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/var $targetRoot/var
-        mount --bind $targetRoot/$diskForUnionfs/root/var $targetRoot/var
-
-        mkdir -p /unionfs-chroot/ro-nix
-        mount --rbind $targetRoot/nix /unionfs-chroot/ro-nix
-
-        mkdir -m 755 -p $targetRoot/$diskForUnionfs/root/nix
-        mkdir -p /unionfs-chroot/rw-nix
-        mount --rbind $targetRoot/$diskForUnionfs/root/nix /unionfs-chroot/rw-nix
-
-        unionfs -o allow_other,cow,nonempty,chroot=/unionfs-chroot,max_files=32768 /rw-nix=RW:/ro-nix=RO $targetRoot/nix
-      fi
-      set +x
     '';
-
 
   system.build.amazonImage = import <nixpkgs/nixos/lib/make-disk-image.nix> {
     inherit pkgs lib config;
-    partitioned = config.ec2.hvm;
-    diskSize = if config.ec2.hvm then 4096 else 8192;
+    diskSize = 8192;
     format = "qcow2";
     configFile = pkgs.writeText "configuration.nix"
       ''
