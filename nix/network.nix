@@ -996,6 +996,7 @@ with pkgs.lib;
                   <lbdevops/logicblox/config/logging/rsyslogd.nix>
                   <lbdevops/nixos/local-modules/cloudwatch.nix>
                   <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
+                  <lbdevops/nixos/monitoring/clamav/clamav.nix>
                 ];
 
       logging.sumologic.sumoToken = sumoToken;
