@@ -28,6 +28,13 @@ let
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
 
+  SESpolicy = ''
+    { "Effect": "Allow",
+      "Action": [ "ses:*" ],
+      "Resource": "*"
+    }
+    '';
+
   instanceProfileArn = name: "arn:aws:iam::${accountId}:instance-profile/${name}";
 
   profiler = with pkgs; stdenv.mkDerivation {
@@ -262,7 +269,8 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
                "Resource": "*"
-            }
+            },
+            ${SESpolicy}
           ]
         }
       '';
@@ -330,7 +338,8 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
                "Resource": "*"
-            }
+            },
+            ${SESpolicy}
           ]
         }
       '';
@@ -395,7 +404,8 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
                "Resource": "*"
-            }
+            },
+            ${SESpolicy}
           ]
         }
       '';
@@ -471,7 +481,8 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
                "Resource": "*"
-            }
+            },
+            ${SESpolicy}
           ]
         }
       '';
@@ -993,7 +1004,7 @@ with pkgs.lib;
 
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> ];
+    { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> <lbdevops/nixos/monitoring/clamav/clamav.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
       logging.sumologic.sumoToken = sumoToken;
       logging.sumologic.collectorHost = "syslog.collection.us1.sumologic.com";
