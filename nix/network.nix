@@ -269,10 +269,21 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
                "Resource": "*"
-            },
-            ${SESpolicy}
+            }
           ]
         }
+      '';
+    };
+  resources.iamRoles.keyserver-role =
+    { resources, ... }:
+    {
+       accessKeyId = account;
+       policy = ''
+         {
+          "Statement": [
+             ${SESpolicy}
+          ]
+         }
       '';
     };
 
@@ -606,6 +617,7 @@ with pkgs.lib;
       deployment.ec2.instanceType = "r3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
+      deployment.ec2.instanceProfile = resources.iamRoles.keyserver-role.name;
 
       imports = [
         <lbdevops/logicblox/production.nix>
