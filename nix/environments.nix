@@ -61,7 +61,7 @@ in rec {
         price = "0.75";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
-        max = "500";
+        max = "700";
         onDemand = true;
         maxDelta = "100";
       };

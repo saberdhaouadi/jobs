@@ -52,6 +52,12 @@ let
       "Resource": "*"
     }
    '';
+  SESpolicy = ''
+    { "Effect": "Allow",
+      "Action": [ "ses:*" ],
+      "Resource": "*"
+    }
+   '';
 
   instanceProfileArn = name: "arn:aws:iam::${accountId}:instance-profile/${name}";
 
@@ -247,7 +253,8 @@ with pkgs.lib;
        policy = ''
          {
            "Statement": [
-             ${cloudwatchpolicy}
+             ${cloudwatchpolicy},
+             ${SESpolicy}
            ]
          }
        '';
@@ -288,7 +295,8 @@ with pkgs.lib;
                 "arn:aws:s3:::${s3Name}/*"
               ]
             },
-            ${cloudwatchpolicy}
+            ${cloudwatchpolicy},
+            ${SESpolicy}
           ]
         }
       '';
@@ -337,7 +345,8 @@ with pkgs.lib;
               "Effect": "Allow",
               "Resource": [ "*" ]
             },
-            ${cloudwatchpolicy}
+            ${cloudwatchpolicy},
+            ${SESpolicy}
           ]
         }
       '';
@@ -386,7 +395,8 @@ with pkgs.lib;
               "Effect": "Allow",
               "Resource": [ "*" ]
             },
-            ${cloudwatchpolicy}
+            ${cloudwatchpolicy},
+            ${SESpolicy}
           ]
         }
       '';
@@ -996,6 +1006,7 @@ with pkgs.lib;
                   <lbdevops/logicblox/config/logging/rsyslogd.nix>
                   <lbdevops/nixos/local-modules/cloudwatch.nix>
                   <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
+                  <lbdevops/nixos/monitoring/clamav/clamav.nix>
                 ];
 
       logging.sumologic.sumoToken = sumoToken;
