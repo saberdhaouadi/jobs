@@ -13,6 +13,7 @@ let
   lbJobsImage = "lb-jobs-5201168";
   gcpProject = "lb-jobs";
   gcpServiceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
+  gcpLocalDisks = "2";
 
 in rec {
   prod = {
@@ -174,6 +175,7 @@ in rec {
         defaultRegion = "us-central1-f";
         project = gcpProject;
         serviceAccount = gcpServiceAccount;
+        localdisks = gcpLocalDisks;
       };
 
       "n1-highmem-8" = {
@@ -187,6 +189,7 @@ in rec {
         defaultRegion = "us-central1-f";
         project = gcpProject;
         serviceAccount = gcpServiceAccount;
+        localdisks = gcpLocalDisks;
       };
 
       "n1-highmem-32" = {
@@ -200,6 +203,8 @@ in rec {
         defaultRegion = "us-central1-f";
         project = gcpProject;
         serviceAccount = gcpServiceAccount;
+        localdisks = gcpLocalDisks;
+
       };
 
       "n2-highmem-32" = {
@@ -213,6 +218,8 @@ in rec {
         defaultRegion = "us-central1-f";
         project = gcpProject;
         serviceAccount = gcpServiceAccount;
+        localdisks = gcpLocalDisks;
+
       };
 
     };

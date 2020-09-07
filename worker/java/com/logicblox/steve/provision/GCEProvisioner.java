@@ -121,7 +121,10 @@ public class GCEProvisioner implements ProvisionerInterface {
     params.setDiskType(GOOGLE_API_ENDPOINT + project + "/zones/" + zone +
                        "/diskTypes/pd-ssd");
     disk.setInitializeParams(params);
+    disks.add(disk);
 
+    int lnb = cmdArgs.getLocalDisks();
+    for (int i = 0; i < lnb i++) {
     AttachedDisk localSSD = new AttachedDisk();
     localSSD.setBoot(false);
     localSSD.setAutoDelete(true);
@@ -134,9 +137,8 @@ public class GCEProvisioner implements ProvisionerInterface {
     localSSD.setInitializeParams(localSSDParams);
 
     List<AttachedDisk> disks = new ArrayList<>();
-    disks.add(disk);
     disks.add(localSSD);
-
+    }
     List<String> tags_list = new ArrayList<String>();
     tags_list.add("worker");
     Tags tags = new Tags();

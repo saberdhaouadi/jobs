@@ -172,6 +172,13 @@ public class Main {
             .withArgName("service account")
             .create());
 
+    options.addOption(OptionBuilder.withLongOpt("local-disks")
+            .withDescription("Number of GCP local disks")
+            .hasArg()
+            .withArgName("number")
+            .withType(Number.class)
+            .create());
+
     options.addOption(OptionBuilder.withLongOpt("dry-run")
             .withDescription("Whether to actually create the requested instances")
             .create());
@@ -228,6 +235,8 @@ public class Main {
         cmdArgs.setProject(_cmdline.getOptionValue("project"));
       if (_cmdline.hasOption("service-account"))
         cmdArgs.setServiceAccount(_cmdline.getOptionValue("service-account"));
+      if (_cmdline.hasOption("local-disks"))
+        cmdArgs.setLocalDisks(((Number) _cmdline.getParsedOptionValue("local-disks")).intValue());
 
       if (_cmdline.hasOption("spotfleet-role"))
         cmdArgs.setSpotFleetRole(_cmdline.getOptionValue("spotfleet-role"));
