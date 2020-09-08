@@ -111,6 +111,7 @@ public class GCEProvisioner implements ProvisionerInterface {
 
     // Add attached Persistent Disk to be used by VM Instance, also add one
     // local-ssd.
+    List<AttachedDisk> disks = new ArrayList<>();
     AttachedDisk disk = new AttachedDisk();
     disk.setBoot(true);
     disk.setAutoDelete(true);
@@ -124,7 +125,7 @@ public class GCEProvisioner implements ProvisionerInterface {
     disks.add(disk);
 
     int lnb = cmdArgs.getLocalDisks();
-    for (int i = 0; i < lnb i++) {
+    for (int i = 0; i < lnb; i++) {
     AttachedDisk localSSD = new AttachedDisk();
     localSSD.setBoot(false);
     localSSD.setAutoDelete(true);
@@ -135,8 +136,6 @@ public class GCEProvisioner implements ProvisionerInterface {
     localSSDParams.setDiskType(GOOGLE_API_ENDPOINT + project + "/zones/" +
                                zone + "/diskTypes/local-ssd");
     localSSD.setInitializeParams(localSSDParams);
-
-    List<AttachedDisk> disks = new ArrayList<>();
     disks.add(localSSD);
     }
     List<String> tags_list = new ArrayList<String>();

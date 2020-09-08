@@ -510,7 +510,7 @@ with pkgs.lib;
                  --project ${env.workers."${t}".project or "project"} \
                  --spotfleet-role ${env.spotfleetRole} \
                  --service-account ${env.workers."${t}".serviceAccount or "unknown"}
-                 --local-disks ${env.workers."${t}"localdisks or "unknown"}
+                 --local-disks ${env.workers."${t}".localdisks or "unknown"}
         '';
       provisionScripts = lib.concatMap (  r: map (i: script i r) instanceTypes) (builtins.attrNames dep-region);
       run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or region )}/bin/run-provisioner-${workerName t}";
