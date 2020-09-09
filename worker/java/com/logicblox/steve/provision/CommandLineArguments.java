@@ -32,7 +32,7 @@ public class CommandLineArguments {
     private static int minInstances = 0;
     private static boolean dryRun = true;
     private static int diskSize = 0;
-    private static int gcpLocalDisks = 2;
+    private static String gcpLocalDisks = "2";
 
     private static String spotFleetRole = "arn:aws:iam::826045886586:role/aws-ec2-spot-fleet-role";
 
@@ -244,11 +244,11 @@ public class CommandLineArguments {
         CommandLineArguments.spotFleetRole = spotFleetRole;
     }
 
-    public static int getLocalDisks() {
+    public static String getLocalDisks() {
         return gcpLocalDisks;
     }
 
-    public static void setLocalDisks(int gcpLocalDisks) {
+    public static void setLocalDisks(String gcpLocalDisks) {
         CommandLineArguments.gcpLocalDisks = gcpLocalDisks;
     }
 }

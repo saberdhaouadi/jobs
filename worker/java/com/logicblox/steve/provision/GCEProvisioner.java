@@ -55,7 +55,7 @@ public class GCEProvisioner implements ProvisionerInterface {
 
   private Instance createInstance(String project, String zone,
                                   String machineType, String image,
-                                  String serviceAccountEmail, boolean preemptible) throws URISyntaxException {
+                                  String serviceAccountEmail, boolean preemptible, String localdisks) throws URISyntaxException {
 
     final String IMAGE_URI =
         GOOGLE_API_ENDPOINT + project + "/global/images/" + image;
@@ -124,7 +124,7 @@ public class GCEProvisioner implements ProvisionerInterface {
     disk.setInitializeParams(params);
     disks.add(disk);
 
-    int lnb = cmdArgs.getLocalDisks();
+    int lnb = Integer.parseInt(localdisks);
     for (int i = 0; i < lnb; i++) {
     AttachedDisk localSSD = new AttachedDisk();
     localSSD.setBoot(false);
@@ -161,7 +161,7 @@ public class GCEProvisioner implements ProvisionerInterface {
         Instance instance = this.createInstance(
             this.cmdArgs.getProject(), this.cmdArgs.getRegion(),
             this.cmdArgs.getInstanceType(), this.cmdArgs.getAmi(),
-            this.cmdArgs.getServiceAccount(), preemptible);
+            this.cmdArgs.getServiceAccount(), preemptible, this.cmdArgs.getLocalDisks());
 
         Compute.Instances.Insert request = computeService.instances().insert(
             this.cmdArgs.getProject(), this.cmdArgs.getRegion(), instance);

@@ -204,7 +204,6 @@ in rec {
         project = gcpProject;
         serviceAccount = gcpServiceAccount;
         localdisks = gcpLocalDisks;
-
       };
 
       "n2-highmem-32" = {
@@ -218,8 +217,7 @@ in rec {
         defaultRegion = "us-central1-f";
         project = gcpProject;
         serviceAccount = gcpServiceAccount;
-        localdisks = gcpLocalDisks;
-
+        localdisks = "4";
       };
 
     };
