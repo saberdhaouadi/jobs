@@ -126,17 +126,17 @@ public class GCEProvisioner implements ProvisionerInterface {
 
     int lnb = Integer.parseInt(localdisks);
     for (int i = 0; i < lnb; i++) {
-    AttachedDisk localSSD = new AttachedDisk();
-    localSSD.setBoot(false);
-    localSSD.setAutoDelete(true);
-    localSSD.setType("SCRATCH");
-    localSSD.setInterface("nvme");
-    AttachedDiskInitializeParams localSSDParams =
-        new AttachedDiskInitializeParams();
-    localSSDParams.setDiskType(GOOGLE_API_ENDPOINT + project + "/zones/" +
+      AttachedDisk localSSD = new AttachedDisk();
+      localSSD.setBoot(false);
+      localSSD.setAutoDelete(true);
+      localSSD.setType("SCRATCH");
+      localSSD.setInterface("nvme");
+      AttachedDiskInitializeParams localSSDParams =
+          new AttachedDiskInitializeParams();
+      localSSDParams.setDiskType(GOOGLE_API_ENDPOINT + project + "/zones/" +
                                zone + "/diskTypes/local-ssd");
-    localSSD.setInitializeParams(localSSDParams);
-    disks.add(localSSD);
+      localSSD.setInitializeParams(localSSDParams);
+      disks.add(localSSD);
     }
     List<String> tags_list = new ArrayList<String>();
     tags_list.add("worker");
