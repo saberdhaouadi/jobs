@@ -29,6 +29,13 @@ let
   builder-config = import <config> {};
   inherit (pkgs.lib) getAttr;
 
+  SESpolicy = ''
+    { "Effect": "Allow",
+      "Action": [ "ses:*" ],
+      "Resource": "*"
+    }
+    '';
+
   instanceProfileArn = name: "arn:aws:iam::${accountId}:instance-profile/${name}";
 
   profiler = with pkgs; stdenv.mkDerivation {
@@ -268,6 +275,18 @@ with pkgs.lib;
         }
       '';
     };
+  resources.iamRoles.keyserver-role =
+    { resources, ... }:
+    {
+       accessKeyId = account;
+       policy = ''
+         {
+          "Statement": [
+             ${SESpolicy}
+          ]
+         }
+      '';
+    };
 
   resources.iamRoles.database-role =
     { resources, ... }:
@@ -331,7 +350,8 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
                "Resource": "*"
-            }
+            },
+            ${SESpolicy}
           ]
         }
       '';
@@ -396,7 +416,8 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
                "Resource": "*"
-            }
+            },
+            ${SESpolicy}
           ]
         }
       '';
@@ -472,7 +493,8 @@ with pkgs.lib;
               ],
               "Effect": "Allow",
                "Resource": "*"
-            }
+            },
+            ${SESpolicy}
           ]
         }
       '';
@@ -596,6 +618,7 @@ with pkgs.lib;
       deployment.ec2.instanceType = "r3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
+      deployment.ec2.instanceProfile = resources.iamRoles.keyserver-role.name;
 
       imports = [
         <lbdevops/logicblox/production.nix>
@@ -994,13 +1017,7 @@ with pkgs.lib;
 
   defaults =
     { config, lib, ... }:
-    { imports = [
-         <lbdevops/logicblox/config/logging/rsyslogd.nix>
-         <lbdevops/nixos/local-modules/cloudwatch.nix>
-         <lbdevops/nixos/monitoring/clamav/clamav.nix>
-         <lbdevops/nixos/local-modules/freeipa.nix>
-         <lbdevops/nixos/base/user-env.nix>
-        ];
+    { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> <lbdevops/nixos/monitoring/clamav/clamav.nix> ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
       logging.sumologic.sumoToken = sumoToken;
       logging.sumologic.collectorHost = "syslog.collection.us1.sumologic.com";
