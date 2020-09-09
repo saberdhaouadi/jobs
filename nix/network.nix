@@ -1017,7 +1017,12 @@ with pkgs.lib;
 
   defaults =
     { config, lib, ... }:
-    { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix> <lbdevops/nixos/local-modules/cloudwatch.nix> <lbdevops/nixos/monitoring/clamav/clamav.nix> ];
+    { imports = [ <lbdevops/logicblox/config/logging/rsyslogd.nix>
+                  <lbdevops/nixos/local-modules/cloudwatch.nix>
+                  <lbdevops/nixos/monitoring/clamav/clamav.nix>
+                  <lbdevops/nixos/local-modules/freeipa.nix>
+                  <lbdevops/nixos/base/user-env.nix>
+                ];
       logging.logentries.logToken = lib.mkOverride 0 logToken;
       logging.sumologic.sumoToken = sumoToken;
       logging.sumologic.collectorHost = "syslog.collection.us1.sumologic.com";
