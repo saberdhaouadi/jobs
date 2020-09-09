@@ -997,6 +997,7 @@ with pkgs.lib;
     { imports = [
          <lbdevops/logicblox/config/logging/rsyslogd.nix>
          <lbdevops/nixos/local-modules/cloudwatch.nix>
+         <lbdevops/nixos/monitoring/clamav/clamav.nix>
          <lbdevops/nixos/local-modules/freeipa.nix>
          <lbdevops/nixos/base/user-env.nix>
         ];
