@@ -55,7 +55,7 @@ public class GCEProvisioner implements ProvisionerInterface {
 
   private Instance createInstance(String project, String zone,
                                   String machineType, String image,
-                                  String serviceAccountEmail, boolean preemptible) throws URISyntaxException {
+                                  String serviceAccountEmail, boolean preemptible, String localdisks) throws URISyntaxException {
 
     final String IMAGE_URI =
         GOOGLE_API_ENDPOINT + project + "/global/images/" + image;
@@ -111,6 +111,7 @@ public class GCEProvisioner implements ProvisionerInterface {
 
     // Add attached Persistent Disk to be used by VM Instance, also add one
     // local-ssd.
+    List<AttachedDisk> disks = new ArrayList<>();
     AttachedDisk disk = new AttachedDisk();
     disk.setBoot(true);
     disk.setAutoDelete(true);
@@ -121,22 +122,22 @@ public class GCEProvisioner implements ProvisionerInterface {
     params.setDiskType(GOOGLE_API_ENDPOINT + project + "/zones/" + zone +
                        "/diskTypes/pd-ssd");
     disk.setInitializeParams(params);
-
-    AttachedDisk localSSD = new AttachedDisk();
-    localSSD.setBoot(false);
-    localSSD.setAutoDelete(true);
-    localSSD.setType("SCRATCH");
-    localSSD.setInterface("nvme");
-    AttachedDiskInitializeParams localSSDParams =
-        new AttachedDiskInitializeParams();
-    localSSDParams.setDiskType(GOOGLE_API_ENDPOINT + project + "/zones/" +
-                               zone + "/diskTypes/local-ssd");
-    localSSD.setInitializeParams(localSSDParams);
-
-    List<AttachedDisk> disks = new ArrayList<>();
     disks.add(disk);
-    disks.add(localSSD);
 
+    int lnb = Integer.parseInt(localdisks);
+    for (int i = 0; i < lnb; i++) {
+      AttachedDisk localSSD = new AttachedDisk();
+      localSSD.setBoot(false);
+      localSSD.setAutoDelete(true);
+      localSSD.setType("SCRATCH");
+      localSSD.setInterface("nvme");
+      AttachedDiskInitializeParams localSSDParams =
+          new AttachedDiskInitializeParams();
+      localSSDParams.setDiskType(GOOGLE_API_ENDPOINT + project + "/zones/" +
+                               zone + "/diskTypes/local-ssd");
+      localSSD.setInitializeParams(localSSDParams);
+      disks.add(localSSD);
+    }
     List<String> tags_list = new ArrayList<String>();
     tags_list.add("worker");
     Tags tags = new Tags();
@@ -160,7 +161,7 @@ public class GCEProvisioner implements ProvisionerInterface {
         Instance instance = this.createInstance(
             this.cmdArgs.getProject(), this.cmdArgs.getRegion(),
             this.cmdArgs.getInstanceType(), this.cmdArgs.getAmi(),
-            this.cmdArgs.getServiceAccount(), preemptible);
+            this.cmdArgs.getServiceAccount(), preemptible, this.cmdArgs.getLocalDisks());
 
         Compute.Instances.Insert request = computeService.instances().insert(
             this.cmdArgs.getProject(), this.cmdArgs.getRegion(), instance);

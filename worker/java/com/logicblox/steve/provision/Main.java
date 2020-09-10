@@ -172,6 +172,12 @@ public class Main {
             .withArgName("service account")
             .create());
 
+    options.addOption(OptionBuilder.withLongOpt("local-disks")
+            .withDescription("Number of GCP local disks")
+            .hasArg()
+            .withArgName("local-disks")
+            .create());
+
     options.addOption(OptionBuilder.withLongOpt("dry-run")
             .withDescription("Whether to actually create the requested instances")
             .create());
@@ -179,6 +185,7 @@ public class Main {
     CommandLineParser parser = new BasicParser();
     try {
       CommandLine _cmdline = parser.parse(options, args);
+
       if (_cmdline.hasOption("queue"))
         cmdArgs.setQueue(_cmdline.getOptionValue("queue"));
       if (_cmdline.hasOption("bucket"))
@@ -228,10 +235,11 @@ public class Main {
         cmdArgs.setProject(_cmdline.getOptionValue("project"));
       if (_cmdline.hasOption("service-account"))
         cmdArgs.setServiceAccount(_cmdline.getOptionValue("service-account"));
+      if (_cmdline.hasOption("local-disks"))
+        cmdArgs.setLocalDisks(_cmdline.getOptionValue("local-disks"));
 
       if (_cmdline.hasOption("spotfleet-role"))
         cmdArgs.setSpotFleetRole(_cmdline.getOptionValue("spotfleet-role"));
-
 
 
       if (cmdArgs.getMaxInstances() < cmdArgs.getTotalNeeded()) {
