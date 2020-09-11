@@ -61,7 +61,7 @@ in rec {
         price = "0.75";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
-        max = "500";
+        max = "700";
         onDemand = true;
         maxDelta = "100";
       };
@@ -183,6 +183,7 @@ in rec {
         defaultRegion = "us-central1-f";
         project = gcpProject;
         serviceAccount = gcpServiceAccount;
+        localdisks = "1";
       };
 
       "n1-highmem-8" = {
@@ -196,6 +197,7 @@ in rec {
         defaultRegion = "us-central1-f";
         project = gcpProject;
         serviceAccount = gcpServiceAccount;
+        localdisks = "1";
       };
 
       "n1-highmem-32" = {
@@ -209,6 +211,7 @@ in rec {
         defaultRegion = "us-central1-f";
         project = gcpProject;
         serviceAccount = gcpServiceAccount;
+        localdisks = "2";
       };
 
       "n2-highmem-32" = {
@@ -222,6 +225,7 @@ in rec {
         defaultRegion = "us-central1-f";
         project = gcpProject;
         serviceAccount = gcpServiceAccount;
+        localdisks = "4";
       };
 
     };

@@ -52,6 +52,12 @@ let
       "Resource": "*"
     }
    '';
+  SESpolicy = ''
+    { "Effect": "Allow",
+      "Action": [ "ses:*" ],
+      "Resource": "*"
+    }
+   '';
 
   instanceProfileArn = name: "arn:aws:iam::${accountId}:instance-profile/${name}";
 
@@ -247,7 +253,8 @@ with pkgs.lib;
        policy = ''
          {
            "Statement": [
-             ${cloudwatchpolicy}
+             ${cloudwatchpolicy},
+             ${SESpolicy}
            ]
          }
        '';
@@ -288,7 +295,8 @@ with pkgs.lib;
                 "arn:aws:s3:::${s3Name}/*"
               ]
             },
-            ${cloudwatchpolicy}
+            ${cloudwatchpolicy},
+            ${SESpolicy}
           ]
         }
       '';
@@ -337,7 +345,8 @@ with pkgs.lib;
               "Effect": "Allow",
               "Resource": [ "*" ]
             },
-            ${cloudwatchpolicy}
+            ${cloudwatchpolicy},
+            ${SESpolicy}
           ]
         }
       '';
@@ -386,7 +395,8 @@ with pkgs.lib;
               "Effect": "Allow",
               "Resource": [ "*" ]
             },
-            ${cloudwatchpolicy}
+            ${cloudwatchpolicy},
+            ${SESpolicy}
           ]
         }
       '';
@@ -499,7 +509,8 @@ with pkgs.lib;
                  --backend ${env.workers."${t}".backend or "aws"} \
                  --project ${env.workers."${t}".project or "project"} \
                  --spotfleet-role ${env.spotfleetRole} \
-                 --service-account ${env.workers."${t}".serviceAccount or "unknown"}
+                 --service-account ${env.workers."${t}".serviceAccount or "unknown"} \
+                 --local-disks ${env.workers."${t}".localdisks or "2"}
         '';
       provisionScripts = lib.concatMap (  r: map (i: script i r) instanceTypes) (builtins.attrNames dep-region);
       run-provisioner = t: "${script t (env.workers."${t}".defaultRegion or region )}/bin/run-provisioner-${workerName t}";
@@ -996,6 +1007,7 @@ with pkgs.lib;
                   <lbdevops/logicblox/config/logging/rsyslogd.nix>
                   <lbdevops/nixos/local-modules/cloudwatch.nix>
                   <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
+                  <lbdevops/nixos/monitoring/clamav/clamav.nix>
                 ];
 
       logging.sumologic.sumoToken = sumoToken;
