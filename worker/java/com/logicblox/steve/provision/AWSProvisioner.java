@@ -213,7 +213,7 @@ public class AWSProvisioner implements ProvisionerInterface {
         DescribeInstancesResult res = ec2.describeInstances(req);
         for (Reservation r : res.getReservations()) {
             for (Instance i : r.getInstances()) {
-                if (!i.getState().getName().equals("terminated") && i.getInstanceLifecycle().equals("spot") == true) {
+                if (!i.getState().getName().equals("terminated") && i.getInstanceLifecycle() != null && i.getInstanceLifecycle().equals("spot") == true) {
                    result++;
                 }
             }
