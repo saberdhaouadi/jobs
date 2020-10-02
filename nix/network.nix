@@ -570,7 +570,7 @@ with pkgs.lib;
 
       deployment.ec2.elasticIPv4 = env.key-server-elastic-ip;
       deployment.ec2.instanceProfile = resources.iamRoles.keyserver-role.name;
-      deployment.ec2.ebsInitialRootDiskSize = 10;
+      deployment.ec2.ebsInitialRootDiskSize = 20;
       imports = [
         <lbdevops/logicblox/production.nix>
         ./keyserver.nix

@@ -165,6 +165,7 @@ in rec {
         max = "200";
         min = "75";
         diskSize = "10";
+        onDemand = true;
       };
       /** Google cloud queues
       * TODO:
