@@ -597,7 +597,7 @@ with pkgs.lib;
 
       # Monocle setup
       telegraf.enable = true;
-      telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
+      telegraf.password = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
       telegraf.enableJolokiaAgent = false;
 
@@ -628,7 +628,7 @@ with pkgs.lib;
 
       # Monocle setup
       telegraf.enable = true ;
-      telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
+      telegraf.password = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
       telegraf.enableJolokiaAgent = false;
       telegraf.nginxInputUrl = "http://127.0.0.1/nginx_status";
@@ -762,7 +762,7 @@ with pkgs.lib;
       # Monocle setup
       telegraf.enable = true;
       telegraf.enableSteveDatabaseMetrics = true;
-      telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
+      telegraf.password = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
       telegraf.enableJolokiaAgent = false;
       telegraf.extraConfig = {
@@ -846,7 +846,7 @@ with pkgs.lib;
 
       # Monocle setup
       telegraf.enable = true;
-      telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
+      telegraf.password = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
       telegraf.enableJolokiaAgent = false;
       telegraf.nginxInputUrl = "http://127.0.0.1/nginx_status";
