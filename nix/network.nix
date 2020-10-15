@@ -1023,7 +1023,7 @@ with pkgs.lib;
 
       # Monocle setup
       telegraf.enable = true ;
-      telegraf.kafkaSaslPassword = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
+      telegraf.password = builtins.readFile (<global_creds/monocle/kafkaProdPassword>);
       telegraf.enableWorkflowMonitors = false;
       telegraf.enableJolokiaAgent = false;
 
