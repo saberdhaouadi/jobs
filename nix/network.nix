@@ -542,7 +542,7 @@ with pkgs.lib;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
-      deployment.ec2.ebsInitialRootDiskSize = 10;
+      deployment.ec2.ebsInitialRootDiskSize = 20;
 
       deployment.keys.google.keyFile = <global_creds/lb-jobs-gcp.json>;
 
