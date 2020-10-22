@@ -164,13 +164,13 @@ for type in $types; do
                         # get snapshot ID
                         snapId=$(echo $importTaskDesc | jq -r ".ImportSnapshotTasks[0].SnapshotTaskDetail.SnapshotId")
 
-                        blockDeviceMappings="DeviceName=/dev/sda1,Ebs={SnapshotId=$snapId,VolumeSize=$vhdFileLogicalGigaBytes,DeleteOnTermination=true,VolumeType=gp2}"
+                        blockDeviceMappings="DeviceName=/dev/xvda,Ebs={SnapshotId=$snapId,VolumeSize=$vhdFileLogicalGigaBytes,DeleteOnTermination=true,VolumeType=gp2}"
                         extraFlags=""
 
                         if [ $type = pv ]; then
-                            extraFlags+=" --root-device-name /dev/sda1"
+                            extraFlags+=" --root-device-name /dev/xvda"
                         else
-                            extraFlags+=" --root-device-name /dev/sda1"
+                            extraFlags+=" --root-device-name /dev/xvda"
                             extraFlags+=" --sriov-net-support simple"
                             extraFlags+=" --ena-support"
                         fi

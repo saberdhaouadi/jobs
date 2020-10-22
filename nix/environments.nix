@@ -157,6 +157,43 @@ in rec {
         min = "75";
         diskSize = "10";
       };
+      "r5ad.xlarge" = {
+        number = 0;
+        price = "0.288";
+        percentageSpot = "1.0";
+        percentageQueue = "1.0";
+        max = "500";
+        min = "75";
+        diskSize = "10";
+      };
+      "r5ad.2xlarge" = {
+        number = 0;
+        price = "0.57";
+        percentageSpot = "1.0";
+        percentageQueue = "1.0";
+        max = "400";
+        min = "75";
+        diskSize = "10";
+      };
+      "r5ad.4xlarge" = {
+        number = 0;
+        price = "1.04";
+        percentageSpot = "1.0";
+        percentageQueue = "1.0";
+        max = "300";
+        min = "75";
+        diskSize = "10";
+      };
+      "r5ad.8xlarge" = {
+        number = 0;
+        price = "2.31";
+        percentageSpot = "1.0";
+        percentageQueue = "1.0";
+        max = "200";
+        min = "75";
+        diskSize = "10";
+        onDemand = true;
+      };
       /** Google cloud queues
       * TODO:
       *   - add more instance types
