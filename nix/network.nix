@@ -1027,6 +1027,7 @@ with pkgs.lib;
       telegraf.enableWorkflowMonitors = false;
       telegraf.enableJolokiaAgent = false;
 
+      nixops.enableDeprecatedAutoLuks = true;
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
