@@ -106,7 +106,7 @@ in rec {
       };
       "i2.4xlarge" = {
         number = 0;
-        price = "3.72";
+        price = "3.41";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "300";
@@ -116,7 +116,7 @@ in rec {
         instanceType = "i3.8xlarge";
         diskSize = "10";
         number = 0;
-        price = "3.00";
+        price = "6.82";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "50";
