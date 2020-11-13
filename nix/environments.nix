@@ -27,7 +27,7 @@ in rec {
       };
       "c3.2xlarge" = {
         number = 0;
-        price = "0.25";
+        price = "0.42";
         percentageSpot = "1.0";
         max = "500";
         maxDelta = "100";
