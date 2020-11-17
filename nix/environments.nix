@@ -116,7 +116,7 @@ in rec {
         instanceType = "i3.8xlarge";
         diskSize = "10";
         number = 0;
-        price = "6.82";
+        price = "3.20";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "50";
