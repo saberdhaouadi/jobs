@@ -637,7 +637,7 @@ with pkgs.lib;
         { autoFormat = true;
           fsType = "xfs";
           device = "/dev/xvdf";
-          options = [ "noatime" ];
+          options = [ "noatime" "_netdev" ];
           ec2.size = 20;
           ec2.encrypt = true;
         };
@@ -811,7 +811,7 @@ with pkgs.lib;
         { autoFormat = true;
           fsType = "xfs";
           device = "/dev/xvdf";
-          options = [ "noatime" ];
+          options = [ "noatime" "_netdev" ];
           ec2.size = 1000;
           ec2.volumeType = "gp2";
         };
@@ -1032,6 +1032,8 @@ with pkgs.lib;
       freeipa.caCertificate = <global_creds/freeipa-creds/ca.crt>;
       freeipa.tlsCertificatePem = <global_creds/freeipa-creds/ldap_tls.pem>;
       freeipa.tlsCertificateKey = <global_creds/freeipa-creds/ldap_tls.key>;
+
+      nixops.enableDeprecatedAutoLuks = true;
     };
 
 } // (listToAttrs (concatLists ( map (t: map (n: nameValuePair "worker-${name}-${workerName t}-${toString n}" (worker t (env.workers."${t}".instanceType or t))) (range 1 env.workers."${t}".number)) instanceTypes ) ) )
