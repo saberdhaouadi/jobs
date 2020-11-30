@@ -24,6 +24,7 @@ in rec {
         price = "0.25";
         percentageSpot = "1.0";
         onDemand = true;
+        max = "500";
       };
       "c3.2xlarge" = {
         number = 0;
