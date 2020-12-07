@@ -278,6 +278,16 @@ in rec {
       inherit (prod) region;
     };
 
+  production =
+    { hostName = "steve-production.logicblox.com";
+      elasticIPv4 = "174.129.157.164";
+      key-server-elastic-ip = "54.172.194.225";
+      google-nat-elastic-ip = "";
+      inherit (prod) workers;
+      inherit (prod) spotfleetRole;
+      inherit (prod) region;
+    };
+
   dev =
     { hostName = "steve-dev.logicblox.com";
       elasticIPv4 = "3.226.198.225";
