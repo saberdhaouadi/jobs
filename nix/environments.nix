@@ -18,6 +18,8 @@ in rec {
   prod = {
     hostName = "steve.logicblox.com";
     elasticIPv4 = "54.243.141.142";
+    key-server-elastic-ip = "34.227.139.230";
+    google-nat-elastic-ip = "google-nat-prod";
     workers = addOnDemandQueues {
       "c3.xlarge" = {
         number = 0;
@@ -271,8 +273,8 @@ in rec {
   test =
     { hostName = "steve-test.logicblox.com";
       elasticIPv4 = "23.21.124.192";
-      key-server-elastic-ip = "";
-      google-nat-elastic-ip = "";
+      key-server-elastic-ip = "54.166.22.23";
+      google-nat-elastic-ip = "google-nat-test";
       inherit (prod) workers;
       inherit (prod) spotfleetRole;
       inherit (prod) region;
@@ -282,7 +284,7 @@ in rec {
     { hostName = "steve-production.logicblox.com";
       elasticIPv4 = "174.129.157.164";
       key-server-elastic-ip = "54.172.194.225";
-      google-nat-elastic-ip = "";
+      google-nat-elastic-ip = "google-nat-production";
       inherit (prod) workers;
       inherit (prod) spotfleetRole;
       inherit (prod) region;
