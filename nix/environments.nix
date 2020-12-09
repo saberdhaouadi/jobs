@@ -32,7 +32,7 @@ in rec {
         number = 0;
         price = "0.42";
         percentageSpot = "1.0";
-        max = "500";
+        max = "650";
         maxDelta = "100";
         percentageQueue = "1.0";
       };
@@ -64,7 +64,7 @@ in rec {
         price = "0.75";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
-        max = "700";
+        max = "650";
         onDemand = true;
         maxDelta = "100";
       };
@@ -87,11 +87,13 @@ in rec {
         min = "50";
         max = "500";
         onDemand = true;
-        maxDelta = "100";
+        maxDelta = "50";
       };
       "i2.xlarge" = {
         number = 0;
-        price = "0.86";
+        diskSize = "10";
+        instanceType = "i3.xlarge";
+        price = "0.312";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "200";
@@ -99,7 +101,9 @@ in rec {
       };
       "i2.2xlarge" = {
         number = 0;
-        price = "1.88";
+        diskSize = "10";
+        instanceType = "i3.2xlarge";
+        price = "0.625";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "500";
@@ -109,7 +113,9 @@ in rec {
       };
       "i2.4xlarge" = {
         number = 0;
-        price = "3.41";
+        diskSize = "10";
+        instanceType = "i3.4xlarge";
+        price = "1.25";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "300";
@@ -119,7 +125,7 @@ in rec {
         instanceType = "i3.8xlarge";
         diskSize = "10";
         number = 0;
-        price = "3.20";
+        price = "2.50";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "50";
@@ -160,6 +166,17 @@ in rec {
         min = "75";
         diskSize = "10";
       };
+      /*"i3.16xlarge" = {
+        number = 0;
+        price = "2.50";
+        percentageSpot = "1.0";
+        percentageQueue = "1.0";
+        max = "200";
+        min = "75";
+        diskSize = "10";
+        instanceType = "i3.8xlarge";
+        ami = "ami-043b12d06dc5085db";
+      };*/
       "r5ad.xlarge" = {
         number = 0;
         price = "0.288";
