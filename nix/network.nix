@@ -26,6 +26,7 @@ let
   devips = import ./dev-ips.nix;
   prodips = import ./prod-ips.nix;
   natips = import ./nat-ips.nix;
+  prodnatips = import ./prod-nat-ips.nix;
 
   dep-region = env.region;
   google-nat-ip = env.google-nat-elastic-ip;
@@ -461,7 +462,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         };
-        ips = natips ++ [ "34.66.55.179" ];
+        ips = if production then prodnatips else natips ++ [ "34.66.55.179" ];
         accountEntry = account:
         {
           fromPort = 443;
