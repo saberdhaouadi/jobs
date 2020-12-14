@@ -6,6 +6,7 @@
 , logToken ? ""
 , sumoToken ? ""
 , vpcId ? ""
+, subnetId ? ""
 , production ? false
 , allowedGroups ? [ "admins" ]
 , gcpProject                     # (required) GCE project to deploy to
@@ -20,7 +21,8 @@ let
 
   instanceTypes = builtins.attrNames env.workers;
 
-  amis = import ./amis.nix;
+  #amis = import ./amis.nix;
+  amis = if production then import ./prod-amis.nix else import ./amis.nix ;
   bootstrap-images = import ./bootstrap-images.nix;
 
   devips = import ./dev-ips.nix;
@@ -539,7 +541,9 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" ];
+      deployment.ec2.securityGroupIds = [ "admin" ];
+      deployment.ec2.subnetId = subnetId ;
+      deployment.ec2.associatePublicIpAddress = true;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
@@ -563,7 +567,8 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg.name ];
+      deployment.ec2.securityGroupIds = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg.name ];
+      deployment.ec2.subnetId = subnetId ;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
@@ -584,7 +589,7 @@ with pkgs.lib;
         { autoFormat = true;
           fsType = "xfs";
           device = getDeviceName config.deployment.ec2.instanceType false; #"/dev/xvdf";
-          options = [ "noatime" ];
+          options = [ "noatime" "_netdev" ];
           ec2.size = 20;
           ec2.encrypt = true;
         };
@@ -723,9 +728,12 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.database-sg.name ];
+      #deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.database-sg.name ];
+      deployment.ec2.securityGroupIds = [ "admin" resources.ec2SecurityGroups.database-sg.name ];
+      deployment.ec2.subnetId = subnetId ;
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.4xlarge" else "c3.8xlarge";
+      deployment.ec2.instanceType = if (vpcId != "") then "c4.8xlarge" else "c3.8xlarge";
+      deployment.ec2.associatePublicIpAddress = true;
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
@@ -753,7 +761,7 @@ with pkgs.lib;
         { autoFormat = true;
           fsType = "xfs";
           device = getDeviceName config.deployment.ec2.instanceType false; #"/dev/xvdf";
-          options = [ "noatime" ];
+          options = [ "noatime" "_netdev" ];
           ec2.size = 1000;
           ec2.volumeType = "gp2";
         };
@@ -771,7 +779,8 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.frontend-sg.name ];
+      deployment.ec2.securityGrouIds = [ "admin" resources.ec2SecurityGroups.frontend-sg.name ];
+      deployment.ec2.subnetId = subnetId ;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "c4.xlarge" else "c3.xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
