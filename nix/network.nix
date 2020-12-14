@@ -21,7 +21,6 @@ let
 
   instanceTypes = builtins.attrNames env.workers;
 
-  #amis = import ./amis.nix;
   amis = if production then import ./prod-amis.nix else import ./amis.nix ;
   bootstrap-images = import ./bootstrap-images.nix;
 
@@ -728,7 +727,6 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      #deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.database-sg.name ];
       deployment.ec2.securityGroupIds = [ "admin" resources.ec2SecurityGroups.database-sg.name ];
       deployment.ec2.subnetId = subnetId ;
       deployment.ec2.region = region;
