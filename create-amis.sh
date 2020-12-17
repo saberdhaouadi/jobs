@@ -29,7 +29,7 @@ if [[ -z "$bucket" ]]; then
 fi
 
 stateDir=/tmp/ec2-image
-amisFile=nix/amis.nix
+amisFile=nix/prod-amis.nix
 
 echo "keeping state in $stateDir"
 mkdir -p $stateDir/hvm
