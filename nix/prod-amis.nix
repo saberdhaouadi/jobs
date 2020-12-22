@@ -1,8 +1,8 @@
 {
-  us-east-1.ebs = "ami-08fb5c9656b4ca57c";
-  us-west-1.ebs = "ami-0d4424daffa11d129";
-  us-west-2.ebs = "ami-019227161b481746f";
-  us-east-1.s3 = "ami-0317602d72572b389";
-  us-west-1.s3 = "ami-087e34dc9c15e2220";
-  us-west-2.s3 = "ami-0988f5300c63bdc88";
+  us-east-1.ebs = "ami-04011252a3fdeaf4a";
+  us-west-1.ebs = "ami-00cdbe6ecde027b14";
+  us-west-2.ebs = "ami-0d7918bb6d04de462";
+  us-east-1.s3 = "ami-0a09074051734817a";
+  us-west-1.s3 = "ami-043e64913126f2fd3";
+  us-west-2.s3 = "ami-04fab756d9f698fa1";
 }

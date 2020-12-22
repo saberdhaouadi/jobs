@@ -56,9 +56,11 @@ public class AWSProvisioner implements ProvisionerInterface {
             WorkersSubnetsList.add(sub.getSubnetId());
           }
         System.out.println(WorkersSubnetsList);
-
         //Getting admin security group Id
-        DescribeSecurityGroupsRequest securitygroupsrequest = new DescribeSecurityGroupsRequest().withGroupNames(cmdArgs.getSecurityGroup()).withFilters(new Filter().withName("vpc-id").withValues(workersvpcId));
+        DescribeSecurityGroupsRequest securitygroupsrequest = new DescribeSecurityGroupsRequest().withFilters(
+                                                                                                       new Filter().withName("vpc-id").withValues(workersvpcId),
+                                                                                                       new Filter().withName("group-name").withValues(cmdArgs.getSecurityGroup())
+                                                                                                  );
         DescribeSecurityGroupsResult securitygroupsresult = ec2.describeSecurityGroups(securitygroupsrequest);
         Collection <SecurityGroup> adminsecuritygroups = securitygroupsresult.getSecurityGroups();
         GroupIdentifier groupidf = new GroupIdentifier();
