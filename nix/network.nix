@@ -805,7 +805,7 @@ with pkgs.lib;
       };
 
       system.build.frontendConfig = frontendConfig;
-
+      boot.kernelPackages = pkgs.linuxPackages_4_9;
       boot.kernel.sysctl = {
         "net.ipv4.ip_local_port_range" = "1024 65000";
         "net.ipv4.tcp_tw_reuse" = "1";

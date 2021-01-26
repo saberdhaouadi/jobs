@@ -28,7 +28,7 @@ in
   ] ;
 
   environment.systemPackages = [ updateLBversions ];
-
+  boot.kernelPackages = pkgs.linuxPackages_4_9;
   services.logicblox.enable = true;
   services.logicblox.logicblox = config.logicblox.jobs.platform;
   services.logicblox.config.lb-server = ''
