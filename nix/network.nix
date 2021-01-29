@@ -731,7 +731,7 @@ with pkgs.lib;
       deployment.ec2.securityGroupIds = [ "admin" resources.ec2SecurityGroups.database-sg.name ];
       deployment.ec2.subnetId = subnetId ;
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.8xlarge" else "c3.8xlarge";
+      deployment.ec2.instanceType = if (vpcId != "" && production) then "c4.8xlarge" else "c4.4xlarge";
       deployment.ec2.associatePublicIpAddress = true;
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
