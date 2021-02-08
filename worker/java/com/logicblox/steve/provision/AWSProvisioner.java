@@ -136,18 +136,43 @@ public class AWSProvisioner implements ProvisionerInterface {
         req.setKeyName(cmdArgs.getKey());
         req.setUserData(getUserData());
 
-        if(cmdArgs.getSubnetId() == null) {
-            Collection<String> groups = new ArrayList<String>();
-            groups.add(cmdArgs.getSecurityGroup());
-            req.setSecurityGroups(groups);
-        } else {
-            Collection<String> groups = new ArrayList<String>();
-            groups.add(cmdArgs.getSecurityGroup());
-            req.setSecurityGroupIds(groups);
+        String workersvpcId = "";
+        DescribeVpcsRequest vpcsrequest = new DescribeVpcsRequest().withFilters(new Filter().withName("tag:Name").withValues("Workers VPC"));
+        DescribeVpcsResult vpcsresult = ec2.describeVpcs(vpcsrequest);
+        List<Vpc> vpcresults = vpcsresult.getVpcs();
+        for (Vpc v : vpcresults) {
+          workersvpcId = v.getVpcId();
         }
-        if(cmdArgs.getSubnetId() != null) {
-            req.setSubnetId(cmdArgs.getSubnetId());
-        }
+
+        List<String> WorkersSubnetsList = new ArrayList<String>();
+        DescribeSubnetsRequest subnetsrequest = new DescribeSubnetsRequest()
+                    .withFilters(
+                            new Filter().withName("vpc-id").withValues(workersvpcId),
+                            new Filter().withName("tag:Name").withValues("workers")
+                    );
+        DescribeSubnetsResult subnetsresult = ec2.describeSubnets(subnetsrequest);
+        List<Subnet> workerssubnets = subnetsresult.getSubnets();
+        for (Subnet sub : workerssubnets) {
+            WorkersSubnetsList.add(sub.getSubnetId());
+          }
+
+        System.out.println(WorkersSubnetsList.get(2));
+        String OndemandSubnet = WorkersSubnetsList.get(2);
+        //Getting admin security group Id
+        DescribeSecurityGroupsRequest securitygroupsrequest = new DescribeSecurityGroupsRequest().withFilters(
+                                                                                                       new Filter().withName("vpc-id").withValues(workersvpcId),
+                                                                                                       new Filter().withName("group-name").withValues(cmdArgs.getSecurityGroup())
+                                                                                                  );
+        DescribeSecurityGroupsResult securitygroupsresult = ec2.describeSecurityGroups(securitygroupsrequest);
+        Collection <SecurityGroup> adminsecuritygroups = securitygroupsresult.getSecurityGroups();
+        List<String> adminOndemandgroups = new ArrayList<String>();
+        for (SecurityGroup sg : adminsecuritygroups) {
+             adminOndemandgroups.add(sg.getGroupId());
+           }
+
+        req.setSecurityGroupIds(adminOndemandgroups);
+        req.setSubnetId(OndemandSubnet);
+
         if(cmdArgs.getDiskSize() != 0) {
             BlockDeviceMapping blockDeviceMapping = new BlockDeviceMapping();
             blockDeviceMapping.setDeviceName("/dev/sda1");
