@@ -16,8 +16,8 @@ let
 
 in rec {
   prod = {
-    hostName = "steve.logicblox.com";
-    elasticIPv4 = "54.243.141.142";
+    hostName = "steve-production.logicblox.com";
+    elasticIPv4 = "174.129.157.164";
     key-server-elastic-ip = "34.227.139.230";
     google-nat-elastic-ip = "google-nat-prod";
     workers = addOnDemandQueues {
@@ -298,8 +298,8 @@ in rec {
     };
 
   production =
-    { hostName = "steve-production.logicblox.com";
-      elasticIPv4 = "174.129.157.164";
+    { hostName = "steve.logicblox.com";
+      elasticIPv4 = "54.243.141.142";
       key-server-elastic-ip = "54.172.194.225";
       google-nat-elastic-ip = "google-nat-production";
       inherit (prod) workers;
