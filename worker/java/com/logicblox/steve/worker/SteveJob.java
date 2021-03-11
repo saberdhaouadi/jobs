@@ -509,6 +509,10 @@ public class SteveJob {
       args.add("platform_version");
       args.add(_metadata.containsKey("platform") ? _metadata.get("platform") : "3.10.15");
     }
+    if (_metadata.containsKey("python_version")) {
+      args.add("--argstr");
+      args.add("python_version "+_metadata.get("python_version"));
+    }
     args.add("--arg");
     args.add("dependencies");
     args.add(_metadata.containsKey("dependencies") ? "with (import <config/lib> {}).pkgs; ["+_metadata.get("dependencies").replace(",", " ")+"]" : "[]");

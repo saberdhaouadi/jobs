@@ -1,4 +1,5 @@
 { platform_version ? ""
+, python_version ? ""
 , external_platform ? null
 , dependencies ? []
 }:
@@ -11,11 +12,11 @@ in
   pkgs.stdenv.mkDerivation (metadata // rec {
     name = "job-${toString builtins.currentTime}";
     buildInputs = [
-      pkgs.pythonFull
-      pkgs.pythonPackages.pandas
-      pkgs.pythonPackages.scikitlearn
-      pkgs.pythonPackages.matplotlib
-      pkgs.pythonPackages.statsmodels
+      pkgs."python${python_version}Full"
+      pkgs."python${python_version}Packages.pandas"
+      pkgs."python${python_version}Packages.scikitlearn"
+      pkgs."python${python_version}Packages.matplotlib"
+      pkgs."python${python_version}Packages.statsmodels"
       pkgs.socat
       pkgs.jq
       pkgs.curl
