@@ -272,11 +272,11 @@ in rec {
     spotfleetRole = "arn:aws:iam::826045886586:role/aws-ec2-spot-fleet-role";
   };
 
-  test = {
-    hostName = "steve-test.logicblox.com";
+  shadow = {
+    hostName = "steve-shadow.logicblox.com";
     elasticIPv4 = "23.21.124.192";
     key-server-elastic-ip = "54.166.22.23";
-    google-nat-elastic-ip = "google-nat-test";
+    google-nat-elastic-ip = "google-nat-shadow";
     inherit (production) workers;
     inherit (production) spotfleetRole;
     inherit (production) region;
