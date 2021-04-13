@@ -413,7 +413,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         };
-      ips = if (production or category == "shadow") then prodips else devips ;
+      ips = if (production == true or category == "shadow") then prodips else devips ;
       accountEntry = account:
         {
           fromPort = 443;
