@@ -13,6 +13,7 @@
 , serviceAccount ? "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com" # (required) GCE service account email
 , latestLb ? true
 , provisionVpc ? false
+, category ? "dev"
 , ...
 }:
 let
@@ -412,7 +413,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         };
-      ips = if production then prodips else devips ;
+      ips = if production or category = "shadow" then prodips else devips ;
       accountEntry = account:
         {
           fromPort = 443;
