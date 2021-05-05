@@ -1016,6 +1016,7 @@ with pkgs.lib;
     { config, lib, ... }:
     { imports = [ <lbdevops/nixos/local-modules/freeipa.nix>
                   <lbdevops/nixos/base/user-env.nix>
+                  <lbdevops/nixos/base/monitoring.nix>
                   <lbdevops/logicblox/config/logging/rsyslogd.nix>
                   <lbdevops/nixos/local-modules/cloudwatch.nix>
                   <lbdevops/nixos/monitoring/telegraf/telegraf.nix>
