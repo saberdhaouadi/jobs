@@ -13,6 +13,7 @@
 , serviceAccount ? "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com" # (required) GCE service account email
 , latestLb ? true
 , provisionVpc ? false
+, category ? "dev"
 , ...
 }:
 let
@@ -412,7 +413,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         };
-      ips = if production then prodips else devips ;
+      ips = if (production || category == "shadow") then prodips else devips ;
       accountEntry = account:
         {
           fromPort = 443;
@@ -1015,6 +1016,7 @@ with pkgs.lib;
     { config, lib, ... }:
     { imports = [ <lbdevops/nixos/local-modules/freeipa.nix>
                   <lbdevops/nixos/base/user-env.nix>
+                  <lbdevops/nixos/base/monitoring.nix>
                   <lbdevops/logicblox/config/logging/rsyslogd.nix>
                   <lbdevops/nixos/local-modules/cloudwatch.nix>
                   <lbdevops/nixos/monitoring/telegraf/telegraf.nix>

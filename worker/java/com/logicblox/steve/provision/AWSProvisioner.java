@@ -24,18 +24,8 @@ public class AWSProvisioner implements ProvisionerInterface {
 
     CommandLineArguments cmdArgs;
 
-    public void createSpotInstances(int nr) {
-
-        System.err.println(String.format("Creating %d spot instances", nr));
+    public String getVpcID () {
         String workersvpcId = "";
-
-        Collection<Tag> tags = new ArrayList<Tag>();
-        Collection<SpotFleetTagSpecification> tagspeclist = new ArrayList<SpotFleetTagSpecification>();
-        tags.add(new Tag("Name", String.format("Worker [%s]", cmdArgs.getS3Bucket())));
-        tags.add(new Tag("S3Bucket", cmdArgs.getS3Bucket()));
-        tags.add(new Tag("IncomingQueue", cmdArgs.getIncoming_url()));
-        tags.add(new Tag("OutgoingQueue", cmdArgs.getOutgoing_url()));
-
         DescribeVpcsRequest vpcsrequest = new DescribeVpcsRequest().withFilters(new Filter().withName("tag:Name").withValues("Workers VPC"));
         DescribeVpcsResult vpcsresult = ec2.describeVpcs(vpcsrequest);
         List<Vpc> vpcresults = vpcsresult.getVpcs();
@@ -43,11 +33,14 @@ public class AWSProvisioner implements ProvisionerInterface {
           workersvpcId = v.getVpcId();
           System.out.println(workersvpcId);
         }
+       return workersvpcId;
+    }
 
+    public List<String> getSubnetIDs (String workersVPCId) {
         List<String> WorkersSubnetsList = new ArrayList<String>();
         DescribeSubnetsRequest subnetsrequest = new DescribeSubnetsRequest()
                     .withFilters(
-                            new Filter().withName("vpc-id").withValues(workersvpcId),
+                            new Filter().withName("vpc-id").withValues(workersVPCId),
                             new Filter().withName("tag:Name").withValues("workers")
                     );
         DescribeSubnetsResult subnetsresult = ec2.describeSubnets(subnetsrequest);
@@ -56,13 +49,38 @@ public class AWSProvisioner implements ProvisionerInterface {
             WorkersSubnetsList.add(sub.getSubnetId());
           }
         System.out.println(WorkersSubnetsList);
-        //Getting admin security group Id
+        return WorkersSubnetsList;
+    }
+
+    public Collection <SecurityGroup> getAdminSecurityGroups (String workersVPCId) {
         DescribeSecurityGroupsRequest securitygroupsrequest = new DescribeSecurityGroupsRequest().withFilters(
-                                                                                                       new Filter().withName("vpc-id").withValues(workersvpcId),
+                                                                                                       new Filter().withName("vpc-id").withValues(workersVPCId),
                                                                                                        new Filter().withName("group-name").withValues(cmdArgs.getSecurityGroup())
                                                                                                   );
         DescribeSecurityGroupsResult securitygroupsresult = ec2.describeSecurityGroups(securitygroupsrequest);
         Collection <SecurityGroup> adminsecuritygroups = securitygroupsresult.getSecurityGroups();
+        return adminsecuritygroups;
+    }
+
+    public void createSpotInstances(int nr) {
+
+        System.err.println(String.format("Creating %d spot instances", nr));
+
+        //String workersvpcId = "";
+
+        Collection<Tag> tags = new ArrayList<Tag>();
+        Collection<SpotFleetTagSpecification> tagspeclist = new ArrayList<SpotFleetTagSpecification>();
+        tags.add(new Tag("Name", String.format("Worker [%s]", cmdArgs.getS3Bucket())));
+        tags.add(new Tag("S3Bucket", cmdArgs.getS3Bucket()));
+        tags.add(new Tag("IncomingQueue", cmdArgs.getIncoming_url()));
+        tags.add(new Tag("OutgoingQueue", cmdArgs.getOutgoing_url()));
+
+        String workersvpcId = getVpcID ();
+
+        List<String> WorkersSubnetsList = getSubnetIDs(workersvpcId);
+
+        Collection <SecurityGroup> adminsecuritygroups = getAdminSecurityGroups(workersvpcId);
+
         GroupIdentifier groupidf = new GroupIdentifier();
         for (SecurityGroup g : adminsecuritygroups) {
             groupidf.setGroupId(g.getGroupId());
@@ -136,35 +154,15 @@ public class AWSProvisioner implements ProvisionerInterface {
         req.setKeyName(cmdArgs.getKey());
         req.setUserData(getUserData());
 
-        String workersvpcId = "";
-        DescribeVpcsRequest vpcsrequest = new DescribeVpcsRequest().withFilters(new Filter().withName("tag:Name").withValues("Workers VPC"));
-        DescribeVpcsResult vpcsresult = ec2.describeVpcs(vpcsrequest);
-        List<Vpc> vpcresults = vpcsresult.getVpcs();
-        for (Vpc v : vpcresults) {
-          workersvpcId = v.getVpcId();
-        }
+        String workersvpcId = getVpcID ();
 
-        List<String> WorkersSubnetsList = new ArrayList<String>();
-        DescribeSubnetsRequest subnetsrequest = new DescribeSubnetsRequest()
-                    .withFilters(
-                            new Filter().withName("vpc-id").withValues(workersvpcId),
-                            new Filter().withName("tag:Name").withValues("workers")
-                    );
-        DescribeSubnetsResult subnetsresult = ec2.describeSubnets(subnetsrequest);
-        List<Subnet> workerssubnets = subnetsresult.getSubnets();
-        for (Subnet sub : workerssubnets) {
-            WorkersSubnetsList.add(sub.getSubnetId());
-          }
+        List<String> WorkersSubnetsList = getSubnetIDs(workersvpcId);
+
+        Collection <SecurityGroup> adminsecuritygroups = getAdminSecurityGroups(workersvpcId);
 
         System.out.println(WorkersSubnetsList.get(2));
         String OndemandSubnet = WorkersSubnetsList.get(2);
-        //Getting admin security group Id
-        DescribeSecurityGroupsRequest securitygroupsrequest = new DescribeSecurityGroupsRequest().withFilters(
-                                                                                                       new Filter().withName("vpc-id").withValues(workersvpcId),
-                                                                                                       new Filter().withName("group-name").withValues(cmdArgs.getSecurityGroup())
-                                                                                                  );
-        DescribeSecurityGroupsResult securitygroupsresult = ec2.describeSecurityGroups(securitygroupsrequest);
-        Collection <SecurityGroup> adminsecuritygroups = securitygroupsresult.getSecurityGroups();
+
         List<String> adminOndemandgroups = new ArrayList<String>();
         for (SecurityGroup sg : adminsecuritygroups) {
              adminOndemandgroups.add(sg.getGroupId());

@@ -8,18 +8,16 @@ let
         instanceType = n;
       })) (lib.filterAttrs (n: v: (v.onDemand or false)) queues));
 
-  subnetId = "subnet-dc1a4194";
-  securityGroup = "sg-b3ac49c3";
   lbJobsImage = "lb-jobs-5201168";
   gcpProject = "lb-jobs";
   gcpServiceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
 
 in rec {
-  prod = {
-    hostName = "steve-production.logicblox.com";
-    elasticIPv4 = "174.129.157.164";
-    key-server-elastic-ip = "34.227.139.230";
-    google-nat-elastic-ip = "google-nat-prod";
+  production = {
+    hostName = "steve.logicblox.com";
+    elasticIPv4 = "54.243.141.142";
+    key-server-elastic-ip = "54.172.194.225";
+    google-nat-elastic-ip = "google-nat-production";
     workers = addOnDemandQueues {
       "c3.xlarge" = {
         number = 0;
@@ -166,17 +164,6 @@ in rec {
         min = "75";
         diskSize = "10";
       };
-      /*"i3.16xlarge" = {
-        number = 0;
-        price = "2.50";
-        percentageSpot = "1.0";
-        percentageQueue = "1.0";
-        max = "200";
-        min = "75";
-        diskSize = "10";
-        instanceType = "i3.8xlarge";
-        ami = "ami-043b12d06dc5085db";
-      };*/
       "r5ad.xlarge" = {
         number = 0;
         price = "0.288";
@@ -275,9 +262,7 @@ in rec {
         serviceAccount = gcpServiceAccount;
         localdisks = "4";
       };
-
     };
-
     region = {
       "us-east-1" = {};
       "us-west-1" = {};
@@ -287,63 +272,33 @@ in rec {
     spotfleetRole = "arn:aws:iam::826045886586:role/aws-ec2-spot-fleet-role";
   };
 
-  test =
-    { hostName = "steve-test.logicblox.com";
-      elasticIPv4 = "23.21.124.192";
-      key-server-elastic-ip = "54.166.22.23";
-      google-nat-elastic-ip = "google-nat-test";
-      inherit (prod) workers;
-      inherit (prod) spotfleetRole;
-      inherit (prod) region;
-    };
+  shadow = {
+    hostName = "steve-shadow.logicblox.com";
+    elasticIPv4 = "23.21.124.192";
+    key-server-elastic-ip = "54.166.22.23";
+    google-nat-elastic-ip = "google-nat-shadow";
+    inherit (production) workers;
+    inherit (production) spotfleetRole;
+    inherit (production) region;
+  };
 
-  production =
-    { hostName = "steve.logicblox.com";
-      elasticIPv4 = "54.243.141.142";
-      key-server-elastic-ip = "54.172.194.225";
-      google-nat-elastic-ip = "google-nat-production";
-      inherit (prod) workers;
-      inherit (prod) spotfleetRole;
-      inherit (prod) region;
-    };
+  dev = {
+    hostName = "steve-dev.logicblox.com";
+    elasticIPv4 = "3.226.198.225";
+    key-server-elastic-ip = "34.232.108.153";
+    google-nat-elastic-ip = "google-nat-dev";
+    inherit (production) workers;
+    inherit (production) region;
+    spotfleetRole = "arn:aws:iam::202226491534:role/aws-ec2-spot-fleet-role";
+  };
 
-  dev =
-    { hostName = "steve-dev.logicblox.com";
-      elasticIPv4 = "3.226.198.225";
-      key-server-elastic-ip = "34.232.108.153";
-      google-nat-elastic-ip = "google-nat-dev";
-      inherit (prod) workers;
-      inherit (prod) region;
-      spotfleetRole = "arn:aws:iam::202226491534:role/aws-ec2-spot-fleet-role";
-    };
-
-  dev-2 =
-    { hostName = "steve-dev-2.logicblox.com";
-      elasticIPv4 = "34.231.25.40";
-      key-server-elastic-ip = "3.209.190.228";
-      google-nat-elastic-ip = "google-nat";
-      inherit (prod) workers;
-      inherit (prod) region;
-      inherit (dev) spotfleetRole;
-    };
-
-  integration =
-    { hostName = "steve-integration.logicblox.com";
-      elasticIPv4 = "18.233.197.187";
-      key-server-elastic-ip = "";
-      inherit (prod) workers;
-      inherit (prod) region;
-      inherit (prod) spotfleetRole;
-    };
-
-  asamtitraining=
-    { hostName = "steve-asamtitraining.logicblox.com";
-      elasticIPv4 = "52.15.255.93";
-      key-server-elastic-ip = "3.13.42.130";
-      google-nat-elastic-ip = "";
-      inherit (prod) workers;
-      inherit (prod) region;
-      inherit (prod) spotfleetRole;
-    };
-
+  dev-2 = {
+    hostName = "steve-dev-2.logicblox.com";
+    elasticIPv4 = "34.231.25.40";
+    key-server-elastic-ip = "3.209.190.228";
+    google-nat-elastic-ip = "google-nat";
+    inherit (production) workers;
+    inherit (production) region;
+    inherit (dev) spotfleetRole;
+  };
 }
