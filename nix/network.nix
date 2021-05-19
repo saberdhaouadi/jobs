@@ -464,7 +464,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         };
-        ips = if production then prodnatips else natips ++ [ "34.66.55.179" ];
+        ips = if (production || category == "shadow") then prodnatips else natips ++ [ "34.66.55.179" ];
         accountEntry = account:
         {
           fromPort = 443;
