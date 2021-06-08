@@ -2,12 +2,27 @@
 , external_platform ? null
 , dependencies ? []
 }:
+with (import <nixpkgs> {});
 let
   inherit (import <config/lib> {}) releases pkgs;
   platform = builtins.getAttr platform_version releases.platform;
   isFullPlatform = external_platform != null || (pkgs.lib.versionAtLeast platform_version "4.3.7");
   metadata = builtins.fromJSON (builtins.readFile /tmp/job/in/metadata.json);
+  pythonWrapper = python38.withPackages(ps: with ps; [ pandas numpy ]);
 in
+  # OPS-30519 - 'python-latest' alias to support different versions of numpy & pandas
+  runCommand "pythons" {
+  buildInputs = [
+    (lib.overrideDerivation pythonWrapper (oldAttrs: {
+      postBuild = (oldAttrs.postBuild or "") +
+      ''
+        ln -s $out/bin/python $out/bin/python-latest
+      '';
+    }))
+    ((import <config> {}).getLB "4.32.latest")
+  ];
+  }
+
   pkgs.stdenv.mkDerivation (metadata // rec {
     name = "job-${toString builtins.currentTime}";
     buildInputs = [
