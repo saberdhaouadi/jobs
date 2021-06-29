@@ -107,7 +107,7 @@ let
       deployment.ec2.tags.OutgoingQueue = sqsStatusURL;
 
       users.extraUsers.root.openssh.authorizedKeys.keys = [
-      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCunr4txUxeXVeaEkLm06vjFceW71ciwf3vPtGQNRPa3mRIxWxRvtaSXj8djNn9g9Lc/Rqjhz2LuGfi9rQVeynpglmicSmt6Ge3UpQL+Z4QibY95movUTb+yvjIFTOHGbeRBGholpfvCK1vd/ZCzv9/21X2Mbg8N1X2/pxGdsmtv6dG9tOuF4Bv47uZA4pzMUC16XxriJN9WKBcrUwv5tPqP0uQoSWnnuU/RIMnZIiZUxi16jKTdMWRUFjx69s/lHkgUdnkAim7ZahhWOCsFAQTq65RdNsi40c/6N7MenWIWWiPIqQ59VpV7E9sxXa4Kbj7W/v4wqEzTcOFuG3EHuGx ahmed.samti@infor.com"
+      "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAgEAmxxgGIudbcSgNoG1z4sSiQq0E7AXRIakJRO0oCJhBbijFP+i2evtSPM5eu5Dm08q+leRnnQGjAckcdJoFbXi05QCLKNk7H/UJVLKyGL3FAHfrZX6nDqZmipkNdIJ1rmSjnKU/sgC5QU7Ordp2rCOba0lYLiDJVoQYZOVIG7CT6BtoCymuvC8Kd/gKwObVh8EPTQ7FRXllXE0Le8cXL+NUStr//YxQndqOqBKgFYYWLRztipRu5ATVJ29bL++jfd3hCsiJvNHy22iD13neO/sigaBnpKE274WjeSBA4SOaTizZB/4Q65idwyy3laLk+noKAbhVkrERu1Yl/tvx9xV8tI21af/zwPBCd+bTDEvEGqY3NqH6YK7tzsEyodXJLf0dVHRIGqF9Nn+Kl1CJ2AtocaecWj9GFAc7cy0RiBaE8XIvjc0a3e0IbDZVI26kO/GpzJhYNqZfJJJDWfZyxZKQ9ttNrRS3HwMx1jklCJ/r7a2UzgoMWXXADgm65zJpBMs+OP+n/6MZWDywmlCxyw1h9pIefxK9bNnauWsrVxp4IuYZWhxI4Lm03j1fYDYv86L7GJLRc4AjzHEK5KzJRYbiUIJJ3FsQ00skCxvD/5hKgHrdkit7WoODYDQbVHJYLXO2k4r744Q2qZ+BBOtsYxsRVW0NmyX84E+zBNTNZfaMZc= deploy@predictix.com"
       ];
 
     };
@@ -670,38 +670,7 @@ with pkgs.lib;
         nginx.serviceConfig.LimitNOFILE = 32768;
       };
 
-      services.dd-agent.jmxConfig = ''
-          instances:
-            - host: 127.0.0.1
-              name: jmx_instance
-              port: 7199
-
-          init_config:
-            conf:
-              - include:
-                  domain: java.lang
-                  type: Threading
-              - include:
-                  domain: java.lang
-                  type: GarbageCollector
-      '';
-
-      environment.etc =
-        let
-          nginx-config =
-            pkgs.writeText "nginx.yaml" ''
-              init_config:
-              instances:
-                -   nginx_status_url: http://127.0.0.1/nginx_status/
-          '';
-        in [
-          { source = nginx-config;
-            target = "dd-agent/conf.d/nginx.yaml";
-          }
-        ];
-
     };
-
 
   "database-${name}" =
     { config, pkgs, lib, resources, nodes, ... }:
@@ -939,28 +908,6 @@ with pkgs.lib;
         nginx.serviceConfig.LimitNOFILE = 32768;
 
       };
-
-      services.dd-agent.jmxConfig = ''
-          instances:
-            - host: 127.0.0.1
-              name: jmx_instance
-              port: 7199
-
-          init_config:
-            conf:
-              - include:
-                  domain: java.lang
-                  type: Threading
-              - include:
-                  domain: java.lang
-                  type: GarbageCollector
-          '';
-
-      services.dd-agent.nginxConfig = ''
-        init_config:
-        instances:
-          -   nginx_status_url: http://127.0.0.1/nginx_status/
-      '';
     };
 
   "google-nat-${name}" =
