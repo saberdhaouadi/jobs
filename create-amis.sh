@@ -18,13 +18,13 @@ while [[ $# -gt 0 ]]; do
 	    build="$2"
 	    shift 2
 	    ;;
-        -f|--file)
-        outputFile=$2
-        shift 2
-        ;;
-        *)
-        shift
-        ;;
+            -f|--file)
+            outputFile=$2
+            shift 2
+            ;;
+            *)
+            shift
+            ;;
     esac
 done
 
