@@ -8,16 +8,16 @@ let
         instanceType = n;
       })) (lib.filterAttrs (n: v: (v.onDemand or false)) queues));
 
-  subnetId = "subnet-dc1a4194";
-  securityGroup = "sg-b3ac49c3";
   lbJobsImage = "lb-jobs-5201168";
   gcpProject = "lb-jobs";
   gcpServiceAccount = "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com";
 
 in rec {
-  prod = {
+  production = {
     hostName = "steve.logicblox.com";
     elasticIPv4 = "54.243.141.142";
+    key-server-elastic-ip = "54.172.194.225";
+    google-nat-elastic-ip = "google-nat-production";
     workers = addOnDemandQueues {
       "c3.xlarge" = {
         number = 0;
@@ -30,7 +30,7 @@ in rec {
         number = 0;
         price = "0.42";
         percentageSpot = "1.0";
-        max = "500";
+        max = "650";
         maxDelta = "100";
         percentageQueue = "1.0";
       };
@@ -62,7 +62,7 @@ in rec {
         price = "0.75";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
-        max = "700";
+        max = "650";
         onDemand = true;
         maxDelta = "100";
       };
@@ -85,11 +85,13 @@ in rec {
         min = "50";
         max = "500";
         onDemand = true;
-        maxDelta = "100";
+        maxDelta = "50";
       };
       "i2.xlarge" = {
         number = 0;
-        price = "0.86";
+        diskSize = "10";
+        instanceType = "i3.xlarge";
+        price = "0.312";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "200";
@@ -97,7 +99,9 @@ in rec {
       };
       "i2.2xlarge" = {
         number = 0;
-        price = "1.88";
+        diskSize = "10";
+        instanceType = "i3.2xlarge";
+        price = "0.625";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "500";
@@ -107,7 +111,9 @@ in rec {
       };
       "i2.4xlarge" = {
         number = 0;
-        price = "3.41";
+        diskSize = "10";
+        instanceType = "i3.4xlarge";
+        price = "1.25";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "300";
@@ -117,7 +123,7 @@ in rec {
         instanceType = "i3.8xlarge";
         diskSize = "10";
         number = 0;
-        price = "3.20";
+        price = "2.50";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "50";
@@ -256,9 +262,7 @@ in rec {
         serviceAccount = gcpServiceAccount;
         localdisks = "4";
       };
-
     };
-
     region = {
       "us-east-1" = {};
       "us-west-1" = {};
@@ -268,53 +272,33 @@ in rec {
     spotfleetRole = "arn:aws:iam::826045886586:role/aws-ec2-spot-fleet-role";
   };
 
-  test =
-    { hostName = "steve-test.logicblox.com";
-      elasticIPv4 = "23.21.124.192";
-      key-server-elastic-ip = "";
-      google-nat-elastic-ip = "";
-      inherit (prod) workers;
-      inherit (prod) spotfleetRole;
-      inherit (prod) region;
-    };
+  shadow = {
+    hostName = "steve-shadow.logicblox.com";
+    elasticIPv4 = "23.21.124.192";
+    key-server-elastic-ip = "54.166.22.23";
+    google-nat-elastic-ip = "google-nat-shadow";
+    inherit (production) workers;
+    inherit (production) spotfleetRole;
+    inherit (production) region;
+  };
 
-  dev =
-    { hostName = "steve-dev.logicblox.com";
-      elasticIPv4 = "3.226.198.225";
-      key-server-elastic-ip = "34.232.108.153";
-      google-nat-elastic-ip = "google-nat-dev";
-      inherit (prod) workers;
-      inherit (prod) region;
-      spotfleetRole = "arn:aws:iam::202226491534:role/aws-ec2-spot-fleet-role";
-    };
+  dev = {
+    hostName = "steve-dev.logicblox.com";
+    elasticIPv4 = "3.226.198.225";
+    key-server-elastic-ip = "34.232.108.153";
+    google-nat-elastic-ip = "google-nat-dev";
+    inherit (production) workers;
+    inherit (production) region;
+    spotfleetRole = "arn:aws:iam::202226491534:role/aws-ec2-spot-fleet-role";
+  };
 
-  dev-2 =
-    { hostName = "steve-dev-2.logicblox.com";
-      elasticIPv4 = "34.231.25.40";
-      key-server-elastic-ip = "3.209.190.228";
-      google-nat-elastic-ip = "google-nat";
-      inherit (prod) workers;
-      inherit (prod) region;
-      inherit (dev) spotfleetRole;
-    };
-
-  integration =
-    { hostName = "steve-integration.logicblox.com";
-      elasticIPv4 = "18.233.197.187";
-      key-server-elastic-ip = "";
-      inherit (prod) workers;
-      inherit (prod) region;
-      inherit (prod) spotfleetRole;
-    };
-
-  asamtitraining=
-    { hostName = "steve-asamtitraining.logicblox.com";
-      elasticIPv4 = "52.15.255.93";
-      key-server-elastic-ip = "3.13.42.130";
-      google-nat-elastic-ip = "";
-      inherit (prod) workers;
-      inherit (prod) region;
-      inherit (prod) spotfleetRole;
-    };
-
+  dev-2 = {
+    hostName = "steve-dev-2.logicblox.com";
+    elasticIPv4 = "34.231.25.40";
+    key-server-elastic-ip = "3.209.190.228";
+    google-nat-elastic-ip = "google-nat";
+    inherit (production) workers;
+    inherit (production) region;
+    inherit (dev) spotfleetRole;
+  };
 }

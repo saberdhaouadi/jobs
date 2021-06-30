@@ -11,25 +11,40 @@ while [[ $# -gt 0 ]]; do
     op="$1"
     case $op in
         -b|--bucket)
-	bucket="$2"
-	shift 2
-	;;
-	-i|--build-id)
-	build="$2"
-	shift 2
-	;;
-	*)
-	shift
-	;;
+	    bucket="$2"
+	    shift 2
+	    ;;
+	    -i|--build-id)
+	    build="$2"
+	    shift 2
+	    ;;
+        -f|--file)
+        outputFile=$2
+        shift 2
+        ;;
+        *)
+        shift
+        ;;
     esac
 done
+
+case $outputFile in
+        dev)
+                amisFile=nix/amis.nix
+        ;;
+        prod)
+                amisFile=nix/prod-amis.nix
+        ;;
+        *)
+                echo "please enter output file"
+        ;;
+esac
 
 if [[ -z "$bucket" ]]; then
     bucket="steve-jobs-worker"
 fi
 
 stateDir=/tmp/ec2-image
-amisFile=nix/amis.nix
 
 echo "keeping state in $stateDir"
 mkdir -p $stateDir/hvm

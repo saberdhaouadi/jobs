@@ -6,12 +6,14 @@
 , logToken ? ""
 , sumoToken ? ""
 , vpcId ? ""
+, subnetId ? ""
 , production ? false
 , allowedGroups ? [ "admins" ]
 , gcpProject                     # (required) GCE project to deploy to
 , serviceAccount ? "lb-jobs-dev@lb-jobs.iam.gserviceaccount.com" # (required) GCE service account email
 , latestLb ? true
 , provisionVpc ? false
+, category ? "dev"
 , ...
 }:
 let
@@ -20,12 +22,13 @@ let
 
   instanceTypes = builtins.attrNames env.workers;
 
-  amis = import ./amis.nix;
+  amis = if production then import ./prod-amis.nix else import ./amis.nix ;
   bootstrap-images = import ./bootstrap-images.nix;
 
   devips = import ./dev-ips.nix;
   prodips = import ./prod-ips.nix;
   natips = import ./nat-ips.nix;
+  prodnatips = import ./prod-nat-ips.nix;
 
   dep-region = env.region;
   google-nat-ip = env.google-nat-elastic-ip;
@@ -104,7 +107,7 @@ let
       deployment.ec2.tags.OutgoingQueue = sqsStatusURL;
 
       users.extraUsers.root.openssh.authorizedKeys.keys = [
-      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCunr4txUxeXVeaEkLm06vjFceW71ciwf3vPtGQNRPa3mRIxWxRvtaSXj8djNn9g9Lc/Rqjhz2LuGfi9rQVeynpglmicSmt6Ge3UpQL+Z4QibY95movUTb+yvjIFTOHGbeRBGholpfvCK1vd/ZCzv9/21X2Mbg8N1X2/pxGdsmtv6dG9tOuF4Bv47uZA4pzMUC16XxriJN9WKBcrUwv5tPqP0uQoSWnnuU/RIMnZIiZUxi16jKTdMWRUFjx69s/lHkgUdnkAim7ZahhWOCsFAQTq65RdNsi40c/6N7MenWIWWiPIqQ59VpV7E9sxXa4Kbj7W/v4wqEzTcOFuG3EHuGx ahmed.samti@infor.com"
+      "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAgEAmxxgGIudbcSgNoG1z4sSiQq0E7AXRIakJRO0oCJhBbijFP+i2evtSPM5eu5Dm08q+leRnnQGjAckcdJoFbXi05QCLKNk7H/UJVLKyGL3FAHfrZX6nDqZmipkNdIJ1rmSjnKU/sgC5QU7Ordp2rCOba0lYLiDJVoQYZOVIG7CT6BtoCymuvC8Kd/gKwObVh8EPTQ7FRXllXE0Le8cXL+NUStr//YxQndqOqBKgFYYWLRztipRu5ATVJ29bL++jfd3hCsiJvNHy22iD13neO/sigaBnpKE274WjeSBA4SOaTizZB/4Q65idwyy3laLk+noKAbhVkrERu1Yl/tvx9xV8tI21af/zwPBCd+bTDEvEGqY3NqH6YK7tzsEyodXJLf0dVHRIGqF9Nn+Kl1CJ2AtocaecWj9GFAc7cy0RiBaE8XIvjc0a3e0IbDZVI26kO/GpzJhYNqZfJJJDWfZyxZKQ9ttNrRS3HwMx1jklCJ/r7a2UzgoMWXXADgm65zJpBMs+OP+n/6MZWDywmlCxyw1h9pIefxK9bNnauWsrVxp4IuYZWhxI4Lm03j1fYDYv86L7GJLRc4AjzHEK5KzJRYbiUIJJ3FsQ00skCxvD/5hKgHrdkit7WoODYDQbVHJYLXO2k4r744Q2qZ+BBOtsYxsRVW0NmyX84E+zBNTNZfaMZc= deploy@predictix.com"
       ];
 
     };
@@ -410,7 +413,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         };
-      ips = if production then prodips else devips ;
+      ips = if (production || category == "shadow") then prodips else devips ;
       accountEntry = account:
         {
           fromPort = 443;
@@ -461,7 +464,7 @@ with pkgs.lib;
           toPort = 443;
           sourceIp = "${ip}/32";
         };
-        ips = natips ++ [ "34.66.55.179" ];
+        ips = if (production || category == "shadow") then prodnatips else natips ++ [ "34.66.55.179" ];
         accountEntry = account:
         {
           fromPort = 443;
@@ -538,7 +541,9 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" ];
+      deployment.ec2.securityGroupIds = [ "admin" ];
+      deployment.ec2.subnetId = subnetId ;
+      deployment.ec2.associatePublicIpAddress = true;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.ec2.instanceProfile = resources.iamRoles.provisioner-role.name;
@@ -562,7 +567,9 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg.name ];
+      deployment.ec2.securityGroupIds = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg.name ];
+      deployment.ec2.associatePublicIpAddress = true;
+      deployment.ec2.subnetId = subnetId ;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
@@ -583,7 +590,7 @@ with pkgs.lib;
         { autoFormat = true;
           fsType = "xfs";
           device = getDeviceName config.deployment.ec2.instanceType false; #"/dev/xvdf";
-          options = [ "noatime" ];
+          options = [ "noatime" "_netdev" ];
           ec2.size = 20;
           ec2.encrypt = true;
         };
@@ -663,38 +670,7 @@ with pkgs.lib;
         nginx.serviceConfig.LimitNOFILE = 32768;
       };
 
-      services.dd-agent.jmxConfig = ''
-          instances:
-            - host: 127.0.0.1
-              name: jmx_instance
-              port: 7199
-
-          init_config:
-            conf:
-              - include:
-                  domain: java.lang
-                  type: Threading
-              - include:
-                  domain: java.lang
-                  type: GarbageCollector
-      '';
-
-      environment.etc =
-        let
-          nginx-config =
-            pkgs.writeText "nginx.yaml" ''
-              init_config:
-              instances:
-                -   nginx_status_url: http://127.0.0.1/nginx_status/
-          '';
-        in [
-          { source = nginx-config;
-            target = "dd-agent/conf.d/nginx.yaml";
-          }
-        ];
-
     };
-
 
   "database-${name}" =
     { config, pkgs, lib, resources, nodes, ... }:
@@ -722,9 +698,11 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.database-sg.name ];
+      deployment.ec2.securityGroupIds = [ "admin" resources.ec2SecurityGroups.database-sg.name ];
+      deployment.ec2.subnetId = subnetId ;
       deployment.ec2.region = region;
-      deployment.ec2.instanceType = if (vpcId != "") then "c4.4xlarge" else "c3.8xlarge";
+      deployment.ec2.instanceType = if (vpcId != "" && production) then "c4.8xlarge" else "c4.4xlarge";
+      deployment.ec2.associatePublicIpAddress = true;
       deployment.ec2.instanceProfile = resources.iamRoles.database-role.name;
       deployment.ec2.ebsInitialRootDiskSize = 100;
       deployment.ec2.ebsOptimized = false;
@@ -752,7 +730,7 @@ with pkgs.lib;
         { autoFormat = true;
           fsType = "xfs";
           device = getDeviceName config.deployment.ec2.instanceType false; #"/dev/xvdf";
-          options = [ "noatime" ];
+          options = [ "noatime" "_netdev" ];
           ec2.size = 1000;
           ec2.volumeType = "gp2";
         };
@@ -770,10 +748,12 @@ with pkgs.lib;
       deployment.targetEnv = "ec2";
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
-      deployment.ec2.securityGroups = [ "admin" resources.ec2SecurityGroups.frontend-sg.name ];
+      deployment.ec2.securityGroupIds = [ "admin" resources.ec2SecurityGroups.frontend-sg.name ];
+      deployment.ec2.subnetId = subnetId ;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "c4.xlarge" else "c3.xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
+      deployment.ec2.associatePublicIpAddress = true;
       deployment.ec2.elasticIPv4 = env.elasticIPv4 or "";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
       deployment.keys."server.crt".text = builtins.readFile <global_creds/logicblox/server.crt>;
@@ -928,28 +908,6 @@ with pkgs.lib;
         nginx.serviceConfig.LimitNOFILE = 32768;
 
       };
-
-      services.dd-agent.jmxConfig = ''
-          instances:
-            - host: 127.0.0.1
-              name: jmx_instance
-              port: 7199
-
-          init_config:
-            conf:
-              - include:
-                  domain: java.lang
-                  type: Threading
-              - include:
-                  domain: java.lang
-                  type: GarbageCollector
-          '';
-
-      services.dd-agent.nginxConfig = ''
-        init_config:
-        instances:
-          -   nginx_status_url: http://127.0.0.1/nginx_status/
-      '';
     };
 
   "google-nat-${name}" =
@@ -966,6 +924,7 @@ with pkgs.lib;
         inherit serviceAccount;
         canIpForward = true;
         region =  "us-central1-a";
+        rootDiskSize = 20;
       };
 
       # NAT setup
@@ -1004,6 +963,7 @@ with pkgs.lib;
     { config, lib, ... }:
     { imports = [ <lbdevops/nixos/local-modules/freeipa.nix>
                   <lbdevops/nixos/base/user-env.nix>
+                  <lbdevops/nixos/base/monitoring.nix>
                   <lbdevops/logicblox/config/logging/rsyslogd.nix>
                   <lbdevops/nixos/local-modules/cloudwatch.nix>
                   <lbdevops/nixos/monitoring/telegraf/telegraf.nix>

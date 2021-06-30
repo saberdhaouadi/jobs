@@ -35,7 +35,7 @@ in
     <lbdevops/logicblox/config/logging/rsyslogd.nix>
     ];
 
-  logging.sumologic.sumoToken = builtins.readFile <global_creds/sumologic-lb-jobs-dev-workers>;
+  logging.sumologic.sumoToken = builtins.readFile <global_creds/sumologic-lb-jobs-prod-workers>;
   logging.sumologic.collectorHost = "syslog.collection.us1.sumologic.com";
 
   environment.systemPackages =
