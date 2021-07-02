@@ -7,6 +7,10 @@
 , sumoToken ? ""
 , vpcId ? ""
 , subnetId ? ""
+, databaseSubnet ? "subnet-883299c3"
+, keyServerSubnet ? "subnet-7451b329"
+, provisionerSubnet ? "subnet-7451b329"
+, steveSubnet ? "subnet-883299c3"
 , production ? false
 , allowedGroups ? [ "admins" ]
 , gcpProject                     # (required) GCE project to deploy to
@@ -542,7 +546,7 @@ with pkgs.lib;
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroupIds = [ "admin" ];
-      deployment.ec2.subnetId = subnetId ;
+      deployment.ec2.subnetId = if (production || category == "shadow") then subnetId else provisionerSubnet;
       deployment.ec2.associatePublicIpAddress = true;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
@@ -569,7 +573,7 @@ with pkgs.lib;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroupIds = [ "admin" resources.ec2SecurityGroups.key-server-nats-sg.name ];
       deployment.ec2.associatePublicIpAddress = true;
-      deployment.ec2.subnetId = subnetId ;
+      deployment.ec2.subnetId = if (production || category == "shadow") then subnetId else keyServerSubnet;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "r4.large" else "r3.large";
       deployment.keys."server.key".text = builtins.readFile <global_creds/logicblox/server.key>;
@@ -699,7 +703,7 @@ with pkgs.lib;
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroupIds = [ "admin" resources.ec2SecurityGroups.database-sg.name ];
-      deployment.ec2.subnetId = subnetId ;
+      deployment.ec2.subnetId = if (production || category == "shadow") then subnetId else databaseSubnet;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "" && production) then "c4.8xlarge" else "c4.4xlarge";
       deployment.ec2.associatePublicIpAddress = true;
@@ -749,7 +753,7 @@ with pkgs.lib;
       deployment.ec2.accessKeyId = account;
       deployment.ec2.keyPair = resources.ec2KeyPairs.kp.name;
       deployment.ec2.securityGroupIds = [ "admin" resources.ec2SecurityGroups.frontend-sg.name ];
-      deployment.ec2.subnetId = subnetId ;
+      deployment.ec2.subnetId = if (production || category == "shadow") then subnetId else steveSubnet;
       deployment.ec2.region = region;
       deployment.ec2.instanceType = if (vpcId != "") then "c4.xlarge" else "c3.xlarge";
       deployment.ec2.instanceProfile = resources.iamRoles.frontend-role.name;
