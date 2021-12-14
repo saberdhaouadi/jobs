@@ -53,7 +53,7 @@ classpath = [
   '$(lb_web)/lib/java/lb-web-client.jar',
   '$(lb_web)/lib/java/lb-web-json.jar',
   '$(lb_web)/lib/java/lb-web-server.jar',
-  '$(lb_web)/lib/java/log4j-1.2.13.jar',
+  '$(lb_web)/lib/java/log4j-1.2-api-2.15.0.jar',
   '$(lb_web)/lib/java/protobuf-2.6.1.jar'
 ]
 
