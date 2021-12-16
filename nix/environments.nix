@@ -76,7 +76,7 @@ in rec {
         max = "200";
       };
       "r3.8xlarge" = {
-        instanceType = "i3.8xlarge";
+        instanceType = "r3.8xlarge";
         diskSize = "10";
         number = 0;
         price = "3.00";
