@@ -160,6 +160,7 @@ in rec {
         price = "2.50";
         percentageSpot = "1.0";
         percentageQueue = "1.0";
+        onDemand = true;
         max = "200";
         min = "75";
         diskSize = "10";
