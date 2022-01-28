@@ -62,7 +62,8 @@ classpath = [
   '$(lb_web)/lib/java/gson-2.2.4.jar',  
   '$(lb_web)/lib/java/lb-web-client.jar',
   '$(lb_web)/lib/java/lb-web-server.jar',
-  '$(lb_web)/lib/java/log4j-1.2.13.jar',
+  '$(lb_web)/lib/java/log4j-api-2.17.1.jar',
+  '$(lb_web)/lib/java/log4j-core-2.17.1.jar',
   '$(lb_web)/lib/java/protobuf-2.6.1.jar',
   '$(lb_web)/lib/java/lb-common.jar',
   '$(lb_web)/lib/java/lb-common-protocol.jar'

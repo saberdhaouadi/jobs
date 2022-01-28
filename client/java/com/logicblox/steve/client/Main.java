@@ -15,7 +15,9 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -54,8 +56,7 @@ import com.logicblox.web.client.service.ServiceClientOptions;
 
 public class Main {
   public static void main(String[] args) {
-    org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
-    rootLogger.setLevel(Level.WARN);
+    Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.WARN);
 
     try {
       Main main = new Main();
