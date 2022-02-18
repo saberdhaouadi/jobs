@@ -6,9 +6,10 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
+//import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.logicblox.bloxweb.*;
@@ -83,7 +84,15 @@ public class SteveHandler extends ProtoBufHandler {
     String dbPrefix = handlerConfig.getStringError("database_prefix");
     _db = new LBDatabase(dbPrefix);
 
-    _s3client = S3Utils.createS3Client(handlerConfig);
+    try
+    {
+      _s3client = S3Utils.createS3Client(handlerConfig);
+    }
+    catch(java.net.MalformedURLException ex)
+    {
+      throw new HandlerValidationException(ex);
+    }
+
     _tmpDir = handlerConfig.getFileError("tmpdir");
 
     _maintenanceFile = handlerConfig.getStringError("logdir")+"/maintenance";
@@ -277,11 +286,14 @@ public class SteveHandler extends ProtoBufHandler {
                     req.hasOutputEncryptionKey() ? req.getOutputEncryptionKey() : null,
                     tags);
 
-    job = Futures.transform(job, new AsyncFunction<Job, Job>() {
-      public ListenableFuture<Job> apply(Job j) {
-        return _jobQueues.get(jobQueueId).submit(j);
-      }
-    });
+    job = Futures.transformAsync(
+       job, 
+       new AsyncFunction<Job, Job>() {
+          public ListenableFuture<Job> apply(Job j) {
+            return _jobQueues.get(jobQueueId).submit(j);
+          }
+        },
+        MoreExecutors.directExecutor());
 
     // Once the job is submitted, construct a response to return the client
     return Futures.transform(
@@ -295,7 +307,8 @@ public class SteveHandler extends ProtoBufHandler {
 
                 return response.build();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Frontend.Response> handleState(
@@ -343,7 +356,8 @@ public class SteveHandler extends ProtoBufHandler {
 
                 return response.build();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -372,7 +386,7 @@ public class SteveHandler extends ProtoBufHandler {
     _statsd.incrementCounter("get_result");
     ListenableFuture<Job> job = _db.getJob(req.getJobId());
 
-    return Futures.transform(
+    return Futures.transformAsync(
             job,
             new AsyncFunction<Job, Frontend.Response>() {
               public ListenableFuture<Frontend.Response> apply(Job job) {
@@ -399,7 +413,8 @@ public class SteveHandler extends ProtoBufHandler {
                 response.setResult(b);
                 return Futures.immediateFuture(response.build());
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Frontend.Response> handleLog(
@@ -435,7 +450,7 @@ public class SteveHandler extends ProtoBufHandler {
 
     // Check the S3 metadata, and if we're okay, then download the
     // log from S3 to a temporary file
-    ListenableFuture<StoreFile> inputFile = Futures.transform(
+    ListenableFuture<StoreFile> inputFile = Futures.transformAsync(
             metadata,
             new AsyncFunction<Metadata, StoreFile>() {
               public ListenableFuture<StoreFile> apply(Metadata m) throws IOException {
@@ -456,9 +471,10 @@ public class SteveHandler extends ProtoBufHandler {
                   .createOptions();
                 return _s3client.download(downloadOptions);
               }
-            });
+            },
+            MoreExecutors.directExecutor());
 
-    ListenableFuture<String> log = Futures.transform(
+    ListenableFuture<String> log = Futures.transformAsync(
             inputFile,
             new AsyncFunction<StoreFile, String>() {
               public ListenableFuture<String> apply(StoreFile logfile) throws IOException {
@@ -467,9 +483,10 @@ public class SteveHandler extends ProtoBufHandler {
                 String log = joiner.join(lines);
                 return Futures.immediateFuture(log);
               }
-            });
+            },
+            MoreExecutors.directExecutor());
 
-    ListenableFuture<Frontend.Response> futureRes = Futures.transform(
+    ListenableFuture<Frontend.Response> futureRes = Futures.transformAsync(
             log,
             new AsyncFunction<String, Frontend.Response>() {
               public ListenableFuture<Frontend.Response> apply(String log) {
@@ -480,7 +497,8 @@ public class SteveHandler extends ProtoBufHandler {
                 response.setLog(b);
                 return Futures.immediateFuture(response.build());
               }
-            });
+            },
+            MoreExecutors.directExecutor());
 
     return MoreFutures.compose(futureRes, new Runnable() {
       @Override
@@ -521,7 +539,7 @@ public class SteveHandler extends ProtoBufHandler {
                 com.logicblox.cloudstore.Utils.getBucketName(logs))
             .setObjectKey(com.logicblox.cloudstore.Utils.getObjectKey(logs))
             .createOptions());
-    ListenableFuture<StoreFile> s3File = Futures.transform(md,
+    ListenableFuture<StoreFile> s3File = Futures.transformAsync(md,
            new AsyncFunction<Metadata, StoreFile>() {
               public ListenableFuture<StoreFile> apply(Metadata m) throws IOException {
                   if (m == null)
@@ -539,7 +557,8 @@ public class SteveHandler extends ProtoBufHandler {
                           .createOptions();
                   return _s3client.copy(options);
               }
-           });
+           },
+           MoreExecutors.directExecutor());
 
     return Futures.transform(
             s3File,
@@ -553,7 +572,8 @@ public class SteveHandler extends ProtoBufHandler {
                                 .setImplGet(resp)
                                 .build();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
 
   }
 
@@ -590,7 +610,7 @@ public class SteveHandler extends ProtoBufHandler {
             .createOptions());
 
     ListenableFuture<StoreFile> inputFile =
-            Futures.transform(metadata, new AsyncFunction<Metadata, StoreFile>() {
+            Futures.transformAsync(metadata, new AsyncFunction<Metadata, StoreFile>() {
               @Override
               public ListenableFuture<StoreFile> apply(Metadata m) throws Exception {
                 if (m == null)
@@ -621,8 +641,10 @@ public class SteveHandler extends ProtoBufHandler {
                         .setOverwrite(true)
                         .createOptions());
               }
-            });
+            },
+            MoreExecutors.directExecutor());
 
+/*
     inputFile = Futures.withFallback(inputFile, new FutureFallback<StoreFile>() {
       @Override
       public ListenableFuture<StoreFile> create(Throwable t) {
@@ -634,9 +656,26 @@ public class SteveHandler extends ProtoBufHandler {
         }
       }
     });
+*/
+    inputFile = Futures.catchingAsync(
+       inputFile,
+       Throwable.class,
+       new AsyncFunction<Throwable, StoreFile>()
+       {
+         public ListenableFuture<StoreFile> apply(Throwable t)
+         {
+           if (t instanceof ServiceException) {
+             return Futures.immediateFailedFuture(t);
+           } else {
+             return Futures.immediateFailedFuture(new ServiceException(
+                new SimpleErrorCode("ERROR_FETCHING", 400, "Could not fetch job implementation")));
+           }
+         }
+       },
+       MoreExecutors.directExecutor());
 
     // Upload file to S3
-    ListenableFuture<StoreFile> newFile = Futures.transform(
+    ListenableFuture<StoreFile> newFile = Futures.transformAsync(
             inputFile,
             new AsyncFunction<StoreFile, StoreFile>() {
               public ListenableFuture<StoreFile> apply(StoreFile input) throws IOException {
@@ -654,12 +693,13 @@ public class SteveHandler extends ProtoBufHandler {
                             com.logicblox.cloudstore.Utils.getObjectKey(jobUri))
                         .createOptions());
               }
-            });
+            },
+            MoreExecutors.directExecutor());
 
     final Map<String, String> tags = Conversions.createMap(req.getMetadataList());
     tags.put("date", Conversions.getCurrentISO8601());
 
-    ListenableFuture<String> jobImplId = Futures.transform(
+    ListenableFuture<String> jobImplId = Futures.transformAsync(
             newFile,
             new AsyncFunction<StoreFile, String>() {
               public ListenableFuture<String> apply(StoreFile input) throws IOException {
@@ -669,9 +709,10 @@ public class SteveHandler extends ProtoBufHandler {
                         Conversions.convertStoreFileToData(input),
                         tags);
               }
-            });
+            },
+            MoreExecutors.directExecutor());
 
-    ListenableFuture<Job> job = Futures.transform(
+    ListenableFuture<Job> job = Futures.transformAsync(
             jobImplId,
             new AsyncFunction<String, Job>() {
               public ListenableFuture<Job> apply(String impl) {
@@ -685,9 +726,10 @@ public class SteveHandler extends ProtoBufHandler {
                         null,
                         tags);
               }
-            });
+            },
+            MoreExecutors.directExecutor());
 
-    ListenableFuture<String> jobId = Futures.transform(
+    ListenableFuture<String> jobId = Futures.transformAsync(
             job,
             new AsyncFunction<Job, String>() {
               public ListenableFuture<String> apply(Job j) {
@@ -698,7 +740,8 @@ public class SteveHandler extends ProtoBufHandler {
 
                 return _db.addStatus(j.id, status.build());
               }
-            });
+            },
+            MoreExecutors.directExecutor());
 
     ListenableFuture<Frontend.Response> futureRes = Futures.transform(
             jobId,
@@ -711,7 +754,8 @@ public class SteveHandler extends ProtoBufHandler {
                                                 .setId(id))
                                 .build();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
 
     return MoreFutures.compose(futureRes, new Runnable() {
       @Override
@@ -740,7 +784,7 @@ public class SteveHandler extends ProtoBufHandler {
     final URI dest = tmpUrl;
 
     ListenableFuture<JobImpl> impl = _db.getJobImpl(user, req.getId());
-    ListenableFuture<StoreFile> s3File = Futures.transform(impl,
+    ListenableFuture<StoreFile> s3File = Futures.transformAsync(impl,
            new AsyncFunction<JobImpl, StoreFile>() {
               public ListenableFuture<StoreFile> apply(JobImpl impl) throws IOException {
                 URI archive;
@@ -761,7 +805,8 @@ public class SteveHandler extends ProtoBufHandler {
                         .createOptions();
                 return _s3client.copy(options);
               }
-           });
+           },
+           MoreExecutors.directExecutor());
 
     return Futures.transform(
             s3File,
@@ -775,7 +820,8 @@ public class SteveHandler extends ProtoBufHandler {
                                 .setImplGet(resp)
                                 .build();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
 
   }
 
@@ -804,7 +850,8 @@ public class SteveHandler extends ProtoBufHandler {
                                 .setImplList(resp)
                                 .build();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Frontend.Response> handleListPlatforms(
@@ -823,7 +870,8 @@ public class SteveHandler extends ProtoBufHandler {
                 }
                 return Frontend.Response.newBuilder().setListPlatforms(resp).build();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Frontend.Response> handleListQueues(
@@ -842,7 +890,8 @@ public class SteveHandler extends ProtoBufHandler {
                 }
                 return Frontend.Response.newBuilder().setListQueues(resp).build();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Frontend.Response> handleListMetadataKeys(
@@ -862,7 +911,8 @@ public class SteveHandler extends ProtoBufHandler {
                 }
                 return Frontend.Response.newBuilder().setListMetadataKeys(resp).build();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Frontend.Response> handleListMetadataValues(
@@ -882,7 +932,8 @@ public class SteveHandler extends ProtoBufHandler {
                 }
                 return Frontend.Response.newBuilder().setListMetadataValues(resp).build();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   private static Frontend.JobImplInfo createImplInfo(JobImpl impl) {

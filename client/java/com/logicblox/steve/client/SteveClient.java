@@ -13,6 +13,7 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.ListenableScheduledFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.logicblox.concurrent.FutureTransform;
 import com.logicblox.concurrent.MoreFutures;
@@ -91,7 +92,8 @@ public class SteveClient implements SteveClientInterface {
               public String apply(Frontend.Response response) {
                 return response.getCreate().getJobId();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -113,7 +115,8 @@ public class SteveClient implements SteveClientInterface {
               public Frontend.State apply(Frontend.Response response) {
                 return response.getState().getState();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -134,7 +137,8 @@ public class SteveClient implements SteveClientInterface {
               public String apply(Frontend.Response response) {
                 return response.getLog().getLog();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -156,7 +160,8 @@ public class SteveClient implements SteveClientInterface {
               public String apply(Frontend.Response response) {
                 return id;
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -177,7 +182,8 @@ public class SteveClient implements SteveClientInterface {
               public List<Frontend.File> apply(Frontend.Response response) {
                 return response.getResult().getOutputList();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -188,13 +194,15 @@ public class SteveClient implements SteveClientInterface {
   }
 
   private ListenableFuture<Frontend.State> waitInternal(
-          final int count, final String id, final long pollDelaySeconds, final StateNotify notify) {
+          final int count, final String id, final long pollDelaySeconds, final StateNotify notify)
+   {
     // TODO extend to accept temporary connectivity issues while waiting
-    return Futures.dereference(
+//    return Futures.dereference(
+      ListenableScheduledFuture<ListenableFuture<Frontend.State>> fut =
             _scheduler.schedule(
                     new Callable<ListenableFuture<Frontend.State>>() {
                       public ListenableFuture<Frontend.State> call() throws ServiceClientException {
-                        return Futures.transform(
+                        return Futures.transformAsync(
                                 getState(id),
                                 new AsyncFunction<Frontend.State, Frontend.State>() {
                                   public ListenableFuture<Frontend.State> apply(Frontend.State state) {
@@ -210,19 +218,36 @@ public class SteveClient implements SteveClientInterface {
                                     else
                                       return waitInternal(count + 1, id, pollDelaySeconds, notify);
                                   }
-                                });
+                                },
+                                MoreExecutors.directExecutor());
                       }
                     },
                     // do not delay initial execution
                     (count == 0 ? 0 : pollDelaySeconds),
-                    TimeUnit.SECONDS));
+                    TimeUnit.SECONDS); //);
+
+// TODO - Need to carefully review this to see if it correctly mimics the Futures.dereference()
+//        use above, which is no longer in the guava library
+     try
+     {
+        return fut.get();
+     }
+     catch(Exception ex)
+     {
+//       return null;
+       return Futures.immediateFailedFuture(
+         new SteveClientException(
+           _serviceUri.toString(),
+           "Job '" + id + "' failed and has no output",
+           "JOB_FAILED"));
+     }
   }
 
   public ListenableFuture<List<Frontend.File>> waitForJob(
           final String id,
           final long pollDelaySeconds,
           final StateNotify notify) {
-    return Futures.transform(
+    return Futures.transformAsync(
             wait(id, pollDelaySeconds, notify),
             new AsyncFunction<Frontend.State, List<Frontend.File>>() {
               @Override
@@ -236,7 +261,8 @@ public class SteveClient implements SteveClientInterface {
                                   "Job '" + id + "' failed and has no output",
                                   "JOB_FAILED"));
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -270,7 +296,8 @@ public class SteveClient implements SteveClientInterface {
               public String apply(Frontend.Response response) {
                 return response.getImplAdd().getId();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -289,7 +316,8 @@ public class SteveClient implements SteveClientInterface {
               public List<Frontend.JobImplInfo> apply(Frontend.Response response) {
                 return response.getImplList().getJobImplList();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -308,7 +336,8 @@ public class SteveClient implements SteveClientInterface {
               public List<String> apply(Frontend.Response response) {
                 return response.getListQueues().getQueueList();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -327,7 +356,8 @@ public class SteveClient implements SteveClientInterface {
               public List<String> apply(Frontend.Response response) {
                 return response.getListPlatforms().getPlatformList();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -346,7 +376,8 @@ public class SteveClient implements SteveClientInterface {
               public List<String> apply(Frontend.Response response) {
                 return response.getListMetadataKeys().getKeyList();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -365,7 +396,8 @@ public class SteveClient implements SteveClientInterface {
               public List<String> apply(Frontend.Response response) {
                 return response.getListMetadataValues().getValueList();
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**
@@ -389,7 +421,8 @@ public class SteveClient implements SteveClientInterface {
               public String apply(Frontend.Response response) {
                 return id;
               }
-            });
+            },
+            MoreExecutors.directExecutor());
   }
 
   /**

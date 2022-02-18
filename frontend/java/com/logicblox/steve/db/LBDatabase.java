@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.logicblox.bloxweb.SimpleErrorCode;
 import com.logicblox.bloxweb.service.ServiceException;
 import com.logicblox.common.logging.Logger;
@@ -128,7 +129,8 @@ public class LBDatabase implements Database {
                 final com.logicblox.steve.protocol.Database.User user = response.getUser();
                 return new User(user.getId(), user.getAccountId(), user.getPublicKey());
               }
-            });
+            }, 
+            MoreExecutors.directExecutor());
   }
 
   @Override
@@ -138,7 +140,8 @@ public class LBDatabase implements Database {
               public Account apply(User u) {
                 return new Account(u.getAccountId());
               }
-            });
+            }, 
+            MoreExecutors.directExecutor());
   }
 
 
@@ -180,7 +183,8 @@ public class LBDatabase implements Database {
                 checkError(response);
                 return convertFromDatabase(response.getJob());
               }
-            });
+            }, 
+            MoreExecutors.directExecutor());
   }
 
 
@@ -201,7 +205,8 @@ public class LBDatabase implements Database {
                 checkError(response);
                 return jobId;
               }
-            });
+            }, 
+            MoreExecutors.directExecutor());
   }
 
 
@@ -222,7 +227,8 @@ public class LBDatabase implements Database {
                 checkError(response);
                 return response.getJob().getId();
               }
-            });
+            }, 
+            MoreExecutors.directExecutor());
   }
 
   private Job convertFromDatabase(com.logicblox.steve.protocol.Database.Job job) {
@@ -261,7 +267,8 @@ public class LBDatabase implements Database {
                 checkError(response);
                 return convertFromDatabase(response.getJob());
               }
-            });    
+            }, 
+            MoreExecutors.directExecutor());    
   }
 
 
@@ -293,7 +300,8 @@ public class LBDatabase implements Database {
                 checkError(response);
                 return implId;
               }
-            });
+            }, 
+            MoreExecutors.directExecutor());
   }
 
   @Override
@@ -319,7 +327,8 @@ public class LBDatabase implements Database {
                         Conversions.convertFromDatabaseFile(impl.getFile()),
                         Conversions.convertFromDatabaseParams(impl.getMetadataList()));
               }
-            });
+            }, 
+            MoreExecutors.directExecutor());
   }
 
   @Override
@@ -346,7 +355,8 @@ public class LBDatabase implements Database {
                   );
                 return builder.build();
               }
-            });
+            }, 
+            MoreExecutors.directExecutor());
   }
 
   @Override
@@ -357,7 +367,8 @@ public class LBDatabase implements Database {
                public Iterable<String> apply(Response response) {
                    return response.getQueueList();
                }
-           });
+           }, 
+           MoreExecutors.directExecutor());
   }
 
   @Override
@@ -368,7 +379,8 @@ public class LBDatabase implements Database {
                public Iterable<String> apply(Response response) {
                    return response.getPlatformList();
                }
-           });
+           }, 
+           MoreExecutors.directExecutor());
   }
 
   @Override
@@ -379,7 +391,8 @@ public class LBDatabase implements Database {
                public Iterable<String> apply(Response response) {
                    return response.getMetadataKeyList();
                }
-           });
+           }, 
+           MoreExecutors.directExecutor());
   }
 
   @Override
@@ -390,7 +403,8 @@ public class LBDatabase implements Database {
                public Iterable<String> apply(Response response) {
                    return response.getMetadataValueList();
                }
-           });
+           }, 
+           MoreExecutors.directExecutor());
   }
 
   //

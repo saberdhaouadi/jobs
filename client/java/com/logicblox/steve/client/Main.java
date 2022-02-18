@@ -29,6 +29,7 @@ import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -177,7 +178,8 @@ public class Main {
                   public List<Frontend.File> apply(List<StoreFile> files) {
                     return Collections.singletonList(Frontend.File.newBuilder().setUrl(tempURI.toString()+"/").build());
                   }
-                });
+                },
+                MoreExecutors.directExecutor());
       } else {
         URI tempURI = createUniqueInputURI(inputFile.getName());
 	UploadOptions options = _s3client.getOptionsBuilderFactory().newUploadOptionsBuilder()
@@ -192,7 +194,8 @@ public class Main {
                   public List<Frontend.File> apply(StoreFile file) {
                     return Collections.singletonList(Conversions.convertToFrontendFile(file));
                   }
-                });
+                },
+                MoreExecutors.directExecutor());
       }
     }
   }
@@ -343,7 +346,7 @@ public class Main {
 
       final SteveClientInterface client = getSteveClient();
 
-      Futures.transform(
+      Futures.transformAsync(
               client.createJob(_impl, inputs, outputPrefix, _outputEncryptionKey, convertCommandLineMetadata(_metadata)),
               new AsyncFunction<String, Object>() {
                 @Override
@@ -361,7 +364,8 @@ public class Main {
                   } else
                     return Futures.immediateFuture((Object) id);
                 }
-              }).get();
+              },
+              MoreExecutors.directExecutor()).get();
     }
   }
 
@@ -390,7 +394,8 @@ public class Main {
 
                     return Futures.immediateFuture((Object) list);
                   }
-                }).get();
+                },
+                MoreExecutors.directExecutor()).get();
       }
     }
   }
@@ -418,7 +423,8 @@ public class Main {
 
                   return Futures.immediateFuture(null);
                 }
-              }).get();
+              },
+              MoreExecutors.directExecutor()).get();
     }
   }
 
@@ -458,7 +464,7 @@ public class Main {
         .setOverwrite(true)
         .createOptions();
 
-      Futures.transform(client.getLBLogs(_ids.get(0), outputURI),
+      Futures.transformAsync(client.getLBLogs(_ids.get(0), outputURI),
               new AsyncFunction<String, Object>() {
                 @Override
                 public ListenableFuture<Object> apply(String id) throws Exception {
@@ -467,7 +473,8 @@ public class Main {
                   else
                     return Futures.immediateFuture((Object) id);
                 }
-              }).get();
+              },
+              MoreExecutors.directExecutor()).get();
     }
   }
 
@@ -525,19 +532,21 @@ public class Main {
                           System.out.println(Conversions.toJSON(f));
                         return list;
                       }
-                    });
+                    },
+                    MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<List<Frontend.File>> downloadResult(final String output, ListenableFuture<List<Frontend.File>> future) {
     return
-            Futures.transform(
+            Futures.transformAsync(
                     future,
                     new AsyncFunction<List<Frontend.File>, List<Frontend.File>>() {
                       public ListenableFuture<List<Frontend.File>> apply(List<Frontend.File> list)
                               throws Exception {
                         return downloadResult(output, list);
                       }
-                    });
+                    },
+                    MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<List<Frontend.File>> downloadResult(final String output, List<Frontend.File> files)
@@ -559,7 +568,7 @@ public class Main {
         downloads.add(_s3client.download(options));
       }
 
-      return Futures.transform(Futures.allAsList(downloads), Functions.constant(files));
+      return Futures.transform(Futures.allAsList(downloads), Functions.constant(files), MoreExecutors.directExecutor());
     } else {
       // Assume that we want to download to a single file
       // TOOD check the ETag from the download
@@ -573,7 +582,8 @@ public class Main {
       return
               Futures.transform(
                       _s3client.download(options),
-                      Functions.constant(files));
+                      Functions.constant(files),
+                      MoreExecutors.directExecutor());
     }
   }
 
@@ -631,7 +641,7 @@ public class Main {
         _input = temp.toString();
       }
 
-      Futures.transform(
+      Futures.transformAsync(
               client.addJobImpl(_impl, createInput(_input, null).get().get(0), convertCommandLineMetadata(_metadata)),
               new AsyncFunction<String, Object>() {
                 @Override
@@ -643,7 +653,8 @@ public class Main {
                   else
                     return Futures.immediateFuture((Object) id);
                 }
-              }).get();
+              },
+              MoreExecutors.directExecutor()).get();
     }
   }
 
@@ -681,7 +692,7 @@ public class Main {
           .setObjectKey(Utils.getObjectKey(outputURI))
           .setOverwrite(true)
           .createOptions();
-      Futures.transform(client.copyJobImpl(_impl, outputURI),
+      Futures.transformAsync(client.copyJobImpl(_impl, outputURI),
               new AsyncFunction<String, Object>() {
                 @Override
                 public ListenableFuture<Object> apply(String id) throws Exception {
@@ -690,7 +701,8 @@ public class Main {
                   else
                     return Futures.immediateFuture((Object) id);
                 }
-              }).get();
+              },
+              MoreExecutors.directExecutor()).get();
     }
   }
 
@@ -732,7 +744,8 @@ public class Main {
 
                   return infos;
                 }
-              }).get();
+              },
+              MoreExecutors.directExecutor()).get();
     }
   }
 
@@ -754,7 +767,8 @@ public class Main {
 
                   return queues;
                 }
-              }).get();
+              },
+              MoreExecutors.directExecutor()).get();
     }
   }
 
@@ -776,7 +790,8 @@ public class Main {
 
                   return platforms;
                 }
-              }).get();
+              },
+              MoreExecutors.directExecutor()).get();
     }
   }
 
@@ -798,7 +813,8 @@ public class Main {
 
                   return keys;
                 }
-              }).get();
+              },
+              MoreExecutors.directExecutor()).get();
     }
   }
 
@@ -826,7 +842,8 @@ public class Main {
 
                   return values;
                 }
-              }).get();
+              },
+              MoreExecutors.directExecutor()).get();
     }
   }
 
