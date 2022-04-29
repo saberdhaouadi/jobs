@@ -197,7 +197,6 @@ public class SteveClient implements SteveClientInterface {
           final int count, final String id, final long pollDelaySeconds, final StateNotify notify)
    {
     // TODO extend to accept temporary connectivity issues while waiting
-//    return Futures.dereference(
       ListenableScheduledFuture<ListenableFuture<Frontend.State>> fut =
             _scheduler.schedule(
                     new Callable<ListenableFuture<Frontend.State>>() {
@@ -224,17 +223,14 @@ public class SteveClient implements SteveClientInterface {
                     },
                     // do not delay initial execution
                     (count == 0 ? 0 : pollDelaySeconds),
-                    TimeUnit.SECONDS); //);
+                    TimeUnit.SECONDS);
 
-// TODO - Need to carefully review this to see if it correctly mimics the Futures.dereference()
-//        use above, which is no longer in the guava library
      try
      {
         return fut.get();
      }
      catch(Exception ex)
      {
-//       return null;
        return Futures.immediateFailedFuture(
          new SteveClientException(
            _serviceUri.toString(),

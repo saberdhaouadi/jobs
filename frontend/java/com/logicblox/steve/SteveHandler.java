@@ -6,7 +6,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.AsyncFunction;
-//import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -644,19 +643,6 @@ public class SteveHandler extends ProtoBufHandler {
             },
             MoreExecutors.directExecutor());
 
-/*
-    inputFile = Futures.withFallback(inputFile, new FutureFallback<StoreFile>() {
-      @Override
-      public ListenableFuture<StoreFile> create(Throwable t) {
-        if (t instanceof ServiceException) {
-          return Futures.immediateFailedFuture(t);
-        } else {
-          return Futures.immediateFailedFuture(new ServiceException(
-                  new SimpleErrorCode("ERROR_FETCHING", 400, "Could not fetch job implementation")));
-        }
-      }
-    });
-*/
     inputFile = Futures.catchingAsync(
        inputFile,
        Throwable.class,
