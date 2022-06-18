@@ -52,12 +52,14 @@ in rec {
         defaultRegion = "us-west-2";
       };
       "r3.xlarge" = {
+        instanceType = "i3.xlarge";
         number = 0;
         price = "0.40";
         percentageSpot = "1.0";
         max = "500";
       };
       "r3.2xlarge" = {
+        instanceType = "i3.2xlarge";
         number = 0;
         price = "0.75";
         percentageSpot = "1.0";
