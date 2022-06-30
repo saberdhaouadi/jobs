@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 
 public final class SQSClient implements SQSClientInterface {
   private final String _endpoint;
@@ -345,7 +346,9 @@ public final class SQSClient implements SQSClientInterface {
     for (int i = 0; i < messages.size(); i++) {
       final int index = i;
       result.add(
-              Futures.transform(future, new AsyncFunction<List<Object>, SQSReceivedMessage>() {
+          Futures.transformAsync(
+             future, 
+             new AsyncFunction<List<Object>, SQSReceivedMessage>() {
                 public ListenableFuture<SQSReceivedMessage> apply(List<Object> list) {
                   Object current = list.get(index);
                   if (current instanceof Exception)
@@ -353,7 +356,8 @@ public final class SQSClient implements SQSClientInterface {
                   else
                     return Futures.immediateFuture((SQSReceivedMessage) current);
                 }
-              }));
+              },
+             MoreExecutors.directExecutor()));
     }
 
     return result;

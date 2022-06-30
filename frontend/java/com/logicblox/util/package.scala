@@ -8,6 +8,7 @@ import scala.util.Success
 import com.google.common.util.concurrent.FutureCallback
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.SettableFuture
 
 import scala.concurrent.ExecutionContext
@@ -34,7 +35,8 @@ package object util {
       new FutureCallback[T] {
         def onSuccess(result: T) = promise success result
         def onFailure(throwable: Throwable) = promise failure throwable
-      }
+      },
+      MoreExecutors.directExecutor()
     )
 
     promise.future

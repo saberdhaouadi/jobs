@@ -13,6 +13,7 @@ import com.logicblox.steve.protocol.Backend;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import com.googlecode.protobuf.format.JsonFormat;
 
@@ -78,6 +79,6 @@ public class JobQueueClient {
     System.err.println("submitting to " + _queue.getQueueUrl() + ":");
     System.err.println(msg);
 
-    return Futures.transform(_sqs.send(_queue, msg), Functions.constant(job));
+    return Futures.transform(_sqs.send(_queue, msg), Functions.constant(job), MoreExecutors.directExecutor());
   }
 }

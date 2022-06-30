@@ -14,7 +14,12 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.log4j.PatternLayout;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.layout.PatternLayout;
+
 
 import com.logicblox.bloxweb.GlobalConfig;
 import com.logicblox.bloxweb.UsageException;
@@ -26,7 +31,6 @@ import com.logicblox.bloxweb.service.ApplicationContext;
 import com.logicblox.bloxweb.service.ConfigFiles;
 import com.logicblox.bloxweb.service.ServiceContext;
 import com.logicblox.common.logging.Logger;
-import com.logicblox.common.logging.SystemDAppender;
 import com.logicblox.common.logging.SystemDLevel;
 import com.logicblox.common.logging.SystemDLogger;
 import com.logicblox.web.server.netty.BloxwebServer;
@@ -34,10 +38,13 @@ import com.logicblox.web.server.netty.BloxwebServer;
 public class Main {
   public static void main(String[] args) {
     try {
-      org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
-      SystemDAppender appender = new SystemDAppender(new PatternLayout("%d{ISO8601} %5p %-18c{1} - %m%n"));
-      rootLogger.addAppender(appender);
-      rootLogger.setLevel(SystemDLevel.INFO);
+      Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.INFO);
+      String PATTERN = "%d{ISO8601} %5p %-18c{1} - %m%n";
+      ConsoleAppender appender = ConsoleAppender.newBuilder()
+         .setName("Steve")
+         .setLayout(PatternLayout.newBuilder().withPattern(PATTERN).build())
+         .build();
+      ((org.apache.logging.log4j.core.Logger) LogManager.getRootLogger()).addAppender(appender);
 
       Logger logger = SystemDLogger.getLogger("Steve");
 

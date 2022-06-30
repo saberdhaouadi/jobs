@@ -197,7 +197,15 @@ public class Main {
 
   public Main() {
     // TODO pass in a configuration for S3
-    this.client = S3Utils.createS3Client(null);
+    try
+    {
+       this.client = S3Utils.createS3Client(null);
+    }
+    catch(java.net.MalformedURLException ex)
+    {
+       System.err.println("Error:  " + ex.getMessage());
+       System.exit(1);
+    }
     this.ec2Client = AmazonEC2ClientBuilder.standard().build();
 
     if (_s3Endpoint != null) {

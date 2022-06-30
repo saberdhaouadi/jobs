@@ -55,7 +55,8 @@ lb_library(
 
 classpath = [
   '$(logicblox)/lib/java/protobuf-2.6.1.jar',
-  '$(logicblox)/lib/java/guava-15.0.jar',
+  '$(lb_web)/lib/java/guava-31.0.1-jre.jar',
+  '$(lb_web)/lib/java/failureaccess-1.0.1.jar',
   '$(logicblox)/lib/java/lb-common.jar',
   '$(lb_web)/lib/java/cloudstore-0.2.jar',
   '$(lb_web)/lib/java/aws-java-sdk-1.11.102.jar',
