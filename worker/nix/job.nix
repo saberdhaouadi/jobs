@@ -37,7 +37,14 @@ in
 
     buildCommand = ''
       export HOME=/tmp/job
-      function start_lb() 
+
+      # make the Gurobi ISV key environment variables available to LB if the
+      # creds file exists.
+      if [[ -f /tmp/gurobi-isv-key ]]; then
+        source /tmp/gurobi-isv-key
+      fi
+
+      function start_lb()
       {
         export LB_BLOXCOMPILER_SERVER=1;
         if type -P lb-services &> /dev/null ; then
