@@ -99,29 +99,6 @@ in
       DefaultMemoryAccounting=true
     '';
 
-    systemd.services.gurobi-socket =
-      { description = "Create Gurobi unix domain socket";
-        wants = [ "network-online.target" ];
-        after = [ "network-online.target" ];
-        wantedBy = [ "multi-user.target" ];
-        path = [ pkgs.socat ];
-        preStart =
-          ''
-            mkdir -p /run/sockets
-            chmod 755 /run/sockets
-          '';
-        postStart =
-          ''
-            sleep 10
-            chmod go+w-x /run/sockets/gurobi
-          '';
-        serviceConfig = {
-          ExecStart = "${pkgs.socat}/bin/socat unix-listen:/run/sockets/gurobi,fork tcp-connect:gurobi.predictix.com:41954";
-          Restart = "always";
-          RestartSec = "10";
-        };
-      };
-
     # LogicBlox needs /dev/shm to be at least 75% of total memory.
     boot.devShmSize = "75%";
 
@@ -174,14 +151,10 @@ in
 
     systemd.services.lb-steve-worker = {
       description = "LB Steve Worker";
-      after = [ "network.target" "fetch-ec2-data.service" "gurobi-socket.service" ];
-      wants = [ "gurobi-socket.service" ];
+      after = [ "network.target" "fetch-ec2-data.service" ];
       wantedBy = [ "multi-user.target" ];
       path = [ config.logicblox.jobs.builds.worker ];
       environment = { LB_WEBCLIENT_HOME = config.logicblox.jobs.platform; };
-      preStart = ''
-        systemctl is-active gurobi-socket.service
-      '';
       serviceConfig = {
         ExecStart = "${workerScript}/bin/worker ${optionalString cfg.shutdownOnIdle "--shutdown-on-idle"}";
         Restart = "always";
