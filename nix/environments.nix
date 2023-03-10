@@ -20,6 +20,7 @@ in rec {
     google-nat-elastic-ip = "google-nat-production";
     workers = addOnDemandQueues {
       "c3.xlarge" = {
+	instanceType = "r3.xlarge";
         number = 0;
         price = "0.25";
         percentageSpot = "1.0";
@@ -27,6 +28,7 @@ in rec {
         max = "500";
       };
       "c3.2xlarge" = {
+      	instanceType = "r3.2xlarge";
         number = 0;
         price = "0.42";
         percentageSpot = "1.0";
@@ -35,6 +37,7 @@ in rec {
         percentageQueue = "1.0";
       };
       "c3.4xlarge" = {
+      	instanceType = "r3.4xlarge";
         number = 0;
         price = "0.84";
         percentageSpot = "1.0";
@@ -52,12 +55,14 @@ in rec {
         defaultRegion = "us-west-2";
       };
       "r3.xlarge" = {
+      	instanceType = "i3.xlarge";
         number = 0;
         price = "0.40";
         percentageSpot = "1.0";
         max = "500";
       };
       "r3.2xlarge" = {
+        instanceType = "i3.2xlarge";
         number = 0;
         price = "0.75";
         percentageSpot = "1.0";
@@ -76,6 +81,7 @@ in rec {
         max = "200";
       };
       "r3.8xlarge" = {
+      	instanceType = "r3.8xlarge";
         diskSize = "10";
         number = 0;
         price = "3.00";
