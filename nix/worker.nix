@@ -77,7 +77,6 @@ in
       sandboxPaths = [
         "/tmp/job"
         "/tmp/gurobi-isv-key=${<global_creds/gurobi-isv-key>}"
-        "/sockets=/run/sockets"
         "/usr/bin/env=${pkgs.coreutils}/bin/env"
         "/lib64/ld-linux-x86-64.so.2=${pkgs.glibc}/lib64/ld-linux-x86-64.so.2"
         "/bin/bash=${pkgs.bash}/bin/bash"
