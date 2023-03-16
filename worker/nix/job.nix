@@ -41,7 +41,8 @@ in
       # creds file exists.
       
       if [[ -f /tmp/gurobi-isv-key ]]; then
-        set -a source /tmp/gurobi-isv-key
+        set -a 
+        source /tmp/gurobi-isv-key
       fi
       
       function start_lb() 
