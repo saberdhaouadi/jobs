@@ -70,6 +70,7 @@ in rec {
         max = "650";
         onDemand = true;
         maxDelta = "100";
+        defaultRegion ="us-west-2";
       };
       "r3.4xlarge" = {
         instanceType = "i3.4xlarge";
@@ -79,6 +80,7 @@ in rec {
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "200";
+        defaultRegion ="us-west-2";
       };
       "r3.8xlarge" = {
       	instanceType = "r3.8xlarge";
@@ -91,6 +93,7 @@ in rec {
         max = "500";
         onDemand = true;
         maxDelta = "50";
+        defaultRegion ="us-west-2";
       };
       "i2.xlarge" = {
         number = 0;
