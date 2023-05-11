@@ -57,14 +57,14 @@ in rec {
         defaultRegion = "us-west-2";
       };
       "r3.xlarge" = {
-      	instanceType = "i3.xlarge";
+      	instanceType = "r3.xlarge";
         number = 0;
         price = "0.40";
         percentageSpot = "1.0";
         max = "500";
       };
       "r3.2xlarge" = {
-        instanceType = "i3.2xlarge";
+        instanceType = "r3.2xlarge";
         number = 0;
         price = "0.75";
         percentageSpot = "1.0";
@@ -75,7 +75,7 @@ in rec {
         defaultRegion = "us-west-2";
       };
       "r3.4xlarge" = {
-        instanceType = "i3.4xlarge";
+        instanceType = "r3.4xlarge";
         diskSize = "10";
         number = 0;
         price = "1.5";
