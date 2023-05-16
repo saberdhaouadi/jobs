@@ -21,6 +21,7 @@ in rec {
     workers = addOnDemandQueues {
       "c3.xlarge" = {
         instanceType = "r3.xlarge";
+        defaultRegion = "us-west-2";
         number = 0;
         price = "0.25";
         percentageSpot = "1.0";
@@ -29,6 +30,7 @@ in rec {
       };
       "c3.2xlarge" = {
         instanceType = "r3.2xlarge";
+        defaultRegion = "us-west-2";
         number = 0;
         price = "0.42";
         percentageSpot = "1.0";
@@ -68,6 +70,7 @@ in rec {
         max = "650";
         onDemand = true;
         maxDelta = "100";
+        defaultRegion = "us-west-2";
       };
       "r3.4xlarge" = {
         instanceType = "i3.4xlarge";
@@ -77,6 +80,7 @@ in rec {
         percentageSpot = "1.0";
         percentageQueue = "1.0";
         max = "200";
+        defaultRegion = "us-west-2";
       };
       "r3.8xlarge" = {
         instanceType = "r3.8xlarge";
@@ -89,6 +93,7 @@ in rec {
         max = "500";
         onDemand = true;
         maxDelta = "50";
+        defaultRegion = "us-west-2";
       };
       "i2.xlarge" = {
         number = 0;
