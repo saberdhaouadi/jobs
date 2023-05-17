@@ -27,11 +27,9 @@ in rec {
         percentageSpot = "1.0";
         onDemand = true;
         max = "500";
-	defaultRegion = "us-west-2";
       };
       "c3.2xlarge" = {
         instanceType = "r3.2xlarge";
-        defaultRegion = "us-west-2";
         number = 0;
         price = "0.42";
         percentageSpot = "1.0";
