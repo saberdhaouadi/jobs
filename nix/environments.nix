@@ -27,6 +27,7 @@ in rec {
         percentageSpot = "1.0";
         onDemand = true;
         max = "500";
+	defaultRegion = "us-west-2";
       };
       "c3.2xlarge" = {
         instanceType = "r3.2xlarge";
@@ -37,6 +38,7 @@ in rec {
         max = "650";
         maxDelta = "100";
         percentageQueue = "1.0";
+	defaultRegion = "us-west-2";
       };
       "c3.4xlarge" = {
         instanceType = "r3.4xlarge";
