@@ -83,7 +83,7 @@ classpath = [
 
   #opensamlv3 dependencies
   '$(lb_web)/lib/java/bcprov-jdk15on-1.54.jar',
-  '$(lb_web)/lib/java/commons-collections-3.2.1.jar',
+  '$(lb_web)/lib/java/commons-collections-3.2.2.jar',
   '$(lb_web)/lib/java/cryptacular-1.1.1.jar',
   '$(lb_web)/lib/java/java-support-7.3.0.jar',
   '$(lb_web)/lib/java/metrics-core-3.1.2.jar',
