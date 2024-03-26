@@ -63,7 +63,7 @@ classpath = [
   '$(lb_web)/lib/java/google-api-client-1.30.3.jar',
   '$(lb_web)/lib/java/google-http-client-1.32.0.jar',
   '$(lb_web)/lib/java/google-http-client-jackson2-1.32.0.jar',
-  '$(lb_web)/lib/java/google-oauth-client-1.30.2.jar',
+  '$(lb_web)/lib/java/google-oauth-client-1.30.3.jar',
   '$(lb_web)/lib/java/grpc-context-1.22.1.jar',
   '$(lb_web)/lib/java/j2objc-annotations-1.3.jar',
   '$(lb_web)/lib/java/opencensus-api-0.24.0.jar',
@@ -82,7 +82,7 @@ classpath = [
 
   #opensamlv3 dependencies
   '$(lb_web)/lib/java/bcprov-jdk15on-1.54.jar',
-  '$(lb_web)/lib/java/commons-collections-3.2.1.jar',
+  '$(lb_web)/lib/java/commons-collections-3.2.2.jar',
   '$(lb_web)/lib/java/cryptacular-1.1.1.jar',
   '$(lb_web)/lib/java/java-support-7.3.0.jar',
   '$(lb_web)/lib/java/metrics-core-3.1.2.jar',
