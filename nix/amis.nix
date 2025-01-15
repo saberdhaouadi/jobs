@@ -5,5 +5,4 @@
   us-east-1.s3 = "ami-05171bc13c19d2d71";
   us-west-1.s3 = "ami-0918532f6a526d288";
   us-west-2.s3 = "ami-0d81b494adb4b9874";
-
 }
